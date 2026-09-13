@@ -80,7 +80,7 @@ function botPrep() {
   const lvlPlan = { 2:2, 3:3, 5:4, 8:5, 12:6, 16:7, 20:8, 23:9, 25:10 };
   const target = lvlPlan[S.round] || S.lvl;
   for (let k = 0; k < 8 && S.lvl < target; k++) {
-    if (S.gold >= 5 + (S.hp >= 12 ? 4 : 2)) { S.gold -= 5; S.xp += 5; checkLevel(); } else break;
+    if (S.gold >= 5 + (S.hp >= 12 ? 4 : 2)) { S.gold -= 5; S.xp += 4; checkLevel(); } else break;
   }
   // 5) 富余 roll down
   let rolls = 0;
@@ -93,7 +93,7 @@ function botPrep() {
       else if (S.bench.filter(x=>!x).length > 0 && (u.cost >= 4 || ((mainTags.has(u.fac)||mainTags.has(u.job)) && u.cost <= 3))) buy(i);
     }
     // 金币太多继续升人口（5 金 4 经验）
-    if (S.gold >= 30 && S.lvl < 10 && S.gold - 5 >= 14) { S.gold -= 5; S.xp += 5; checkLevel(); }
+    if (S.gold >= 30 && S.lvl < 10 && S.gold - 5 >= 14) { S.gold -= 5; S.xp += 4; checkLevel(); }
   }
   // 6) 择优编队：机器人像真人一样主动换人，选出当前最强阵容（按钮的 autoDeploy 只补位不换人）
   autoDeployBest();
