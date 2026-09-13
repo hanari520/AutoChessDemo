@@ -278,6 +278,11 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .vfx.ring.frost { border-color:#9fe8ff; }
 .vfx.ring.shield { border-color:#4aa8ff; }
 .vfx.ring.drain { border-color:#c77dff; }
+/* AoE 范围圈：以施法者为中心，直径 = (2R+1) 格，直观显示技能覆盖范围 */
+.vfx.aoe { border:3px solid #ffd24a; border-radius:50%; animation:aoePop calc(.7s/var(--spd)) ease-out forwards; z-index:6; }
+.vfx.aoe.frost { border-color:#9fe8ff; }
+.vfx.aoe.drain { border-color:#c77dff; }
+@keyframes aoePop { from{ transform:scale(.3); opacity:.95; } to{ transform:scale(1.1); opacity:0; } }
 .vfx.boom { border-radius:50%; background:radial-gradient(circle,#ffce5499 20%,#ff7b3344 55%,transparent 75%);
   animation:boom calc(.65s/var(--spd)) ease-out forwards; }
 .vfx.flash { background:radial-gradient(circle,#ffffffcc 15%,#ffffff44 45%,transparent 70%); animation:boom calc(.55s/var(--spd)) forwards; }
@@ -558,8 +563,8 @@ const SKILL_INFO = {
   slam: k=>`对周围 1 格内所有敌人造成 ${P(120,k)}% 攻击伤害，并击飞 0.8 秒`,
   curse: k=>`对最近的敌人造成 ${P(100,k)}% 攻击伤害，并使其攻击力降低 30%，持续 4 秒`,
   burn: k=>`对最近的敌人造成 ${P(150,k)}% 攻击伤害，并烧毁其 30 点法力`,
-  massstun: k=>`对所有敌人造成 ${P(100,k)}% 攻击伤害，并眩晕 1 秒`,
-  massfreeze: k=>`对所有敌人造成 ${P(80,k)}% 攻击伤害，并冻结 1 秒`,
+  massstun: k=>`对周围 ${AOE_RADIUS.massstun} 格内所有敌人造成 ${P(100,k)}% 攻击伤害，并眩晕 1 秒`,
+  massfreeze: k=>`对周围 ${AOE_RADIUS.massfreeze} 格内所有敌人造成 ${P(80,k)}% 攻击伤害，并冻结 1 秒`,
   tauntshield: (k,sv)=>`获得 ${Math.round((sv&&sv.shieldPct||.35)*100)}% 最大生命护盾，并嘲讽 ${sv&&sv.tauntT||2} 秒（强制敌人攻击自己）`,
   guard: (k,sv)=>`为生命比例最低的队友附加 ${Math.round((sv&&sv.allyShield||.3)*100)}% 护盾，自身获得 ${Math.round((sv&&sv.selfShield||.2)*100)}% 护盾并嘲讽 ${sv&&sv.tauntT||1.5} 秒`,
   manafeed: (k,sv)=>`全体队友回复 ${sv&&sv.manaAmt||25} 点法力，并治疗 ${P(50,k)}% 攻击生命`,
@@ -572,7 +577,7 @@ const SKILL_INFO = {
   chain: k=>`闪电连锁最近的 3 名敌人，依次造成 ${P(150,k)}%、${P(120,k)}%、${P(95,k)}% 攻击伤害`,
   cleanse: k=>`治疗全体队友 ${P(90,k)}% 攻击生命，并净化眩晕/冻结/减速/攻降/减疗/沉默`,
   bulwark: (k,sv)=>`全体队友获得 ${Math.round((sv&&sv.teamPct||.15)*100)}% 护盾，自身减伤 ${Math.round((sv&&sv.drB||.15)*100)}% 持续 ${sv&&sv.drT||4} 秒，并嘲讽 ${sv&&sv.tauntT||2.5} 秒`,
-  masssilence: (k,sv)=>`对所有敌人造成 ${P(110,k)}% 攻击伤害，并沉默 ${sv&&sv.dur||2} 秒`,
+  masssilence: (k,sv)=>`对周围 ${AOE_RADIUS.masssilence} 格内所有敌人造成 ${P(110,k)}% 攻击伤害，并沉默 ${sv&&sv.dur||2} 秒`,
   shred: (k,sv)=>`对最近的敌人造成 ${P(120,k)}% 攻击伤害，并降低其 ${Math.round((sv&&sv.arShred||20))} 点护甲，持续 ${sv&&sv.dur||4} 秒（护甲可被压至负数）`,
   sunder: (k,sv)=>`对最近的敌人造成 ${P(120,k)}% 攻击伤害，并削减其 ${Math.round((sv&&sv.mrShred||.25)*100)}% 魔法抗性，持续 ${sv&&sv.dur||4} 秒（负魔抗伤害增幅极强）`,
   hex: (k,sv)=>`对最近的敌人造成 ${P(110,k)}% 攻击伤害，并将其变形 ${sv&&sv.dur||2} 秒（禁用所有技能，含被动）`,
@@ -617,7 +622,7 @@ const SKILL_VAR = {
   yukie:  {pow:1.10, fx:[['dot',.015]], txt:'并附加每 3 秒 1.5% 最大生命的毒伤'},
   miting: {mrShred:.30, dur:4},
   xuezhu: {pow:1.20, fx:[['freeze',2.0]]},
-  zeyin:  {fx:[['foehealdown',.20,3]], txt:'并使所有敌人受到的治疗降低 20%，持续 3 秒'},
+  zeyin:  {fx:[['foehealdown',.20,3]], txt:'并使周围敌人受到的治疗降低 20%，持续 3 秒'},
   sanli:  {pow:1.05},
   diansu: {fx:[['weaken',.40,4]]},
   lianshiye:{dur:3},
@@ -1504,7 +1509,7 @@ function genEnemy(){
   const capR = S.endless ? 999 : 24;
   // 全程渐进难度曲线：前期就有压力、中后期持续加压（指数 0.85 = 前段斜率更大），不再是"前松后紧"
   const prog = Math.min(r-1, capR) / 24;
-  const mul = 0.985 * (1.19 + 2.15 * Math.pow(prog, 1.05)) * dyn;
+  const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * dyn;
   const used=new Set();
   const list=[];
   if(r%5===0){   // 野怪回合（每 5 回合），波次固定按进度强化
@@ -1512,7 +1517,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.15;
+    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.46;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1899,6 +1904,19 @@ function vfxAt(u,cls,dur=900){
   host.appendChild(v);
   setTimeout(()=>v.remove(),dur);
 }
+/* AoE 范围圈：画在棋盘层，以施法者为中心覆盖 (2R+1) 格的方形区域（视觉上标出技能范围） */
+function vfxAoe(u,R,colorCls='',dur=700){
+  const cell=CELL_PX(), gap=boardGeo().gap, step=cellStep(), pad=PAD_PX()-2;
+  const size=Math.round((2*R+1)*cell + 2*R*gap);
+  const el=document.createElement('div');
+  el.className='vfx aoe '+colorCls;
+  el.style.left=Math.round(pad+u.x*step-gap/2)+'px';
+  el.style.top=Math.round(pad+u.y*step-gap/2)+'px';
+  el.style.width=size+'px'; el.style.height=size+'px';
+  const layer=document.getElementById('unitLayer') || $('board');
+  layer.appendChild(el);
+  setTimeout(()=>el.remove(), dur/SPEED);
+}
 function shakeCell(x,y){
   const c=$('board').children[y*BOARD_W+x];
   if(!c) return;
@@ -1973,6 +1991,10 @@ function pickFoe(foes,u,sv){
   if(t==='far') return foes.reduce((a,b)=>dist(b)>dist(a)?b:a);
   return foes.reduce((a,b)=>dist(b)<dist(a)?b:a);
 }
+/* 范围型 AoE：只命中施法者周围 R 格内的敌人（曼哈顿距离），不再全场生效 */
+function aoeFoes(u,foes,r){ return foes.filter(f=>Math.abs(f.x-u.x)+Math.abs(f.y-u.y)<=r); }
+/* 技能 AoE 半径（格）；范围越小伤害/控制可给得越强。3 格 ≈ 覆盖半数战场的环形区域 */
+const AOE_RADIUS={ massstun:3, massfreeze:3, masssilence:3, foehealdown:2 };
 /* 棋子独有技能特效统一结算（fx 词条 → 既有状态字段） */
 function applyFx(u,f,sv,units,allies,foes,power,dmg){
   if(!sv.fx || (f && f.hp<=0)) { if(!sv.fx) return; }
@@ -2009,7 +2031,7 @@ function applyFx(u,f,sv,units,allies,foes,power,dmg){
         const f2=foes.filter(v=>v!==f&&v.hp>0)
           .sort((x,y)=>(Math.abs(x.x-u.x)+Math.abs(x.y-u.y))-(Math.abs(y.x-u.x)+Math.abs(y.y-u.y)))[0];
         if(f2){ dealDamage(u,f2,Math.round(power*a),units); dmgPopup(u,f2,'✦溅射','cast'); } break; }
-      case 'foehealdown': foes.forEach(t=>{ if(t.hp>0){ t.healDownA=Math.max(t.healDownA||0,a); t.healDownT=(b||3)*1000; } }); break;
+      case 'foehealdown': aoeFoes(u,foes,AOE_RADIUS.foehealdown).forEach(t=>{ if(t.hp>0){ t.healDownA=Math.max(t.healDownA||0,a); t.healDownT=(b||3)*1000; } }); break;
       case 'exec': if(hit && f.hp>0 && f.hp/f.maxhp<0.35){   // 斩杀：残血目标追加伤害
         dealDamage(u,f,Math.round(power*a),units); dmgPopup(u,f,'⚔斩杀','cast'); } break;
       case 'allymana': allies.forEach(t=>{ if(t.hp>0&&!isPassive(t)) t.mana=Math.min(t.maxmana||60,t.mana+a); }); break;
@@ -2150,15 +2172,19 @@ function castSkill(u,tgt,units,skMul){
       shakeCell(f.x,f.y); break; }
     case 'massstun': {
       if(!foes.length)break;
-      vfxAt(u,'ring',900); shakeCell(u.x,u.y);
-      foes.forEach(f=>{ vfxAt(f,'ring',900); const dd=dealDamage(u,f,Math.round(power*1.0),units);
+      const R=AOE_RADIUS.massstun, hit=aoeFoes(u,foes,R);
+      vfxAt(u,'ring',900); vfxAoe(u,R,'',700); shakeCell(u.x,u.y);
+      log(`　💥 高音震魂波及 ${hit.length} 名敌人（范围 ${R} 格）`);
+      hit.forEach(f=>{ vfxAt(f,'ring',900); const dd=dealDamage(u,f,Math.round(power*1.0),units);
         applyFx(u,f,sv,units,allies,foes,power,dd);
         if(f.hp>0){ f.stun=Math.max(f.stun,1000); dmgPopup(u,f,'💫眩晕','cast'); } });
       break; }
     case 'massfreeze': {
       if(!foes.length)break;
-      vfxAt(u,'ring frost',950); shakeCell(u.x,u.y);
-      foes.forEach(f=>{ vfxAt(f,'ring frost',1050); const dd=dealDamage(u,f,Math.round(power*0.8),units);
+      const R=AOE_RADIUS.massfreeze, hit=aoeFoes(u,foes,R);
+      vfxAt(u,'ring frost',950); vfxAoe(u,R,'frost',700); shakeCell(u.x,u.y);
+      log(`　❄ 海豚安魂曲波及 ${hit.length} 名敌人（范围 ${R} 格）`);
+      hit.forEach(f=>{ vfxAt(f,'ring frost',1050); const dd=dealDamage(u,f,Math.round(power*0.8),units);
         applyFx(u,f,sv,units,allies,foes,power,dd);
         if(f.hp>0){ f.frozen=Math.max(f.frozen,1000); } });
       break; }
@@ -2227,9 +2253,11 @@ function castSkill(u,tgt,units,skMul){
       u.tauntT=(sv.tauntT||2.5)*1000;
       vfxAt(u,'ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
       break; }
-    case 'masssilence': { if(!foes.length)break;   // 灵界之门：全体沉默
-      vfxAt(u,'ring drain',950); shakeCell(u.x,u.y);
-      foes.forEach(f=>{ vfxAt(f,'ring drain',950); const dd=dealDamage(u,f,Math.round(power*1.1),units);
+    case 'masssilence': { if(!foes.length)break;   // 灵界之门：范围沉默（不再是全屏）
+      const R=AOE_RADIUS.masssilence, hit=aoeFoes(u,foes,R);
+      vfxAt(u,'ring drain',950); vfxAoe(u,R,'drain',700); shakeCell(u.x,u.y);
+      log(`　🔇 灵界之门波及 ${hit.length} 名敌人（范围 ${R} 格）`);
+      hit.forEach(f=>{ vfxAt(f,'ring drain',950); const dd=dealDamage(u,f,Math.round(power*1.1),units);
         applyFx(u,f,sv,units,allies,foes,power,dd);
         if(f.hp>0){ f.silenceT=(sv.dur||2)*1000; dmgPopup(u,f,'🔇沉默','cast'); } });
       break; }
