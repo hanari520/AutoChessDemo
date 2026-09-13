@@ -277,6 +277,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     <button class="btn" id="histBtn">📜 战绩</button>
     <button class="btn" id="bookBtn">📖 图鉴</button>
     <button class="btn" id="resetBtn" title="放弃当前进度，重新开一局">🔄 重开</button>
+    <button class="btn" id="endBtn" style="display:none;background:#5b1e1e;color:#ffb0b0" title="结束无限模式，直接查看本局结算">🏁 结束挑战</button>
     <span class="tag" style="display:flex;gap:4px;align-items:center;padding:3px 8px">⏩
       <button class="spd-b" data-s="1">1×</button>
       <button class="spd-b on" data-s="1.5">1.5×</button>
@@ -903,6 +904,7 @@ function renderTop(){
   const c = compForRound(S.round);
   $('lockBtn').textContent=S.lock?'🔒 已锁定':'🔓 锁定';
   $('lockBtn').classList.toggle('on',!!S.lock);
+  $('endBtn').style.display = (S.endless && S.phase==='prep') ? 'inline-block' : 'none';
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
     : S.streak>=4 ? '难度 ⬆（连胜 4+，敌方增强）' : '难度 ➖ 标准';
   $('enemyInfo').innerHTML = c.boss
@@ -2046,6 +2048,24 @@ function gameOver(win){
   $('ovBtn2').style.display='none';
   $('overlay').classList.remove('hidden');
 }
+function endEndless(){  // 无限模式主动结束：直接进入结算画面
+  if(!S.endless||S.phase!=='prep') return;
+  S.phase='over';
+  try{ // 记入历史（能进无限模式=已通关，记为胜局）
+    const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
+    h.unshift({ts:Date.now(),win:true,round:S.round,hp:S.hp,endless:true,
+      wins:S.stats.wins,losses:S.stats.losses,kills:S.stats.kills,maxStreak:S.stats.maxStreak});
+    localStorage.setItem('vc_history',JSON.stringify(h.slice(0,20)));
+  }catch(e){}
+  localStorage.removeItem('vc_save');
+  $('ovTitle').textContent='♾ 无限模式结算';
+  $('ovText').innerHTML=`主动结束挑战，安然退场。<br>`+reportHTML();
+  $('ovBtn').textContent='再来一局';
+  $('ovBtn').style.display='inline-block';
+  $('ovBtn2').style.display='none';
+  $('overlay').classList.remove('hidden');
+}
+$('endBtn').onclick=endEndless;
 $('ovBtn').onclick=()=>{ newGame(); renderAll(); $('fightBtn').disabled=false;
   $('overlay').classList.add('hidden'); log('新的一局开始！'); };
 $('ovBtn2').onclick=enterEndless;
