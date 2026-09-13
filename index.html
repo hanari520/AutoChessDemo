@@ -1404,8 +1404,9 @@ function tryMerge(){
       S.bench.forEach((u,i)=>{ if(u&&u.id===d.id&&u.star===star) spots.push(['bench',i]); });
       S.board.forEach((u,i)=>{ if(u&&u.id===d.id&&u.star===star) spots.push(['board',i]); });
       if(spots.length>=3){
-        const keep = spots.find(s=>s[0]==='board') || spots[0];
-        const allItems = spots.map(s=>getAt(s[0],s[1]).items||[]).flat();
+        const group = spots.slice(0,3);   // 只取 3 个合成，其余同名棋子保留（否则 4 个以上会被误清空）
+        const keep = group.find(s=>s[0]==='board') || group[0];
+        const allItems = group.map(s=>getAt(s[0],s[1]).items||[]).flat();
         const items = allItems.slice(0,MAX_EQUIP);          // 新星最多带 2 件
         if(allItems.length>MAX_EQUIP){
           allItems.slice(MAX_EQUIP).forEach(k=>S.items.push(k)); // 多余装备回到装备栏
@@ -1416,7 +1417,7 @@ function tryMerge(){
         const upgraded={uid:S.uid++, id:d.id, star:star+1, sks,
           hp:Math.round(d.hp*m), maxhp:Math.round(d.hp*m),
           atk:Math.round(d.atk*Math.pow(STAR_M[d.cost]||1.8, star)), items};
-        spots.forEach(s=>setAt(s[0],s[1],null));
+        group.forEach(s=>setAt(s[0],s[1],null));
         setAt(keep[0],keep[1],upgraded);
         log(`✨ ${d.name} 升至 ${star+1} 星！`);
         tryMerge(); return;
@@ -1541,6 +1542,7 @@ function autoDeploy(){
   const rest=all.filter(u=>!upSet.has(u.uid));
   for(let i=0;i<BENCH;i++) S.bench[i]=null;
   rest.forEach((u,i)=>{ if(i<BENCH) S.bench[i]=u; });
+  tryMerge();   // 上阵搬动后可能凑齐 3 个同名，需重新检查合成
   renderAll();
   if(need>0 && picked.length) log(`⚡ 一键上阵：补入 ${picked.length} 名棋子（原有棋子保持不动）`);
   else if(need<=0) log('⚡ 一键上阵：人口已满，仅整理站位（不会替换已有棋子）');
