@@ -59,6 +59,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 /* 星级进度高亮：单卡=浅微光；对子=金色描边强光（备战席/棋盘） */
 #board .unit.solo, #bench .unit.solo { border-color:#aab3cc; filter:drop-shadow(0 0 2px #ffffff40); }
 #board .unit.pair, #bench .unit.pair { border-color:#ffd24a; filter:drop-shadow(0 0 4px #ffd24acc); box-shadow:0 0 0 1px #ffd24a55; }
+#board .unit.preview { opacity:.9; pointer-events:none; filter:saturate(.85); }
 .card.solo { border-color:#9aa3c0; box-shadow:0 0 4px #ffffff26; }
 .card.paircard { border-color:#ffd24a; box-shadow:0 0 9px #ffd24a66; }
 .card.chase3 { border-color:#ff8ad8; box-shadow:0 0 10px #ff8ad888; }
@@ -384,10 +385,10 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <p id="ovText" style="max-width:520px;line-height:1.8;color:#cdd6f4">
     单机自动战斗棋局（VirtuaReal + P-SP · 46 名主播 · 限量卡池 · 25 回合通关）<br>
     ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +5 经验（每回合自然 +2，升级更快凑人口）；卖棋 1★原价、合成折价<br>
-    ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#8dff9a">绿色=购买即触发羁绊档位</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
+    ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#8dff9a">绿色=购买即触发羁绊档位</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>：胜利掉装备（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
-    ⑤ 拖拽布阵（场上最多 10 人）；<b style="color:#8dff9a">一键上阵优先凑羁绊</b>（按羁绊档位+战力贪心选队）；撑过 25 回合并击败最终魔王即通关
+    ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；一键上阵优先凑羁绊；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
   </p>
   <button id="ovBtn">开始游戏</button>
   <button id="ovBtn2" style="display:none;background:#1e5b2a;color:#8dff9a;">♾ 进入无限模式</button>
@@ -664,9 +665,11 @@ function newGame(){
     bench:Array(BENCH).fill(null), board:Array(BOARD_H*BOARD_W).fill(null),
     shop:[], enemyBoard:[], uid:1, log:[], items:[], selItem:null, selUid:null, pool:{},
     stats:{wins:0,losses:0,maxStreak:0,kills:0,dmgTaken:0,goldEarned:0,goldSpent:0,bought:0} };
-  UNITS.forEach(u=>{ S.pool[u.id]=POOL_COPIES[u.cost]; }); // 初始化限量卡池
-  rollShop();
+  S.pool={}; initPool();
+  prepEnemy();
+  rollShop();   // 开局发牌（含第 1 回合保底 1 费）
 }
+function initPool(){ UNITS.forEach(u=>{ S.pool[u.id]=POOL_COPIES[u.cost]; }); }   // 初始化限量卡池（含开局保底 1 费）
 
 /* ================= 工具 ================= */
 const $=id=>document.getElementById(id);
@@ -776,8 +779,8 @@ function skillDesc(u){ // 技能最终描述：原型效果 × 棋子独有变�
 function skillText(u){ return (isPassive(u)?'':'主动：')+skillDesc(u); }
 /* 各人口等级刷新概率（1~5 费，%）——5 个卡槽每格独立判定，概率仅与等级绑定，无隐藏修正 */
 const SHOP_ODDS = {1:[100,0,0,0,0], 2:[70,30,0,0,0], 3:[60,35,5,0,0], 4:[50,35,15,0,0],
-  5:[40,35,23,2,0], 6:[33,30,30,7,0], 7:[30,30,30,10,0], 8:[24,30,30,15,1],
-  9:[22,30,25,20,3], 10:[19,25,25,25,6]};
+  5:[40,35,23,2,0], 6:[33,30,30,7,0], 7:[30,30,28,10,2], 8:[23,29,28,16,4],
+  9:[18,26,27,22,7], 10:[15,22,25,27,11]};
 function drawFromPool(){ // 按等级概率决定费用档，再从卡池余量中抽取
   const lv=S.lvl;
   const odds = (SHOP_ODDS[lv]||SHOP_ODDS[10]).map(x=>x/100);
@@ -880,6 +883,10 @@ function renderBoard(){
     cell.dataset.i=i;
     const u=S.board[i];
     if(u) cell.innerHTML=unitHTML(u, S.selUid===u.uid);
+    else if(y<BOARD_H/2 && S.phase==='prep' && S.enemyBoard && S.enemyBoard[i]){
+      // 备战期显示敌方阵容预览（不可交互）：便于开战前观察与针对性布阵
+      cell.innerHTML=unitHTML(S.enemyBoard[i], false).replace('<div class="unit ','<div class="unit preview ');
+    }
     cell.onclick=()=>cellClick(i);
     b.appendChild(cell);
   }
@@ -1027,7 +1034,7 @@ function findUnit(uid){
 function clickUnit(t,i){
   if(S.phase!=='prep') return;
   const u=getAt(t,i);
-  if(S.selItem!=null){
+  if(S.selItem!=null){   // 装备穿戴模式：点棋子即穿上
     if(!u){ log('⚠ 请点击要穿戴装备的棋子'); return; }
     u.items = u.items||[];
     if(u.items.length>=MAX_EQUIP){ log(`⚠ ${byId(u.id).name} 装备已满（${MAX_EQUIP} 件）`); S.selItem=null; renderEquip(); return; }
@@ -1038,14 +1045,10 @@ function clickUnit(t,i){
     if(S.inspectUid===u.uid) showInspectFor(t,i);   // 详情面板跟随刷新装备栏
     return;
   }
-  if(S.selUid!=null){
-    const pos = findUnit(S.selUid);
-    if(!pos){ S.selUid=null; hideInspect(); renderAll(); return; }
-    if(u && u.uid===S.selUid){ S.selUid=null; hideInspect(); }   // 再点自己=取消选中并收起详情
-    else { moveOrSwap(pos[0],pos[1],t,i); S.selUid=null; if(u) showInspectFor(t,i); else hideInspect(); }
-    renderAll(); return;
-  }
-  if(u){ S.selUid=u.uid; renderBoard(); renderBench(); renderTop(); showInspectFor(t,i); }
+  // 单击 = 查看详情（棋子换位请用拖动）
+  if(u){ S.selUid=u.uid; showInspectFor(t,i); }
+  else { S.selUid=null; hideInspect(); }
+  renderBoard(); renderBench(); renderTop();
 }
 /* ===== 棋子详情面板 ===== */
 const INSPECT_EMPTY='<div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div>';
@@ -1085,6 +1088,7 @@ document.addEventListener('pointerdown', e=>{
   if(S.phase!=='prep') return;
   const el = e.target.closest && e.target.closest('.unit');
   if(!el) return;
+  if(el.classList.contains('preview')) return;   // 敌方阵容预览不可拖拽
   const cell = el.closest('.cell'), slot = el.closest('.bslot');
   if(!cell && !slot) return;
   drag = { t: cell?'board':'bench', i: cell?+cell.dataset.i:+slot.dataset.bi,
@@ -1296,7 +1300,7 @@ function genEnemy(){
   const earlyDisc = Math.max(0, 6-r) * 0.015;
   // 无限模式（r>25）成长不封顶：敌方随回合持续变强；普通模式 24 回合封顶
   const capR = S.endless ? 999 : 24;
-  const mul = 0.985 * (1 + Math.min(r-1,capR)*0.062) * dyn - earlyDisc;
+  const mul = 0.985 * (1 + Math.min(r-1,capR)*0.072) * dyn - earlyDisc;
   const used=new Set();
   const comp = compForRound(r);
   const list=[];
@@ -1339,28 +1343,31 @@ function genEnemy(){
   }
   const b=Array(BOARD_H*BOARD_W).fill(null);
   const front=[], back=[];
+  // 敌方半区在上方：第 3/2 行贴近中线（前排），第 1/0 行为后排
   list.forEach(x=> (x.d.job==='守护'||x.d.job==='刀客'||x.d.job==='狂战') ? front.push(x) : back.push(x));
   const place=(arr,rows)=>{
+    // 每行从中间向两侧展开，避免远程被随机丢到角落、前排散乱
+    const slots=[];
+    for(const row of rows) for(const col of [3,4,2,5,1,6,0,7]) slots.push(row*BOARD_W+col);
+    let si=0;
     arr.forEach(x=>{
-      for(let tries=0;tries<30;tries++){
-        const row=rows[Math.floor(Math.random()*rows.length)], col=Math.floor(Math.random()*BOARD_W);
-        const idx=row*BOARD_W+col;
-        if(!b[idx]){
-          const m = mul * (x.bossMult||1) * Math.pow(STAR_M[x.d.cost]||1.8, x.star-1) * HP_SCALE;
-          b[idx]={uid:S.uid++, id:x.d.id, star:x.star, sks:Math.pow(SKILL_STAR_M[x.d.cost]||1.1, x.star-1),
-            hp:Math.round(x.d.hp*m), maxhp:Math.round(x.d.hp*m),
-            atk:Math.round(x.d.atk*m), enemy:true};
-          return;
-        }
-      }
+      while(si<slots.length && b[slots[si]]) si++;
+      if(si>=slots.length) return;
+      const idx=slots[si++];
+      const m = mul * (x.bossMult||1) * Math.pow(STAR_M[x.d.cost]||1.8, x.star-1) * HP_SCALE;
+      b[idx]={uid:S.uid++, id:x.d.id, star:x.star, sks:Math.pow(SKILL_STAR_M[x.d.cost]||1.1, x.star-1),
+        hp:Math.round(x.d.hp*m), maxhp:Math.round(x.d.hp*m),
+        atk:Math.round(x.d.atk*m), enemy:true};
     });
   };
-  place(front,[0,1]); place(back,[2,3]);
+  place(front,[3,2]);    // 前排：紧贴中线，先占中间列
+  place(back,[1,0]);     // 后排：远程/辅助站后方，受前排保护
   return b;
 }
 
-/* ================= 战斗 ================= */
+function prepEnemy(){ S.enemyBoard = genEnemy(); }   // 备战阶段就生成敌方阵容（供玩家观察，开战时直接沿用）
 let battleTimer=null, SPEED=1.5, currentTick=null, tickWorker=null;   // 默认 1.5 倍速
+const BATTLE_DELAY = 300;   // 开战后先暂停 0.3 秒（让玩家看清双方站位）再开始移动
 function startTickLoop(ms){ // 用 Worker 驱动战斗时钟，避免后台标签页被浏览器节流
   stopTickLoop();
   try{
@@ -1417,7 +1424,7 @@ function startBattle(){
   if(S.phase!=='prep') return;
   stopTickLoop(); // 关闭任何残余的战斗时钟
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
-  S.phase='battle'; S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null; hideInspect();
+  S.phase='battle'; if(!S.enemyBoard || !S.enemyBoard.some(Boolean)) S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null; hideInspect();
   const c=compForRound(S.round);
   log(`⚔ 第 ${S.round} 回合开战！对手：【${c.name}】`);
   $('fightBtn').disabled=true; $('refreshBtn').disabled=true; $('lvlBtn').disabled=true;
@@ -1511,10 +1518,16 @@ function startBattle(){
       if(tt>0) parts.push(`${k}${tt>=2?'·T'+tt:''}×${n}`); });
     if(parts.length) log(`${side===0?'🔥 我方':'⚔ 敌方'}羁绊：${parts.join('、')}`);
   }
-  let t=0; const TICK=100;
+  let t=0, delayLeft=BATTLE_DELAY, released=false; const TICK=100;
   currentTick=()=>{
     if(S.phase!=='battle') return;  // 非战斗阶段，任何残余时钟都是空操作
     t+=TICK;
+    // 开战缓冲：前 0.3 秒双方静止，让玩家看清站位后再开始行动
+    if(!released){
+      delayLeft-=TICK;
+      if(delayLeft>0){ renderBattle(units); return; }
+      released=true;
+    }
     // 每秒：回血 & 毒伤 & 增益到期
     if(t%1000===0){
       for(const u of units){
@@ -2113,6 +2126,7 @@ function endBattle(alive0,alive1){
   if(!shopOpen){ shopOpen=true; applyShop(); }   // 战斗结束自动展开商店
   if(S.lvl<10){ S.xp+=2; checkLevel(); }   // 每回合自然 +2 升级经验（加快凑人口与高星）
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
+  prepEnemy();   // 提前生成本回合敌方阵容，备战期即可观察
   rollShop();
   if(S.lock){ S.lock=false; log('🔓 锁定已释放（商店锁定仅保留一回合）'); }   // 单回合锁：回合结束自动解锁
   renderAll();
@@ -2144,7 +2158,7 @@ function stageVictory(){
 }
 function enterEndless(){
   S.endless=true; S.round++; S.phase='prep';
-  S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
+  S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null); prepEnemy();
   $('overlay').classList.add('hidden');
   $('fightBtn').disabled=false;
   rollShop(); renderAll();
@@ -2256,6 +2270,7 @@ function loadGame(){
     if(!o||typeof o.round!=='number'||!Array.isArray(o.board)||!Array.isArray(o.bench)) return false;
     if(!S) S={}; // 直接从存档启动时 S 尚未初始化
     Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
+    prepEnemy();   // 读档后立即生成可观察的敌方阵容
     return true;
   }catch(e){ return false; }
 }
