@@ -95,7 +95,7 @@ function botPrep() {
     // 金币太多继续升人口（5 金 4 经验）
     if (S.gold >= 30 && S.lvl < 10 && S.gold - 5 >= 14) { S.gold -= 5; S.xp += 5; checkLevel(); }
   }
-  // 6) 一键上阵（游戏内置按钮逻辑）
-  autoDeploy();
+  // 6) 择优编队：机器人像真人一样主动换人，选出当前最强阵容（按钮的 autoDeploy 只补位不换人）
+  autoDeployBest();
   renderAll();
 }

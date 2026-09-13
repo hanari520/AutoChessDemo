@@ -6,7 +6,7 @@ const code = html.match(/<script>([\s\S]*)<\/script>/)[1] + `
 
 ;globalThis.API = { get S(){return S}, setS:v=>{S=v},
   get currentTick(){return currentTick},
-  byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy };
+  byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy, autoDeployBest };
 `;
 
 /* ---------- DOM 桩 ---------- */
@@ -63,6 +63,7 @@ const botSrc = fs.readFileSync(path.join(__dirname, 'bot_strategy.js'), 'utf8')
   .replace(/\bclickUnit\b/g, 'API.clickUnit')
   .replace(/\brollShop\b/g, 'API.rollShop')
   .replace(/\bcheckLevel\b/g, 'API.checkLevel')
+  .replace(/\bautoDeployBest\b/g, 'API.autoDeployBest')
   .replace(/\bautoDeploy\b/g, 'API.autoDeploy')
   .replace(/\brenderAll\b/g, '(() => {})');
 (0, eval)(botSrc);

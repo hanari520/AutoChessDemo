@@ -1431,34 +1431,33 @@ $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
   $('lockBtn').textContent=S.lock?'🔒 锁定':'🔓 锁定';
   $('lockBtn').classList.toggle('on',S.lock); renderTop(); };
 /* 一键上阵：按战力选主力，坦克前排居中、远程后排，快速完成布阵 */
-function autoDeploy(){
+/* 队伍羁绊评分：已达成档位大分 + 朝下一档的进度小分（同名棋子按 1 个计，与战斗结算一致） */
+function teamSynScore(team){
+  const cnt={}; const seen=new Set();
+  team.forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id); const dd=byId(u.id);
+    cnt['F:'+dd.fac]=(cnt['F:'+dd.fac]||0)+1;
+    cnt['J:'+dd.job]=(cnt['J:'+dd.job]||0)+1; });
+  let s=0;
+  for(const key in cnt){
+    const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
+    if(!tbl[name]) continue;
+    const needs=tbl[name].need; let prev=0;
+    needs.forEach((nd,i)=>{ const n=cnt[key];
+      if(n>=nd){ s+=5+3*i; prev=nd; }
+      else if(n>prev) s+=(n-prev)*1.2;    // 未达档但有余量：进度分
+    });
+  }
+  return s;
+}
+/* 择优编队（供 AI/机器人使用，会主动替换棋子以达成更强阵容）
+   从场上+备战席全局贪心选出最强 N 人并整体布阵。按钮不用这个——按钮走"只补位不换人"。 */
+function autoDeployBest(){
   if(S.phase!=='prep') return;
   const all=[];
   S.board.forEach(u=>{ if(u) all.push(u); });
   S.bench.forEach(u=>{ if(u) all.push(u); });
   if(!all.length) return;
-  const d=u=>byId(u.id);
-  const isFront=u=>(d(u).job==='守护'||d(u).job==='狂战'||(d(u).form==='me'&&d(u).job!=='刺客'))?1:0;
   const power=u=>Math.pow(u.star||1,2)*u.maxhp+u.atk*(u.star||1)*4;
-  // 队伍羁绊评分：已达成档位大分 + 朝下一档的进度小分（同名棋子按 1 个计，与战斗结算一致）
-  function teamSynScore(team){
-    const cnt={}; const seen=new Set();
-    team.forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id); const dd=byId(u.id);
-      cnt['F:'+dd.fac]=(cnt['F:'+dd.fac]||0)+1;
-      cnt['J:'+dd.job]=(cnt['J:'+dd.job]||0)+1; });
-    let s=0;
-    for(const key in cnt){
-      const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
-      if(!tbl[name]) continue;
-      const needs=tbl[name].need; let prev=0;
-      needs.forEach((nd,i)=>{ const n=cnt[key];
-        if(n>=nd){ s+=5+3*i; prev=nd; }
-        else if(n>prev) s+=(n-prev)*1.2;    // 未达档但有余量：进度分
-      });
-    }
-    return s;
-  }
-  // 贪心选队：每步取「边际羁绊分 + 战力」最高的棋子，直到凑满人口
   const k=Math.min(S.lvl, all.length);
   const team=[], pool=[...all];
   while(team.length<k && pool.length){
@@ -1469,14 +1468,82 @@ function autoDeploy(){
     });
     team.push(pool.splice(best,1)[0]);
   }
-  team.sort((a,b)=>unitBand(a)-unitBand(b)||b.maxhp-a.maxhp);
+  team.sort((a,b)=>unitBand(a)-unitBand(b)||b.maxhp-a.maxhp);   // 按梯队排序后再布阵（placeFormation 依赖此顺序）
   for(let y=4;y<8;y++) for(let x=0;x<8;x++) S.board[y*BOARD_W+x]=null;
-  // 按角色梯队布阵：守卫(第4行) → 战士(第5行) → 辅助/法师(第6行) → 刺客(第7行)
   placeFormation(S.board, [4,5,6,7], team);
-  const rest=all.slice(S.lvl);
+  const rest=all.slice(S.lvl);   // 与历史基线一致（保持已验证的强度）
   for(let i=0;i<BENCH;i++) S.bench[i]=null;
   rest.forEach((u,i)=>{ if(i<BENCH) S.bench[i]=u; });
   renderAll();
+}
+function autoDeploy(){
+  if(S.phase!=='prep') return;
+  const all=[];
+  S.board.forEach(u=>{ if(u) all.push(u); });
+  S.bench.forEach(u=>{ if(u) all.push(u); });
+  if(!all.length) return;
+  const d=u=>byId(u.id);
+  const isFront=u=>(d(u).job==='守护'||d(u).job==='狂战'||(d(u).form==='me'&&d(u).job!=='刺客'))?1:0;
+  const power=u=>Math.pow(u.star||1,2)*u.maxhp+u.atk*(u.star||1)*4;
+  // —— 只补位、不换人 ——
+  // 场上已有的棋子一律保留（绝不因新买的棋子把老队员挤下去）；只在有人口空位时，
+  // 从备战席按「羁绊收益 + 战力」挑选补入，并放入合适的梯队行。
+  const onBoardAll = [];
+  S.board.forEach((u,i)=>{ if(u) onBoardAll.push({u,i}); });
+  const benchPool = S.bench.filter(Boolean);
+  const need = S.lvl - onBoardAll.length;                 // 还能上几个人
+  const boardTeam = onBoardAll.map(x=>x.u);
+
+  // 选补位棋子：优先能让场上羁绊升档/接近档位的，其次战力高的
+  const picked=[];
+  const pool=[...benchPool];
+  while(picked.length < need && pool.length){
+    let best=0, bestSc=-Infinity;
+    pool.forEach((u,idx)=>{
+      const delta=teamSynScore(boardTeam.concat(picked,u)) - teamSynScore(boardTeam.concat(picked));
+      const isDupe=boardTeam.concat(picked).some(x=>x.id===u.id);   // 与场上同名（凑三星用）
+      const sc=delta*300 + power(u)*0.1 + (isDupe?power(u)*0.05:0);
+      if(sc>bestSc){ bestSc=sc; best=idx; }
+    });
+    picked.push(pool.splice(best,1)[0]);
+  }
+
+  // 若已有空位就在原位保留；然后为补入者找位置（按梯队行的空位优先）
+  const occupied=new Set();
+  onBoardAll.forEach(x=>occupied.add(x.i));
+  const rows=[4,5,6,7], cols=[3,4,2,5,1,6,0,7];
+  picked.forEach(u=>{
+    const band=unitBand(u);
+    // 先尝试本梯队及之后的行的空位，再退到任意空位
+    const order=[];
+    for(let r=band;r<4;r++) order.push(rows[r]);
+    for(let r=0;r<4;r++) if(!order.includes(rows[r])) order.push(rows[r]);
+    let placed=false;
+    for(const y of order){
+      for(const x of cols){
+        const k=y*BOARD_W+x;
+        if(!occupied.has(k) && !S.board[k]){ occupied.add(k); S.board[k]=u; placed=true; break; }
+      }
+      if(placed) break;
+    }
+    if(!placed){ for(let i=0;i<BOARD_H*BOARD_W;i++){ if(!S.board[i] && Math.floor(i/BOARD_W)>=4){ S.board[i]=u; placed=true; break; } } }
+  });
+
+  // 把场上棋子按梯队重新排一下列顺序（不换人，只是让站位更整齐）
+  const teamNow=[]; S.board.forEach(u=>{ if(u) teamNow.push(u); });
+  const keepPos=new Map();
+  S.board.forEach((u,i)=>{ if(u) keepPos.set(u.uid, i); });
+  for(let y=4;y<8;y++) for(let x=0;x<8;x++) S.board[y*BOARD_W+x]=null;
+  placeFormation(S.board, [4,5,6,7], teamNow);
+
+  // 备战席：移除已上场的，其余按原顺序填回
+  const upSet=new Set(teamNow.map(u=>u.uid));
+  const rest=all.filter(u=>!upSet.has(u.uid));
+  for(let i=0;i<BENCH;i++) S.bench[i]=null;
+  rest.forEach((u,i)=>{ if(i<BENCH) S.bench[i]=u; });
+  renderAll();
+  if(need>0 && picked.length) log(`⚡ 一键上阵：补入 ${picked.length} 名棋子（原有棋子保持不动）`);
+  else if(need<=0) log('⚡ 一键上阵：人口已满，仅整理站位（不会替换已有棋子）');
 }
 $('deployBtn').onclick=autoDeploy;
 /* 整理备战席：高的星级在前、同名棋子相邻（便于合成）、空位挪到最后 */
@@ -1551,7 +1618,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.58;
+    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.48;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
