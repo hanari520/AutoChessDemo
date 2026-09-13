@@ -409,7 +409,7 @@ const UNITS = [
   {id:'zhouyi', name:'轴伊',        cost:2, fac:'夜幕',    job:'刀客', hp:55,  atk:11, rng:1, spd:1.1, sk:['破盾之刃','shieldbane','passive']},
   {id:'yuji',   name:'雨纪',        cost:2, fac:'深海',    job:'游侠', hp:46,  atk:10, rng:4, spd:1.2, sk:['雨幕庇护','block','passive']},
   {id:'tiandou',name:'恬豆',        cost:2, fac:'四禧丸子', job:'歌势', hp:52,  atk:10, rng:3, spd:0.9, sk:['点心投喂','heal']},
-  {id:'aza',    name:'阿萨Aza',     cost:2, fac:'音律',    job:'歌势', hp:50,  atk:10, rng:3, spd:0.9, sk:['节拍共鸣','aheal']},
+  {id:'aza',    name:'阿萨Aza',     cost:2, fac:'音律',    job:'守护', hp:88,  atk:6,  rng:1, spd:0.8, sk:['节拍堡垒','aheal']},
   {id:'pako',   name:'帕可',        cost:2, fac:'学园',    job:'医者', hp:50,  atk:10, rng:3, spd:0.9, sk:['善意收集','heal']},
   {id:'zhijin', name:'枝堇',        cost:2, fac:'花语',    job:'刺客', hp:52,  atk:12, rng:1, spd:1.2, sk:['紫藤突刺','dash']},
   {id:'sishi',  name:'四时小路',    cost:2, fac:'音律',    job:'游侠', hp:46,  atk:11, rng:4, spd:1.2, sk:['四季轮舞','volley']},
@@ -421,7 +421,7 @@ const UNITS = [
   {id:'zeyin',  name:'泽音',        cost:3, fac:'深海',    job:'医者', hp:52,  atk:12, rng:3, spd:0.9, sk:['泽畔歌声','aheal']},
   {id:'sanli',  name:'三理',        cost:3, fac:'音律',    job:'偶像', hp:48,  atk:15, rng:3, spd:0.75,sk:['梦境三重奏','chain']},
   {id:'diansu', name:'点酥',        cost:3, fac:'魔道',    job:'咒术', hp:48,  atk:16, rng:3, spd:0.7, sk:['邪修符咒','curse']},
-  {id:'lianshiye',name:'恋诗夜',    cost:3, fac:'夜幕',    job:'法师', hp:44,  atk:15, rng:3, spd:0.7, sk:['失忆挽歌','silence']},
+  {id:'lianshiye',name:'恋诗夜',    cost:3, fac:'夜幕',    job:'刀客', hp:60,  atk:11, rng:1, spd:1.05,sk:['失忆挽歌','silence']},
   {id:'huize',  name:'灰泽满',      cost:3, fac:'深海',    job:'咒术', hp:48,  atk:16, rng:3, spd:0.7, sk:['果冻封印','curse']},
   {id:'shengge',name:'笙歌',        cost:3, fac:'P-SP',    job:'歌势', hp:50,  atk:12, rng:3, spd:0.9, sk:['笙歌净化','cleanse']},
   {id:'shadow', name:'李豆沙',      cost:3, fac:'P-SP',    job:'刺客', hp:50,  atk:13, rng:1, spd:1.3, sk:['熊猫跃袭','dash']},
@@ -448,8 +448,8 @@ const UNITS = [
 ];
 /* ===== 攻击形式：近战(me)/远程(rg) × 物理(phys)/法术(magic) =====
    职业默认：刀客/守护/狂战/刺客=近战物理，游侠=远程物理，法师/咒术/歌势/医者/偶像=远程法术 */
-const MELEE_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco']);
-const PHYS_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco','yuji','yujiu','sishi']);
+const MELEE_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco','aza','lianshiye']);
+const PHYS_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco','yuji','yujiu','sishi','aza','lianshiye']);
 UNITS.forEach(u=>{ u.form = MELEE_IDS.has(u.id)?'me':'rg'; u.dtype = PHYS_IDS.has(u.id)?'phys':'magic'; });
 /* ===== 限量共享卡池（多多官方）：1费50张 / 2费40张 / 3费30张 / 4费20张 / 5费10张 ===== */
 const POOL_COPIES = {1:50, 2:40, 3:30, 4:20, 5:10};
@@ -471,7 +471,7 @@ UNITS.forEach(u=>{
 });
 /* ===== 抗性分层（多多自走棋式）：前排高护甲中魔抗、后排低护甲中魔抗；
    护甲走官方线性边际递减公式，魔抗走百分比乘算 ===== */
-const JOB_AR = {'守护':20,'刀客':13,'狂战':13,'刺客':8,'游侠':5,'偶像':5,'法师':3,'咒术':4,'歌势':4,'医者':4};
+const JOB_AR = {'守护':23,'刀客':15,'狂战':16,'刺客':8,'游侠':5,'偶像':5,'法师':3,'咒术':4,'歌势':4,'医者':4};
 const JOB_MR = {'守护':.10,'刀客':.05,'狂战':.05,'刺客':0,'游侠':.10,'偶像':.10,'法师':.15,'咒术':.15,'歌势':.15,'医者':.15};
 UNITS.forEach(u=>{
   const jit = 0.85 + (uhash(u.id,17)%4)*0.1;   // ±15% 个体差异
