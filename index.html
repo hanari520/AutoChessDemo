@@ -17,6 +17,11 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #topbar { display:flex; align-items:center; gap:14px; padding:8px 16px; background:#1c1830; border-bottom:2px solid #35294f; font-size:15px; flex-shrink:0; flex-wrap:wrap; }
 #topbar b { color:#ffd24a; }
 .tag { background:#2a2344; padding:3px 10px; border-radius:6px; }
+.tag.pop-warn { background:#5b3a1e; box-shadow:0 0 0 1px #ffd24a, 0 0 10px #ffd24a55; animation:popPulse 1.2s ease-in-out infinite; }
+.tag.pop-warn b { color:#ffd24a; }
+@keyframes popPulse { 0%,100%{ box-shadow:0 0 0 1px #ffd24a, 0 0 4px #ffd24a44; } 50%{ box-shadow:0 0 0 1px #ffd24a, 0 0 12px #ffd24aaa; } }
+#deployBtn.pulse { animation:deployPulse 1.1s ease-in-out infinite; }
+@keyframes deployPulse { 0%,100%{ box-shadow:0 0 0 0 #ffd24a00; } 50%{ box-shadow:0 0 0 2px #ffd24a, 0 0 14px #ffd24a88; } }
 #main { flex:1; display:flex; justify-content:center; padding:10px; gap:20px; overflow:hidden; }
 #boardwrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
 /* 多多式：棋盘上方对手信息横幅 */
@@ -29,12 +34,22 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .unit.battle-unit { position:absolute; inset:auto; width:50px; height:50px; pointer-events:auto; isolation:isolate;
   transition:left calc(.45s/var(--spd)) ease, top calc(.45s/var(--spd)) ease, transform calc(.12s/var(--spd)) ease; overflow:visible; }
 .unit.battle-unit.lunge { transform:scale(1.15); }
+/* 刺客突进：飞行动画（缩放+拖影+提速过渡） */
+.unit.battle-unit.dashing { z-index:9; transition:left calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), top calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), transform calc(.45s/var(--spd)) ease;
+  filter:drop-shadow(0 0 10px #c77dff) drop-shadow(0 0 18px #c77dff88); }
+.unit.battle-unit.dashing::after { content:''; position:absolute; inset:-6px; border-radius:8px;
+  border:2px solid #c77dff; animation:dashRing calc(.45s/var(--spd)) ease-out forwards; }
+@keyframes dashRing { from{ transform:scale(.7); opacity:1; } to{ transform:scale(1.6); opacity:0; } }
 .vfx.attached { left:-4px !important; top:-4px !important; width:58px; height:58px; }
 .cell { background:#2a2444; border-radius:6px; position:relative; }
 .cell.enemy-side { background:#3a2430; }
 .cell.drop-hl { background:#5a4a8e; filter:brightness(1.4); }
 .cell.rng-hl { background:#3f5a7e; box-shadow:inset 0 0 0 2px #6ec8ff88; }
 .cell.rng-src { background:#5a4a8e; box-shadow:inset 0 0 0 2px #ffd24a; }
+.cell.equip-hl { box-shadow:inset 0 0 0 2px #8dff9a, 0 0 12px #8dff9a66; }
+.item-chip { cursor:grab; user-select:none; }
+.item-ghost { display:flex; align-items:center; justify-content:center; font-size:10px; text-align:center;
+  background:#241e3e; border:1px solid #8dff9a; border-radius:8px; color:#8dff9a; padding:2px; }
 .unit { position:absolute; inset:4px; border-radius:6px; display:flex; flex-direction:column; align-items:center;
   justify-content:center; cursor:grab; font-size:9px; text-align:center; line-height:1.1; overflow:visible;
   border:2px solid #888; background:#5b6b8c; z-index:2; }
@@ -896,15 +911,32 @@ function renderBoard(){
     b.appendChild(cell);
   }
   // 攻击范围提示（选中 / 拖动时）：源格描金，可攻击格浅蓝
-  if(rangeFocus){
-    const cells=b.children;
-    const sx=rangeFocus.idx%BOARD_W, sy=Math.floor(rangeFocus.idx/BOARD_W), rr=rangeFocus.rng;
-    for(let yy=0;yy<BOARD_H;yy++) for(let xx=0;xx<BOARD_W;xx++){
-      const i=yy*BOARD_W+xx; if(i===rangeFocus.idx) continue;
-      if(Math.abs(xx-sx)+Math.abs(yy-sy)<=rr){ const c=cells[i]; if(c) c.classList.add('rng-hl'); }
-    }
-    const sc=cells[rangeFocus.idx]; if(sc) sc.classList.add('rng-src');
+  paintRange();
+}
+/* 只切换已有格子的高亮 class，不重建 DOM（否则会打断浏览器 click 事件，导致点棋子失效） */
+function paintRange(){
+  const b=$('board'); if(!b) return;
+  const cells=b.children;
+  for(let i=0;i<cells.length;i++) cells[i].classList.remove('rng-hl','rng-src');
+  if(!rangeFocus) return;
+  const sx=rangeFocus.idx%BOARD_W, sy=Math.floor(rangeFocus.idx/BOARD_W), rr=rangeFocus.rng;
+  for(let yy=0;yy<BOARD_H;yy++) for(let xx=0;xx<BOARD_W;xx++){
+    const i=yy*BOARD_W+xx; if(i===rangeFocus.idx) continue;
+    if(Math.abs(xx-sx)+Math.abs(yy-sy)<=rr && cells[i]) cells[i].classList.add('rng-hl');
   }
+  const sc=cells[rangeFocus.idx]; if(sc) sc.classList.add('rng-src');
+}
+/* 装备拖拽穿戴的落点高亮 */
+function paintEquipDrop(clientX, clientY){
+  document.querySelectorAll('.equip-hl').forEach(x=>x.classList.remove('equip-hl'));
+  const tgt=document.elementFromPoint(clientX,clientY);
+  const cell=tgt&&tgt.closest&&tgt.closest('.cell,.bslot');
+  if(!cell) return null;
+  const t=cell.classList.contains('cell')?'board':'bench';
+  const i=cell.classList.contains('cell')?+cell.dataset.i:+cell.dataset.bi;
+  const u=getAt(t,i);
+  if(u) cell.classList.add('equip-hl');
+  return u?{t,i,u}:null;
 }
 function renderBench(){
   const b=$('bench');
@@ -952,6 +984,14 @@ function renderTop(){
   $('interest').textContent = S.phase==='prep' && S.lvl<10 ? `+${Math.min(5,Math.floor(S.gold/10))}` : '';
   const pop=S.board.filter(Boolean).length;
   $('pop').textContent=pop; $('popMax').textContent=S.lvl;
+  // 人口未上满提醒：备战阶段若场上人数 < 人口上限，高亮人口标签 + 一键上阵按钮脉冲
+  const popLazy = S.phase==='prep' && pop<S.lvl && S.bench.some(Boolean);
+  const popTagEl=$('pop').closest('.tag');
+  if(popTagEl) popTagEl.classList.toggle('pop-warn', !!popLazy);
+  $('deployBtn').classList.toggle('pulse', !!popLazy);
+  $('deployBtn').title = popLazy
+    ? `⚠ 场上只上了 ${pop}/${S.lvl} 人，还有空位——点这里一键上阵（或拖动棋子）`
+    : '自动把最强的棋子按职业梯队布阵（A）';
   $('streak').textContent=S.streak;
   const need=xpNeed(S.lvl);
   $('lvlNum').textContent=S.lvl;
@@ -1017,9 +1057,15 @@ function renderEquip(){
     const it=ITEMS[k];
     const c=document.createElement('div');
     c.className='item-chip'+(S.selItem===i?' sel':'');
-    c.title=it.desc;
+    c.title=it.desc+'（拖到棋子上穿戴，或点选后再点棋子）';
     c.innerHTML=`${it.e} ${it.n}`;
     c.onclick=()=>{ S.selItem = S.selItem===i?null:i; renderEquip(); };
+    // 拖拽穿戴：按住装备芯片拖到棋子身上松手即可
+    c.addEventListener('pointerdown', ev=>{
+      if(ev.button!==0 || S.phase!=='prep') return;
+      ev.stopPropagation();
+      itemDrag={ i, x0:ev.clientX, y0:ev.clientY, ghost:null };
+    });
     e.appendChild(c);
   });
 }
@@ -1085,12 +1131,7 @@ function clickUnit(t,i){
   const u=getAt(t,i);
   if(S.selItem!=null){   // 装备穿戴模式：点棋子即穿上
     if(!u){ log('⚠ 请点击要穿戴装备的棋子'); return; }
-    u.items = u.items||[];
-    if(u.items.length>=MAX_EQUIP){ log(`⚠ ${byId(u.id).name} 装备已满（${MAX_EQUIP} 件）`); S.selItem=null; renderEquip(); return; }
-    u.items.push(S.items[S.selItem]);
-    log(`🎒 ${byId(u.id).name} 装备了 ${ITEMS[S.items[S.selItem]].n}`);
-    S.items.splice(S.selItem,1); S.selItem=null;
-    renderAll();
+    equipTo(u, S.selItem);
     if(S.inspectUid===u.uid) showInspectFor(t,i);   // 详情面板跟随刷新装备栏
     return;
   }
@@ -1146,7 +1187,20 @@ function sellInspect(){  // 详情面板一键出售
 }
 
 /* ================= 交互：拖拽 ================= */
-let drag=null;
+let drag=null, itemDrag=null;
+/* 穿戴装备到棋子（拖拽与点选共用同一出口） */
+function equipTo(u, bagIdx){
+  if(!u || bagIdx==null || bagIdx<0 || bagIdx>=S.items.length) return false;
+  u.items = u.items||[];
+  if(u.items.length>=MAX_EQUIP){ log(`⚠ ${byId(u.id).name} 装备已满（${MAX_EQUIP} 件）`); return false; }
+  const k=S.items[bagIdx];
+  u.items.push(k);
+  S.items.splice(bagIdx,1); S.selItem=null;
+  log(`🎒 ${byId(u.id).name} 装备了 ${ITEMS[k].n}`);
+  renderAll();
+  const pos=findUnit(u.uid); if(pos) showInspectFor(pos[0],pos[1]);
+  return true;
+}
 document.addEventListener('pointerdown', e=>{
   if(e.button!==0) return; // 仅左键可拖拽（右键留给卸装备）
   if(S.phase!=='prep') return;
@@ -1158,9 +1212,22 @@ document.addEventListener('pointerdown', e=>{
   drag = { t: cell?'board':'bench', i: cell?+cell.dataset.i:+slot.dataset.bi,
            x0:e.clientX, y0:e.clientY, ghost:null, el };
   // 拖动开始时显示该棋子的攻击范围（棋盘上的棋子才显示）
-  if(drag.t==='board'){ const u=getAt('board',drag.i); if(u) setRangeFocus(drag.i, byId(u.id).rng); renderBoard(); }
+  if(drag.t==='board'){ const u=getAt('board',drag.i); if(u){ setRangeFocus(drag.i, byId(u.id).rng); paintRange(); } }
 });
 document.addEventListener('pointermove', e=>{
+  // 装备拖拽：移动时显示装备浮动层并高亮可穿戴的棋子
+  if(itemDrag){
+    if(!itemDrag.ghost && Math.hypot(e.clientX-itemDrag.x0, e.clientY-itemDrag.y0)>6){
+      const g=$('dragGhost'); g.innerHTML=`<div class="unit item-ghost">${ITEMS[S.items[itemDrag.i]]?ITEMS[S.items[itemDrag.i]].e+' '+ITEMS[S.items[itemDrag.i]].n:''}</div>`;
+      g.style.display='block'; itemDrag.ghost=g;
+    }
+    if(itemDrag.ghost){
+      itemDrag.ghost.style.left=(e.clientX-34)+'px';
+      itemDrag.ghost.style.top=(e.clientY-34)+'px';
+      paintEquipDrop(e.clientX,e.clientY);
+    }
+    return;
+  }
   if(!drag) return;
   if(!drag.ghost && Math.hypot(e.clientX-drag.x0, e.clientY-drag.y0)>6){
     const g=$('dragGhost'); g.innerHTML=unitHTML(getAt(drag.t,drag.i),false);
@@ -1177,8 +1244,8 @@ document.addEventListener('pointermove', e=>{
       // 拖动预览：把范围提示移到光标所在格（拖到哪就看到哪的攻击范围）
       const tt2 = c.classList.contains('cell')?'board':'bench';
       const ti2 = c.classList.contains('cell')?+c.dataset.i:+c.dataset.bi;
-      if(tt2==='board'){ const du=getAt(d.t,d.i); if(du){ setRangeFocus(ti2, byId(du.id).rng); renderBoard(); } }
-      else { clearRangeFocus(); renderBoard(); }
+      if(tt2==='board'){ const du=getAt(d.t,d.i); if(du){ setRangeFocus(ti2, byId(du.id).rng); paintRange(); } }
+      else { clearRangeFocus(); paintRange(); }
     }
     if(c) c.classList.add('drop-hl');
     const sb=tgt&&tgt.closest && tgt.closest('#sellBtn');
@@ -1186,6 +1253,20 @@ document.addEventListener('pointermove', e=>{
   }
 });
 document.addEventListener('pointerup', e=>{
+  // 装备拖拽结束：落点有棋子就穿上；没拖动则视为点选（切换选中）
+  if(itemDrag){
+    const id=itemDrag; itemDrag=null;
+    document.querySelectorAll('.equip-hl').forEach(x=>x.classList.remove('equip-hl'));
+    $('dragGhost').style.display='none';
+    if(id.ghost){                       // 真的拖动了
+      const hit=paintEquipDrop(e.clientX,e.clientY);
+      if(hit) equipTo(hit.u, id.i);
+      else log('⚠ 请把装备拖到棋子身上');
+    } else {                            // 未移动 = 视为点击选中（保持原有点选流程）
+      S.selItem = S.selItem===id.i ? null : id.i; renderEquip();
+    }
+    return;
+  }
   if(!drag) return;
   const d=drag; drag=null;
   clearRangeFocus();
@@ -1375,7 +1456,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.30 : 1.45;
+    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.30 : 1.42;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1495,8 +1576,7 @@ function startBattle(){
   window.__bu=units; // 调试：战斗单位快照
   S.board.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,0,i%BOARD_W,Math.floor(i/BOARD_W))); });
   S.enemyBoard.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,1,i%BOARD_W,Math.floor(i/BOARD_W))); });
-  // 刺客开局瞬移到敌方后排（我方刺客→上半场最远排 row0；敌方刺客→下半场最远排 row7）。
-  // 后排有空位就落空位；全被占则退到相邻一排找空位，保证"瞬移切入后排"的观感。
+  // 刺客开局瞬移切后排：先记录目标格，开战缓冲结束时再飞过去（带飞行动画），不在此刻改坐标
   units.filter(u=>byId(u.id).job==='刺客').forEach(a=>{
     const dir = a.side===0 ? -1 : 1;           // 我方往上切，敌方往下切
     const baseRow = a.side===0 ? 0 : BOARD_H-1;
@@ -1504,8 +1584,9 @@ function startBattle(){
     for(const row of [baseRow, baseRow-dir, baseRow-2*dir]){   // 后排→其次靠前两排
       if(row<0||row>=BOARD_H) continue;
       for(const x of cols){
-        const occupied=units.some(v=>v!==a&&v.hp>0&&v.x===x&&v.y===row);
-        if(!occupied){ a.x=x; a.y=row; return; }
+        const occupied=units.some(v=>v!==a&&v.hp>0&&v.x===x&&v.y===row)
+          || units.some(v=>v!==a&&v.dashTo&&v.dashTo[0]===x&&v.dashTo[1]===row);
+        if(!occupied){ a.dashTo=[x,row]; return; }
       }
     }
   });
@@ -1588,14 +1669,29 @@ function startBattle(){
       if(tt>0) parts.push(`${k}${tt>=2?'·T'+tt:''}×${n}`); });
     if(parts.length) log(`${side===0?'🔥 我方':'⚔ 敌方'}羁绊：${parts.join('、')}`);
   }
-  let t=0, delayLeft=BATTLE_DELAY, released=false; const TICK=100;
+  let t=0, delayLeft=BATTLE_DELAY, released=false, dashPending=units.some(u=>u.dashTo); const TICK=100;
+  const DASH_FLIGHT=450;   // 刺客突进飞行时间（这段时间不行动，让动画播完）
+  const doDash=()=>{   // 缓冲结束：刺客飞向敌方后排（CSS 过渡播放飞行动画）
+    units.forEach(u=>{
+      if(!u.dashTo) return;
+      const el=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
+      if(el) el.classList.add('dashing');
+      u.x=u.dashTo[0]; u.y=u.dashTo[1]; delete u.dashTo;
+    });
+    renderBattle(units);
+    units.forEach(u=>{   // 落地闪光
+      const el=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
+      if(el && el.classList.contains('dashing')) setTimeout(()=>el.classList.remove('dashing'), DASH_FLIGHT/SPEED);
+    });
+  };
   currentTick=()=>{
     if(S.phase!=='battle') return;  // 非战斗阶段，任何残余时钟都是空操作
     t+=TICK;
-    // 开战缓冲：前 0.3 秒双方静止，让玩家看清站位后再开始行动
+    // 开战缓冲：先静止 0.3 秒看清初始站位 → 刺客飞出（0.45 秒动画）→ 之后才开始行动
     if(!released){
       delayLeft-=TICK;
       if(delayLeft>0){ renderBattle(units); return; }
+      if(dashPending){ doDash(); dashPending=false; delayLeft=DASH_FLIGHT; return; }
       released=true;
     }
     // 每秒：回血 & 毒伤 & 增益到期
@@ -2202,6 +2298,10 @@ function endBattle(alive0,alive1){
   log(`— 第 ${S.round} 回合备战阶段 —${S.endless?'（♾ 无限模式）':''}`);
   if(S.round%5===0){   // 野怪回合提醒
     log(`🐾 本回合是【野怪回合 · ${CREEP[S.round]||'野怪'}】：胜利掉 2 件装备，失败也保底掉 1 件（不扣血、不动连胜）`);
+  }
+  const onBoard=S.board.filter(Boolean).length, freeBench=S.bench.filter(Boolean).length;
+  if(onBoard<S.lvl && freeBench>0){   // 人口未上满提醒
+    log(`👥 提示：场上只上了 ${onBoard}/${S.lvl} 人，备战席还有棋子——点【⚡ 一键上阵】或拖动补齐，别浪费人口！`);
   }
 }
 function reportHTML(){
