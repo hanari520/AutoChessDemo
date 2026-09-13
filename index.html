@@ -33,6 +33,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .cell { background:#2a2444; border-radius:6px; position:relative; }
 .cell.enemy-side { background:#3a2430; }
 .cell.drop-hl { background:#5a4a8e; filter:brightness(1.4); }
+.cell.rng-hl { background:#3f5a7e; box-shadow:inset 0 0 0 2px #6ec8ff88; }
+.cell.rng-src { background:#5a4a8e; box-shadow:inset 0 0 0 2px #ffd24a; }
 .unit { position:absolute; inset:4px; border-radius:6px; display:flex; flex-direction:column; align-items:center;
   justify-content:center; cursor:grab; font-size:9px; text-align:center; line-height:1.1; overflow:visible;
   border:2px solid #888; background:#5b6b8c; z-index:2; }
@@ -890,6 +892,16 @@ function renderBoard(){
     cell.onclick=()=>cellClick(i);
     b.appendChild(cell);
   }
+  // 攻击范围提示（选中 / 拖动时）：源格描金，可攻击格浅蓝
+  if(rangeFocus){
+    const cells=b.children;
+    const sx=rangeFocus.idx%BOARD_W, sy=Math.floor(rangeFocus.idx/BOARD_W), rr=rangeFocus.rng;
+    for(let yy=0;yy<BOARD_H;yy++) for(let xx=0;xx<BOARD_W;xx++){
+      const i=yy*BOARD_W+xx; if(i===rangeFocus.idx) continue;
+      if(Math.abs(xx-sx)+Math.abs(yy-sy)<=rr){ const c=cells[i]; if(c) c.classList.add('rng-hl'); }
+    }
+    const sc=cells[rangeFocus.idx]; if(sc) sc.classList.add('rng-src');
+  }
 }
 function renderBench(){
   const b=$('bench');
@@ -1031,6 +1043,32 @@ function findUnit(uid){
   for(let i=0;i<S.bench.length;i++) if(S.bench[i]&&S.bench[i].uid===uid) return ['bench',i];
   return null;
 }
+/* ===== 角色梯队布阵（近战按职业分带纵深；刺客单列最后排） =====
+   band 越小越靠前：0 守卫 / 1 战士(刀客·狂战) / 2 辅助(歌势·医者·偶像) / 3 法师·咒术·游侠 / 4 刺客 */
+const JOB_BAND = {'守护':0,'刀客':1,'狂战':1,'歌势':2,'医者':2,'偶像':2,'法师':3,'咒术':3,'游侠':3,'刺客':4};
+function unitBand(u){ const d=byId(u.id); return (d.job in JOB_BAND) ? JOB_BAND[d.job] : 2; }
+/* 把 cands 按梯队填入 4 行棋盘：rows = [最前排行号, …, 最后排行号]（长度为 4，按纵深从近到远）。
+   同带内按战力降序；每行从中间列向两侧展开；本带行满则向后顺延。 */
+function placeFormation(board, rows, cands){
+  const bands=[[],[],[],[],[]];
+  cands.forEach(u=>bands[unitBand(u)].push(u));
+  const desc=u=>Math.pow(u.star||1,2)*(u.maxhp||0)+(u.atk||0)*(u.star||1)*4;
+  bands.forEach(b=>b.sort((a,b2)=>desc(b2)-desc(a)));
+  const cols=[3,4,2,5,1,6,0,7], used=new Set();
+  const startRow=[0,1,2,2,3];        // 各梯队起始行（刺客=最后一行）
+  const putOne=(u,sr)=>{
+    for(let r=sr;r<4;r++){ const y=rows[r];
+      for(const x of cols){ const k=y*BOARD_W+x; if(!used.has(k)){ used.add(k); board[k]=u; return true; } } }
+    for(let r=0;r<4;r++){ const y=rows[r];
+      for(const x of cols){ const k=y*BOARD_W+x; if(!used.has(k)){ used.add(k); board[k]=u; return true; } } }
+    return false;
+  };
+  for(let b=0;b<5;b++) bands[b].forEach(u=>putOne(u,startRow[b]));
+}
+/* ===== 攻击范围提示：选中/拖动时在棋盘上浅色高亮可攻击格 ===== */
+let rangeFocus=null;   // {idx:棋盘格索引, rng:射程}
+function setRangeFocus(idx,rng){ rangeFocus = (idx==null||rng==null) ? null : {idx,rng}; }
+function clearRangeFocus(){ rangeFocus=null; }
 function clickUnit(t,i){
   if(S.phase!=='prep') return;
   const u=getAt(t,i);
@@ -1045,9 +1083,9 @@ function clickUnit(t,i){
     if(S.inspectUid===u.uid) showInspectFor(t,i);   // 详情面板跟随刷新装备栏
     return;
   }
-  // 单击 = 查看详情（棋子换位请用拖动）
-  if(u){ S.selUid=u.uid; showInspectFor(t,i); }
-  else { S.selUid=null; hideInspect(); }
+  // 单击 = 查看详情（棋子换位请用拖动），并显示该棋子的攻击范围
+  if(u){ S.selUid=u.uid; showInspectFor(t,i); setRangeFocus(t==='board'?i:null, t==='board'?byId(u.id).rng:null); }
+  else { S.selUid=null; hideInspect(); clearRangeFocus(); }
   renderBoard(); renderBench(); renderTop();
 }
 /* ===== 棋子详情面板 ===== */
@@ -1093,6 +1131,8 @@ document.addEventListener('pointerdown', e=>{
   if(!cell && !slot) return;
   drag = { t: cell?'board':'bench', i: cell?+cell.dataset.i:+slot.dataset.bi,
            x0:e.clientX, y0:e.clientY, ghost:null, el };
+  // 拖动开始时显示该棋子的攻击范围（棋盘上的棋子才显示）
+  if(drag.t==='board'){ const u=getAt('board',drag.i); if(u) setRangeFocus(drag.i, byId(u.id).rng); renderBoard(); }
 });
 document.addEventListener('pointermove', e=>{
   if(!drag) return;
@@ -1107,6 +1147,13 @@ document.addEventListener('pointermove', e=>{
     document.querySelectorAll('.sell-hl').forEach(x=>x.classList.remove('sell-hl'));
     const tgt=document.elementFromPoint(e.clientX,e.clientY);
     const c=tgt&&tgt.closest && tgt.closest('.cell,.bslot');
+    if(c){
+      // 拖动预览：把范围提示移到光标所在格（拖到哪就看到哪的攻击范围）
+      const tt2 = c.classList.contains('cell')?'board':'bench';
+      const ti2 = c.classList.contains('cell')?+c.dataset.i:+c.dataset.bi;
+      if(tt2==='board'){ const du=getAt(d.t,d.i); if(du){ setRangeFocus(ti2, byId(du.id).rng); renderBoard(); } }
+      else { clearRangeFocus(); renderBoard(); }
+    }
     if(c) c.classList.add('drop-hl');
     const sb=tgt&&tgt.closest && tgt.closest('#sellBtn');
     if(sb) sb.classList.add('sell-hl');
@@ -1115,6 +1162,7 @@ document.addEventListener('pointermove', e=>{
 document.addEventListener('pointerup', e=>{
   if(!drag) return;
   const d=drag; drag=null;
+  clearRangeFocus();
   $('dragGhost').style.display='none';
   document.querySelectorAll('.drop-hl').forEach(x=>x.classList.remove('drop-hl'));
   document.querySelectorAll('.sell-hl').forEach(x=>x.classList.remove('sell-hl'));
@@ -1240,18 +1288,10 @@ function autoDeploy(){
     });
     team.push(pool.splice(best,1)[0]);
   }
-  team.sort((a,b)=>isFront(b)-isFront(a)||b.maxhp-a.maxhp);
+  team.sort((a,b)=>unitBand(a)-unitBand(b)||b.maxhp-a.maxhp);
   for(let y=4;y<8;y++) for(let x=0;x<8;x++) S.board[y*BOARD_W+x]=null;
-  // 分排布阵：坦克/近战前排（第4行居中开始），远程/刺客后排（第5行起）；满了顺延
-  const front=team.filter(u=>isFront(u)), back=team.filter(u=>!isFront(u));
-  const slotsFor=y=>[3,4,2,5,1,6,0,7].map(x=>[x,y]);
-  const frontSlots=[...slotsFor(4),...slotsFor(5)];
-  const backSlots=[...slotsFor(5),...slotsFor(6),...slotsFor(7),...slotsFor(4)];
-  const used=new Set();
-  const tryPlace=(u,slots)=>{ for(const [x,y] of slots){ const k=y*BOARD_W+x;
-    if(!used.has(k)){ used.add(k); S.board[k]=u; return true; } } return false; };
-  front.forEach(u=>{ if(!tryPlace(u,frontSlots)) tryPlace(u,backSlots); });
-  back.forEach(u=>{ if(!tryPlace(u,backSlots)) tryPlace(u,frontSlots); });
+  // 按角色梯队布阵：守卫(第4行) → 战士(第5行) → 辅助/法师(第6行) → 刺客(第7行)
+  placeFormation(S.board, [4,5,6,7], team);
   const rest=all.slice(S.lvl);
   for(let i=0;i<BENCH;i++) S.bench[i]=null;
   rest.forEach((u,i)=>{ if(i<BENCH) S.bench[i]=u; });
@@ -1309,7 +1349,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.28 : 1.15;
+    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.30 : 1.62;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1342,26 +1382,16 @@ function genEnemy(){
     }
   }
   const b=Array(BOARD_H*BOARD_W).fill(null);
-  const front=[], back=[];
-  // 敌方半区在上方：第 3/2 行贴近中线（前排），第 1/0 行为后排
-  list.forEach(x=> (x.d.job==='守护'||x.d.job==='刀客'||x.d.job==='狂战') ? front.push(x) : back.push(x));
-  const place=(arr,rows)=>{
-    // 每行从中间向两侧展开，避免远程被随机丢到角落、前排散乱
-    const slots=[];
-    for(const row of rows) for(const col of [3,4,2,5,1,6,0,7]) slots.push(row*BOARD_W+col);
-    let si=0;
-    arr.forEach(x=>{
-      while(si<slots.length && b[slots[si]]) si++;
-      if(si>=slots.length) return;
-      const idx=slots[si++];
-      const m = mul * (x.bossMult||1) * Math.pow(STAR_M[x.d.cost]||1.8, x.star-1) * HP_SCALE;
-      b[idx]={uid:S.uid++, id:x.d.id, star:x.star, sks:Math.pow(SKILL_STAR_M[x.d.cost]||1.1, x.star-1),
-        hp:Math.round(x.d.hp*m), maxhp:Math.round(x.d.hp*m),
-        atk:Math.round(x.d.atk*m), enemy:true};
-    });
-  };
-  place(front,[3,2]);    // 前排：紧贴中线，先占中间列
-  place(back,[1,0]);     // 后排：远程/辅助站后方，受前排保护
+  // 敌方半区在上方：用统一梯队布阵。rows 从贴近中线（第3行）到最远（第0行）：
+  // 守卫 row3 → 战士 row2 → 辅助/法师 row1 → 刺客 row0（敌方最后一排）
+  const placed=[];
+  for(const x of list){
+    const m = mul * (x.bossMult||1) * Math.pow(STAR_M[x.d.cost]||1.8, x.star-1) * HP_SCALE;
+    placed.push({uid:S.uid++, id:x.d.id, star:x.star, sks:Math.pow(SKILL_STAR_M[x.d.cost]||1.1, x.star-1),
+      hp:Math.round(x.d.hp*m), maxhp:Math.round(x.d.hp*m),
+      atk:Math.round(x.d.atk*m), enemy:true});
+  }
+  placeFormation(b, [3,2,1,0], placed);
   return b;
 }
 
@@ -1424,7 +1454,7 @@ function startBattle(){
   if(S.phase!=='prep') return;
   stopTickLoop(); // 关闭任何残余的战斗时钟
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
-  S.phase='battle'; if(!S.enemyBoard || !S.enemyBoard.some(Boolean)) S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null; hideInspect();
+  S.phase='battle'; if(!S.enemyBoard || !S.enemyBoard.some(Boolean)) S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null; hideInspect(); clearRangeFocus();
   const c=compForRound(S.round);
   log(`⚔ 第 ${S.round} 回合开战！对手：【${c.name}】`);
   $('fightBtn').disabled=true; $('refreshBtn').disabled=true; $('lvlBtn').disabled=true;
@@ -1439,6 +1469,16 @@ function startBattle(){
   window.__bu=units; // 调试：战斗单位快照
   S.board.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,0,i%BOARD_W,Math.floor(i/BOARD_W))); });
   S.enemyBoard.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,1,i%BOARD_W,Math.floor(i/BOARD_W))); });
+  // 刺客开局跳后：切入敌方最后一排（我方刺客→跳上半场最远排；敌方刺客→跳下半场最远处），
+  // 优先落空位；该排已满则与队友换位；实在无位不跳。
+  units.filter(u=>byId(u.id).job==='刺客').forEach(a=>{
+    const targetRow = a.side===0 ? 0 : BOARD_H-1;
+    const occ=(x,y)=>units.find(v=>v!==a&&v.hp>0&&v.x===x&&v.y===y);
+    const cols=[3,4,2,5,1,6,0,7];
+    for(const x of cols){ if(!occ(x,targetRow)){ a.x=x; a.y=targetRow; return; } }
+    for(const x of cols){ const v=occ(x,targetRow);
+      if(v && v.side===a.side){ const ox=a.x, oy=a.y; a.x=x; a.y=targetRow; v.x=ox; v.y=oy; return; } }
+  });
   // —— 双方羁绊结算（分级强化） ——
   const tierOf=(cnt,tbl,k)=>{ let t=0; for(const n of tbl[k].need) if(cnt[k]>=n) t++; return t; };
   for(const side of [0,1]){
