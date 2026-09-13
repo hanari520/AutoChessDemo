@@ -317,6 +317,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .vfx.slash { border-radius:50%;
   background:radial-gradient(circle,#ffffffcc 8%,#ffffff44 38%,transparent 62%);
   animation:boom calc(.4s/var(--spd)) ease-out forwards; }
+/* 刺客暴击：紫色爆裂特效 */
+.vfx.crit { border-radius:50%; background:radial-gradient(circle,#c77dffaa 15%,#7a3fd455 50%,transparent 72%);
+  animation:boom calc(.5s/var(--spd)) ease-out forwards; }
 /* ===== 战斗结果横幅 ===== */
 .result-banner { position:absolute; inset:0; z-index:12; display:flex; align-items:center; justify-content:center;
   font-size:34px; font-weight:bold; pointer-events:none; overflow:hidden; border-radius:8px;
@@ -469,7 +472,7 @@ const UNITS = [
   {id:'tiandou',name:'恬豆',        cost:2, fac:'四禧丸子', job:'歌势', hp:52,  atk:10, rng:3, spd:0.9, sk:['点心投喂','heal']},
   {id:'aza',    name:'阿萨Aza',     cost:2, fac:'音律',    job:'守护', hp:88,  atk:6,  rng:1, spd:0.8, sk:['节拍堡垒','aheal']},
   {id:'pako',   name:'帕可',        cost:2, fac:'学园',    job:'医者', hp:50,  atk:10, rng:3, spd:0.9, sk:['善意收集','heal']},
-  {id:'zhijin', name:'枝堇',        cost:2, fac:'花语',    job:'刺客', hp:52,  atk:12, rng:1, spd:1.2, sk:['紫藤突刺','dash']},
+  {id:'zhijin', name:'枝堇',        cost:2, fac:'花语',    job:'刺客', hp:66,  atk:12, rng:1, spd:1.2, sk:['紫藤突刺','dash']},
   {id:'sishi',  name:'四时小路',    cost:2, fac:'音律',    job:'游侠', hp:46,  atk:11, rng:4, spd:1.2, sk:['四季轮舞','volley']},
   {id:'sumi',   name:'礼墨',        cost:2, fac:'P-SP',    job:'守护', hp:90,  atk:6,  rng:1, spd:0.8, sk:['墨龙结界','teamshield']},
   // ---------- 3 费（10 人 × 30 张） ----------
@@ -482,7 +485,7 @@ const UNITS = [
   {id:'lianshiye',name:'恋诗夜',    cost:3, fac:'夜幕',    job:'刀客', hp:60,  atk:11, rng:1, spd:1.05,sk:['失忆挽歌','silence']},
   {id:'huize',  name:'灰泽满',      cost:3, fac:'深海',    job:'咒术', hp:48,  atk:16, rng:3, spd:0.7, sk:['果冻封印','curse']},
   {id:'shengge',name:'笙歌',        cost:3, fac:'P-SP',    job:'歌势', hp:50,  atk:12, rng:3, spd:0.9, sk:['笙歌净化','cleanse']},
-  {id:'shadow', name:'李豆沙',      cost:3, fac:'P-SP',    job:'刺客', hp:50,  atk:13, rng:1, spd:1.3, sk:['熊猫跃袭','dash']},
+  {id:'shadow', name:'李豆沙',      cost:3, fac:'P-SP',    job:'刺客', hp:68,  atk:13, rng:1, spd:1.3, sk:['熊猫跃袭','dash']},
   // ---------- 4 费（10 人 × 20 张） ----------
   {id:'miyue',  name:'弥月',        cost:4, fac:'夜幕',    job:'刀客', hp:60,  atk:12, rng:1, spd:1.1, sk:['月影斩','dash']},
   {id:'huali',  name:'花礼',        cost:4, fac:'花语',    job:'偶像', hp:52,  atk:11, rng:3, spd:0.9, sk:['小花的祝福','heal']},
@@ -491,13 +494,13 @@ const UNITS = [
   {id:'ruiya',  name:'瑞娅',        cost:4, fac:'星际',    job:'法师', hp:46,  atk:16, rng:3, spd:0.7, sk:['时空禁锢','frost']},
   {id:'mumu',   name:'沐霂',        cost:4, fac:'四禧丸子', job:'偶像', hp:54,  atk:12, rng:3, spd:0.9, sk:['东风润物','heal']},
   {id:'kroya',  name:'克罗雅',      cost:4, fac:'学园',    job:'法师', hp:46,  atk:16, rng:3, spd:0.7, sk:['混沌裂界','fireball']},
-  {id:'shiliu', name:'十六萤',      cost:4, fac:'森之国',  job:'刺客', hp:50,  atk:13, rng:1, spd:1.2, sk:['浣熊洗劫','break']},
+  {id:'shiliu', name:'十六萤',      cost:4, fac:'森之国',  job:'刺客', hp:70,  atk:13, rng:1, spd:1.2, sk:['浣熊洗劫','break']},
   {id:'seki',   name:'星汐',        cost:4, fac:'P-SP',    job:'咒术', hp:46,  atk:16, rng:3, spd:0.7, sk:['星蚀灼烧','burn']},
   {id:'haruka', name:'白神遥',      cost:4, fac:'P-SP',    job:'刀客', hp:58,  atk:12, rng:1, spd:1.1, sk:['白刃拍击','cleave']},
   // ---------- 5 费（8 人 × 10 张） ----------
   {id:'nana7mi',name:'七海Nana7mi', cost:5, fac:'深海',    job:'刀客', hp:62,  atk:12, rng:1, spd:1.05,sk:['鲨皇旋流','cleave']},
   {id:'liAn',   name:'梨安',        cost:5, fac:'四禧丸子', job:'法师', hp:48,  atk:17, rng:3, spd:0.7, sk:['海豚安魂曲','massfreeze']},
-  {id:'youyi',  name:'又一',        cost:5, fac:'四禧丸子', job:'刺客', hp:58,  atk:13, rng:1, spd:1.15,sk:['一心同体','drain','passive']},
+  {id:'youyi',  name:'又一',        cost:5, fac:'四禧丸子', job:'刺客', hp:80,  atk:13, rng:1, spd:1.15,sk:['一心同体','drain','passive']},
   {id:'azi',    name:'阿梓',        cost:5, fac:'工造',    job:'歌势', hp:52,  atk:15, rng:3, spd:1.0, sk:['高音震魂','massstun']},
   {id:'taodai', name:'桃代',        cost:5, fac:'花语',    job:'守护', hp:96,  atk:8,  rng:1, spd:0.8, sk:['桃香结界','bulwark']},
   {id:'miki',   name:'弥希',        cost:5, fac:'星际',    job:'医者', hp:48,  atk:14, rng:3, spd:0.9, sk:['星海庇护','heal']},
@@ -1548,7 +1551,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.52;
+    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.58;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1596,6 +1599,7 @@ function prepEnemy(){ S.enemyBoard = genEnemy(); }   // 备战阶段就生成敌
 let battleTimer=null, SPEED=1, currentTick=null, tickWorker=null;   // 默认 1 倍速
 const BATTLE_DELAY = 300;   // 开战后先暂停 0.3 秒（让玩家看清双方站位）再开始移动
 const SKILL_CD = 1800;      // 技能内置冷却（ms）：防止回蓝类技能把蓝秒满后每帧反复施法形成死循环
+const ASSASSIN_CRIT_MULT = 1.5;   // 刺客切入后首次攻击的暴击倍率
 function startTickLoop(ms){ // 用 Worker 驱动战斗时钟，避免后台标签页被浏览器节流
   stopTickLoop();
   try{
@@ -1800,6 +1804,7 @@ function startBattle(){
               const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
               if(ael){ ael.classList.add('dashing'); setTimeout(()=>ael.classList.remove('dashing'), 450/SPEED); }
               u.cd=500;   // 落地小硬直，随后立即投入战斗
+              u.assassinCrit=true;   // 切入后的第一次攻击触发暴击（补足孤军深入的脆皮刺客）
               break;
             }
           }
@@ -1824,8 +1829,12 @@ function startBattle(){
       if(Math.abs(tgt.x-u.x)+Math.abs(tgt.y-u.y)<=d.rng){
         if(u.cd<=0){
           const slow = u.slowT>0 ? u.slowA : 0;
-          const dmg = Math.round(eatk(u)*(u.rapid>0?2:1));
+          let dmg = Math.round(eatk(u)*(u.rapid>0?2:1));
           if(u.rapid>0)u.rapid--;
+          if(u.assassinCrit){   // 刺客切入首击暴击 ×1.5（仅一次）
+            dmg=Math.round(dmg*ASSASSIN_CRIT_MULT); u.assassinCrit=false;
+            dmgPopup(u,tgt,'⚡暴击×'+ASSASSIN_CRIT_MULT,'cast'); vfxAt(tgt,'crit',500);
+          }
           // 攻击表现：远程弹道 / 近战斩击 + 突进动作
           const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
           if(ael){ ael.classList.add('lunge'); setTimeout(()=>ael.classList.remove('lunge'),260/SPEED); }
