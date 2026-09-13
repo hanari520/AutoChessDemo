@@ -338,7 +338,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     <div id="pbtns">
       <button class="btn" id="lvlBtn">买经验 (F) +5经验 -5💰</button>
       <button class="btn" id="deployBtn" title="自动把最强的棋子按坦克前排、输出后排布阵（A）">⚡ 一键上阵</button>
-      <button class="btn" id="sellBtn" title="出售选中棋子；也可直接把棋子拖到这里，或选中后按 X/Delet（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售</button>
+      <button class="btn" id="sellBtn" title="出售：单击棋子后按 E（或 X / Delete）；也可直接把棋子拖到这里（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售 (E)</button>
       <button class="btn" id="shopBtn" title="打开/关闭商店">🛒 商店</button>
     </div>
   </div>
@@ -388,7 +388,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     单机自动战斗棋局（VirtuaReal + P-SP · 46 名主播 · 限量卡池 · 25 回合通关）<br>
     ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +5 经验（每回合自然 +2，升级更快凑人口）；卖棋 1★原价、合成折价<br>
     ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#8dff9a">绿色=购买即触发羁绊档位</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
-    ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>：胜利掉装备（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
+    ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
     ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；一键上阵优先凑羁绊；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
   </p>
@@ -650,7 +650,7 @@ const COMPS = [
 ];
 /* 野怪回合（多多自走棋式中立生物）：失败不扣血、不影响连胜；胜利按进度掉装备 */
 const CREEP = {5:'🐺 野狼群', 10:'🗿 岩石巨像', 15:'🐉 黑龙幼崽', 20:'🦣 远古凶兽', 25:'👑 最终魔王'};
-const DROP_N = {5:1, 10:1, 15:2, 20:2, 25:2};   // 野怪胜利掉落装备件数
+/* 野怪回合：失败不扣血、不动连胜；掉落装备——胜利 2 件、失败保底 1 件（见 endBattle） */
 const SHOP_SIZE=5, MAX_ROUNDS=25, BENCH=8, MAX_EQUIP=2;
 const BOARD_W=8, BOARD_H=8;                 // 8×8 四边形棋盘（每方 32 格，下半 4 行为我方布阵区）
 const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节奏更线性）；蓝量全棋子统一 100、开局清零
@@ -884,12 +884,15 @@ function renderBoard(){
     cell.className='cell'+(y<BOARD_H/2?' enemy-side':'');
     cell.dataset.i=i;
     const u=S.board[i];
+    let isEnemyPreview=false;
     if(u) cell.innerHTML=unitHTML(u, S.selUid===u.uid);
     else if(y<BOARD_H/2 && S.phase==='prep' && S.enemyBoard && S.enemyBoard[i]){
-      // 备战期显示敌方阵容预览（不可交互）：便于开战前观察与针对性布阵
+      // 备战期显示敌方阵容预览：可单击查看详情（数据取自图鉴），但不可拖动
       cell.innerHTML=unitHTML(S.enemyBoard[i], false).replace('<div class="unit ','<div class="unit preview ');
+      cell.classList.add('enemy-preview-cell');
+      isEnemyPreview=true;
     }
-    cell.onclick=()=>cellClick(i);
+    cell.onclick = isEnemyPreview ? (()=>enemyCellClick(i)) : (()=>cellClick(i));
     b.appendChild(cell);
   }
   // 攻击范围提示（选中 / 拖动时）：源格描金，可攻击格浅蓝
@@ -974,7 +977,7 @@ function renderTop(){
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
     : S.streak>=4 ? '难度 ⬆（连胜 4+，敌方增强）' : '难度 ➖ 标准';
   $('enemyInfo').innerHTML = c.boss
-    ? `<b>${c.name}</b> · 野怪回合（${S.round>=20&&S.round<25?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">胜利掉 ${DROP_N[S.round]!==undefined?DROP_N[S.round]:1} 件装备 · 失败不扣血、不动连胜${S.round>=25&&!S.endless?' · <b style="color:#ff9a9a">最终决战，战败即结束！</b>':''}</span>`
+    ? `<b>${c.name}</b> · 野怪回合（${S.round>=20&&S.round<25?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">🏆 胜利掉 <b style="color:#8dff9a">2</b> 件装备 · 💤 失败不扣血、不动连胜，仍掉 <b style="color:#8dff9a">1</b> 件${S.round>=25&&!S.endless?' · <b style="color:#ff9a9a">最终决战，战败即结束！</b>':''}</span>`
     : `<b>${c.name}</b>：` + Object.entries(c.mix).map(([j,n])=>`${j}×${n}`).join(' + ')
       + `<br><span style="font-size:11px;color:#8a93c4">${dynTxt} · 胜利 +1 金（装备只在野怪回合掉落）</span>`;
   $('gold2').textContent=S.gold;
@@ -1025,6 +1028,14 @@ function renderAll(){ renderBoard(); renderBench(); renderShop(); renderTop(); r
 /* ================= 交互：点击选择流 ================= */
 function benchClick(i){ clickUnit('bench', i); }
 function cellClick(i){ clickUnit('board', i); }
+/* 备战期点击敌方预览棋子：显示其详情（按图鉴 1★ 基础数据 + 星级） */
+function enemyCellClick(i){
+  const eu=S.enemyBoard && S.enemyBoard[i];
+  if(!eu) { S.selUid=null; hideInspect(); clearRangeFocus(); renderBoard(); return; }
+  S.selUid=null; clearRangeFocus();
+  showEnemyInspect(eu);
+  renderBoard(); renderBench(); renderTop();
+}
 function getAt(t,i){ return t==='board'?S.board[i]:S.bench[i]; }
 function setAt(t,i,v){ if(t==='board')S.board[i]=v; else S.bench[i]=v; }
 function moveOrSwap(ft,fi,tt,ti){
@@ -1106,6 +1117,21 @@ function showInspect(u){
     <div class="in-item">🎒 装备：${items}</div>
     <div class="in-sell" onclick="sellInspect()">💸 出售（+${sellRefund(u)}💰）</div>`;
   S.inspectUid=u.uid;
+}
+function showEnemyInspect(u){   // 敌方棋子详情（无出售按钮；数值为该敌方单位本场实际属性）
+  const d=byId(u.id);
+  $('inspect').innerHTML=`
+    <div class="in-hd"><b>${d.name}</b><span class="in-star">${'★'.repeat(u.star||1)}</span>
+      <span class="in-tag" style="margin-left:6px;color:#ff9a9a">敌方</span>
+      <span class="in-close" title="关闭" onclick="hideInspect()">✕</span></div>
+    <div class="in-tag">${d.fac} · ${d.job} ｜ ${d.cost} 费</div>
+    <div class="in-row"><span>生命</span><b>${u.maxhp}</b><span>攻击</span><b>${u.atk}</b></div>
+    <div class="in-row"><span>护甲</span><b>${d.ar||0}</b><span>魔抗</span><b>${Math.round((d.mr||0)*100)}%</b></div>
+    <div class="in-row"><span>射程</span><b>${d.rng} 格</b><span>攻速</span><b>${d.spd.toFixed(2)}/s</b></div>
+    <div class="in-row"><span>形式</span><b>${d.form==='me'?'近战':'远程'}·${d.dtype==='phys'?'物理':'法术'}</b><span>站位</span><b>${d.job==='刺客'?'切后排':(d.form==='me'?'前排':'后排')}</b></div>
+    <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
+    <div class="in-desc">${skillDesc(u)}</div>`;
+  S.inspectUid=null;
 }
 function showInspectFor(t,i){
   const u=getAt(t,i);
@@ -1310,7 +1336,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='f'||e.key==='F')$('lvlBtn').click();
   if(e.key==='l'||e.key==='L')$('lockBtn').click();
   if(e.key==='a'||e.key==='A')autoDeploy();
-  if((e.key==='Delete'||e.key==='x'||e.key==='X')&&S.phase==='prep'&&S.selUid!=null)sellSelected();
+  if((e.key==='Delete'||e.key==='x'||e.key==='X'||e.key==='e'||e.key==='E')&&S.phase==='prep'&&S.selUid!=null)sellSelected();
   if(e.key===' '&&S.phase==='prep'){ e.preventDefault(); $('fightBtn').click(); }
 });
 
@@ -1349,7 +1375,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.30 : 1.62;
+    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.30 : 1.45;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1469,15 +1495,19 @@ function startBattle(){
   window.__bu=units; // 调试：战斗单位快照
   S.board.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,0,i%BOARD_W,Math.floor(i/BOARD_W))); });
   S.enemyBoard.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,1,i%BOARD_W,Math.floor(i/BOARD_W))); });
-  // 刺客开局跳后：切入敌方最后一排（我方刺客→跳上半场最远排；敌方刺客→跳下半场最远处），
-  // 优先落空位；该排已满则与队友换位；实在无位不跳。
+  // 刺客开局瞬移到敌方后排（我方刺客→上半场最远排 row0；敌方刺客→下半场最远排 row7）。
+  // 后排有空位就落空位；全被占则退到相邻一排找空位，保证"瞬移切入后排"的观感。
   units.filter(u=>byId(u.id).job==='刺客').forEach(a=>{
-    const targetRow = a.side===0 ? 0 : BOARD_H-1;
-    const occ=(x,y)=>units.find(v=>v!==a&&v.hp>0&&v.x===x&&v.y===y);
-    const cols=[3,4,2,5,1,6,0,7];
-    for(const x of cols){ if(!occ(x,targetRow)){ a.x=x; a.y=targetRow; return; } }
-    for(const x of cols){ const v=occ(x,targetRow);
-      if(v && v.side===a.side){ const ox=a.x, oy=a.y; a.x=x; a.y=targetRow; v.x=ox; v.y=oy; return; } }
+    const dir = a.side===0 ? -1 : 1;           // 我方往上切，敌方往下切
+    const baseRow = a.side===0 ? 0 : BOARD_H-1;
+    const cols=[0,1,2,3,4,5,6,7].sort((p,q)=>Math.abs(p-a.x)-Math.abs(q-a.x));
+    for(const row of [baseRow, baseRow-dir, baseRow-2*dir]){   // 后排→其次靠前两排
+      if(row<0||row>=BOARD_H) continue;
+      for(const x of cols){
+        const occupied=units.some(v=>v!==a&&v.hp>0&&v.x===x&&v.y===row);
+        if(!occupied){ a.x=x; a.y=row; return; }
+      }
+    }
   });
   // —— 双方羁绊结算（分级强化） ——
   const tierOf=(cnt,tbl,k)=>{ let t=0; for(const n of tbl[k].need) if(cnt[k]>=n) t++; return t; };
@@ -2123,23 +2153,21 @@ function endBattle(alive0,alive1){
     addGold(inc,`基础收入（第 ${S.round+1} 回合 · ${inc} 金）`);
     addGold(Math.min(5,Math.floor(S.gold/10)),'存款利息（每10金+1，上限5）'); };
   if(isCreep){
-    /* 多多自走棋野怪规则：失败不扣血、不影响连胜；胜利按进度掉装备（普通回合不掉装备） */
+    /* 野怪回合：失败不扣血、不影响连胜；掉落装备——胜利 2 件、失败也有 1 件（保底） */
+    const dropGear = n=>{ const keys=Object.keys(ITEMS);
+      for(let i=0;i<n;i++){ const k=keys[Math.floor(Math.random()*keys.length)];
+        S.items.push(k); log(`🎁 野怪掉落：${ITEMS[k].e} ${ITEMS[k].n}（${ITEMS[k].desc}）`); } };
     if(won){
       S.stats.wins++;
-      const dropN = DROP_N[S.round]!==undefined ? DROP_N[S.round] : 1;
-      const keys=Object.keys(ITEMS);
-      for(let i=0;i<dropN;i++){
-        const k=keys[Math.floor(Math.random()*keys.length)];
-        S.items.push(k);
-        log(`🎁 野怪掉落：${ITEMS[k].e} ${ITEMS[k].n}（${ITEMS[k].desc}）`);
-      }
-      log(`　🏆 击败【${CREEP[S.round]||'野怪'}】，获得 ${dropN} 件装备（连胜 ${S.streak} 保持不变）`);
+      dropGear(2);
+      log(`　🏆 击败【${CREEP[S.round]||'野怪'}】，获得 2 件装备（连胜 ${S.streak} 保持不变）`);
       settleIncome();
       if(S.round>=MAX_ROUNDS && !S.endless){ stageVictory(); return; }   // 第 25 回合击败最终魔王 = 通关
     } else {
       S.stats.losses++;
       if(S.round>=MAX_ROUNDS && !S.endless){ log('💀 最终魔王战失败，挑战结束！'); gameOver(false); return; }
-      log('　💤 野怪回合失败：不扣血、不影响连胜/连败（多多自走棋规则）');
+      dropGear(1);
+      log('　💤 野怪回合失败：不扣血、不影响连胜/连败，仍获得 1 件装备（保底掉落）');
       settleIncome();
     }
   } else if(won){
@@ -2172,6 +2200,9 @@ function endBattle(alive0,alive1){
   renderAll();
   $('fightBtn').disabled=false;
   log(`— 第 ${S.round} 回合备战阶段 —${S.endless?'（♾ 无限模式）':''}`);
+  if(S.round%5===0){   // 野怪回合提醒
+    log(`🐾 本回合是【野怪回合 · ${CREEP[S.round]||'野怪'}】：胜利掉 2 件装备，失败也保底掉 1 件（不扣血、不动连胜）`);
+  }
 }
 function reportHTML(){
   const st=S.stats;
