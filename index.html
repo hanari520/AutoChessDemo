@@ -583,7 +583,7 @@ const SKILL_INFO = {
   massfreeze: k=>`对周围 ${AOE_RADIUS.massfreeze} 格内所有敌人造成 ${P(80,k)}% 攻击伤害，并冻结 1 秒`,
   tauntshield: (k,sv)=>`获得 ${Math.round((sv&&sv.shieldPct||.35)*100)}% 最大生命护盾，并嘲讽 ${sv&&sv.tauntT||2} 秒（强制敌人攻击自己）`,
   guard: (k,sv)=>`为生命比例最低的队友附加 ${Math.round((sv&&sv.allyShield||.3)*100)}% 护盾，自身获得 ${Math.round((sv&&sv.selfShield||.2)*100)}% 护盾并嘲讽 ${sv&&sv.tauntT||1.5} 秒`,
-  manafeed: (k,sv)=>`全体队友回复 ${sv&&sv.manaAmt||25} 点法力，并治疗 ${P(50,k)}% 攻击生命`,
+  manafeed: (k,sv)=>`为全体队友回复 ${sv&&sv.manaAmt||25} 点法力（不含自己），并治疗 ${P(50,k)}% 攻击生命`,
   shell: (k,sv)=>{ let s=`获得 ${Math.round((sv&&sv.shellPct||.35)*100)}% 最大生命护盾`;
     if(sv&&sv.blockCt) s+=`，${sv.blockT||4} 秒内 ${Math.round(sv.blockCt*100)}% 概率格挡（伤害减半）`;
     if(sv&&sv.thornsB) s+=`，${sv.thornsT||4} 秒荆棘反弹`;
@@ -624,7 +624,7 @@ const SKILL_VAR = {
   likou:  {fx:[['healshield',.06]], txt:'并为其附加 6% 最大生命护盾'},
   agari:  {fx:[['healshield',.04]], txt:'并使全体获得 4% 最大生命护盾'},
   /* —— 2 费 —— */
-  suiji:  {manaAmt:25},
+  suiji:  {manaAmt:25, txt:'为队友回蓝（不含自己，避免自充能）'},
   kanban: {shellPct:.30, blockCt:.25, blockDmg:.5, blockT:4},
   zhouyi: {p:{sb:.80}},
   yuji:   {p:{blockCt:.25,blockDmg:.5}},
@@ -1535,7 +1535,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.46;
+    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.52;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1582,6 +1582,7 @@ function genEnemy(){
 function prepEnemy(){ S.enemyBoard = genEnemy(); }   // 备战阶段就生成敌方阵容（供玩家观察，开战时直接沿用）
 let battleTimer=null, SPEED=1, currentTick=null, tickWorker=null;   // 默认 1 倍速
 const BATTLE_DELAY = 300;   // 开战后先暂停 0.3 秒（让玩家看清双方站位）再开始移动
+const SKILL_CD = 1800;      // 技能内置冷却（ms）：防止回蓝类技能把蓝秒满后每帧反复施法形成死循环
 function startTickLoop(ms){ // 用 Worker 驱动战斗时钟，避免后台标签页被浏览器节流
   stopTickLoop();
   try{
@@ -1604,7 +1605,7 @@ function setSpeed(s){ SPEED=s; document.body.style.setProperty('--spd',s);
 document.querySelectorAll('.spd-b').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
 function makeBattleUnit(u, side, x, y){
   const d=byId(u.id);
-  const b={...u, side, x, y, cd:0, moveCd:0, maxmana:50, shield:0, frozen:0, rapid:0,
+  const b={...u, side, x, y, cd:0, moveCd:0, skillCd:0, maxmana:50, shield:0, frozen:0, rapid:0,
     stun:0, atkDownA:0, atkDownT:0, slowA:0, slowT:0, noShieldT:0, healDownA:0, healDownT:0,
     poisonT:0, poisonDmg:0, atkMul:1, hpMul:1, spdMul:1, vamp:0, dmgReduce:0,
     tauntT:0, silenceT:0, blockCt:0, blockDmg:.5, blockT:0, thorns:0, thornsT:0, drBuff:0, drBuffT:0,
@@ -1770,6 +1771,7 @@ function startBattle(){
       if(u.blockT>0){ u.blockT-=TICK; if(u.blockT<=0){ u.blockCt = (u.pv&&u.pv.blockCt)||0; u.blockT=0; } } // 格挡增益到期（被动格挡常驻）
       if(u.drBuffT>0){ u.drBuffT-=TICK; if(u.drBuffT<=0){ u.drBuff=0; u.drBuffT=0; } }   // 减伤增益到期
       // 多多官方：无常驻回蓝，蓝量仅来自攻击伤害与受击（见 dealDamage）
+      if(u.skillCd>0) u.skillCd-=TICK;   // 技能内置冷却（防止满蓝后每帧反复施法）
       u.cd-=TICK; u.moveCd-=TICK;
       // 刺客切入：开战后随大部队同步行动——它的第一次移动改为瞬移到敌方最后一排（带飞行动画）
       if(byId(u.id).job==='刺客' && !u.jumped && u.moveCd<=0){
@@ -1803,7 +1805,9 @@ function startBattle(){
         for(const f of foes){ const d2=Math.abs(f.x-u.x)+Math.abs(f.y-u.y); if(d2<bd){bd=d2;tgt=f;} } }
       const d=byId(u.id);
       const aspd = d.spd*(u.spdMul||1);
-      if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana){ u.mana=0; castSkill(u,tgt,units,u.skMul); }
+      if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana && u.skillCd<=0){
+        u.mana=0; u.skillCd=SKILL_CD; castSkill(u,tgt,units,u.skMul);
+      }
       if(Math.abs(tgt.x-u.x)+Math.abs(tgt.y-u.y)<=d.rng){
         if(u.cd<=0){
           const slow = u.slowT>0 ? u.slowA : 0;
@@ -2052,7 +2056,7 @@ function applyFx(u,f,sv,units,allies,foes,power,dmg){
       case 'foehealdown': aoeFoes(u,foes,AOE_RADIUS.foehealdown).forEach(t=>{ if(t.hp>0){ t.healDownA=Math.max(t.healDownA||0,a); t.healDownT=(b||3)*1000; } }); break;
       case 'exec': if(hit && f.hp>0 && f.hp/f.maxhp<0.35){   // 斩杀：残血目标追加伤害
         dealDamage(u,f,Math.round(power*a),units); dmgPopup(u,f,'⚔斩杀','cast'); } break;
-      case 'allymana': allies.forEach(t=>{ if(t.hp>0&&!isPassive(t)) t.mana=Math.min(t.maxmana||60,t.mana+a); }); break;
+      case 'allymana': allies.forEach(t=>{ if(t.hp>0&&!isPassive(t)) t.mana=Math.min(t.maxmana||50,t.mana+a); }); break;
       case 'thornsbuff': u.thorns=a; u.thornsT=(b||4)*1000; break;
       case 'drbuff': u.drBuff=a; u.drBuffT=(b||4)*1000; break;
     }
@@ -2220,9 +2224,9 @@ function castSkill(u,tgt,units,skMul){
       u.tauntT=(sv.tauntT||1.5)*1000;
       vfxAt(u,'ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
       break; }
-    case 'manafeed': {      // 晨间报时：全队回蓝+群疗（与烧蓝对冲，加速法师阵容）
+    case 'manafeed': {      // 晨间报时：为队友回蓝+群疗（不含自己，避免自充能死循环）
       allies.forEach(t=>{
-        if(!isPassive(t)) t.mana=Math.min(t.maxmana||60,t.mana+(sv.manaAmt||25));
+        if(t!==u && !isPassive(t)) t.mana=Math.min(t.maxmana||50,t.mana+(sv.manaAmt||25));
         const hd=t.healDownT>0?(1-t.healDownA):1;
         const h=Math.round(power*0.5*hm*hd);
         t.hp=Math.min(t.maxhp,t.hp+h); vfxAt(t,'ring heal',900);
