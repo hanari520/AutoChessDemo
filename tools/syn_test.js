@@ -57,6 +57,32 @@ global.clearTimeout = () => {};
 (0, eval)(code);
 const A = globalThis.API;
 
+/* —— r25 诊断插桩（DBG=1 生效）：medEcho/dealDamage 是顶层函数声明（挂 globalThis），
+   游戏内调用点在运行时经全局对象解析，包裹 globalThis 同名属性即可拦截统计伤害构成 —— */
+const DBG = !!process.env.DBG;
+const __diag = { cur: null };
+const origMedEcho = globalThis.medEcho;
+const origDealDamage = globalThis.dealDamage;
+globalThis.medEcho = function(src, healed, units, foes){
+  const f = __diag.cur;
+  if (f) { if (healed > 0) f.healed += healed; if (src) src.__echoing = true; }
+  const r = origMedEcho(src, healed, units, foes);
+  if (src) src.__echoing = false;
+  return r;
+};
+globalThis.dealDamage = function(src, tgt, dmg, units, dtype){
+  const f = __diag.cur;
+  if (!f) return origDealDamage(src, tgt, dmg, units, dtype);
+  const wasEcho = !!(src && src.__echoing);
+  const r = origDealDamage(src, tgt, dmg, units, dtype);
+  if (tgt && tgt.side === 1) {
+    if (wasEcho) f.echo += r;
+    if (tgt.boss) f.bossDmg += r;
+  }
+  if (tgt && tgt.hp <= 0 && tgt.side === 0) f.myDeaths.push(Math.round(fakeClock - f.t0) + ':' + A.byId(tgt.id).name);
+  return r;
+};
+
 /* ---------- 锁羁绊机器人：复制 bot_strategy.js，购买只认锁内棋子 ---------- */
 const botSrc = `
 function botPrep() {
@@ -239,9 +265,25 @@ for (const syn of targets) {
     (0, eval)('newGame()');
     let outcome = null;
     for (let guard = 0; guard < 40; guard++) {
+      const curRound = A.S.round;   // 战斗结算会推进回合数，r 编号须在开战前取
       botPrep();
       (0, eval)('startBattle')();
-      driveBattle();
+      const snap = globalThis.__bu || [];
+      __diag.cur = { t0: fakeClock,
+        enemyHP: snap.filter(u => u.side === 1).reduce((a, u) => a + u.hp, 0),
+        echo: 0, bossDmg: 0, healed: 0, myDeaths: [] };
+      const dur = driveBattle();
+      const f = __diag.cur; __diag.cur = null;
+      f.dur = dur; f.round = curRound; f.phase = A.S.phase;
+      const boss = (globalThis.__bu || []).find(u => u.side === 1 && u.boss);
+      if (boss) { f.bossHp = boss.hp; f.bossMax = boss.maxhp; }
+      f.foesAlive = (globalThis.__bu || []).filter(u => u.side === 1 && u.hp > 0).length;
+      if (DBG && f.round === 25) {
+        console.log(`  [r25] hp=${A.S.hp} dur=${f.dur}ms 敌总HP=${Math.round(f.enemyHP)}` +
+          ` 回响=${Math.round(f.echo)} 魔王伤=${Math.round(f.bossDmg)}` +
+          ` boss余=${f.bossHp != null ? Math.round(f.bossHp) + '/' + Math.round(f.bossMax) : '-'}` +
+          ` 敌存活=${f.foesAlive} 实疗=${Math.round(f.healed)} 我减员=[${f.myDeaths.join(' ')}]`);
+      }
       if (process.env.DBG) console.log(`  [dbg] r${A.S.round} hp=${A.S.hp} phase=${A.S.phase} lvl=${A.S.lvl} 场上=${A.S.board.filter(Boolean).length} bench=${A.S.bench.filter(Boolean).length} gold=${A.S.gold}`);
       if (A.S.phase === 'over') {
         const ovT = String(global.document.getElementById('ovTitle').textContent || '');

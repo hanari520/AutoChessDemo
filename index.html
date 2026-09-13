@@ -572,13 +572,13 @@ const FACTIONS = {
 const CLASSES = {
   '刀客': {need:[2,4], desc:['刀客攻击 +20%','刀客攻击 +35%']},
   '守护': {need:[2,4], desc:['全队生命 +10%','全队生命 +20%']},
-  '歌势': {need:[2,4], desc:['全队每秒回复 2 生命','全队每秒回复 4 生命']},
-  '游侠': {need:[2,3], desc:['游侠攻速 +40%','游侠攻速 +70%']},
+  '歌势': {need:[2,4], desc:['全队每秒回复 2 生命；歌势施放技能时放出音波，冲击最近的敌人造成 100% 技能强度魔法伤害（场上每有一名歌势棋子含重复再 +55%）','全队每秒回复 4 生命；音波提升至 200% 技能强度（场上每有一名歌势棋子含重复再 +55%）']},
+  '游侠': {need:[2,3], desc:['游侠攻速 +40%，场上每有一名游侠棋子（含重复棋子），游侠攻击 +10%','游侠攻速 +70%，场上每有一名游侠棋子（含重复棋子），游侠攻击 +15%']},
   '法师': {need:[2,4], desc:['技能伤害 +30%','技能伤害 +60%']},
   '咒术': {need:[2,4], desc:['咒术攻击附加毒伤（3 秒共 6% 目标最大生命）','毒伤翻倍（3 秒共 12%）']},
   '刺客': {need:[2,4], desc:['刺客攻击 +15%，开局切入敌方后排','刺客攻击 +30%，开局切入敌方后排']},
-  '狂战': {need:[2,3], desc:['狂战吸血 15%','狂战吸血 30%']},
-  '医者': {need:[2,4], desc:['开战时生命最低的队友获得 20% 护盾，医者治疗附带 25% 回响伤害','护盾 35%，全队每秒回复 1 生命，回响伤害提升至 50%']},
+  '狂战': {need:[2,3], desc:['狂战吸血 15%，场上每有一名狂战棋子（含重复棋子），狂战攻击 +10%','狂战吸血 30%，场上每有一名狂战棋子（含重复棋子），狂战攻击 +15%']},
+  '医者': {need:[2,4], desc:['开战时生命最低的队友获得 20% 护盾，医者治疗附带 60% 回响伤害（场上每有一名医者棋子含重复再 +35%）','护盾 35%，全队每秒回复 1 生命，回响 120%（每有一名医者含重复再 +35%），医者棋子生命 +25%']},
   '偶像': {need:[2,4], desc:['全队攻击 +8%','全队攻击 +16%']},
 };
 /* 技能效果按费用分级增强：1费×0.92 → 3费×1.12 → 5费×1.32 */
@@ -1624,10 +1624,10 @@ function genEnemy(){
   const list=[];
   if(r%5===0){   // 野怪回合（每 5 回合），波次固定按进度强化
     /* 多多自走棋式野怪波次：狼群(纯低费杂兵) → 岩石巨像(3费头目) → 黑龙幼崽(4费)
-       → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
+       → 远古凶兽(4费2★) → 最终魔王(5费1★·吃 bossMult)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.60;
+    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.68;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1665,7 +1665,7 @@ function genEnemy(){
     const m = mul * (x.bossMult||1) * Math.pow(STAR_M[x.d.cost]||1.8, x.star-1) * HP_SCALE;
     placed.push({uid:S.uid++, id:x.d.id, star:x.star, sks:Math.pow(SKILL_STAR_M[x.d.cost]||1.1, x.star-1),
       hp:Math.round(x.d.hp*m), maxhp:Math.round(x.d.hp*m),
-      atk:Math.round(x.d.atk*m), enemy:true});
+      atk:Math.round(x.d.atk*m), enemy:true, boss:!!x.boss});
   }
   placeFormation(b, [3,2,1,0], placed);
   return b;
@@ -1791,26 +1791,35 @@ function startBattle(){
     // —— 职业档位 ——
     t=tierOf(clsCnt,CLASSES,'刀客'); if(t>=1) addAtkJob('刀客',0.2); if(t>=2) addAtkJob('刀客',0.15);
     t=tierOf(clsCnt,CLASSES,'守护'); if(t>=1) hpMul*=1.10; if(t>=2) hpMul*=1.10;
-    t=tierOf(clsCnt,CLASSES,'歌势'); if(t>=1) regen+=1.5; if(t>=2) regen+=1.5;
+    t=tierOf(clsCnt,CLASSES,'歌势'); if(t>=1) regen+=2; if(t>=2) regen+=2;
+    const gT=t, gCnt=mine.filter(u=>byId(u.id).job==='歌势').length;  // 音波浓度成长（含重复副本）
     t=tierOf(clsCnt,CLASSES,'游侠'); let rgSpd=0; if(t>=1) rgSpd+=0.4; if(t>=2) rgSpd+=0.3;
+    if(t>=1){ // 专精浓度成长：场上每有一名游侠（含重复副本）游侠攻击 +10%/+15%
+      const rgCnt=mine.filter(u=>byId(u.id).job==='游侠').length;
+      addAtkJob('游侠',(t>=2?0.15:0.10)*rgCnt); }
     t=tierOf(clsCnt,CLASSES,'法师'); if(t>=1) skMul+=0.3; if(t>=2) skMul+=0.3;
     t=tierOf(clsCnt,CLASSES,'咒术');
     if(t>=1){ if(t>=2) poisonPow=0.04;
       mine.filter(u=>byId(u.id).job==='咒术').forEach(u=>u.poisonAtk=true); }
     t=tierOf(clsCnt,CLASSES,'刺客'); if(t>=1) addAtkJob('刺客',0.15); if(t>=2) addAtkJob('刺客',0.15);
     t=tierOf(clsCnt,CLASSES,'狂战'); if(t>=1){ const v=t>=2?0.3:0.15;
+      const bzCnt=mine.filter(u=>byId(u.id).job==='狂战').length; // 专精浓度成长（含重复副本）
+      addAtkJob('狂战',(t>=2?0.15:0.10)*bzCnt);
       mine.filter(u=>byId(u.id).job==='狂战').forEach(u=>u.vamp=Math.max(u.vamp,v)); }
     const mT=tierOf(clsCnt,CLASSES,'医者'); if(mT>=2) regen+=1;
+    const mCnt=mine.filter(u=>byId(u.id).job==='医者').length;        // 回响浓度成长（含重复副本）
     t=tierOf(clsCnt,CLASSES,'偶像'); if(t>=1) atkMul+=0.08; if(t>=2) atkMul+=0.08;
     // —— 应用到每个棋子 ——
     mine.forEach(u=>{
       const d=byId(u.id);
       u.maxhp=Math.round(u.maxhp*(hpMul*(1+(facHp[d.fac]||0)))); u.hp=u.maxhp;
+      if(d.job==='医者' && mT>=2){ u.maxhp=Math.round(u.maxhp*1.25); u.hp=u.maxhp; }  // 医者 T2 生存浓度：防魔王战减员雪崩
       u.atk=Math.round(u.atk*(atkMul+(atkJob.get(d.job)||0)+(facAtk[d.fac]||0)));
       u.spdMul=spdMul+(d.job==='游侠'?rgSpd:0);
       u.skMul=skMul; u.healMul=healMul; u.dmgReduce=dmgReduce; u.regen=regen;
       u.poisonPow = poisonPow;
-      u.medEcho = (d.job==='医者' && mT>=1) ? (mT>=2?0.5:0.25) : 0;   // 医者羁绊：治疗回响比例
+      u.medEcho = (d.job==='医者' && mT>=1) ? (mT>=2?1.2:0.6)+0.35*mCnt : 0;  // 医者羁绊：治疗回响（浓度成长含重复副本）
+      u.sonic   = (d.job==='歌势' && gT>=1) ? (gT>=2?2.0:1.0)+0.55*gCnt : 0;  // 歌势羁绊：音波共鸣（浓度成长含重复副本）
       if(shieldPct>0) u.shield+=Math.round(u.maxhp*shieldPct);
     });
     // 医者羁绊：生命最低队友护盾（治疗回响在 dealDamage 的 medEcho() 中结算）
@@ -2395,6 +2404,17 @@ function castSkill(u,tgt,units,skMul){
         applyFx(u,f,sv,units,allies,foes,power,dd);
         if(f.hp>0){ f.silenceT=(sv.dur||2)*1000; dmgPopup(u,f,'🔇沉默','cast'); } });
       break; }
+  }
+  // 歌势羁绊「音波共鸣」：任意技能施放后冲击最近的敌人（治疗/辅助也放歌；
+  // 音波不产生任何资源回流，无施法循环风险）
+  if(u.sonic>0){
+    const alive=foes.filter(v=>v.hp>0);
+    if(alive.length){
+      const f2=alive.sort((a,b)=>dist(a)-dist(b))[0];
+      vfxAt(u,'ring',700);
+      dealDamage(u,f2,Math.round(power*u.sonic),units,'magic');
+      dmgPopup(u,f2,'🎵音波','cast');
+    }
   }
 }
 function dmgPopup(src,tgt,text,cls){
