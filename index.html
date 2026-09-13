@@ -65,6 +65,22 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .card.syncard { border-color:#4ac8ff; box-shadow:0 0 7px #4ac8ff55; }
 .card .ctag { color:#4ac8ff; font-size:10px; font-weight:bold; margin-left:4px; }
 .card .ctag.c3 { color:#ff8ad8; }
+/* ===== 棋子详情面板（单击棋子弹出） ===== */
+#inspect { position:fixed; z-index:60; width:272px; background:#171329f5; border:1px solid #6a58b8;
+  border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.55; color:#dcd6f0;
+  box-shadow:0 10px 28px #000b; }
+#inspect.hidden { display:none; }
+#inspect .in-hd { font-size:14px; color:#ffd24a; display:flex; align-items:center; gap:6px; }
+#inspect .in-star { color:#ffd24a; letter-spacing:1px; }
+#inspect .in-close { margin-left:auto; cursor:pointer; color:#8a93c4; padding:0 4px; }
+#inspect .in-close:hover { color:#fff; }
+#inspect .in-tag { color:#9fe8ff; margin:2px 0 6px; }
+#inspect .in-row { display:flex; justify-content:space-between; border-bottom:1px dashed #ffffff18; padding:1px 0; }
+#inspect .in-row span { color:#8a93c4; }
+#inspect .in-row b { color:#e8e4f0; min-width:56px; text-align:right; }
+#inspect .in-sk { margin-top:6px; color:#c77dff; font-weight:bold; }
+#inspect .in-desc { color:#cdd6f4; margin:2px 0 6px; }
+#inspect .in-item { color:#8dff9a; }
 .card .cpair { color:#ffd24a; font-size:10px; font-weight:bold; margin-left:4px; }
 .unit.stunned { animation:stunWob .5s infinite; }
 @keyframes stunWob { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
@@ -355,6 +371,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     <button id="resumeNo" class="ghost">🆕 新开一局</button>
   </div>
 </div>
+<div id="inspect" class="hidden"></div>
 <div id="overlay">
   <h1 id="ovTitle">虚拟棋战 🎲</h1>
   <p id="ovText" style="max-width:520px;line-height:1.8;color:#cdd6f4">
@@ -790,7 +807,7 @@ function sellSelected(){
   S.gold+=refund; S.stats.goldEarned+=refund; S.pool[u.id]+=copies;
   (u.items||[]).forEach(k=>S.items.push(k)); // 装备卸下回装备栏
   setAt(pos[0],pos[1],null);
-  S.selUid=null;
+  S.selUid=null; hideInspect();
   log(`💸 出售 ${d.name}${u.star>1?'（'+u.star+'★折价）':''}：+${refund} 金币，${copies} 张返还卡池`);
   if(u.items&&u.items.length) log(`　　装备卸下回装备栏：${u.items.map(k=>ITEMS[k].e+ITEMS[k].n).join('、')}`);
   renderAll();
@@ -987,17 +1004,53 @@ function clickUnit(t,i){
     u.items.push(S.items[S.selItem]);
     log(`🎒 ${byId(u.id).name} 装备了 ${ITEMS[S.items[S.selItem]].n}`);
     S.items.splice(S.selItem,1); S.selItem=null;
-    renderAll(); return;
+    renderAll();
+    if(S.inspectUid===u.uid) showInspectFor(t,i);   // 详情面板跟随刷新装备栏
+    return;
   }
   if(S.selUid!=null){
     const pos = findUnit(S.selUid);
-    if(!pos){ S.selUid=null; renderAll(); return; }
-    if(u && u.uid===S.selUid){ S.selUid=null; }
-    else { moveOrSwap(pos[0],pos[1],t,i); S.selUid=null; }
+    if(!pos){ S.selUid=null; hideInspect(); renderAll(); return; }
+    if(u && u.uid===S.selUid){ S.selUid=null; hideInspect(); }   // 再点自己=取消选中并收起详情
+    else { moveOrSwap(pos[0],pos[1],t,i); S.selUid=null; if(u) showInspectFor(t,i); else hideInspect(); }
     renderAll(); return;
   }
-  if(u){ S.selUid=u.uid; renderBoard(); renderBench(); renderTop(); }
+  if(u){ S.selUid=u.uid; renderBoard(); renderBench(); renderTop(); showInspectFor(t,i); }
 }
+/* ===== 棋子详情面板 ===== */
+function showInspect(u, anchorEl){
+  const d=byId(u.id);
+  const items=(u.items||[]).map(k=>ITEMS[k].e+' '+ITEMS[k].n).join('、')||'无';
+  $('inspect').innerHTML=`
+    <div class="in-hd"><b>${d.name}</b><span class="in-star">${'★'.repeat(u.star)}</span>
+      <span class="in-close" title="关闭" onclick="hideInspect()">✕</span></div>
+    <div class="in-tag">${d.fac} · ${d.job} ｜ ${d.cost} 费</div>
+    <div class="in-row"><span>生命</span><b>${u.maxhp}</b><span>攻击</span><b>${u.atk}</b></div>
+    <div class="in-row"><span>护甲</span><b>${d.ar||0}</b><span>魔抗</span><b>${Math.round((d.mr||0)*100)}%</b></div>
+    <div class="in-row"><span>射程</span><b>${d.rng} 格</b><span>攻速</span><b>${d.spd.toFixed(2)}/s</b></div>
+    <div class="in-row"><span>形式</span><b>${d.form==='me'?'近战':'远程'}·${d.dtype==='phys'?'物理':'法术'}</b><span>出售</span><b>${sellRefund(u)}💰</b></div>
+    <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
+    <div class="in-desc">${skillDesc(u)}</div>
+    <div class="in-item">🎒 装备：${items}</div>`;
+  $('inspect').classList.remove('hidden');
+  S.inspectUid=u.uid;
+  let x=innerWidth/2-136, y=110;
+  if(anchorEl){
+    const r=anchorEl.getBoundingClientRect();
+    x=r.right+8; y=r.top-8;
+    if(x+280>innerWidth) x=r.left-284;      // 右侧放不下→放左侧
+    y=Math.min(Math.max(8,y), innerHeight-330);
+  }
+  $('inspect').style.left=Math.max(8,x)+'px';
+  $('inspect').style.top=Math.max(8,y)+'px';
+}
+function showInspectFor(t,i){
+  const u=getAt(t,i);
+  if(!u){ hideInspect(); return; }
+  const el=document.querySelector(`#board [data-uid="${u.uid}"], #bench [data-uid="${u.uid}"]`);
+  showInspect(u, el);
+}
+function hideInspect(){ S.inspectUid=null; const p=$('inspect'); if(p) p.classList.add('hidden'); }
 
 /* ================= 交互：拖拽 ================= */
 let drag=null;
@@ -1299,7 +1352,7 @@ function startBattle(){
   if(S.phase!=='prep') return;
   stopTickLoop(); // 关闭任何残余的战斗时钟
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
-  S.phase='battle'; S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null;
+  S.phase='battle'; S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null; hideInspect();
   const c=compForRound(S.round);
   log(`⚔ 第 ${S.round} 回合开战！对手：【${c.name}】`);
   $('fightBtn').disabled=true; $('refreshBtn').disabled=true; $('lvlBtn').disabled=true;
