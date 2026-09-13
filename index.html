@@ -115,13 +115,13 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .syn-badge.t1 .pips i.on { background:#c98a4b; box-shadow:0 0 4px #c98a4b88; }
 /* ===== 多多式底部玩家信息盒 ===== */
 #shopbar { gap:10px; }
-#playerBox { display:flex; flex-direction:column; gap:5px; width:216px; flex-shrink:0; justify-content:center; }
+#playerBox { display:flex; flex-direction:column; gap:6px; width:300px; flex-shrink:0; justify-content:center; }
 #lvlBox { background:#161228; border:1px solid #35294f; border-radius:8px; padding:5px 8px; }
 .lvl-row { display:flex; justify-content:space-between; font-size:12px; color:#cdd6f4; margin-bottom:4px; }
 .xpbar { height:8px; background:#221c38; border-radius:4px; overflow:hidden; border:1px solid #4a3d6e; }
 .xpfill { height:100%; width:0%; background:linear-gradient(90deg,#4aa8ff,#8dd0ff); transition:width .3s; }
-#pbtns { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
-#pbtns .btn { font-size:12px; padding:4px 6px; white-space:nowrap; overflow:hidden; }
+#pbtns { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+#pbtns .btn { font-size:13px; padding:8px 6px; white-space:nowrap; overflow:hidden; }
 #fightBox { display:flex; align-items:center; flex-shrink:0; }
 #fightBox .btn { padding:14px 16px; font-size:16px; line-height:1.25; }
 .panel { background:#1c1830; border:1px solid #35294f; border-radius:10px; padding:10px; }
@@ -142,7 +142,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 /* 多多式：刷新/锁定按钮紧贴商店两侧 */
 #shopbar .btn.shopctl { padding:5px 8px; font-size:12px; line-height:1.35; min-width:58px; text-align:center; }
 #shop { display:flex; gap:8px; flex:1; align-items:stretch; min-width:0; }
-.card { flex:1; max-width:150px; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px;
+.card { flex:1; min-width:0; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px;
   cursor:pointer; text-align:center; transition:transform .1s; position:relative; }
 .card:hover { transform:translateY(-3px); border-color:#ffd24a; }
 .card .cn { font-weight:bold; font-size:14px; }
