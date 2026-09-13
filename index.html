@@ -292,6 +292,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <div class="fight-btn-row">
     <button class="btn" id="histBtn">📜 战绩</button>
     <button class="btn" id="bookBtn">📖 图鉴</button>
+    <button class="btn" id="helpBtn">❓ 玩法</button>
     <button class="btn" id="resetBtn" title="放弃当前进度，重新开一局">🔄 重开</button>
     <button class="btn" id="endBtn" style="display:none;background:#5b1e1e;color:#ffb0b0" title="结束无限模式，直接查看本局结算">🏁 结束挑战</button>
     <span class="tag" style="display:flex;gap:4px;align-items:center;padding:3px 8px">⏩
@@ -375,7 +376,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 <div id="overlay">
   <h1 id="ovTitle">虚拟棋战 🎲</h1>
   <p id="ovText" style="max-width:520px;line-height:1.8;color:#cdd6f4">
-    多多自走棋式单机自动战斗（VirtuaReal + P-SP · 46 人 · 限量卡池 · 25 回合）<br>
+    单机自动战斗棋局（VirtuaReal + P-SP · 46 名主播 · 限量卡池 · 25 回合通关）<br>
     ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +5 经验（每回合自然 +2，升级更快凑人口）；卖棋 1★原价、合成折价<br>
     ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>：胜利掉装备（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
@@ -2069,7 +2070,7 @@ function reportHTML(){
   </div>`;
 }
 function stageVictory(){
-  S.phase='over';
+  S.phase='over'; ovMode='start';
   $('ovTitle').textContent='🏅 通关成功！';
   $('ovText').innerHTML=`你撑过了 ${MAX_ROUNDS} 回合并击败最终 Boss！<br>`+reportHTML();
   $('ovBtn').textContent='📊 结束并查看报告';
@@ -2086,7 +2087,7 @@ function enterEndless(){
   log('♾ 进入无限模式：从第 26 回合开始，敌方将无限变强！');
 }
 function gameOver(win){
-  S.phase='over';
+  S.phase='over'; ovMode='start';
   try{ // 写入历史战绩并清除进行中的存档
     const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
     h.unshift({ts:Date.now(),win,round:S.round,hp:S.hp,endless:!!S.endless,
@@ -2119,7 +2120,19 @@ function endEndless(){  // 无限模式主动结束：直接进入结算画面
   $('overlay').classList.remove('hidden');
 }
 $('endBtn').onclick=endEndless;
-$('ovBtn').onclick=()=>{ newGame(); renderAll(); $('fightBtn').disabled=false;
+/* 玩法介绍弹窗：start=开局 / resume=游戏中查看（按钮变"继续游戏"，不重开） */
+let ovMode='start';
+function showIntro(resume){
+  ovMode = resume ? 'resume' : 'start';
+  $('ovBtn').textContent = resume ? '▶ 继续游戏' : '开始游戏';
+  $('ovBtn2').style.display='none';
+  $('overlay').classList.remove('hidden');
+}
+$('helpBtn').onclick=()=>showIntro(S && S.phase!=='over' ? true : false);
+$('ovBtn').onclick=()=>{
+  if(ovMode==='resume'){ $('overlay').classList.add('hidden'); return; }   // 查看玩法：关闭即继续当前对局
+  ovMode='start';
+  newGame(); renderAll(); $('fightBtn').disabled=false;
   $('overlay').classList.add('hidden'); log('新的一局开始！'); };
 $('ovBtn2').onclick=enterEndless;
 /* ================= 棋子图鉴（费用/阵营/职业筛选） ================= */
