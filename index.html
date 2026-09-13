@@ -63,6 +63,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .card.paircard { border-color:#ffd24a; box-shadow:0 0 9px #ffd24a66; }
 .card.chase3 { border-color:#ff8ad8; box-shadow:0 0 10px #ff8ad888; }
 .card.syncard { border-color:#4ac8ff; box-shadow:0 0 7px #4ac8ff55; }
+.card.syntrig { border-color:#8dff9a; box-shadow:0 0 10px #8dff9a88; }
+.card .ctag.cg { color:#8dff9a; }
 .card .ctag { color:#4ac8ff; font-size:10px; font-weight:bold; margin-left:4px; }
 .card .ctag.c3 { color:#ff8ad8; }
 #sellBtn.sell-hl { border-color:#ff8ad8 !important; color:#ff8ad8 !important; box-shadow:0 0 12px #ff8ad888; }
@@ -380,7 +382,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <p id="ovText" style="max-width:520px;line-height:1.8;color:#cdd6f4">
     单机自动战斗棋局（VirtuaReal + P-SP · 46 名主播 · 限量卡池 · 25 回合通关）<br>
     ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +5 经验（每回合自然 +2，升级更快凑人口）；卖棋 1★原价、合成折价<br>
-    ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
+    ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#8dff9a">绿色=购买即触发羁绊档位</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>：胜利掉装备（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
     ⑤ 拖拽布阵（场上最多 10 人）；<b style="color:#8dff9a">一键上阵优先凑羁绊</b>（按羁绊档位+战力贪心选队）；撑过 25 回合并击败最终魔王即通关
@@ -689,16 +691,27 @@ function ownedTags(){ // 场上棋子的阵营/职业集合（去重按棋子）
     (tags['J:'+d.job]=tags['J:'+d.job]||[]).push(d.id); });
   return tags;
 }
-function synergyMatch(u){ // 商店卡是否有助于补全"未满级"的已有羁绊（显示引导，不影响概率）
-  const tags=ownedTags();
+function synTriggers(u){ // 购买该棋子后【新触发】的羁绊档位（如 '毛茸乐园 T1'）
+  const out=[]; const tags=ownedTags();
+  for(const key of ['F:'+u.fac,'J:'+u.job]){
+    const ids=tags[key]; if(!ids) continue;
+    const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
+    if(!tbl[name]) continue;
+    const distinct=new Set(ids).size+1;   // 买入后 +1
+    tbl[name].need.forEach((nd,i)=>{ if(distinct===nd) out.push(name+' T'+(i+1)); });
+  }
+  return out;
+}
+function synTags(u){ // 可补全（已有成员但尚未满档）的羁绊名
+  const out=[]; const tags=ownedTags();
   for(const key of ['F:'+u.fac,'J:'+u.job]){
     const ids=tags[key]; if(!ids) continue;
     const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
     if(!tbl[name]) continue;
     const distinct=new Set(ids).size;
-    if(distinct < tbl[name].need[tbl[name].need.length-1]) return true;   // 仍有档位未达成
+    if(distinct>0 && distinct < tbl[name].need[tbl[name].need.length-1]) out.push(name);
   }
-  return false;
+  return out;
 }
 function boardTierKeys(){ // 当前场上已达成的全部羁绊档位（去重按棋子），如 ['F:深海:1','J:游侠:2']
   const out=[];
@@ -885,12 +898,18 @@ function renderShop(){
     const isPair = u && pairCount(u.id)>=2; // 买到手即凑齐 3 张升星
     const isSolo = u && !isPair && pairCount(u.id)===1;
     const owned2 = u && !isPair && has2star(u.id); // 已有 2★ 同名 → 高亮提示追三
-    const synHit = u && !isPair && !owned2 && synergyMatch(u); // 有助补全未满级羁绊
+    const trig = u ? synTriggers(u) : [];          // 购买即新触发的羁绊档位（绿色高亮）
+    const synNames = u && !trig.length ? synTags(u) : [];  // 仅补进度的羁绊名
     if(isPair) c.classList.add('paircard');
     if(isSolo) c.classList.add('solo');
     if(owned2) c.classList.add('chase3');
-    if(synHit) c.classList.add('syncard');
-    const badge = isPair?'<span class="cpair">对子!</span>' : owned2?'<span class="ctag c3">追三!</span>' : synHit?'<span class="ctag">✦ 羁绊</span>' : '';
+    if(trig.length && !isPair) c.classList.add('syntrig');
+    else if(synNames.length) c.classList.add('syncard');
+    const badge =
+      (isPair?'<span class="cpair">对子!</span>':'')+
+      (owned2?'<span class="ctag c3">追三!</span>':'')+
+      (trig.length?'<span class="ctag cg">✦ '+trig.join(' ')+'</span>':
+       (synNames.length?'<span class="ctag">✦ '+synNames.join('/')+'</span>':''));
     if(u) c.innerHTML=`<div class="cn">${u.name}${badge}</div><div class="cfj">${u.form==='me'?'⚔':'🏹'} ${u.fac}·${u.job} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div><div class="ct">${u.hp}❤ ${u.atk}⚔</div><div class="cs">${u.sk[0]}（${u.sk.length>2?'被动':'主动'}）</div><div class="cd" title="${skillText(u)}">${skillDesc(u).replace('被动：','')}</div><div class="cc">💰${u.cost}</div>`;
     c.onclick=()=>buy(i);
     s.appendChild(c);
