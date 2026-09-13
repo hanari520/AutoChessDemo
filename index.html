@@ -65,6 +65,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .card.syncard { border-color:#4ac8ff; box-shadow:0 0 7px #4ac8ff55; }
 .card.syntrig { border-color:#8dff9a; box-shadow:0 0 10px #8dff9a88; }
 .card .ctag.cg { color:#8dff9a; }
+.card .ctag.c9 { color:#ffd24a; }
+.card.star3 { border-color:#ffe9a8; box-shadow:0 0 12px #ffd24aaa; }
 .card .ctag { color:#4ac8ff; font-size:10px; font-weight:bold; margin-left:4px; }
 .card .ctag.c3 { color:#ff8ad8; }
 #sellBtn.sell-hl { border-color:#ff8ad8 !important; color:#ff8ad8 !important; box-shadow:0 0 12px #ff8ad888; }
@@ -680,8 +682,11 @@ function pairCount(id){ // 同名 1★ 拥有数（备战席+场上）
   S.board.forEach(u=>{ if(u&&u.id===id&&u.star===1) n++; });
   return n;
 }
-function has2star(id){ // 是否已拥有同名 2★ 及以上（商店高亮提示追三）
-  return [...S.bench,...S.board].some(u=>u&&u.id===id&&u.star>=2);
+function has2star(id){ // 是否已拥有同名 2★（商店高亮提示追三）
+  return [...S.bench,...S.board].some(u=>u&&u.id===id&&u.star===2);
+}
+function has3star(id){ // 是否已拥有同名 3★（商店仍高亮，标记三星达成）
+  return [...S.bench,...S.board].some(u=>u&&u.id===id&&u.star>=3);
 }
 function ownedTags(){ // 场上棋子的阵营/职业集合（去重按棋子）
   const tags={};
@@ -897,16 +902,19 @@ function renderShop(){
     c.className='card'+(u?'':' sold');
     const isPair = u && pairCount(u.id)>=2; // 买到手即凑齐 3 张升星
     const isSolo = u && !isPair && pairCount(u.id)===1;
-    const owned2 = u && !isPair && has2star(u.id); // 已有 2★ 同名 → 高亮提示追三
+    const owned3 = u && !isPair && has3star(u.id); // 已有 3★ 同名 → 仍高亮，标记三星达成
+    const owned2 = u && !isPair && !owned3 && has2star(u.id); // 已有 2★ 同名 → 高亮提示追三
     const trig = u ? synTriggers(u) : [];          // 购买即新触发的羁绊档位（绿色高亮）
     const synNames = u && !trig.length ? synTags(u) : [];  // 仅补进度的羁绊名
     if(isPair) c.classList.add('paircard');
     if(isSolo) c.classList.add('solo');
+    if(owned3) c.classList.add('chase3');
     if(owned2) c.classList.add('chase3');
     if(trig.length && !isPair) c.classList.add('syntrig');
     else if(synNames.length) c.classList.add('syncard');
     const badge =
       (isPair?'<span class="cpair">对子!</span>':'')+
+      (owned3?'<span class="ctag c9">三星达成</span>':'')+
       (owned2?'<span class="ctag c3">追三!</span>':'')+
       (trig.length?'<span class="ctag cg">✦ '+trig.join(' ')+'</span>':
        (synNames.length?'<span class="ctag">✦ '+synNames.join('/')+'</span>':''));

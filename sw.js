@@ -1,5 +1,5 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面走网络优先（保证更新），静态资源缓存优先 */
-const CACHE = 'vcache-v4';
+const CACHE = 'vcache-v5';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
