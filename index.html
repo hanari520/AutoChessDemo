@@ -65,6 +65,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .card.syncard { border-color:#4ac8ff; box-shadow:0 0 7px #4ac8ff55; }
 .card .ctag { color:#4ac8ff; font-size:10px; font-weight:bold; margin-left:4px; }
 .card .ctag.c3 { color:#ff8ad8; }
+#sellBtn.sell-hl { border-color:#ff8ad8 !important; color:#ff8ad8 !important; box-shadow:0 0 12px #ff8ad888; }
+#inspect .in-sell { margin-top:8px; text-align:center; background:#5b1e1e; color:#ffb0b0; border:1px solid #7a3030; border-radius:7px; padding:5px; cursor:pointer; font-weight:bold; }
+#inspect .in-sell:hover { background:#7a2626; border-color:#ff9a9a; }
 /* ===== 棋子详情面板（停靠右栏：装备栏上方） ===== */
 #inspect { font-size:12px; line-height:1.55; color:#dcd6f0; }
 #inspect .in-empty { color:#8a93c4; text-align:center; padding:10px 0; }
@@ -328,7 +331,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     <div id="pbtns">
       <button class="btn" id="lvlBtn">买经验 (F) +5经验 -5💰</button>
       <button class="btn" id="deployBtn" title="自动把最强的棋子按坦克前排、输出后排布阵（A）">⚡ 一键上阵</button>
-      <button class="btn" id="sellBtn" title="先点击棋子选中，再点此出售（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售</button>
+      <button class="btn" id="sellBtn" title="出售选中棋子；也可直接把棋子拖到这里，或选中后按 X/Delet（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售</button>
       <button class="btn" id="shopBtn" title="打开/关闭商店">🛒 商店</button>
     </div>
   </div>
@@ -1032,7 +1035,8 @@ function showInspect(u){
     <div class="in-row"><span>形式</span><b>${d.form==='me'?'近战':'远程'}·${d.dtype==='phys'?'物理':'法术'}</b><span>出售</span><b>${sellRefund(u)}💰</b></div>
     <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
     <div class="in-desc">${skillDesc(u)}</div>
-    <div class="in-item">🎒 装备：${items}</div>`;
+    <div class="in-item">🎒 装备：${items}</div>
+    <div class="in-sell" onclick="sellInspect()">💸 出售（+${sellRefund(u)}💰）</div>`;
   S.inspectUid=u.uid;
 }
 function showInspectFor(t,i){
@@ -1041,6 +1045,11 @@ function showInspectFor(t,i){
   showInspect(u);
 }
 function hideInspect(){ S.inspectUid=null; $('inspect').innerHTML=INSPECT_EMPTY; }
+function sellInspect(){  // 详情面板一键出售
+  if(S.phase!=='prep'||S.inspectUid==null) return;
+  S.selUid=S.inspectUid;
+  sellSelected();
+}
 
 /* ================= 交互：拖拽 ================= */
 let drag=null;
@@ -1064,9 +1073,12 @@ document.addEventListener('pointermove', e=>{
     drag.ghost.style.left=(e.clientX-34)+'px';
     drag.ghost.style.top=(e.clientY-34)+'px';
     document.querySelectorAll('.drop-hl').forEach(x=>x.classList.remove('drop-hl'));
+    document.querySelectorAll('.sell-hl').forEach(x=>x.classList.remove('sell-hl'));
     const tgt=document.elementFromPoint(e.clientX,e.clientY);
     const c=tgt&&tgt.closest && tgt.closest('.cell,.bslot');
     if(c) c.classList.add('drop-hl');
+    const sb=tgt&&tgt.closest && tgt.closest('#sellBtn');
+    if(sb) sb.classList.add('sell-hl');
   }
 });
 document.addEventListener('pointerup', e=>{
@@ -1074,8 +1086,16 @@ document.addEventListener('pointerup', e=>{
   const d=drag; drag=null;
   $('dragGhost').style.display='none';
   document.querySelectorAll('.drop-hl').forEach(x=>x.classList.remove('drop-hl'));
+  document.querySelectorAll('.sell-hl').forEach(x=>x.classList.remove('sell-hl'));
   if(!d.ghost) return;
   const tgt=document.elementFromPoint(e.clientX,e.clientY);
+  // 拖到出售按钮 = 出售该棋子（TFT 式）
+  const sell=tgt&&tgt.closest && tgt.closest('#sellBtn');
+  if(sell && S.phase==='prep'){
+    const u=getAt(d.t,d.i);
+    if(u){ S.selUid=u.uid; sellSelected(); }
+    return;
+  }
   const c=tgt&&tgt.closest && tgt.closest('.cell,.bslot');
   if(c){
     const tt = c.classList.contains('cell')?'board':'bench';
@@ -1219,6 +1239,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='f'||e.key==='F')$('lvlBtn').click();
   if(e.key==='l'||e.key==='L')$('lockBtn').click();
   if(e.key==='a'||e.key==='A')autoDeploy();
+  if((e.key==='Delete'||e.key==='x'||e.key==='X')&&S.phase==='prep'&&S.selUid!=null)sellSelected();
   if(e.key===' '&&S.phase==='prep'){ e.preventDefault(); $('fightBtn').click(); }
 });
 
