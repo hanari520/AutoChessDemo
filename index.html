@@ -65,11 +65,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .card.syncard { border-color:#4ac8ff; box-shadow:0 0 7px #4ac8ff55; }
 .card .ctag { color:#4ac8ff; font-size:10px; font-weight:bold; margin-left:4px; }
 .card .ctag.c3 { color:#ff8ad8; }
-/* ===== 棋子详情面板（单击棋子弹出） ===== */
-#inspect { position:fixed; z-index:60; width:272px; background:#171329f5; border:1px solid #6a58b8;
-  border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.55; color:#dcd6f0;
-  box-shadow:0 10px 28px #000b; }
-#inspect.hidden { display:none; }
+/* ===== 棋子详情面板（停靠右栏：装备栏上方） ===== */
+#inspect { font-size:12px; line-height:1.55; color:#dcd6f0; }
+#inspect .in-empty { color:#8a93c4; text-align:center; padding:10px 0; }
 #inspect .in-hd { font-size:14px; color:#ffd24a; display:flex; align-items:center; gap:6px; }
 #inspect .in-star { color:#ffd24a; letter-spacing:1px; }
 #inspect .in-close { margin-left:auto; cursor:pointer; color:#8a93c4; padding:0 4px; }
@@ -130,7 +128,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #equip { display:flex; flex-wrap:wrap; gap:6px; min-height:34px; }
 .item-chip { background:#2a2344; border:1px solid #4a3d6e; border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; }
 .item-chip.sel { border-color:#ffd24a; background:#5b4a1e; box-shadow:0 0 6px #ffd24a66; }
-#log { font-size:12px; color:#b0a8c8; max-height:130px; overflow-y:auto; line-height:1.7; }
+#log { font-size:12px; color:#b0a8c8; max-height:280px; overflow-y:auto; line-height:1.7; }
 #shopbar { display:flex; gap:8px; padding:8px 12px; background:#1c1830; border-top:2px solid #35294f; flex-shrink:0; align-items:stretch; }
 #shopbar .btn { align-self:center; white-space:nowrap; flex-shrink:0; }
 .btn.on { background:#5b4a1e; border-color:#ffd24a; }
@@ -223,7 +221,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   #shop .card { padding:4px 2px; max-width:130px; }
   #shop .card .cd, #shop .card .cfj { display:none; }
   #shop .card .cn { font-size:11px; }
-  #log { max-height:56px; }
+  #log { max-height:110px; }
 }
 #bookPanel { width:min(920px,94vw); max-height:90vh; background:#161226; border:2px solid #35294f; border-radius:14px;
   display:flex; flex-direction:column; padding:14px 16px; }
@@ -315,6 +313,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     <div id="bench"></div>
   </div>
   <div id="side">
+    <div class="panel"><h3>🔍 棋子详情（单击棋子查看）</h3><div id="inspect"><div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div></div></div>
     <div class="panel"><h3>🎒 装备（点装备→点棋子穿戴；右键棋子卸下全部装备）</h3><div id="equip"></div></div>
     <div class="panel"><h3>战报</h3><div id="log"></div></div>
   </div>
@@ -1019,7 +1018,8 @@ function clickUnit(t,i){
   if(u){ S.selUid=u.uid; renderBoard(); renderBench(); renderTop(); showInspectFor(t,i); }
 }
 /* ===== 棋子详情面板 ===== */
-function showInspect(u, anchorEl){
+const INSPECT_EMPTY='<div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div>';
+function showInspect(u){
   const d=byId(u.id);
   const items=(u.items||[]).map(k=>ITEMS[k].e+' '+ITEMS[k].n).join('、')||'无';
   $('inspect').innerHTML=`
@@ -1033,25 +1033,14 @@ function showInspect(u, anchorEl){
     <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
     <div class="in-desc">${skillDesc(u)}</div>
     <div class="in-item">🎒 装备：${items}</div>`;
-  $('inspect').classList.remove('hidden');
   S.inspectUid=u.uid;
-  let x=innerWidth/2-136, y=110;
-  if(anchorEl){
-    const r=anchorEl.getBoundingClientRect();
-    x=r.right+8; y=r.top-8;
-    if(x+280>innerWidth) x=r.left-284;      // 右侧放不下→放左侧
-    y=Math.min(Math.max(8,y), innerHeight-330);
-  }
-  $('inspect').style.left=Math.max(8,x)+'px';
-  $('inspect').style.top=Math.max(8,y)+'px';
 }
 function showInspectFor(t,i){
   const u=getAt(t,i);
   if(!u){ hideInspect(); return; }
-  const el=document.querySelector(`#board [data-uid="${u.uid}"], #bench [data-uid="${u.uid}"]`);
-  showInspect(u, el);
+  showInspect(u);
 }
-function hideInspect(){ S.inspectUid=null; const p=$('inspect'); if(p) p.classList.add('hidden'); }
+function hideInspect(){ S.inspectUid=null; $('inspect').innerHTML=INSPECT_EMPTY; }
 
 /* ================= 交互：拖拽 ================= */
 let drag=null;
