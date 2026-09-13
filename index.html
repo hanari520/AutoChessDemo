@@ -79,10 +79,14 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #board .unit.pair, #bench .unit.pair { border-color:#ffd24a; filter:drop-shadow(0 0 4px #ffd24acc); box-shadow:0 0 0 1px #ffd24a55; }
 #board .unit.preview { opacity:.9; pointer-events:none; filter:saturate(.85); }
 .card.solo { border-color:#9aa3c0; box-shadow:0 0 4px #ffffff26; }
-.card.paircard { border-color:#ffd24a; box-shadow:0 0 9px #ffd24a66; }
-.card.chase3 { border-color:#ff8ad8; box-shadow:0 0 10px #ff8ad888; }
-.card.syncard { border-color:#4ac8ff; box-shadow:0 0 7px #4ac8ff55; }
-.card.syntrig { border-color:#8dff9a; box-shadow:0 0 10px #8dff9a88; }
+.card.paircard { border:2px solid #ffd24a !important; box-shadow:0 0 12px #ffd24a88; }
+.card.chase3 { border:2px solid #ff8ad8 !important; box-shadow:0 0 12px #ff8ad8aa; }
+/* 羁绊高亮：整卡加粗描边 + 发光 + 左上角色带，不再只靠文字徽章 */
+.card.syncard { border:2px solid #4ac8ff !important; box-shadow:0 0 12px #4ac8ff77; }
+.card.syntrig { border:2px solid #8dff9a !important; box-shadow:0 0 14px #8dff9aaa; }
+.card.syncard::before, .card.syntrig::before { content:''; position:absolute; inset:0; border-radius:9px; pointer-events:none; }
+.card.syncard::before { background:linear-gradient(180deg,#4ac8ff1f,transparent 55%); }
+.card.syntrig::before { background:linear-gradient(180deg,#8dff9a24,transparent 55%); }
 .card .ctag.cg { color:#8dff9a; }
 .card .ctag.c9 { color:#ffd24a; }
 .card.star3 { border-color:#ffe9a8; box-shadow:0 0 12px #ffd24aaa; }
@@ -114,6 +118,18 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .cost3{background:#7a5bb0;border-color:#b79ae8}
 .cost4{background:#a8762c;border-color:#e6b45a}
 .cost5{background:#8a5a12;border-color:#ffd24a}
+/* ===== 商店卡片按费用着色：左侧色条 + 顶部同色渐变（与棋盘棋子配色一致） ===== */
+.card .costbar { position:absolute; left:0; top:0; bottom:0; width:5px; border-radius:9px 0 0 9px; }
+.card.cost1 .costbar{background:#9db}    .card.cost2 .costbar{background:#7fc9a0}
+.card.cost3 .costbar{background:#b79ae8} .card.cost4 .costbar{background:#e6b45a}
+.card.cost5 .costbar{background:#ffd24a}
+.card.cost1{ border-color:#5d6d8e; background:linear-gradient(180deg,#2b3450,#241e3e 60%); }
+.card.cost2{ border-color:#3f7d5c; background:linear-gradient(180deg,#22402f,#241e3e 60%); }
+.card.cost3{ border-color:#7a5bb0; background:linear-gradient(180deg,#352a52,#241e3e 60%); }
+.card.cost4{ border-color:#a8762c; background:linear-gradient(180deg,#4a3512,#241e3e 60%); }
+.card.cost5{ border-color:#c99a1f; background:linear-gradient(180deg,#5a3d0a,#241e3e 60%); }
+.card.cost4 .cn,.card.cost5 .cn { text-shadow:0 0 6px #ffd24a66; }
+.card .clabel { position:absolute; top:5px; right:7px; font-size:9px; color:#ffffffa0; letter-spacing:.5px; }
 #side { width:300px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex-shrink:0; }
 /* ===== 多多式左侧羁绊竖栏 ===== */
 #synCol { width:136px; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; padding:2px 0; }
@@ -994,6 +1010,7 @@ function renderShop(){
   S.shop.forEach((u,i)=>{
     const c=document.createElement('div');
     c.className='card'+(u?'':' sold');
+    if(u) c.classList.add('cost'+u.cost);   // 按费用着色（1-5 费各自配色，与棋子一致）
     const isPair = u && pairCount(u.id)>=2; // 买到手即凑齐 3 张升星
     const isSolo = u && !isPair && pairCount(u.id)===1;
     const owned3 = u && !isPair && has3star(u.id); // 已有 3★ 同名 → 仍高亮，标记三星达成
@@ -1012,7 +1029,8 @@ function renderShop(){
       (owned2?'<span class="ctag c3">追三!</span>':'')+
       (trig.length?'<span class="ctag cg">✦ '+trig.join(' ')+'</span>':
        (synNames.length?'<span class="ctag">✦ '+synNames.join('/')+'</span>':''));
-    if(u) c.innerHTML=`<div class="cn">${u.name}${badge}</div><div class="cfj">${u.form==='me'?'⚔':'🏹'} ${u.fac}·${u.job} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div><div class="ct">${u.hp}❤ ${u.atk}⚔</div><div class="cs">${u.sk[0]}（${u.sk.length>2?'被动':'主动'}）</div><div class="cd" title="${skillText(u)}">${skillDesc(u).replace('被动：','')}</div><div class="cc">💰${u.cost}</div>`;
+    if(u) c.innerHTML=`<div class="costbar"></div><div class="clabel">${u.cost}费</div>`+
+      `<div class="cn">${u.name}${badge}</div><div class="cfj">${u.form==='me'?'⚔':'🏹'} ${u.fac}·${u.job} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div><div class="ct">${u.hp}❤ ${u.atk}⚔</div><div class="cs">${u.sk[0]}（${u.sk.length>2?'被动':'主动'}）</div><div class="cd" title="${skillText(u)}">${skillDesc(u).replace('被动：','')}</div><div class="cc">💰${u.cost}</div>`;
     c.onclick=()=>buy(i);
     s.appendChild(c);
   });
