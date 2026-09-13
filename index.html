@@ -381,7 +381,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>：胜利掉装备（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
-    ⑤ 拖拽布阵（场上最多 10 人），撑过 25 回合并击败最终魔王即通关
+    ⑤ 拖拽布阵（场上最多 10 人）；<b style="color:#8dff9a">一键上阵优先凑羁绊</b>（按羁绊档位+战力贪心选队）；撑过 25 回合并击败最终魔王即通关
   </p>
   <button id="ovBtn">开始游戏</button>
   <button id="ovBtn2" style="display:none;background:#1e5b2a;color:#8dff9a;">♾ 进入无限模式</button>
@@ -1171,8 +1171,35 @@ function autoDeploy(){
   const d=u=>byId(u.id);
   const isFront=u=>(d(u).job==='守护'||d(u).job==='狂战'||(d(u).form==='me'&&d(u).job!=='刺客'))?1:0;
   const power=u=>Math.pow(u.star||1,2)*u.maxhp+u.atk*(u.star||1)*4;
-  all.sort((a,b)=>power(b)-power(a));
-  const team=all.slice(0,S.lvl);
+  // 队伍羁绊评分：已达成档位大分 + 朝下一档的进度小分（同名棋子按 1 个计，与战斗结算一致）
+  function teamSynScore(team){
+    const cnt={}; const seen=new Set();
+    team.forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id); const dd=byId(u.id);
+      cnt['F:'+dd.fac]=(cnt['F:'+dd.fac]||0)+1;
+      cnt['J:'+dd.job]=(cnt['J:'+dd.job]||0)+1; });
+    let s=0;
+    for(const key in cnt){
+      const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
+      if(!tbl[name]) continue;
+      const needs=tbl[name].need; let prev=0;
+      needs.forEach((nd,i)=>{ const n=cnt[key];
+        if(n>=nd){ s+=5+3*i; prev=nd; }
+        else if(n>prev) s+=(n-prev)*1.2;    // 未达档但有余量：进度分
+      });
+    }
+    return s;
+  }
+  // 贪心选队：每步取「边际羁绊分 + 战力」最高的棋子，直到凑满人口
+  const k=Math.min(S.lvl, all.length);
+  const team=[], pool=[...all];
+  while(team.length<k && pool.length){
+    let best=0, bestSc=-Infinity;
+    pool.forEach((u,idx)=>{
+      const sc=(teamSynScore(team.concat(u))-teamSynScore(team))*300 + power(u)*0.1;
+      if(sc>bestSc){ bestSc=sc; best=idx; }
+    });
+    team.push(pool.splice(best,1)[0]);
+  }
   team.sort((a,b)=>isFront(b)-isFront(a)||b.maxhp-a.maxhp);
   for(let y=4;y<8;y++) for(let x=0;x<8;x++) S.board[y*BOARD_W+x]=null;
   // 分排布阵：坦克/近战前排（第4行居中开始），远程/刺客后排（第5行起）；满了顺延
@@ -1232,7 +1259,7 @@ function genEnemy(){
   const earlyDisc = Math.max(0, 6-r) * 0.015;
   // 无限模式（r>25）成长不封顶：敌方随回合持续变强；普通模式 24 回合封顶
   const capR = S.endless ? 999 : 24;
-  const mul = 0.985 * (1 + Math.min(r-1,capR)*0.052) * dyn - earlyDisc;
+  const mul = 0.985 * (1 + Math.min(r-1,capR)*0.062) * dyn - earlyDisc;
   const used=new Set();
   const comp = compForRound(r);
   const list=[];
