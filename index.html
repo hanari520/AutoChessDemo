@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1c1830">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>虚拟棋战 VirtuaReal Auto Chess</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; --spd:2; }
+.spd-b { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:5px; padding:2px 7px; cursor:pointer; font-size:12px; }
+.spd-b.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
+#topbar { display:flex; align-items:center; gap:14px; padding:8px 16px; background:#1c1830; border-bottom:2px solid #35294f; font-size:15px; flex-shrink:0; flex-wrap:wrap; }
+#topbar b { color:#ffd24a; }
+.tag { background:#2a2344; padding:3px 10px; border-radius:6px; }
+#main { flex:1; display:flex; justify-content:center; padding:10px; gap:20px; overflow:hidden; }
+#boardwrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
+/* 多多式：棋盘上方对手信息横幅 */
+#oppBar { width:494px; max-width:96vw; background:#1c1830; border:1px solid #35294f; border-radius:10px;
+  padding:5px 12px; text-align:center; flex-shrink:0; }
+#oppBar #enemyInfo { font-size:13px; line-height:1.55; }
+#board { display:grid; grid-template-columns:repeat(8,58px); grid-template-rows:repeat(8,58px); gap:2px;
+  background:#221c38; padding:6px; border-radius:10px; border:2px solid #35294f; position:relative; }
+#unitLayer { position:absolute; left:6px; top:6px; width:478px; height:478px; pointer-events:none; z-index:2; }
+.unit.battle-unit { position:absolute; inset:auto; width:50px; height:50px; pointer-events:auto; isolation:isolate;
+  transition:left calc(.45s/var(--spd)) ease, top calc(.45s/var(--spd)) ease, transform calc(.12s/var(--spd)) ease; overflow:visible; }
+.unit.battle-unit.lunge { transform:scale(1.15); }
+.vfx.attached { left:-4px !important; top:-4px !important; width:58px; height:58px; }
+.cell { background:#2a2444; border-radius:6px; position:relative; }
+.cell.enemy-side { background:#3a2430; }
+.cell.drop-hl { background:#5a4a8e; filter:brightness(1.4); }
+.unit { position:absolute; inset:4px; border-radius:6px; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; cursor:grab; font-size:9px; text-align:center; line-height:1.1; overflow:visible;
+  border:2px solid #888; background:#5b6b8c; z-index:2; }
+.unit .nm { font-weight:bold; padding:0 1px; }
+.unit .st { font-size:9px; opacity:.85; }
+.unit .sk { font-size:8px; color:#9fe8ff; }
+.unit .fj { font-size:7px; color:#c8bfe8; letter-spacing:.3px; }
+.unit .its { position:absolute; top:2px; left:3px; font-size:9px; letter-spacing:-2px; z-index:2; }
+.unit.sel { border-color:#ffd24a; box-shadow:0 0 4px #ffd24a88; z-index:3; }
+.unit.ally { border-color:#4aa8ff; }
+.unit.enemy { border-color:#e05555; box-shadow:inset 0 0 0 999px rgba(224,85,85,.30); }
+.unit .side { position:absolute; top:2px; right:3px; font-size:8px; padding:0 3px; border-radius:4px; color:#fff; z-index:2; }
+.unit.ally .side { background:#3b82f6; }
+.unit.enemy .side { background:#e05555; }
+.unit .fz { position:absolute; top:2px; right:22px; font-size:10px; z-index:2; }
+.unit.shielded { box-shadow:0 0 6px 2px #4aa8ff99; }
+.unit .hpbar { position:absolute; bottom:2px; left:4px; right:4px; height:4px; background:#333; border-radius:2px; }
+.unit .hpfill { height:100%; background:#5dd35d; border-radius:2px; transition:width .2s; }
+.unit .mpbar { position:absolute; bottom:7px; left:6px; right:6px; height:3px; background:#333; border-radius:2px; }
+.unit .mpfill { height:100%; background:#4aa8ff; border-radius:2px; transition:width .1s; }
+.unit.enemy .hpfill { background:#e05555; }
+.unit.enemy .mpfill { background:#c77dff; }
+.unit.frozen { filter:brightness(1.3) hue-rotate(40deg); }
+/* 星级进度高亮：单卡=浅微光；对子=金色描边强光（备战席/棋盘） */
+#board .unit.solo, #bench .unit.solo { border-color:#aab3cc; filter:drop-shadow(0 0 2px #ffffff40); }
+#board .unit.pair, #bench .unit.pair { border-color:#ffd24a; filter:drop-shadow(0 0 4px #ffd24acc); box-shadow:0 0 0 1px #ffd24a55; }
+.card.solo { border-color:#9aa3c0; box-shadow:0 0 4px #ffffff26; }
+.card.paircard { border-color:#ffd24a; box-shadow:0 0 9px #ffd24a66; }
+.card .cpair { color:#ffd24a; font-size:10px; font-weight:bold; margin-left:4px; }
+.unit.stunned { animation:stunWob .5s infinite; }
+@keyframes stunWob { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
+.unit.weakened { filter:grayscale(.5) brightness(.85); }
+.unit.slowed { box-shadow:0 0 0 2px #8affd466; }
+.cost1{background:#5b6b8c;border-color:#9db}.cost2{background:#3f7d5c;border-color:#7fc9a0}
+.cost3{background:#7a5bb0;border-color:#b79ae8}
+.cost4{background:#a8762c;border-color:#e6b45a}
+.cost5{background:#8a5a12;border-color:#ffd24a}
+#side { width:300px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex-shrink:0; }
+/* ===== 多多式左侧羁绊竖栏 ===== */
+#synCol { width:136px; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; padding:2px 0; }
+.syn-head { font-size:11px; color:#a99cd0; padding:3px 6px 2px; border-bottom:1px solid #2a2344; margin-bottom:3px; }
+.syn-badge { display:flex; align-items:center; gap:6px; background:#161228; border:1px solid #2a2344; border-left:3px solid #3a3055;
+  border-radius:8px; padding:4px 7px; margin:0 2px 4px; font-size:12px; color:#5e5580; cursor:default; }
+.syn-badge .ico { font-size:14px; filter:grayscale(1); opacity:.55; }
+.syn-badge .cnt { margin-left:auto; font-weight:bold; font-size:11px; white-space:nowrap; }
+.syn-badge.on { color:#d8d2ea; }
+.syn-badge.on .ico { filter:none; opacity:1; }
+.syn-badge.t1 { border-left-color:#c98a4b; background:#231a10; color:#e8cf9a; }
+.syn-badge.t2 { border-left-color:#ffd24a; background:#2b2410; color:#ffe9a8; box-shadow:0 0 6px #ffd24a30; }
+.syn-empty { color:#565073; font-size:11px; padding:4px 6px; }
+/* 羁绊档位点阵（多多式铜/金档点亮） */
+.syn-badge .pips { display:flex; gap:2px; margin-left:5px; }
+.syn-badge .pips i { width:6px; height:6px; border-radius:50%; background:#3a3055; }
+.syn-badge .pips i.on { background:#ffd24a; box-shadow:0 0 4px #ffd24a; }
+.syn-badge.t1 .pips i.on { background:#c98a4b; box-shadow:0 0 4px #c98a4b88; }
+/* ===== 多多式底部玩家信息盒 ===== */
+#shopbar { gap:10px; }
+#playerBox { display:flex; flex-direction:column; gap:5px; width:216px; flex-shrink:0; justify-content:center; }
+#lvlBox { background:#161228; border:1px solid #35294f; border-radius:8px; padding:5px 8px; }
+.lvl-row { display:flex; justify-content:space-between; font-size:12px; color:#cdd6f4; margin-bottom:4px; }
+.xpbar { height:8px; background:#221c38; border-radius:4px; overflow:hidden; border:1px solid #4a3d6e; }
+.xpfill { height:100%; width:0%; background:linear-gradient(90deg,#4aa8ff,#8dd0ff); transition:width .3s; }
+#pbtns { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+#pbtns .btn { font-size:12px; padding:4px 6px; white-space:nowrap; overflow:hidden; }
+#fightBox { display:flex; align-items:center; flex-shrink:0; }
+#fightBox .btn { padding:14px 16px; font-size:16px; line-height:1.25; }
+.panel { background:#1c1830; border:1px solid #35294f; border-radius:10px; padding:10px; }
+.panel h3 { font-size:13px; color:#a99cd0; margin-bottom:8px; }
+#synergy { font-size:12px; }
+#synergy .grp { margin-bottom:4px; }
+#synergy span { display:inline-block; background:#2a2344; border-radius:6px; padding:2px 6px; margin:2px; font-size:11px; }
+#synergy span.on { background:#5b4a1e; color:#ffd24a; }
+#enemyInfo { font-size:13px; color:#ffb0b0; line-height:1.6; }
+#enemyInfo b { color:#ffd24a; }
+#equip { display:flex; flex-wrap:wrap; gap:6px; min-height:34px; }
+.item-chip { background:#2a2344; border:1px solid #4a3d6e; border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; }
+.item-chip.sel { border-color:#ffd24a; background:#5b4a1e; box-shadow:0 0 6px #ffd24a66; }
+#log { font-size:12px; color:#b0a8c8; max-height:130px; overflow-y:auto; line-height:1.7; }
+#shopbar { display:flex; gap:8px; padding:8px 12px; background:#1c1830; border-top:2px solid #35294f; flex-shrink:0; align-items:stretch; }
+#shopbar .btn { align-self:center; white-space:nowrap; flex-shrink:0; }
+.btn.on { background:#5b4a1e; border-color:#ffd24a; }
+/* 多多式：刷新/锁定按钮紧贴商店两侧 */
+#shopbar .btn.shopctl { padding:5px 8px; font-size:12px; line-height:1.35; min-width:58px; text-align:center; }
+#shop { display:flex; gap:8px; flex:1; align-items:stretch; min-width:0; }
+.card { flex:1; max-width:150px; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px;
+  cursor:pointer; text-align:center; transition:transform .1s; position:relative; }
+.card:hover { transform:translateY(-3px); border-color:#ffd24a; }
+.card .cn { font-weight:bold; font-size:14px; }
+.card .cfj { font-size:10px; color:#c8bfe8; }
+.card .ct { font-size:11px; color:#a99cd0; margin:3px 0; }
+.card .cs { font-size:10px; color:#9fe8ff; }
+.card .cd { font-size:10px; color:#9fe8ff; min-height:24px; }
+.card .cc { color:#ffd24a; font-size:12px; }
+.card.sold { opacity:.25; pointer-events:none; }
+#bench { display:grid; grid-template-columns:repeat(8,58px); gap:2px; padding:6px; background:#181428;
+  border-top:1px solid #2a2344; border-radius:10px; flex-shrink:0; }
+.bslot { width:58px; height:58px; background:#221c38; border:1px dashed #4a3d6e; border-radius:6px; position:relative; }
+.bslot .unit { inset:3px; }
+.btn { background:#5b4a1e; color:#ffd24a; border:1px solid #ffd24a; border-radius:8px; padding:6px 14px;
+  cursor:pointer; font-size:14px; font-weight:bold; }
+.btn:hover { background:#7a6528; }
+.btn.off { background:#2a2344; color:#8a93c4; border-color:#4a3d6e; }
+.btn:disabled { opacity:.4; cursor:default; }
+#overlay { position:fixed; inset:0; background:#0b0912e0; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:14px; z-index:10; text-align:center; }
+#overlay.hidden { display:none; }
+#overlay h1 { font-size:36px; color:#ffd24a; }
+#overlay button { padding:12px 40px; font-size:18px; border:none; border-radius:24px; background:#ffd24a; color:#223; font-weight:bold; cursor:pointer; }
+.fight-btn-row { display:flex; gap:10px; margin-top:6px; }
+.dmg { position:absolute; color:#ff7b7b; font-weight:bold; font-size:13px; pointer-events:none; z-index:9;
+  animation:fly 1s ease-out forwards; }
+.dmg.heal { color:#8dff9a; }
+.dmg.cast { color:#4aa8ff; font-size:12px; }
+.dmg.poison { color:#9dff6b; font-size:11px; }
+@keyframes fly { to { transform:translateY(-24px); opacity:0; } }
+#dragGhost { position:fixed; z-index:99; pointer-events:none; opacity:.85; width:50px; height:50px; display:none; }
+#dragGhost .unit { position:relative; inset:0; width:50px; height:50px; }
+/* ===== 图鉴 ===== */
+#bookModal { position:fixed; inset:0; background:#0b0912e6; z-index:9; display:flex; align-items:center; justify-content:center; }
+#bookModal.hidden { display:none; }
+/* ===== 存档恢复 / 战绩 / 移动端 ===== */
+#resumeOv { position:fixed; inset:0; background:#0b0912ee; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:18px; z-index:60; text-align:center; padding:20px; }
+#resumeOv.hidden { display:none; }
+#resumeOv h1 { font-size:32px; color:#ffd24a; }
+#resumeOv button { padding:12px 32px; font-size:17px; border:none; border-radius:22px;
+  background:#ffd24a; color:#223; font-weight:bold; cursor:pointer; }
+#resumeOv button.ghost { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; }
+#histModal { position:fixed; inset:0; background:#0b0912e0; display:flex;
+  align-items:center; justify-content:center; z-index:55; }
+#histModal.hidden { display:none; }
+#histPanel { background:#1c1830; border:1px solid #35294f; border-radius:14px; padding:18px;
+  width:min(92vw,470px); max-height:80vh; overflow-y:auto; }
+#histPanel h2 { color:#ffd24a; font-size:17px; }
+.hrow { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:13px;
+  padding:8px 4px; border-bottom:1px solid #2a2344; color:#cdd6f4; }
+@media (max-width:880px){
+  #main { flex-direction:column; align-items:center; overflow-y:auto; padding:6px; gap:8px; }
+  #side { width:min(96vw,520px); }
+  #synCol { width:min(96vw,520px); flex-direction:row; flex-wrap:wrap; gap:2px; }
+  #synCol .syn-head { display:none; }
+  #synCol .syn-badge { margin:1px; }
+  #playerBox { width:100%; }
+  #pbtns { grid-template-columns:repeat(3,1fr); }
+  #topbar { gap:8px; padding:6px 8px; font-size:13px; }
+  .fight-btn-row { display:flex; flex-wrap:wrap; gap:6px; }
+  #overlay h1 { font-size:26px; }
+  #shop .card { padding:6px 4px; }
+  #shop .card .cd { display:none; }
+}
+/* 手机横屏：左侧棋盘 + 右侧信息栏，顶栏与商店压缩，板凳席移到棋盘右侧竖排 */
+@media (orientation:landscape) and (max-height:540px){
+  #main { flex-direction:row; justify-content:center; padding:4px; gap:8px; overflow:hidden; }
+  #boardwrap { flex-direction:row; align-items:flex-start; gap:6px; }
+  #bench { grid-template-columns:58px; grid-template-rows:repeat(8,58px); border-top:none; border-left:1px solid #2a2344; padding:4px; }
+  #side { width:262px; flex-shrink:0; overflow-y:auto; }
+  #synCol { width:96px; }
+  .syn-badge { font-size:10px; padding:3px 4px; gap:3px; }
+  .syn-badge .ico { font-size:12px; }
+  #playerBox { width:190px; }
+  #side .panel { padding:6px 8px; }
+  #topbar { gap:6px; padding:4px 8px; font-size:12px; flex-wrap:nowrap; }
+  #topbar .tag { white-space:nowrap; }
+  .btn { padding:5px 8px; font-size:12px; }
+  .fight-btn-row { display:flex; flex-wrap:wrap; gap:4px; }
+  #shopbar { padding:4px 8px; gap:4px; }
+  #shopbar .btn { padding:4px 8px; font-size:12px; }
+  #shop .card { padding:4px 2px; max-width:130px; }
+  #shop .card .cd, #shop .card .cfj { display:none; }
+  #shop .card .cn { font-size:11px; }
+  #log { max-height:56px; }
+}
+#bookPanel { width:min(920px,94vw); max-height:90vh; background:#161226; border:2px solid #35294f; border-radius:14px;
+  display:flex; flex-direction:column; padding:14px 16px; }
+#bookHead { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+#bookHead h2 { font-size:18px; color:#ffd24a; }
+#bookFilters { border-bottom:1px solid #2a2344; padding-bottom:8px; margin-bottom:10px; }
+.bf-row { display:flex; align-items:flex-start; gap:8px; margin:4px 0; }
+.bf-label { font-size:12px; color:#a99cd0; width:32px; flex-shrink:0; padding-top:5px; }
+.bf-chips { display:flex; flex-wrap:wrap; gap:5px; }
+.bf-chip { background:#2a2344; border:1px solid #4a3d6e; border-radius:6px; padding:3px 9px; font-size:12px; cursor:pointer; }
+.bf-chip:hover { border-color:#ffd24a; }
+.bf-chip.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
+.bf-chip.all.on { background:#2f4a1e; color:#b8f0a0; border-color:#b8f0a0; }
+#bookGrid { overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; padding-right:4px; }
+.bcard { background:#241e3e; border:1px solid #4a3d6e; border-left-width:4px; border-radius:10px; padding:8px 10px; font-size:12px; line-height:1.5; }
+.bcard .bn { font-weight:bold; font-size:13px; display:flex; justify-content:space-between; align-items:center; }
+.bcard .bc { font-size:11px; color:#ffd24a; }
+.bcard .bf2 { color:#c8bfe8; font-size:11px; }
+.bcard .bs { color:#9fe8ff; font-size:11px; margin-top:2px; }
+.bcard .bp { color:#8dff9a; font-size:10px; }
+/* ===== 战斗技能特效 ===== */
+.vfx { position:absolute; width:58px; height:58px; pointer-events:none; z-index:8;
+  display:flex; align-items:center; justify-content:center; }
+.vfx.ring { border:3px solid #ffd24a; border-radius:50%; animation:ringPop calc(.85s/var(--spd)) ease-out forwards; }
+.vfx.ring.heal { border-color:#8dff9a; }
+.vfx.ring.frost { border-color:#9fe8ff; }
+.vfx.ring.shield { border-color:#4aa8ff; }
+.vfx.ring.drain { border-color:#c77dff; }
+.vfx.boom { border-radius:50%; background:radial-gradient(circle,#ffce5499 20%,#ff7b3344 55%,transparent 75%);
+  animation:boom calc(.65s/var(--spd)) ease-out forwards; }
+.vfx.flash { background:radial-gradient(circle,#ffffffcc 15%,#ffffff44 45%,transparent 70%); animation:boom calc(.55s/var(--spd)) forwards; }
+.vfx.beam { height:5px; border-radius:3px; transform-origin:0 50%; opacity:.95;
+  animation:beamFade calc(.45s/var(--spd)) forwards; box-shadow:0 0 8px 1px currentColor; }
+.vfx.proj { width:9px; height:9px; border-radius:50%;
+  transition:left calc(.4s/var(--spd)) linear, top calc(.4s/var(--spd)) linear; z-index:7; }
+.vfx.slash { border-radius:50%;
+  background:radial-gradient(circle,#ffffffcc 8%,#ffffff44 38%,transparent 62%);
+  animation:boom calc(.4s/var(--spd)) ease-out forwards; }
+/* ===== 战斗结果横幅 ===== */
+.result-banner { position:absolute; inset:0; z-index:12; display:flex; align-items:center; justify-content:center;
+  font-size:34px; font-weight:bold; pointer-events:none; overflow:hidden; border-radius:8px;
+  animation:bannerPop .5s ease-out; }
+.result-banner.win { color:#ffd24a; text-shadow:0 0 18px #ffd24a,0 2px 4px #000;
+  background:linear-gradient(180deg,#ffd24a22,transparent); }
+.result-banner.lose { color:#ff7b7b; text-shadow:0 0 18px #ff5a5a,0 2px 4px #000;
+  background:linear-gradient(180deg,#ff5a5a22,transparent); animation:bannerPop .5s ease-out, shakeB .35s .25s 2; }
+@keyframes bannerPop { from{transform:scale(.3);opacity:0} 60%{transform:scale(1.12)} to{transform:scale(1);opacity:1} }
+@keyframes shakeB { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.confetti { position:absolute; top:-12px; width:7px; height:11px; animation:confFall linear forwards; }
+@keyframes confFall { to { transform:translateY(520px) rotate(540deg); opacity:.65; } }
+@keyframes ringPop { from{transform:scale(.25);opacity:1} to{transform:scale(1.5);opacity:0} }
+@keyframes boom { from{transform:scale(.2);opacity:1} to{transform:scale(1.9);opacity:0} }
+@keyframes beamFade { 0%{opacity:.95} 100%{opacity:0} }
+.cell.shake .unit { animation:cellShake .35s; }
+@keyframes cellShake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-3px,1px)}
+  50%{transform:translate(3px,-1px)} 75%{transform:translate(-2px,0)} }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <span class="tag">回合 <b id="round">1</b><span id="roundMax">/25</span></span>
+  <span class="tag">❤️ <b id="hp">32</b></span>
+  <span class="tag" title="利息：每10金+1，上限5。下回合利息预览见绿色数字">💰 <b id="gold">10</b><span id="interest" style="font-size:11px;color:#8dff9a;margin-left:3px"></span></span>
+  <span class="tag">人口 <b id="pop">0</b>/<b id="popMax">4</b></span>
+  <span class="tag" title="连胜/连败 3→+1金、5→+2金、7+→+3金">🔥 连胜 <b id="streak">0</b></span>
+  <div class="fight-btn-row">
+    <button class="btn" id="histBtn">📜 战绩</button>
+    <button class="btn" id="bookBtn">📖 图鉴</button>
+    <button class="btn" id="resetBtn" title="放弃当前进度，重新开一局">🔄 重开</button>
+    <span class="tag" style="display:flex;gap:4px;align-items:center;padding:3px 8px">⏩
+      <button class="spd-b" data-s="1">1×</button>
+      <button class="spd-b" data-s="1.5">1.5×</button>
+      <button class="spd-b on" data-s="2">2×</button>
+    </span>
+  </div>
+</div>
+<div id="main">
+  <div id="synCol">
+    <div class="syn-head">🔗 阵营羁绊</div>
+    <div id="synFac"></div>
+    <div class="syn-head">⚔ 职业羁绊</div>
+    <div id="synJob"></div>
+  </div>
+  <div id="boardwrap">
+    <div id="oppBar"><div id="enemyInfo"></div></div>
+    <div id="board"></div>
+    <div id="bench"></div>
+  </div>
+  <div id="side">
+    <div class="panel"><h3>🎒 装备（点装备→点棋子穿戴；右键棋子卸下全部装备）</h3><div id="equip"></div></div>
+    <div class="panel"><h3>战报</h3><div id="log"></div></div>
+  </div>
+</div>
+<div id="shopbar">
+  <div id="playerBox">
+    <div id="lvlBox">
+      <div class="lvl-row"><span>Lv.<b id="lvlNum">4</b>（人口 <b id="pop2">0</b>/<b id="popMax2">4</b>）</span><span>💰 <b id="gold2">10</b></span></div>
+      <div class="lvl-row" style="margin-bottom:4px"><span id="xpText">经验 0/6</span><span style="color:#8dff9a;font-size:11px" id="interest2">利息 +1</span></div>
+      <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
+    </div>
+    <div id="pbtns">
+      <button class="btn" id="lvlBtn">买经验 (F) +5经验 -5💰</button>
+      <button class="btn" id="deployBtn" title="自动把最强的棋子按坦克前排、输出后排布阵（A）">⚡ 一键上阵</button>
+      <button class="btn" id="sellBtn" title="先点击棋子选中，再点此出售（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售</button>
+      <button class="btn" id="shopBtn" title="打开/关闭商店">🛒 商店</button>
+    </div>
+  </div>
+  <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄<br>刷新<br>-2💰</button>
+  <div id="shop"></div>
+  <button class="btn shopctl" id="lockBtn" title="锁定当前商店，下回合不自动刷新（L）">🔓<br>锁定<br>(L)</button>
+  <div id="fightBox">
+    <button class="btn" id="fightBtn" style="background:#1e5b2a;color:#8dff9a;border-color:#8dff9a;">⚔ 开战<br>(空格)</button>
+  </div>
+</div>
+<div id="dragGhost"></div>
+<div id="histModal" class="hidden">
+  <div id="histPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2>📜 历史战绩（最近 20 局）</h2>
+      <button class="btn" id="histClose">✕ 关闭</button>
+    </div>
+    <div id="histList"></div>
+  </div>
+</div>
+<div id="bookModal" class="hidden">
+  <div id="bookPanel">
+    <div id="bookHead">
+      <h2>📖 棋子图鉴 <span id="bookCount" style="font-size:13px;color:#a99cd0"></span></h2>
+      <button class="btn" id="bookClose">✕ 关闭</button>
+    </div>
+    <div id="bookFilters">
+      <div class="bf-row"><span class="bf-label">费用</span><div class="bf-chips" data-dim="cost"></div></div>
+      <div class="bf-row"><span class="bf-label">阵营</span><div class="bf-chips" data-dim="fac"></div></div>
+      <div class="bf-row"><span class="bf-label">职业</span><div class="bf-chips" data-dim="job"></div></div>
+    </div>
+    <div id="bookGrid"></div>
+  </div>
+</div>
+<div id="resumeOv" class="hidden">
+  <h1>虚拟棋战 🎲</h1>
+  <p id="resumeInfo" style="color:#cdd6f4;line-height:1.8"></p>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
+    <button id="resumeYes">▶ 继续上一局</button>
+    <button id="resumeNo" class="ghost">🆕 新开一局</button>
+  </div>
+</div>
+<div id="overlay">
+  <h1 id="ovTitle">虚拟棋战 🎲</h1>
+  <p id="ovText" style="max-width:520px;line-height:1.8;color:#cdd6f4">
+    多多自走棋式单机自动战斗（VirtuaReal + P-SP · 46 人 · 限量卡池 · 25 回合）<br>
+    ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +5 经验（每回合自然 +2，升级更快凑人口）；卖棋 1★原价、合成折价<br>
+    ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2<br>
+    ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>：胜利掉装备（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
+    ④ 战斗数值（多多官方）：全棋子 100 蓝开局清零，攻击回蓝 =伤害÷2.5（法师系上限 20、其他 10），受击回蓝 =伤害 10%~20%（上限 25~50）；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
+    ⑤ 拖拽布阵（场上最多 10 人），撑过 25 回合并击败最终魔王即通关
+  </p>
+  <button id="ovBtn">开始游戏</button>
+  <button id="ovBtn2" style="display:none;background:#1e5b2a;color:#8dff9a;">♾ 进入无限模式</button>
+</div>
+<script>
+/* ================= 名单：46 人（VirtuaReal 38 + P-SP 8，按 2026-09-12 修改建议重编） =================
+   fac 阵营(12) / job 职业(10) / sk [技能名, 原型]——多多自走棋式：绝大多数为回蓝主动技，仅 3 个被动（破盾/格挡/吸血） */
+const UNITS = [
+  // ---------- 1 费（8 人 × 50 张） ----------
+  {id:'ein',    name:'艾因',        cost:1, fac:'魔道',    job:'守护', hp:84,  atk:6,  rng:1, spd:0.8, sk:['魔导结界','tauntshield']},
+  {id:'kouichi',name:'光一',        cost:1, fac:'工造',    job:'狂战', hp:58,  atk:10, rng:1, spd:1.1, sk:['滑板切入','dash']},
+  {id:'yua',    name:'悠亚',        cost:1, fac:'星际',    job:'法师', hp:44,  atk:12, rng:3, spd:0.7, sk:['记忆篡改','hex']},
+  {id:'goutan', name:'勾檀',        cost:1, fac:'毛茸乐园', job:'守护', hp:82,  atk:6,  rng:1, spd:0.8, sk:['忠犬护主','guard']},
+  {id:'yujiu',  name:'羽啾',        cost:1, fac:'毛茸乐园', job:'游侠', hp:40,  atk:10, rng:4, spd:1.25,sk:['天线锁定','shred']},
+  {id:'songlv', name:'小松绿',      cost:1, fac:'森之国',  job:'狂战', hp:58,  atk:10, rng:1, spd:1.05,sk:['盘根重锤','slam']},
+  {id:'likou',  name:'莉蔻',        cost:1, fac:'学园',    job:'医者', hp:44,  atk:10, rng:3, spd:0.9, sk:['救急手册','heal']},
+  {id:'agari',  name:'东爱璃',      cost:1, fac:'P-SP',    job:'偶像', hp:50,  atk:9,  rng:3, spd:0.9, sk:['四十八人应援','aheal']},
+  // ---------- 2 费（10 人 × 40 张） ----------
+  {id:'suiji',  name:'岁己Sui',     cost:2, fac:'森之国',  job:'歌势', hp:48,  atk:10, rng:3, spd:0.9, sk:['十小时续航','manafeed']},
+  {id:'kanban', name:'栞栞',        cost:2, fac:'毛茸乐园', job:'守护', hp:92,  atk:6,  rng:1, spd:0.8, sk:['海獭硬壳','shell']},
+  {id:'zhouyi', name:'轴伊',        cost:2, fac:'夜幕',    job:'刀客', hp:55,  atk:11, rng:1, spd:1.1, sk:['破盾之刃','shieldbane','passive']},
+  {id:'yuji',   name:'雨纪',        cost:2, fac:'深海',    job:'游侠', hp:46,  atk:10, rng:4, spd:1.2, sk:['雨幕庇护','block','passive']},
+  {id:'tiandou',name:'恬豆',        cost:2, fac:'四禧丸子', job:'歌势', hp:52,  atk:10, rng:3, spd:0.9, sk:['点心投喂','heal']},
+  {id:'aza',    name:'阿萨Aza',     cost:2, fac:'音律',    job:'歌势', hp:50,  atk:10, rng:3, spd:0.9, sk:['节拍共鸣','aheal']},
+  {id:'pako',   name:'帕可',        cost:2, fac:'学园',    job:'医者', hp:50,  atk:10, rng:3, spd:0.9, sk:['善意收集','heal']},
+  {id:'zhijin', name:'枝堇',        cost:2, fac:'花语',    job:'刺客', hp:52,  atk:12, rng:1, spd:1.2, sk:['紫藤突刺','dash']},
+  {id:'sishi',  name:'四时小路',    cost:2, fac:'音律',    job:'游侠', hp:46,  atk:11, rng:4, spd:1.2, sk:['四季轮舞','volley']},
+  {id:'sumi',   name:'礼墨',        cost:2, fac:'P-SP',    job:'守护', hp:90,  atk:6,  rng:1, spd:0.8, sk:['墨龙结界','teamshield']},
+  // ---------- 3 费（10 人 × 30 张） ----------
+  {id:'yukie',  name:'桃濑雪绘',    cost:3, fac:'工造',    job:'刀客', hp:62,  atk:11, rng:1, spd:1.05,sk:['上勾拳连段','cleave']},
+  {id:'miting', name:'米汀',        cost:3, fac:'魔道',    job:'咒术', hp:46,  atk:16, rng:3, spd:0.7, sk:['侦探的看破','sunder']},
+  {id:'xuezhu', name:'雪烛',        cost:3, fac:'夜幕',    job:'法师', hp:44,  atk:15, rng:3, spd:0.7, sk:['奇门冰封','frost']},
+  {id:'zeyin',  name:'泽音',        cost:3, fac:'深海',    job:'医者', hp:52,  atk:12, rng:3, spd:0.9, sk:['泽畔歌声','aheal']},
+  {id:'sanli',  name:'三理',        cost:3, fac:'音律',    job:'偶像', hp:48,  atk:15, rng:3, spd:0.75,sk:['梦境三重奏','chain']},
+  {id:'diansu', name:'点酥',        cost:3, fac:'魔道',    job:'咒术', hp:48,  atk:16, rng:3, spd:0.7, sk:['邪修符咒','curse']},
+  {id:'lianshiye',name:'恋诗夜',    cost:3, fac:'夜幕',    job:'法师', hp:44,  atk:15, rng:3, spd:0.7, sk:['失忆挽歌','silence']},
+  {id:'huize',  name:'灰泽满',      cost:3, fac:'深海',    job:'咒术', hp:48,  atk:16, rng:3, spd:0.7, sk:['果冻封印','curse']},
+  {id:'shengge',name:'笙歌',        cost:3, fac:'P-SP',    job:'歌势', hp:50,  atk:12, rng:3, spd:0.9, sk:['笙歌净化','cleanse']},
+  {id:'shadow', name:'李豆沙',      cost:3, fac:'P-SP',    job:'刺客', hp:50,  atk:13, rng:1, spd:1.3, sk:['熊猫跃袭','dash']},
+  // ---------- 4 费（10 人 × 20 张） ----------
+  {id:'miyue',  name:'弥月',        cost:4, fac:'夜幕',    job:'刀客', hp:60,  atk:12, rng:1, spd:1.1, sk:['月影斩','dash']},
+  {id:'huali',  name:'花礼',        cost:4, fac:'花语',    job:'偶像', hp:52,  atk:11, rng:3, spd:0.9, sk:['小花的祝福','heal']},
+  {id:'youyu',  name:'柚雨',        cost:4, fac:'深海',    job:'刀客', hp:60,  atk:13, rng:1, spd:1.1, sk:['幽魂斩','purebolt']},
+  {id:'quanrong',name:'犬绒',       cost:4, fac:'毛茸乐园', job:'守护', hp:100, atk:8,  rng:1, spd:0.8, sk:['小狗硬壳','shell']},
+  {id:'ruiya',  name:'瑞娅',        cost:4, fac:'星际',    job:'法师', hp:46,  atk:16, rng:3, spd:0.7, sk:['时空禁锢','frost']},
+  {id:'mumu',   name:'沐霂',        cost:4, fac:'四禧丸子', job:'偶像', hp:54,  atk:12, rng:3, spd:0.9, sk:['东风润物','heal']},
+  {id:'kroya',  name:'克罗雅',      cost:4, fac:'学园',    job:'法师', hp:46,  atk:16, rng:3, spd:0.7, sk:['混沌裂界','fireball']},
+  {id:'shiliu', name:'十六萤',      cost:4, fac:'森之国',  job:'刺客', hp:50,  atk:13, rng:1, spd:1.2, sk:['浣熊洗劫','break']},
+  {id:'seki',   name:'星汐',        cost:4, fac:'P-SP',    job:'咒术', hp:46,  atk:16, rng:3, spd:0.7, sk:['星蚀灼烧','burn']},
+  {id:'haruka', name:'白神遥',      cost:4, fac:'P-SP',    job:'刀客', hp:58,  atk:12, rng:1, spd:1.1, sk:['白刃拍击','cleave']},
+  // ---------- 5 费（8 人 × 10 张） ----------
+  {id:'nana7mi',name:'七海Nana7mi', cost:5, fac:'深海',    job:'刀客', hp:62,  atk:12, rng:1, spd:1.05,sk:['鲨皇旋流','cleave']},
+  {id:'liAn',   name:'梨安',        cost:5, fac:'四禧丸子', job:'法师', hp:48,  atk:17, rng:3, spd:0.7, sk:['海豚安魂曲','massfreeze']},
+  {id:'youyi',  name:'又一',        cost:5, fac:'四禧丸子', job:'刺客', hp:58,  atk:13, rng:1, spd:1.15,sk:['一心同体','drain','passive']},
+  {id:'azi',    name:'阿梓',        cost:5, fac:'工造',    job:'歌势', hp:52,  atk:15, rng:3, spd:1.0, sk:['高音震魂','massstun']},
+  {id:'taodai', name:'桃代',        cost:5, fac:'花语',    job:'守护', hp:96,  atk:8,  rng:1, spd:0.8, sk:['桃香结界','bulwark']},
+  {id:'miki',   name:'弥希',        cost:5, fac:'星际',    job:'医者', hp:48,  atk:14, rng:3, spd:0.9, sk:['星海庇护','heal']},
+  {id:'rei',    name:'病院坂灵',    cost:5, fac:'P-SP',    job:'法师', hp:47,  atk:15, rng:3, spd:0.7, sk:['灵界之门','masssilence']},
+  {id:'rinco',  name:'秋凛子',      cost:5, fac:'P-SP',    job:'狂战', hp:62,  atk:13, rng:1, spd:1.1, sk:['神社拉闸','cleave']},
+];
+/* ===== 攻击形式：近战(me)/远程(rg) × 物理(phys)/法术(magic) =====
+   职业默认：刀客/守护/狂战/刺客=近战物理，游侠=远程物理，法师/咒术/歌势/医者/偶像=远程法术 */
+const MELEE_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco']);
+const PHYS_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco','yuji','yujiu','sishi']);
+UNITS.forEach(u=>{ u.form = MELEE_IDS.has(u.id)?'me':'rg'; u.dtype = PHYS_IDS.has(u.id)?'phys':'magic'; });
+/* ===== 限量共享卡池（多多官方）：1费50张 / 2费40张 / 3费30张 / 4费20张 / 5费10张 ===== */
+const POOL_COPIES = {1:50, 2:40, 3:30, 4:20, 5:10};
+/* ===== 个体差异：同费用同职业的棋子也有攻血区别（按 ID 确定性生成） ===== */
+function uhash(id,seed){ let h=seed; for(const ch of id) h=(h*31+ch.charCodeAt(0))>>>0; return h; }
+/* ===== 费用强度基准：费用越高基础越强 ===== */
+const COST_MULT={1:1, 2:1.18, 3:1.42, 4:1.72, 5:2.1};
+/* ===== 升星倍率：低费升星收益更高（2★=M¹，3★=M²） ===== */
+const STAR_M={1:1.9, 2:1.8, 3:1.7, 4:1.6, 5:1.5};
+/* ===== 升星技能倍率：低费升星技能收益更高（配合面板倍率形成反打资本） ===== */
+const SKILL_STAR_M={1:1.30, 2:1.25, 3:1.20, 4:1.15, 5:1.12};
+UNITS.forEach(u=>{
+  u.hp=Math.round(u.hp*COST_MULT[u.cost]);
+  u.atk=Math.round(u.atk*COST_MULT[u.cost]);
+});
+UNITS.forEach(u=>{
+  u.hp=Math.round(u.hp*(0.9+(uhash(u.id,7)%5)*0.05));    // 血量 0.90~1.10
+  u.atk=Math.round(u.atk*(0.88+(uhash(u.id,13)%5)*0.06)); // 攻击 0.88~1.12
+});
+/* ===== 抗性分层（多多自走棋式）：前排高护甲中魔抗、后排低护甲中魔抗；
+   护甲走官方线性边际递减公式，魔抗走百分比乘算 ===== */
+const JOB_AR = {'守护':20,'刀客':13,'狂战':13,'刺客':8,'游侠':5,'偶像':5,'法师':3,'咒术':4,'歌势':4,'医者':4};
+const JOB_MR = {'守护':.10,'刀客':.05,'狂战':.05,'刺客':0,'游侠':.10,'偶像':.10,'法师':.15,'咒术':.15,'歌势':.15,'医者':.15};
+UNITS.forEach(u=>{
+  const jit = 0.85 + (uhash(u.id,17)%4)*0.1;   // ±15% 个体差异
+  u.ar = Math.round((JOB_AR[u.job]||5) * jit);
+  u.mr = Math.round((JOB_MR[u.job]||0) * jit * 100) / 100;   // 魔抗为百分比小数
+});
+/* 技能系数个体化：同费用同模板的成员均匀分配互不相同的偏移（组内必然有区分） */
+const skGroups={};
+UNITS.forEach(u=>{ const k=u.cost+'|'+u.sk[1]; (skGroups[k]=skGroups[k]||[]).push(u); });
+Object.values(skGroups).forEach(members=>{
+  const sorted=[...members].sort((a,b)=>uhash(a.id,31)-uhash(b.id,31));
+  const n=sorted.length;
+  sorted.forEach((u,i)=>{
+    const off = n===1 ? 0 : (-0.06 + 0.12*i/(n-1)); // -6% ~ +6% 均匀铺开
+    u.skc = 0.82+0.10*u.cost + off; // 费用曲线拉开：1费0.92 → 5费1.32
+  });
+});
+/* ===== 13 阵营羁绊（分级强化：need 数组为各档人数，desc 对应各档效果） ===== */
+const FACTIONS = {
+  '深海':    {need:[2,4], desc:['全队每秒回复 1.5 生命','每秒回复 3 生命，深海棋子生命 +15%']},
+  '星际':    {need:[2,3], desc:['法师与游侠攻击 +15%','法师与游侠攻击 +25%，攻速 +10%']},
+  '毛茸乐园': {need:[2,3], desc:['全队生命 +10%','全队生命 +20%，每秒回复 1.5 生命']},
+  '音律':    {need:[2,3], desc:['歌势与医者治疗效果 +25%','治疗效果 +50%']},
+  '四禧丸子': {need:[3,4], desc:['全队攻击 +12%，每秒回复 1.5 生命','全员合体：全队攻击 +20%，团员额外 +15% 攻击']},
+  '学园':    {need:[2,3], desc:['全队攻速 +12%','攻速 +20%，学园棋子攻击 +15%']},
+  '夜幕':    {need:[2,3], desc:['夜幕棋子攻击 +18%','夜幕棋子攻击 +30%，全队受到伤害 -10%']},
+  '花语':    {need:[2,3], desc:['全队生命 +8%，每秒回复 1 生命','全队生命 +15%，每秒回复 2 生命']},
+  '魔道':    {need:[2,3], desc:['技能伤害 +20%','技能伤害 +40%']},
+  '森之国':  {need:[2,3], desc:['全队生命 +12%','全队生命 +22%，每秒回复 1 生命']},
+  '工造':    {need:[2,3], desc:['全队攻速 +10%，获得 10% 护盾','攻速 +18%，护盾 20%，工造棋子攻击 +15%']},
+  'P-SP':    {need:[3,6], desc:['P-SP 棋子攻击 +15%，全队每秒回复 1 生命','P-SP 棋子攻击 +30%，全队每秒回复 2 生命']},
+};
+/* ===== 10 职业羁绊（分级强化） ===== */
+const CLASSES = {
+  '刀客': {need:[2,4], desc:['刀客攻击 +20%','刀客攻击 +35%']},
+  '守护': {need:[2,4], desc:['全队生命 +10%','全队生命 +20%']},
+  '歌势': {need:[2,4], desc:['全队每秒回复 2 生命','全队每秒回复 4 生命']},
+  '游侠': {need:[2,3], desc:['游侠攻速 +40%','游侠攻速 +70%']},
+  '法师': {need:[2,4], desc:['技能伤害 +30%','技能伤害 +60%']},
+  '咒术': {need:[2,4], desc:['咒术攻击附加毒伤（3 秒共 6% 目标最大生命）','毒伤翻倍（3 秒共 12%）']},
+  '刺客': {need:[2,4], desc:['刺客攻击 +15%，优先攻击残血','刺客攻击 +30%，优先攻击残血']},
+  '狂战': {need:[2,3], desc:['狂战吸血 15%','狂战吸血 30%']},
+  '医者': {need:[2,4], desc:['开战时生命最低的队友获得 20% 护盾','护盾 35%，全队每秒回复 1 生命']},
+  '偶像': {need:[2,4], desc:['全队攻击 +8%','全队攻击 +16%']},
+};
+/* 技能效果按费用分级增强：1费×0.92 → 3费×1.12 → 5费×1.32 */
+const skillCoef=c=>0.82+0.10*c;
+const P=(v,k)=>Math.round(v*k); // 百分比按 1% 取整（保证个体区分度）
+/* 技能效果说明（数值随费用系数 k 与个体变体 sv 变化；显示基数=施法结算倍率×100） */
+const SKILL_INFO = {
+  cleave: k=>`对周围 1 格内所有敌人造成 ${P(150,k)}% 攻击伤害，并将其击退 1 格`,
+  dash: k=>`瞬步到最远的敌人身边，对其造成 ${P(200,k)}% 攻击伤害`,
+  heal: (k,sv)=> sv&&sv.healN===2 ? `治疗生命比例最低的两名队友，各回复 ${P(130,k)}% 攻击生命` : `治疗生命比例最低的队友，回复 ${P(180,k)}% 攻击生命`,
+  aheal: k=>`治疗全体队友，每人回复 ${P(90,k)}% 攻击生命`,
+  rapid: k=>'接下来 3 次普通攻击伤害翻倍',
+  volley: k=>`对目标及其相邻敌人各造成 ${P(120,k)}% 攻击伤害`,
+  fireball: k=>`对最近的敌人造成 ${P(250,k)}% 攻击伤害`,
+  frost: k=>`对最近的敌人造成 ${P(150,k)}% 攻击伤害，并冻结 1.5 秒`,
+  break: k=>`对最近的敌人造成 ${P(130,k)}% 攻击伤害，移除其全部护盾，并使其 3 秒内无法获得护盾`,
+  slam: k=>`对周围 1 格内所有敌人造成 ${P(120,k)}% 攻击伤害，并击飞 0.8 秒`,
+  curse: k=>`对最近的敌人造成 ${P(100,k)}% 攻击伤害，并使其攻击力降低 30%，持续 4 秒`,
+  burn: k=>`对最近的敌人造成 ${P(150,k)}% 攻击伤害，并烧毁其 30 点法力`,
+  massstun: k=>`对所有敌人造成 ${P(100,k)}% 攻击伤害，并眩晕 1 秒`,
+  massfreeze: k=>`对所有敌人造成 ${P(80,k)}% 攻击伤害，并冻结 1 秒`,
+  tauntshield: (k,sv)=>`获得 ${Math.round((sv&&sv.shieldPct||.35)*100)}% 最大生命护盾，并嘲讽 ${sv&&sv.tauntT||2} 秒（强制敌人攻击自己）`,
+  guard: (k,sv)=>`为生命比例最低的队友附加 ${Math.round((sv&&sv.allyShield||.3)*100)}% 护盾，自身获得 ${Math.round((sv&&sv.selfShield||.2)*100)}% 护盾并嘲讽 ${sv&&sv.tauntT||1.5} 秒`,
+  manafeed: (k,sv)=>`全体队友回复 ${sv&&sv.manaAmt||25} 点法力，并治疗 ${P(50,k)}% 攻击生命`,
+  shell: (k,sv)=>{ let s=`获得 ${Math.round((sv&&sv.shellPct||.35)*100)}% 最大生命护盾`;
+    if(sv&&sv.blockCt) s+=`，${sv.blockT||4} 秒内 ${Math.round(sv.blockCt*100)}% 概率格挡（伤害减半）`;
+    if(sv&&sv.thornsB) s+=`，${sv.thornsT||4} 秒荆棘反弹`;
+    if(sv&&sv.tauntT) s+=`，并嘲讽 ${sv.tauntT} 秒`; return s; },
+  teamshield: (k,sv)=>`为全体队友附加 ${Math.round((sv&&sv.teamPct||.12)*100)}% 最大生命护盾`,
+  silence: (k,sv)=>`对最近的敌人造成 ${P(140,k)}% 攻击伤害，并沉默 ${sv&&sv.dur||3} 秒（无法回蓝与施法）`,
+  chain: k=>`闪电连锁最近的 3 名敌人，依次造成 ${P(150,k)}%、${P(120,k)}%、${P(95,k)}% 攻击伤害`,
+  cleanse: k=>`治疗全体队友 ${P(90,k)}% 攻击生命，并净化眩晕/冻结/减速/攻降/减疗/沉默`,
+  bulwark: (k,sv)=>`全体队友获得 ${Math.round((sv&&sv.teamPct||.15)*100)}% 护盾，自身减伤 ${Math.round((sv&&sv.drB||.15)*100)}% 持续 ${sv&&sv.drT||4} 秒，并嘲讽 ${sv&&sv.tauntT||2.5} 秒`,
+  masssilence: (k,sv)=>`对所有敌人造成 ${P(110,k)}% 攻击伤害，并沉默 ${sv&&sv.dur||2} 秒`,
+  shred: (k,sv)=>`对最近的敌人造成 ${P(120,k)}% 攻击伤害，并降低其 ${Math.round((sv&&sv.arShred||20))} 点护甲，持续 ${sv&&sv.dur||4} 秒（护甲可被压至负数）`,
+  sunder: (k,sv)=>`对最近的敌人造成 ${P(120,k)}% 攻击伤害，并削减其 ${Math.round((sv&&sv.mrShred||.25)*100)}% 魔法抗性，持续 ${sv&&sv.dur||4} 秒（负魔抗伤害增幅极强）`,
+  hex: (k,sv)=>`对最近的敌人造成 ${P(110,k)}% 攻击伤害，并将其变形 ${sv&&sv.dur||2} 秒（禁用所有技能，含被动）`,
+  petrify: (k,sv)=>`对最近的敌人造成 ${P(130,k)}% 攻击伤害，并将其石化 ${sv&&sv.dur||2} 秒（无法行动，受到物理伤害提高 25%）`,
+  purebolt: k=>`对最近的敌人造成 ${P(180,k)}% 攻击伤害（纯粹伤害：无视护甲与魔抗）`,
+};
+/* ===== 全棋子技能差异表：每名棋子独有的技能变体，确保没有两人生效完全相同 =====
+   主动：pow=技能倍率乘数；tgt=索敌偏好('near'默认/'low'残血/'hi'高攻/'far'最远)；
+        fx=[效果,数值,时长秒...]：stun眩晕 freeze冻结 slow减速 weaken攻降 healdown减疗
+           burn烧蓝 dot毒伤 selfheal自疗 vamp吸血 atkup增攻 splash溅射 exec斩杀 allymana回蓝
+           healshield全队护盾 heallow单疗 foehealdown敌减疗 allatkup全体增攻
+           shred破甲(-护甲值) sunder减魔抗(百分比) hex变形(禁技能含被动) petrify石化 silence沉默
+   原型（含新机制）：shred/sunder/hex/petrify/purebolt(纯粹伤害) 见 SKILL_INFO
+   新机制参数：tauntT嘲讽 shieldPct/selfShield/allyShield护盾比 manaAmt回蓝量 healN治疗人数
+             shellPct+blockCt/blockT 格挡buff  thornsB/thornsT 荆棘buff  drB/drT 减伤buff
+             dur控制/减益时长 teamPct全队护盾比 arShred破甲值 mrShred减魔抗比
+             dtype:'pure' 该棋子主动技为纯粹伤害
+   被动（仅 3 人）：p={sb破盾特攻 blockCt/blockDmg格挡 vampPct吸血 atkDot攻击毒伤}
+   txt=描述该棋子独有差异的附加文本 */
+const SKILL_VAR = {
+  /* —— 1 费 —— */
+  ein:    {shieldPct:.32, tauntT:2.0},
+  kouichi:{tgt:'far', fx:[['selfheal',.40]], txt:'中单切入最远敌人，并回复自身相当于伤害 40% 的生命'},
+  yua:    {pow:1.05, dur:1.6},
+  goutan: {allyShield:.30, selfShield:.20, tauntT:1.5},
+  yujiu:  {arShred:24, dur:4},
+  songlv: {fx:[['selfheal',.35]], txt:'园艺师扎根：回复自身相当于伤害 35% 的生命'},
+  likou:  {fx:[['healshield',.06]], txt:'并为其附加 6% 最大生命护盾'},
+  agari:  {fx:[['healshield',.04]], txt:'并使全体获得 4% 最大生命护盾'},
+  /* —— 2 费 —— */
+  suiji:  {manaAmt:25},
+  kanban: {shellPct:.30, blockCt:.25, blockDmg:.5, blockT:4},
+  zhouyi: {p:{sb:.80}},
+  yuji:   {p:{blockCt:.25,blockDmg:.5}},
+  tiandou:{healN:2, fx:[['healshield',.05]], txt:'并为她们附加 5% 最大生命护盾'},
+  aza:    {fx:[['allatkup',.10]], txt:'并提升全体 10% 攻击（本场战斗）'},
+  pako:   {fx:[['heallow',.40]], txt:'并为生命比例最低的队友额外回复 40% 攻击生命'},
+  zhijin: {tgt:'low', pow:1.05, fx:[['vamp',.15]], txt:'优先攻击残血，并永久获得 15% 吸血'},
+  sishi:  {pow:1.05, fx:[['slow',.25,2]], txt:'并使命中者减速 25%，持续 2 秒'},
+  sumi:   {teamPct:.12},
+  /* —— 3 费 —— */
+  yukie:  {pow:1.10, fx:[['dot',.015]], txt:'并附加每 3 秒 1.5% 最大生命的毒伤'},
+  miting: {mrShred:.30, dur:4},
+  xuezhu: {pow:1.20, fx:[['freeze',2.0]]},
+  zeyin:  {fx:[['foehealdown',.20,3]], txt:'并使所有敌人受到的治疗降低 20%，持续 3 秒'},
+  sanli:  {pow:1.05},
+  diansu: {fx:[['weaken',.40,4]]},
+  lianshiye:{dur:3},
+  huize:  {fx:[['slow',.35,3],['dot',.015]], txt:'并使其减速 35%、附加毒伤，持续 3 秒'},
+  shengge:{},
+  shadow: {tgt:'low', pow:1.10, fx:[['exec',.60]], txt:'优先攻击残血；目标生命低于 35% 时追加 60% 斩杀伤害'},
+  /* —— 4 费 —— */
+  miyue:  {pow:1.10, fx:[['dot',.02]], txt:'并附加每 3 秒 2% 最大生命的毒伤'},
+  huali:  {healN:2, fx:[['allymana',15]], txt:'并使受疗者回复 15 点法力'},
+  youyu:  {pow:1.05},
+  quanrong:{shellPct:.40, thornsB:.05, thornsT:5, tauntT:2},
+  ruiya:  {fx:[['freeze',2.2]]},
+  mumu:   {healN:2},
+  kroya:  {tgt:'hi', pow:1.10, fx:[['splash',.35]], txt:'并造成 35% 溅射'},
+  shiliu: {pow:1.05, fx:[['stun',.5]], txt:'并眩晕目标 0.5 秒'},
+  seki:   {pow:1.10, fx:[['burn',.45]]},
+  haruka: {pow:1.10, fx:[['weaken',.20,3]], txt:'并削减命中者 20% 攻击，持续 3 秒'},
+  /* —— 5 费 —— */
+  nana7mi:{pow:1.15, fx:[['dot',.02],['slow',.25,2]], txt:'鲨皇撕咬：附加毒伤并减速 25%'},
+  liAn:   {fx:[['freeze',1.5]]},
+  youyi:  {p:{vampPct:.30,atkDot:.010}},
+  azi:    {pow:1.10, fx:[['stun',1.5]]},
+  taodai: {teamPct:.15, drB:.15, drT:4, tauntT:2.5},
+  miki:   {healN:2, fx:[['healshield',.08],['allymana',10]], txt:'并为其附加 8% 护盾、回复 10 点法力'},
+  rei:    {pow:1.10, dur:2},
+  rinco:  {pow:1.15, fx:[['silence',1.5],['vamp',.20]], txt:'十二点准时拉闸：命中者额外沉默 1.5 秒，自身获得 20% 吸血'},
+};
+const svOf=id=>SKILL_VAR[id]||{};
+/* 装备 */
+const ITEMS = {
+  sword:{n:'屠龙大剑', e:'🗡', desc:'+40% 攻击'},
+  staff:{n:'秘法权杖', e:'🪄', desc:'+25% 攻击'},
+  armor:{n:'骑士板甲', e:'🛡', desc:'+30% 生命'},
+  bow:  {n:'疾风反曲弓',e:'🏹', desc:'+35% 攻速'},
+  vamp: {n:'饮血魔剑', e:'🩸', desc:'攻击吸血 20%'},
+  mana: {n:'潮汐法螺', e:'🔮', desc:'攻击/受击回蓝效率 +100%，更快施放技能'},
+};
+/* 有针对性的对手阵容模板（普通回合轮换；每 5 回合为野怪回合） */
+const COMPS = [
+  {name:'杂牌游勇',   mix:{守护:1, 刀客:2}},
+  {name:'刀客快攻队',  mix:{刀客:2, 守护:1}},
+  {name:'守护奶妈队', mix:{守护:2, 歌势:1, 医者:1}},
+  {name:'游侠风筝队', mix:{游侠:3, 守护:1}},
+  {name:'法师轰击队', mix:{法师:2, 守护:1, 游侠:1}},
+  {name:'刺客猎杀队', mix:{刺客:3, 歌势:1}},
+  {name:'咒术消耗队', mix:{咒术:2, 守护:1, 狂战:1}},
+  {name:'狂战冲锋队', mix:{狂战:3, 偶像:1}},
+  {name:'全员恶人',   mix:{刀客:2, 法师:2, 游侠:1}},
+];
+/* 野怪回合（多多自走棋式中立生物）：失败不扣血、不影响连胜；胜利按进度掉装备 */
+const CREEP = {5:'🐺 野狼群', 10:'🗿 岩石巨像', 15:'🐉 黑龙幼崽', 20:'🦣 远古凶兽', 25:'👑 最终魔王'};
+const DROP_N = {5:1, 10:1, 15:2, 20:2, 25:2};   // 野怪胜利掉落装备件数
+const SHOP_SIZE=5, MAX_ROUNDS=25, BENCH=8, MAX_EQUIP=2;
+const BOARD_W=8, BOARD_H=8;                 // 8×8 四边形棋盘（每方 32 格，下半 4 行为我方布阵区）
+const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节奏更线性）；蓝量全棋子统一 100、开局清零
+/* 升级人口经验表（多多式）：每回合自然 +1 经验，5 金币固定买 4 经验；1 级起步 */
+const XP_NEED = {1:1, 2:2, 3:3, 4:5, 5:8, 6:12, 7:16, 8:20, 9:28};
+function xpNeed(lvl){ return XP_NEED[lvl]||Infinity; }
+function checkLevel(){ let need=xpNeed(S.lvl);
+  while(S.lvl<10 && S.xp>=need){ S.lvl++; S.xp-=need; log('⬆ 人口升级至 '+S.lvl+'（回合经验积累）'); need=xpNeed(S.lvl); } }
+
+/* ================= 状态 ================= */
+let S;
+function newGame(){
+  S = { round:1, hp:32, gold:10, lvl:1, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false,
+    bench:Array(BENCH).fill(null), board:Array(BOARD_H*BOARD_W).fill(null),
+    shop:[], enemyBoard:[], uid:1, log:[], items:[], selItem:null, selUid:null, pool:{},
+    stats:{wins:0,losses:0,maxStreak:0,kills:0,dmgTaken:0,goldEarned:0,goldSpent:0,bought:0} };
+  UNITS.forEach(u=>{ S.pool[u.id]=POOL_COPIES[u.cost]; }); // 初始化限量卡池
+  rollShop();
+}
+
+/* ================= 工具 ================= */
+const $=id=>document.getElementById(id);
+function log(t){ S.log.unshift(t); if(S.log.length>40)S.log.pop();
+  $('log').innerHTML = S.log.map(x=>'· '+x).join('<br>'); }
+function byId(id){ return UNITS.find(u=>u.id===id); }
+function addGold(n,reason){ if(!n) return; S.gold+=n; S.stats.goldEarned+=n;
+  if(reason) log(`　　+${n} 金币（${reason}）`); }
+function isPassive(u){ const d=byId(u.id); return d.sk.length>2 && d.sk[2]==='passive'; }
+function pairCount(id){ // 同名 1★ 拥有数（备战席+场上）
+  let n=0;
+  S.bench.forEach(u=>{ if(u&&u.id===id&&u.star===1) n++; });
+  S.board.forEach(u=>{ if(u&&u.id===id&&u.star===1) n++; });
+  return n;
+}
+function skillDesc(u){ // 技能最终描述：原型效果 × 棋子独有变体（倍率/索敌/特效）× 星级
+  const d=byId(u.id), sv=svOf(d.id);
+  const sm = u.sks!==undefined ? u.sks : Math.pow(SKILL_STAR_M[d.cost]||1.1, (u.star||1)-1);
+  const k=(u.skc!==undefined||d.skc!==undefined)?d.skc*sm*(sv.pow||1):skillCoef(d.cost)*sm*(sv.pow||1);
+  const tgtTxt = sv.tgt==='low' ? '优先攻击残血' : sv.tgt==='hi' ? '优先攻击高攻' : sv.tgt==='far' ? '攻击最远的敌人' : '';
+  if(isPassive(u)){
+    const p=sv.p||{}; let s='';
+    switch(d.sk[1]){
+      case 'drain': s=`被动：普通攻击吸血 ${Math.round((p.vampPct||0.3)*100)}%${p.atkDot?'，攻击附带毒伤（每 3 秒 1% 目标最大生命）':''}`; break;
+      case 'shieldbane': s=`被动：攻击带有护盾的目标时，额外造成 ${Math.round((p.sb||0.6)*100)}% 伤害`; break;
+      case 'block': s=`被动：受到攻击时有 ${Math.round((p.blockCt||0.2)*100)}% 概率格挡，减免 ${Math.round((p.blockDmg||0.5)*100)}% 伤害`; break;
+      default: s='被动：战斗中自然生效';
+    }
+    return s + (sv.txt?`，${sv.txt}`:'');
+  }
+  const info=SKILL_INFO[d.sk[1]];
+  let s=typeof info==='function'?info(k,sv):info;
+  if(sv.tgt==='low'||sv.tgt==='hi') s+=`，${tgtTxt}`;
+  // 变体覆盖基础词条时直接替换数值，避免"眩晕1.2秒，眩晕延长至1.8秒"式重复
+  const fxOf=t=>(sv.fx||[]).find(f=>f[0]===t);
+  let substituted=false;
+  const fStun=fxOf('stun');
+  if(fStun && /眩晕 [0-9.]+ 秒/.test(s)){ s=s.replace(/眩晕 [0-9.]+ 秒/,`眩晕 ${fStun[1]} 秒`); substituted=true; }
+  if(fStun && /击飞 [0-9.]+ 秒/.test(s)){ s=s.replace(/击飞 [0-9.]+ 秒/,`击飞 ${fStun[1]} 秒`); substituted=true; }
+  const fFr=fxOf('freeze');
+  if(fFr && /冻结 [0-9.]+ 秒/.test(s)){ s=s.replace(/冻结 [0-9.]+ 秒/,`冻结 ${fFr[1]} 秒`); substituted=true; }
+  const fWk=fxOf('weaken');
+  if(fWk && /攻击力降低 30%，持续 4 秒/.test(s)){ s=s.replace(/攻击力降低 30%，持续 4 秒/,`攻击力降低 ${Math.round(fWk[1]*100)}%，持续 ${fWk[2]} 秒`); substituted=true; }
+  const fBu=fxOf('burn');
+  if(fBu && /烧毁其 30 点法力/.test(s)){ s=s.replace(/烧毁其 30 点法力/,`烧毁其 ${Math.round(fBu[1]*100)}% 法力`); substituted=true; }
+  if(sv.stealPct){ s=s.replace(/夺取其 60% 的护盾/,`夺取其 ${Math.round(sv.stealPct*100)}% 的护盾`); substituted=true; }
+  if(sv.rapidN && /接下来 3 次普通攻击/.test(s)){ s=s.replace(/接下来 3 次普通攻击/,`接下来 ${sv.rapidN} 次普通攻击`); substituted=true; }
+  return s + (!substituted && sv.txt?`，${sv.txt}`:'');
+}
+function skillText(u){ return (isPassive(u)?'':'主动：')+skillDesc(u); }
+/* 各人口等级刷新概率（1~5 费，%）——5 个卡槽每格独立判定，概率仅与等级绑定，无隐藏修正 */
+const SHOP_ODDS = {1:[100,0,0,0,0], 2:[70,30,0,0,0], 3:[60,35,5,0,0], 4:[50,35,15,0,0],
+  5:[40,35,23,2,0], 6:[33,30,30,7,0], 7:[30,30,30,10,0], 8:[24,30,30,15,1],
+  9:[22,30,25,20,3], 10:[19,25,25,25,6]};
+function drawFromPool(){ // 按等级概率决定费用档，再从卡池余量中抽取
+  const lv=S.lvl;
+  const odds = (SHOP_ODDS[lv]||SHOP_ODDS[10]).map(x=>x/100);
+  // 主档按概率掷出；缺货时按概率从高到低顺延到其他档位
+  const roll=Math.random(); let acc=0, primary=5;
+  for(let i=0;i<5;i++){ acc+=odds[i]; if(roll<acc){ primary=i+1; break; } }
+  const order=[primary, ...[1,2,3,4,5].filter(t=>t!==primary).sort((a,b)=>odds[b-1]-odds[a-1])];
+  for(const tier of order){
+    const c=UNITS.filter(u=>u.cost===tier && S.pool[u.id]>0);
+    if(!c.length) continue;
+    // 按剩余张数加权抽取
+    const total=c.reduce((s,u)=>s+S.pool[u.id],0);
+    let pick=Math.random()*total;
+    for(const u of c){ pick-=S.pool[u.id]; if(pick<=0){ S.pool[u.id]--; return u; } }
+  }
+  return UNITS.find(u=>S.pool[u.id]>0) || null;
+}
+function rollShop(){
+  // 商店锁定：保留当前货架不刷新、不返池
+  if(S.lock){ renderShop(); return; }
+  // 未购买的旧商店卡返还卡池
+  S.shop.forEach(u=>{ if(u) S.pool[u.id]++; });
+  // 多多自走棋官方规则：5 个卡槽每格独立按人口概率抽取，
+  // 概率只与等级绑定，不绑定玩家已有羁绊、无隐藏修正
+  S.shop = Array(SHOP_SIZE).fill(0).map(()=>drawFromPool());
+  // 开局保底：第 1 回合商店至少有一张 1 费卡（1 金开局必定买得起，避免空场卡死）
+  if(S.round===1 && !S.shop.some(u=>u && u.cost===1)){
+    const ones=UNITS.filter(u=>u.cost===1 && S.pool[u.id]>0);
+    if(ones.length){
+      let idx=S.shop.findIndex(Boolean); if(idx<0) idx=0;
+      const old=S.shop[idx]; if(old) S.pool[old.id]++;
+      const pick=ones[Math.floor(Math.random()*ones.length)];
+      S.shop[idx]=pick; S.pool[pick.id]--;
+    }
+  }
+  renderShop();
+}
+/* 多多自走棋式卖价：1★原价回购；合成棋子折价（2★=3×费用−1，3★=9×费用−2） */
+function sellRefund(u){ const d=byId(u.id); return u.star===1 ? d.cost : Math.pow(3,u.star-1)*d.cost-(u.star-1); }
+function sellSelected(){
+  if(S.phase!=='prep' || S.selUid==null) return;
+  const pos=findUnit(S.selUid);
+  if(!pos) return;
+  const u=getAt(pos[0],pos[1]);
+  const d=byId(u.id);
+  const copies=Math.pow(3,u.star-1);
+  const refund=sellRefund(u);
+  S.gold+=refund; S.stats.goldEarned+=refund; S.pool[u.id]+=copies;
+  (u.items||[]).forEach(k=>S.items.push(k)); // 装备卸下回装备栏
+  setAt(pos[0],pos[1],null);
+  S.selUid=null;
+  log(`💸 出售 ${d.name}${u.star>1?'（'+u.star+'★折价）':''}：+${refund} 金币，${copies} 张返还卡池`);
+  if(u.items&&u.items.length) log(`　　装备卸下回装备栏：${u.items.map(k=>ITEMS[k].e+ITEMS[k].n).join('、')}`);
+  renderAll();
+}
+function compForRound(r){
+  if(r%5===0) return {name:CREEP[r]||'🐗 野怪', boss:true};
+  const normal = COMPS.filter(c=>!c.boss);
+  return normal[(r-1)%normal.length];
+}
+
+/* ================= 渲染 ================= */
+function itemStr(u){ return (u.items||[]).map(k=>ITEMS[k].e).join(''); }
+function unitInner(u){
+  const d=byId(u.id);
+  const st=(u.frozen>0?'❄':'')+(u.stun>0?'💫':'')+(u.atkDownT>0?'🔻':'')+(u.slowT>0?'🐌':'')
+    +(u.noShieldT>0?'🔨':'')+(u.healDownT>0?'💉':'')+(u.silenceT>0?'🔇':'')+(u.tauntT>0?'🎯':'')
+    +(u.hexT>0?'🐧':'')+(u.petrifyT>0?'🗿':'')+(u.arDownT>0?'🪓':'')+(u.mrDownT>0?'🔯':'');
+  const fz = st ? `<span class="fz">${st}</span>` : '';
+  const w = u.hp!=null ? (u.hp/u.maxhp*100) : 100;
+  const m = u.maxmana ? (u.mana/u.maxmana*100) : 0;
+  const sideTag = u.side!=null ? `<span class="side">${u.side===1?'敌':'我'}</span>` : '';
+  const inBattle = u.side===0||u.side===1;
+  const mp = isPassive(u) ? '<span class="sk" style="color:#8dff9a">被动</span>'
+    : (inBattle ? `<div class="mpbar"><div class="mpfill" style="width:${m}%"></div></div>`
+                : '<span class="sk" style="color:#9fe8ff">主动</span>');
+  return `${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${sideTag}
+    <span class="nm">${d.name}</span>
+    <span class="st">${'★'.repeat(u.star)}<span style="opacity:.8">${d.form==='me'?'⚔':'🏹'}</span></span>
+    <span class="fj">${d.fac}·${d.job}</span>
+    ${mp}
+    <div class="hpbar"><div class="hpfill" style="width:${Math.max(0,w)}%"></div></div>`;
+}
+function unitHTML(u,sel){
+  const d=byId(u.id);
+  const sideCls = u.side===1?'enemy':u.side===0?'ally':'';
+  const stCls = (u.stun>0?'stunned ':'')+(u.atkDownT>0?'weakened ':'')+(u.slowT>0?'slowed':'');
+  let pairCls='';
+  if(u.star===1){ const n=pairCount(u.id); pairCls = n>=2?'pair':(n===1?'solo':''); }
+  const tip = `${d.name} · ${u.star?'★'.repeat(u.star)+' ':''}${d.fac}·${d.job}\n攻击方式：${d.form==='me'?'近战':'远程'} · ${d.dtype==='phys'?'物理':'法术'}伤害\n${d.sk[0]}（${isPassive(u)?'被动':'主动'}）\n${skillText(u)}`
+    + ((u.items&&u.items.length)?`\n装备：${u.items.map(k=>ITEMS[k].n+'（'+ITEMS[k].desc+'）').join('、')}`:'');
+  return `<div class="unit cost${d.cost} ${sideCls} ${stCls} ${pairCls} ${sel?'sel':''} ${u.shield>0?'shielded':''} ${u.frozen>0?'frozen':''}" data-uid="${u.uid}" title="${tip}">${unitInner(u)}</div>`;
+}
+function renderBoard(){
+  const b=$('board'); b.innerHTML='';
+  for(let y=0;y<BOARD_H;y++) for(let x=0;x<BOARD_W;x++){
+    const i=y*BOARD_W+x;
+    const cell=document.createElement('div');
+    cell.className='cell'+(y<BOARD_H/2?' enemy-side':'');
+    cell.dataset.i=i;
+    const u=S.board[i];
+    if(u) cell.innerHTML=unitHTML(u, S.selUid===u.uid);
+    cell.onclick=()=>cellClick(i);
+    b.appendChild(cell);
+  }
+}
+function renderBench(){
+  const b=$('bench');
+  b.innerHTML='<span style="grid-column:1/-1;font-size:11px;color:#6b6288;text-align:left;line-height:1.2">备战席</span>';
+  for(let i=0;i<BENCH;i++){
+    const s=document.createElement('div'); s.className='bslot'; s.dataset.bi=i;
+    const u=S.bench[i];
+    if(u) s.innerHTML=unitHTML(u, S.selUid===u.uid);
+    s.onclick=()=>benchClick(i);
+    b.appendChild(s);
+  }
+}
+function renderShop(){
+  const s=$('shop'); s.innerHTML='';
+  S.shop.forEach((u,i)=>{
+    const c=document.createElement('div');
+    c.className='card'+(u?'':' sold');
+    const isPair = u && pairCount(u.id)>=2; // 买到手即凑齐 3 张升星
+    const isSolo = u && !isPair && pairCount(u.id)===1;
+    if(isPair) c.classList.add('paircard');
+    if(isSolo) c.classList.add('solo');
+    if(u) c.innerHTML=`<div class="cn">${u.name}${isPair?'<span class="cpair">对子!</span>':''}</div><div class="cfj">${u.form==='me'?'⚔':'🏹'} ${u.fac}·${u.job} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div><div class="ct">${u.hp}❤ ${u.atk}⚔</div><div class="cs">${u.sk[0]}（${u.sk.length>2?'被动':'主动'}）</div><div class="cd" title="${skillText(u)}">${skillDesc(u).replace('被动：','')}</div><div class="cc">💰${u.cost}</div>`;
+    c.onclick=()=>buy(i);
+    s.appendChild(c);
+  });
+}
+function renderTop(){
+  $('round').textContent=S.endless ? S.round+' ♾' : S.round;
+  $('roundMax').textContent = S.endless ? '' : '/25';
+  $('hp').textContent=S.hp; $('gold').textContent=S.gold;
+  $('interest').textContent = S.phase==='prep' && S.lvl<10 ? `+${Math.min(5,Math.floor(S.gold/10))}` : '';
+  const pop=S.board.filter(Boolean).length;
+  $('pop').textContent=pop; $('popMax').textContent=S.lvl;
+  $('streak').textContent=S.streak;
+  const need=xpNeed(S.lvl);
+  $('lvlNum').textContent=S.lvl;
+  $('xpText').textContent = S.lvl>=10 ? '人口已满' : `经验 ${S.xp}/${need}`;
+  $('xpFill').style.width = S.lvl>=10 ? '100%' : Math.min(100,S.xp/need*100)+'%';
+  $('lvlBtn').textContent = S.lvl>=10 ? '人口已满' : '买经验 (F) +5经验 -5💰';
+  $('lvlBtn').disabled = S.lvl>=10 || S.gold<4;
+  $('refreshBtn').disabled = S.gold<2;
+  // 出售按钮：选中棋子后解锁，并预览回购价（多多式：1★原价、合成折价）
+  const sel = S.selUid!=null ? findUnit(S.selUid) : null;
+  if(sel){
+    const u=getAt(sel[0],sel[1]);
+    $('sellBtn').textContent=`💸 出售 +${sellRefund(u)}💰`;
+    $('sellBtn').disabled=false;
+  } else {
+    $('sellBtn').textContent='💸 出售';
+    $('sellBtn').disabled=true;
+  }
+  const c = compForRound(S.round);
+  $('lockBtn').textContent=S.lock?'🔒 已锁定':'🔓 锁定';
+  $('lockBtn').classList.toggle('on',!!S.lock);
+  const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
+    : S.streak>=4 ? '难度 ⬆（连胜 4+，敌方增强）' : '难度 ➖ 标准';
+  $('enemyInfo').innerHTML = c.boss
+    ? `<b>${c.name}</b> · 野怪回合（${S.round>=20?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">胜利掉 ${DROP_N[S.round]!==undefined?DROP_N[S.round]:1} 件装备 · 失败不扣血、不动连胜${S.round>=25&&!S.endless?' · <b style="color:#ff9a9a">最终决战，战败即结束！</b>':''}</span>`
+    : `<b>${c.name}</b>：` + Object.entries(c.mix).map(([j,n])=>`${j}×${n}`).join(' + ')
+      + `<br><span style="font-size:11px;color:#8a93c4">${dynTxt} · 胜利 +1 金（装备只在野怪回合掉落）</span>`;
+  $('gold2').textContent=S.gold;
+  $('interest2').textContent = `利息 +${Math.min(5,Math.floor(S.gold/10))}`;
+}
+const FAC_ICON={'深海':'🌊','星际':'🚀','毛茸乐园':'🐾','音律':'🎵','四禧丸子':'🍡','学园':'🎓','夜幕':'🌙','花语':'🌸','魔道':'🔮','森之国':'🌲','工造':'⚙️','P-SP':'🎬'};
+const JOB_ICON={'刀客':'🗡️','守护':'🛡️','歌势':'🎤','游侠':'🏹','法师':'☄️','咒术':'☠️','刺客':'🥷','狂战':'🪓','医者':'💊','偶像':'✨'};
+/* 多多式羁绊徽章：图标+名称+档位进度；T1 铜色/T2 金色点亮，未达档位灰显 */
+function synBadges(cnt,cfg,icons){
+  return Object.entries(cfg).map(([k,c])=>{
+    const n=cnt[k]||0;
+    if(n===0) return '';
+    const tier=c.need.filter(x=>x<=n).length;
+    const maxN=c.need[c.need.length-1];
+    const prog = n>=maxN ? 'MAX' : `${n}/${c.need.find(x=>x>n)}`;
+    const pips = c.need.map((x,i)=>`<i class="${i<tier?'on':''}"></i>`).join('');
+    return `<div class="syn-badge ${tier>0?('on t'+tier):''}" title="${k}\n${c.desc.map((d,i)=>`T${i+1}(${c.need[i]}人)：${d}`).join('\n')}">
+      <span class="ico">${icons[k]||'❓'}</span><span>${k}</span><span class="pips">${pips}</span><span class="cnt">${prog}</span></div>`;
+  }).join('') || '<div class="syn-empty">上场棋子后显示羁绊</div>';
+}
+function renderSynergy(){
+  const facCnt={}, clsCnt={};
+  const seen=new Set(); // 羁绊按不同棋子计数：同名重复副本只算 1 个
+  S.board.filter(Boolean).forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id);
+    const d=byId(u.id);
+    facCnt[d.fac]=(facCnt[d.fac]||0)+1; clsCnt[d.job]=(clsCnt[d.job]||0)+1; });
+  $('synFac').innerHTML=synBadges(facCnt,FACTIONS,FAC_ICON);
+  $('synJob').innerHTML=synBadges(clsCnt,CLASSES,JOB_ICON);
+  // 玩家盒里的人口镜像（多多式：人口紧贴等级显示）
+  $('pop2').textContent=S.board.filter(Boolean).length; $('popMax2').textContent=S.lvl;
+}
+function renderEquip(){
+  const e=$('equip');
+  if(!S.items.length){ e.innerHTML='<span style="color:#6b6288;font-size:12px">暂无装备，战斗胜利后掉落</span>'; return; }
+  e.innerHTML='';
+  S.items.forEach((k,i)=>{
+    const it=ITEMS[k];
+    const c=document.createElement('div');
+    c.className='item-chip'+(S.selItem===i?' sel':'');
+    c.title=it.desc;
+    c.innerHTML=`${it.e} ${it.n}`;
+    c.onclick=()=>{ S.selItem = S.selItem===i?null:i; renderEquip(); };
+    e.appendChild(c);
+  });
+}
+function renderAll(){ renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); saveGame(); }
+
+/* ================= 交互：点击选择流 ================= */
+function benchClick(i){ clickUnit('bench', i); }
+function cellClick(i){ clickUnit('board', i); }
+function getAt(t,i){ return t==='board'?S.board[i]:S.bench[i]; }
+function setAt(t,i,v){ if(t==='board')S.board[i]=v; else S.bench[i]=v; }
+function moveOrSwap(ft,fi,tt,ti){
+  const src=getAt(ft,fi), dst=getAt(tt,ti);
+  if(src==null || (ft===tt&&fi===ti)) return;
+  if(tt==='board' && Math.floor(ti/BOARD_W)<BOARD_H/2){
+    log('⚠ 只能布置在我方半区（棋盘下半部分）'); return;
+  }
+  if(ft==='bench'&&tt==='board'&&!dst && S.board.filter(Boolean).length>=S.lvl){
+    log('⚠ 人口已满，先升级人口！'); return;
+  }
+  setAt(ft,fi,dst); setAt(tt,ti,src);
+}
+function findUnit(uid){
+  for(let i=0;i<S.board.length;i++) if(S.board[i]&&S.board[i].uid===uid) return ['board',i];
+  for(let i=0;i<S.bench.length;i++) if(S.bench[i]&&S.bench[i].uid===uid) return ['bench',i];
+  return null;
+}
+function clickUnit(t,i){
+  if(S.phase!=='prep') return;
+  const u=getAt(t,i);
+  if(S.selItem!=null){
+    if(!u){ log('⚠ 请点击要穿戴装备的棋子'); return; }
+    u.items = u.items||[];
+    if(u.items.length>=MAX_EQUIP){ log(`⚠ ${byId(u.id).name} 装备已满（${MAX_EQUIP} 件）`); S.selItem=null; renderEquip(); return; }
+    u.items.push(S.items[S.selItem]);
+    log(`🎒 ${byId(u.id).name} 装备了 ${ITEMS[S.items[S.selItem]].n}`);
+    S.items.splice(S.selItem,1); S.selItem=null;
+    renderAll(); return;
+  }
+  if(S.selUid!=null){
+    const pos = findUnit(S.selUid);
+    if(!pos){ S.selUid=null; renderAll(); return; }
+    if(u && u.uid===S.selUid){ S.selUid=null; }
+    else { moveOrSwap(pos[0],pos[1],t,i); S.selUid=null; }
+    renderAll(); return;
+  }
+  if(u){ S.selUid=u.uid; renderBoard(); renderBench(); renderTop(); }
+}
+
+/* ================= 交互：拖拽 ================= */
+let drag=null;
+document.addEventListener('pointerdown', e=>{
+  if(e.button!==0) return; // 仅左键可拖拽（右键留给卸装备）
+  if(S.phase!=='prep') return;
+  const el = e.target.closest && e.target.closest('.unit');
+  if(!el) return;
+  const cell = el.closest('.cell'), slot = el.closest('.bslot');
+  if(!cell && !slot) return;
+  drag = { t: cell?'board':'bench', i: cell?+cell.dataset.i:+slot.dataset.bi,
+           x0:e.clientX, y0:e.clientY, ghost:null, el };
+});
+document.addEventListener('pointermove', e=>{
+  if(!drag) return;
+  if(!drag.ghost && Math.hypot(e.clientX-drag.x0, e.clientY-drag.y0)>6){
+    const g=$('dragGhost'); g.innerHTML=unitHTML(getAt(drag.t,drag.i),false);
+    g.style.display='block'; drag.ghost=g;
+  }
+  if(drag.ghost){
+    drag.ghost.style.left=(e.clientX-34)+'px';
+    drag.ghost.style.top=(e.clientY-34)+'px';
+    document.querySelectorAll('.drop-hl').forEach(x=>x.classList.remove('drop-hl'));
+    const tgt=document.elementFromPoint(e.clientX,e.clientY);
+    const c=tgt&&tgt.closest && tgt.closest('.cell,.bslot');
+    if(c) c.classList.add('drop-hl');
+  }
+});
+document.addEventListener('pointerup', e=>{
+  if(!drag) return;
+  const d=drag; drag=null;
+  $('dragGhost').style.display='none';
+  document.querySelectorAll('.drop-hl').forEach(x=>x.classList.remove('drop-hl'));
+  if(!d.ghost) return;
+  const tgt=document.elementFromPoint(e.clientX,e.clientY);
+  const c=tgt&&tgt.closest && tgt.closest('.cell,.bslot');
+  if(c){
+    const tt = c.classList.contains('cell')?'board':'bench';
+    const ti = c.classList.contains('cell')?+c.dataset.i:+c.dataset.bi;
+    const u=getAt(tt,ti);
+    if(S.selItem!=null && u){ clickUnit(tt,ti); renderAll(); return; }
+    moveOrSwap(d.t,d.i,tt,ti);
+    S.selUid=null;
+    renderAll();
+    e.stopPropagation();
+  }
+});
+
+/* ================= 卸装备：右键点击棋子 = 全部装备回装备栏 ================= */
+document.addEventListener('contextmenu', e=>{
+  if(S.phase!=='prep') return;
+  const el=e.target.closest && e.target.closest('.unit');
+  if(!el) return;
+  const cell=el.closest('.cell'), slot=el.closest('.bslot');
+  if(!cell && !slot) return;
+  e.preventDefault();
+  const u = cell ? S.board[+cell.dataset.i] : S.bench[+slot.dataset.bi];
+  if(!u) return;
+  if(!u.items || !u.items.length){ log(`⚠ ${byId(u.id).name} 身上没有装备`); return; }
+  log(`🧥 ${byId(u.id).name} 卸下装备：${u.items.map(k=>ITEMS[k].e+ITEMS[k].n).join('、')}`);
+  u.items.forEach(k=>S.items.push(k));
+  u.items=[];
+  renderAll();
+});
+
+/* ================= 商店/按钮 ================= */
+function buy(i){
+  if(S.phase!=='prep'||!S.shop[i]) return;
+  const d=S.shop[i];
+  if(S.gold<d.cost){ log('⚠ 金币不足'); return; }
+  const slot=S.bench.findIndex(x=>!x);
+  if(slot<0){ log('⚠ 备战席已满'); return; }
+  S.gold-=d.cost; S.stats.goldSpent+=d.cost; S.stats.bought++; S.shop[i]=null;
+  S.bench[slot]={uid:S.uid++, id:d.id, star:1, sks:1, hp:Math.round(d.hp*HP_SCALE), maxhp:Math.round(d.hp*HP_SCALE), atk:d.atk, items:[]};
+  tryMerge(); log('购买 '+d.name); renderAll();
+}
+function tryMerge(){
+  for(const d of UNITS){
+    for(let star=1;star<=2;star++){
+      const spots=[];
+      S.bench.forEach((u,i)=>{ if(u&&u.id===d.id&&u.star===star) spots.push(['bench',i]); });
+      S.board.forEach((u,i)=>{ if(u&&u.id===d.id&&u.star===star) spots.push(['board',i]); });
+      if(spots.length>=3){
+        const keep = spots.find(s=>s[0]==='board') || spots[0];
+        const allItems = spots.map(s=>getAt(s[0],s[1]).items||[]).flat();
+        const items = allItems.slice(0,MAX_EQUIP);          // 新星最多带 2 件
+        if(allItems.length>MAX_EQUIP){
+          allItems.slice(MAX_EQUIP).forEach(k=>S.items.push(k)); // 多余装备回到装备栏
+          log(`🎒 合成后多余装备回到装备栏（${allItems.length-MAX_EQUIP} 件）`);
+        }
+        const m = Math.pow(STAR_M[d.cost]||1.8, star) * HP_SCALE; // 升星倍率（低费收益更高）
+        const sks = Math.pow(SKILL_STAR_M[d.cost]||1.1, star);    // 技能倍率随星级增强（低费收益更高）
+        const upgraded={uid:S.uid++, id:d.id, star:star+1, sks,
+          hp:Math.round(d.hp*m), maxhp:Math.round(d.hp*m),
+          atk:Math.round(d.atk*Math.pow(STAR_M[d.cost]||1.8, star)), items};
+        spots.forEach(s=>setAt(s[0],s[1],null));
+        setAt(keep[0],keep[1],upgraded);
+        log(`✨ ${d.name} 升至 ${star+1} 星！`);
+        tryMerge(); return;
+      }
+    }
+  }
+}
+$('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<2)return; S.gold-=2; S.stats.goldSpent+=2; rollShop(); renderTop(); };
+/* 商店锁定：下回合自动刷新时保留当前货架 */
+$('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
+  log(S.lock?'🔒 商店已锁定（下回合保留货架）':'🔓 商店已解锁');
+  $('lockBtn').textContent=S.lock?'🔒 锁定':'🔓 锁定';
+  $('lockBtn').classList.toggle('on',S.lock); renderTop(); };
+/* 一键上阵：按战力选主力，坦克前排居中、远程后排，快速完成布阵 */
+function autoDeploy(){
+  if(S.phase!=='prep') return;
+  const all=[];
+  S.board.forEach(u=>{ if(u) all.push(u); });
+  S.bench.forEach(u=>{ if(u) all.push(u); });
+  if(!all.length) return;
+  const d=u=>byId(u.id);
+  const isFront=u=>(d(u).job==='守护'||d(u).job==='狂战'||(d(u).form==='me'&&d(u).job!=='刺客'))?1:0;
+  const power=u=>Math.pow(u.star||1,2)*u.maxhp+u.atk*(u.star||1)*4;
+  all.sort((a,b)=>power(b)-power(a));
+  const team=all.slice(0,S.lvl);
+  team.sort((a,b)=>isFront(b)-isFront(a)||b.maxhp-a.maxhp);
+  for(let y=4;y<8;y++) for(let x=0;x<8;x++) S.board[y*BOARD_W+x]=null;
+  // 分排布阵：坦克/近战前排（第4行居中开始），远程/刺客后排（第5行起）；满了顺延
+  const front=team.filter(u=>isFront(u)), back=team.filter(u=>!isFront(u));
+  const slotsFor=y=>[3,4,2,5,1,6,0,7].map(x=>[x,y]);
+  const frontSlots=[...slotsFor(4),...slotsFor(5)];
+  const backSlots=[...slotsFor(5),...slotsFor(6),...slotsFor(7),...slotsFor(4)];
+  const used=new Set();
+  const tryPlace=(u,slots)=>{ for(const [x,y] of slots){ const k=y*BOARD_W+x;
+    if(!used.has(k)){ used.add(k); S.board[k]=u; return true; } } return false; };
+  front.forEach(u=>{ if(!tryPlace(u,frontSlots)) tryPlace(u,backSlots); });
+  back.forEach(u=>{ if(!tryPlace(u,backSlots)) tryPlace(u,frontSlots); });
+  const rest=all.slice(S.lvl);
+  for(let i=0;i<BENCH;i++) S.bench[i]=null;
+  rest.forEach((u,i)=>{ if(i<BENCH) S.bench[i]=u; });
+  renderAll();
+}
+$('deployBtn').onclick=autoDeploy;
+$('lvlBtn').onclick=()=>{ if(S.phase!=='prep'||S.lvl>=10)return;   // 5 金币买 5 经验（加码：更快升人口凑羁绊）
+  if(S.gold<5){ log('⚠ 金币不足，无法购买升级经验'); return; }
+  S.gold-=5; S.stats.goldSpent+=5; S.xp+=5;
+  checkLevel(); renderAll(); };
+$('sellBtn').onclick=sellSelected;
+$('fightBtn').onclick=startBattle;
+window.addEventListener('keydown',e=>{
+  if(!S) return;
+  if(e.key==='d'||e.key==='D')$('refreshBtn').click();
+  if(e.key==='f'||e.key==='F')$('lvlBtn').click();
+  if(e.key==='l'||e.key==='L')$('lockBtn').click();
+  if(e.key==='a'||e.key==='A')autoDeploy();
+  if(e.key===' '&&S.phase==='prep'){ e.preventDefault(); $('fightBtn').click(); }
+});
+
+/* ================= 敌方阵容 ================= */
+function pickFor(job, cap, used){
+  // 费用上限逐级放宽：本职业 cap 内 → cap+1 → cap+2 → 任意职业 cap 内
+  // 保证前期（cap 低）敌人不会因该职业缺低费成员而跳到高费棋子
+  let arr = UNITS.filter(u=>u.job===job&&u.cost<=cap);
+  if(!arr.length) arr = UNITS.filter(u=>u.job===job&&u.cost<=cap+1);
+  if(!arr.length) arr = UNITS.filter(u=>u.job===job&&u.cost<=cap+2);
+  if(!arr.length) arr = UNITS.filter(u=>u.cost<=cap);
+  const avail=arr.filter(u=>!used.has(u.id));
+  const use=avail.length?avail:arr;
+  // 低费加权：同一上限下 1 费占比最高，费用越高权重越低（前期敌方以低费为主）
+  const weights=use.map(u=>Math.max(1, 1+(cap-u.cost)*1.5));
+  const total=weights.reduce((a,b)=>a+b,0);
+  let r=Math.random()*total;
+  for(let i=0;i<use.length;i++){ r-=weights[i]; if(r<=0){ used.add(use[i].id); return use[i]; } }
+  const u=use[use.length-1]; used.add(u.id); return u;
+}
+function genEnemy(){
+  const r=S.round;
+  const cap = r<4?1 : r<7?2 : r<11?3 : r<16?4 : 5;   // 敌方费用上限随回合解锁
+  // 动态难度：连败减压（每连败 -10%，最多 -30%）；连胜 4+ 加压 10%
+  const dyn = (S.lossStreak>=2 ? Math.max(0.55, 1-0.12*S.lossStreak) : (S.streak>=4?1.1:1)) * (S.hp<=12?0.88:1);
+  // 前期减免：前 5 回合每回合 -1.5% 线性衰减（1 金开局的铺垫期），第 6 回合起与原曲线完全一致
+  const earlyDisc = Math.max(0, 6-r) * 0.015;
+  // 无限模式（r>25）成长不封顶：敌方随回合持续变强；普通模式 24 回合封顶
+  const capR = S.endless ? 999 : 24;
+  const mul = 0.985 * (1 + Math.min(r-1,capR)*0.049) * dyn - earlyDisc;
+  const used=new Set();
+  const comp = compForRound(r);
+  const list=[];
+  if(comp.boss){
+    /* 多多自走棋式野怪波次：狼群(纯低费杂兵) → 岩石巨像(3费头目) → 黑龙幼崽(4费)
+       → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
+    const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
+    const bossStar = r>=20 ? 2 : 1;
+    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.28 : 1.12;
+    if(S.endless && r>25) bossMult = Math.min(1.12 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
+    if(headCost){
+      let heads = UNITS.filter(u=>u.cost===headCost);
+      if(!heads.length) heads = UNITS.filter(u=>u.cost>=headCost);
+      const b = heads[Math.floor(Math.random()*heads.length)];
+      list.push({d:b, star:bossStar, boss:true, bossMult});
+    }
+    const bossGuards = r<10?0 : r<20?1 : (r>=25?1:2);
+    for(let i=0;i<bossGuards;i++) list.push({d:pickFor('守护',cap,used), star:1});
+    // 野怪数量：狼群多而弱，后期杂兵费用上限放宽；r25 收敛为魔王精英队（少而强）
+    const total = r>=25 ? 5 : Math.min(2+Math.ceil(r/3), 8);
+    const addCap = r<10?1 : r<15?2 : (r>=25?2:3);
+    const jobs=['刀客','狂战','游侠','法师','刺客','咒术'];
+    const extra = Math.max(0, total - list.length);
+    for(let i=0;i<extra;i++) list.push({d:pickFor(jobs[i%jobs.length], Math.min(cap,addCap), used), star:1});
+  } else {
+    for(const [job,n] of Object.entries(comp.mix)) for(let i=0;i<n;i++) list.push({d:pickFor(job,cap,used), star:1});
+    // 敌方总数跟随「棋手等级=人口」节奏：1级1人、2级2人…缓增至 7 人（无限模式 9 人），与玩家成长曲线对齐
+    const total = Math.min(1 + Math.floor(r/2), S.endless ? 9 : 7);
+    const extra = Math.max(0, total - list.length);
+    // 填充杂兵避开模板主职业（mix 中已有 2+ 人的职业不再堆叠），避免敌方白凑 T2 羁绊
+    const mainJobs = Object.entries(comp.mix).filter(([j,n])=>n>=2).map(([j])=>j);
+    const fillJobs = ['刀客','守护','游侠','法师','歌势','咒术','刺客','狂战'].filter(j=>!mainJobs.includes(j));
+    for(let i=0;i<extra;i++) list.push({d:pickFor(fillJobs[Math.floor(Math.random()*fillJobs.length)],cap,used), star:1});
+    // 前期（r≤3）敌方人数与玩家人口节奏同步：1级1人、2级2人、3级3人以内
+    // 避免 1 金/1 级开局被多打少，也避免敌方白凑 T2 羁绊压制玩家
+    if(r<=3){
+      const capN = Math.min(total, list.length);
+      if(list.length>capN) list.length = capN;
+    }
+  }
+  const b=Array(BOARD_H*BOARD_W).fill(null);
+  const front=[], back=[];
+  list.forEach(x=> (x.d.job==='守护'||x.d.job==='刀客'||x.d.job==='狂战') ? front.push(x) : back.push(x));
+  const place=(arr,rows)=>{
+    arr.forEach(x=>{
+      for(let tries=0;tries<30;tries++){
+        const row=rows[Math.floor(Math.random()*rows.length)], col=Math.floor(Math.random()*BOARD_W);
+        const idx=row*BOARD_W+col;
+        if(!b[idx]){
+          const m = mul * (x.bossMult||1) * Math.pow(STAR_M[x.d.cost]||1.8, x.star-1) * HP_SCALE;
+          b[idx]={uid:S.uid++, id:x.d.id, star:x.star, sks:Math.pow(SKILL_STAR_M[x.d.cost]||1.1, x.star-1),
+            hp:Math.round(x.d.hp*m), maxhp:Math.round(x.d.hp*m),
+            atk:Math.round(x.d.atk*m), enemy:true};
+          return;
+        }
+      }
+    });
+  };
+  place(front,[0,1]); place(back,[2,3]);
+  return b;
+}
+
+/* ================= 战斗 ================= */
+let battleTimer=null, SPEED=2, currentTick=null, tickWorker=null;   // 默认 2 倍速（8 分钟对局节奏）
+function startTickLoop(ms){ // 用 Worker 驱动战斗时钟，避免后台标签页被浏览器节流
+  stopTickLoop();
+  try{
+    const blob=new Blob(["let id=null;onmessage=e=>{if(e.data&&e.data.start){clearInterval(id);id=setInterval(()=>postMessage(0),e.data.ms);}};"],{type:'application/javascript'});
+    tickWorker=new Worker(URL.createObjectURL(blob));
+    tickWorker.onmessage=()=>{ if(currentTick) currentTick(); };
+    tickWorker.postMessage({start:true, ms});
+  }catch(err){
+    battleTimer=setInterval(()=>{ if(currentTick) currentTick(); }, ms);
+  }
+}
+function stopTickLoop(){
+  if(tickWorker){ tickWorker.terminate(); tickWorker=null; }
+  if(battleTimer){ clearInterval(battleTimer); battleTimer=null; }
+}
+function setSpeed(s){ SPEED=s; document.body.style.setProperty('--spd',s);
+  document.querySelectorAll('.spd-b').forEach(b=>b.classList.toggle('on',+b.dataset.s===s));
+  if(S.phase==='battle') startTickLoop(100/SPEED);
+}
+document.querySelectorAll('.spd-b').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
+function makeBattleUnit(u, side, x, y){
+  const d=byId(u.id);
+  const b={...u, side, x, y, cd:0, moveCd:0, maxmana:100, shield:0, frozen:0, rapid:0,
+    stun:0, atkDownA:0, atkDownT:0, slowA:0, slowT:0, noShieldT:0, healDownA:0, healDownT:0,
+    poisonT:0, poisonDmg:0, atkMul:1, hpMul:1, spdMul:1, vamp:0, dmgReduce:0,
+    tauntT:0, silenceT:0, blockCt:0, blockDmg:.5, blockT:0, thorns:0, thornsT:0, drBuff:0, drBuffT:0,
+    arDown:0, arDownT:0, mrDown:0, mrDownT:0, hexT:0, petrifyT:0};   // 破甲/减魔抗/变形/石化（多多文档机制）
+  b.ar=d.ar||0; b.mr=d.mr||0;   // 抗性以图鉴数据为唯一来源（敌方镜像同样生效）
+  (u.items||[]).forEach(k=>{
+    if(k==='sword')b.atkMul*=1.4;
+    if(k==='staff')b.atkMul*=1.25;
+    if(k==='armor')b.hpMul*=1.3;
+    if(k==='bow')b.spdMul*=1.35;
+    if(k==='vamp')b.vamp=Math.max(b.vamp,0.2);
+    if(k==='mana')b.manaRegen=true; // 潮汐法螺：每秒回蓝翻倍
+  });
+  b.atk=Math.round(b.atk*b.atkMul);
+  if(b.hpMul)b.maxhp=Math.round(b.maxhp*b.hpMul);
+  b.hp=b.maxhp;
+  const pv=svOf(d.id).p;                  // 被动参数（仅轴伊/雨纪/又一 3 人有）
+  b.svDtype = svOf(d.id).dtype || null;   // 主动技伤害类型覆盖（如纯粹伤害）
+  if(pv){
+    b.pv=pv;
+    if(pv.sb) b.sbAmt=pv.sb;                                   // 破盾特攻
+    if(pv.blockCt){ b.blockCt=pv.blockCt; b.blockDmg=pv.blockDmg||.5; } // 常驻格挡
+    if(pv.vampPct) b.vamp=Math.max(b.vamp,pv.vampPct);          // 被动吸血
+    if(pv.atkDot) b.pAtkDot=pv.atkDot;                          // 攻击附带毒伤
+  }
+  // 多多官方：蓝量开局清零，仅靠攻击/受击回蓝攒满 100 施放大招
+  b.mana = 0;
+  return b;
+}
+function startBattle(){
+  if(S.phase!=='prep') return;
+  stopTickLoop(); // 关闭任何残余的战斗时钟
+  if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
+  S.phase='battle'; S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null;
+  const c=compForRound(S.round);
+  log(`⚔ 第 ${S.round} 回合开战！对手：【${c.name}】`);
+  $('fightBtn').disabled=true; $('refreshBtn').disabled=true; $('lvlBtn').disabled=true;
+  renderAll();
+  // 战斗单位图层（平滑移动）；并清掉格子里的备战副本，防止移动后原位残留
+  const oldLayer=document.getElementById('unitLayer');
+  if(oldLayer) oldLayer.remove();
+  $('board').querySelectorAll('.cell .unit').forEach(e=>e.remove());
+  const layer=document.createElement('div'); layer.id='unitLayer';
+  $('board').appendChild(layer);
+  const units=[];
+  window.__bu=units; // 调试：战斗单位快照
+  S.board.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,0,i%BOARD_W,Math.floor(i/BOARD_W))); });
+  S.enemyBoard.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,1,i%BOARD_W,Math.floor(i/BOARD_W))); });
+  // —— 双方羁绊结算（分级强化） ——
+  const tierOf=(cnt,tbl,k)=>{ let t=0; for(const n of tbl[k].need) if(cnt[k]>=n) t++; return t; };
+  for(const side of [0,1]){
+    const mine = units.filter(u=>u.side===side);
+    const facCnt={}, clsCnt={};
+    const seen=new Set(); // 羁绊按不同棋子计数：同名重复副本只算 1 个
+    mine.forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id);
+      const d=byId(u.id);
+      facCnt[d.fac]=(facCnt[d.fac]||0)+1; clsCnt[d.job]=(clsCnt[d.job]||0)+1; });
+    // 数值聚合
+    let hpMul=1, atkMul=1, spdMul=1, regen=0, skMul=1, healMul=1, shieldPct=0, dmgReduce=0, poisonPow=0.02;
+    const atkJob=new Map(), facAtk={}, facHp={};
+    const addAtkJob=(j,amt)=>atkJob.set(j,(atkJob.get(j)||0)+amt);
+    // —— 阵营档位 ——
+    let t=tierOf(facCnt,FACTIONS,'深海');
+    if(t>=1) regen+=1.5; if(t>=2){ regen+=1.5; facHp['深海']=0.15; }
+    t=tierOf(facCnt,FACTIONS,'星际');
+    if(t>=1){ addAtkJob('法师',0.15); addAtkJob('游侠',0.15); }
+    if(t>=2){ addAtkJob('法师',0.10); addAtkJob('游侠',0.10); spdMul+=0.10; }
+    t=tierOf(facCnt,FACTIONS,'毛茸乐园');
+    if(t>=1) hpMul*=1.10; if(t>=2){ hpMul*=1.10; regen+=1.5; }
+    t=tierOf(facCnt,FACTIONS,'音律');
+    if(t>=1) healMul+=0.25; if(t>=2) healMul+=0.25;
+    t=tierOf(facCnt,FACTIONS,'四禧丸子');
+    if(t>=1){ atkMul+=0.12; regen+=1.5; }
+    if(t>=2){ atkMul+=0.08; regen+=0.5; facAtk['四禧丸子']=0.15; }
+    t=tierOf(facCnt,FACTIONS,'学园');
+    if(t>=1) spdMul+=0.12; if(t>=2){ spdMul+=0.08; facAtk['学园']=0.15; }
+    t=tierOf(facCnt,FACTIONS,'夜幕');
+    if(t>=1) facAtk['夜幕']=0.18; if(t>=2){ facAtk['夜幕']=0.30; dmgReduce+=0.10; }
+    t=tierOf(facCnt,FACTIONS,'花语');
+    if(t>=1){ hpMul*=1.08; regen+=1; } if(t>=2){ hpMul*=1.07; regen+=1; }
+    t=tierOf(facCnt,FACTIONS,'魔道');
+    if(t>=1) skMul+=0.2; if(t>=2) skMul+=0.2;
+    t=tierOf(facCnt,FACTIONS,'森之国');
+    if(t>=1) hpMul*=1.12; if(t>=2){ hpMul*=1.10; regen+=1; }
+    t=tierOf(facCnt,FACTIONS,'工造');
+    if(t>=1){ spdMul+=0.10; shieldPct+=0.10; } if(t>=2){ spdMul+=0.08; shieldPct+=0.10; facAtk['工造']=0.15; }
+    t=tierOf(facCnt,FACTIONS,'P-SP');
+    if(t>=1){ facAtk['P-SP']=0.15; regen+=1; } if(t>=2){ facAtk['P-SP']=0.30; regen+=1; }
+    // —— 职业档位 ——
+    t=tierOf(clsCnt,CLASSES,'刀客'); if(t>=1) addAtkJob('刀客',0.2); if(t>=2) addAtkJob('刀客',0.15);
+    t=tierOf(clsCnt,CLASSES,'守护'); if(t>=1) hpMul*=1.10; if(t>=2) hpMul*=1.10;
+    t=tierOf(clsCnt,CLASSES,'歌势'); if(t>=1) regen+=1.5; if(t>=2) regen+=1.5;
+    t=tierOf(clsCnt,CLASSES,'游侠'); let rgSpd=0; if(t>=1) rgSpd+=0.4; if(t>=2) rgSpd+=0.3;
+    t=tierOf(clsCnt,CLASSES,'法师'); if(t>=1) skMul+=0.3; if(t>=2) skMul+=0.3;
+    t=tierOf(clsCnt,CLASSES,'咒术');
+    if(t>=1){ if(t>=2) poisonPow=0.04;
+      mine.filter(u=>byId(u.id).job==='咒术').forEach(u=>u.poisonAtk=true); }
+    t=tierOf(clsCnt,CLASSES,'刺客'); if(t>=1) addAtkJob('刺客',0.15); if(t>=2) addAtkJob('刺客',0.15);
+    t=tierOf(clsCnt,CLASSES,'狂战'); if(t>=1){ const v=t>=2?0.3:0.15;
+      mine.filter(u=>byId(u.id).job==='狂战').forEach(u=>u.vamp=Math.max(u.vamp,v)); }
+    if(tierOf(clsCnt,CLASSES,'医者')>=2) regen+=1;
+    t=tierOf(clsCnt,CLASSES,'偶像'); if(t>=1) atkMul+=0.08; if(t>=2) atkMul+=0.08;
+    // —— 应用到每个棋子 ——
+    mine.forEach(u=>{
+      const d=byId(u.id);
+      u.maxhp=Math.round(u.maxhp*(hpMul*(1+(facHp[d.fac]||0)))); u.hp=u.maxhp;
+      u.atk=Math.round(u.atk*(atkMul+(atkJob.get(d.job)||0)+(facAtk[d.fac]||0)));
+      u.spdMul=spdMul+(d.job==='游侠'?rgSpd:0);
+      u.skMul=skMul; u.healMul=healMul; u.dmgReduce=dmgReduce; u.regen=regen;
+      u.assassin = (d.job==='刺客');   // 多多文档：刺客职业天生扑后排，无需羁绊
+      u.poisonPow = poisonPow;
+      if(shieldPct>0) u.shield+=Math.round(u.maxhp*shieldPct);
+    });
+    // 医者羁绊：生命最低队友护盾
+    const mT=tierOf(clsCnt,CLASSES,'医者');
+    if(mT>=1){
+      const lowest=mine.reduce((a,b)=>b.hp/b.maxhp<a.hp/a.maxhp?b:a);
+      lowest.shield+=Math.round(lowest.maxhp*(mT>=2?0.35:0.2));
+    }
+    // 战报（标注达到的档位）
+    const parts=[];
+    Object.entries(facCnt).forEach(([k,n])=>{ const tt=tierOf(facCnt,FACTIONS,k);
+      if(tt>0) parts.push(`${k}${tt>=2?'·T'+tt:''}×${n}`); });
+    Object.entries(clsCnt).forEach(([k,n])=>{ const tt=tierOf(clsCnt,CLASSES,k);
+      if(tt>0) parts.push(`${k}${tt>=2?'·T'+tt:''}×${n}`); });
+    if(parts.length) log(`${side===0?'🔥 我方':'⚔ 敌方'}羁绊：${parts.join('、')}`);
+  }
+  let t=0; const TICK=100;
+  currentTick=()=>{
+    if(S.phase!=='battle') return;  // 非战斗阶段，任何残余时钟都是空操作
+    t+=TICK;
+    // 每秒：回血 & 毒伤 & 增益到期
+    if(t%1000===0){
+      for(const u of units){
+        if(u.hp<=0) continue;
+        const hd = u.healDownT>0 ? (1-u.healDownA) : 1;
+        if(u.regen && u.hp<u.maxhp) u.hp=Math.min(u.maxhp,u.hp+u.regen*hd);
+        if(u.poisonT>0){ u.poisonT-=1000; u.hp-=u.poisonDmg;
+          dmgPopup(null,u,'☠'+u.poisonDmg,'poison'); }
+        if(u.thornsT>0){ u.thornsT-=1000; if(u.thornsT<=0){ u.thorns=0; u.thornsT=0; } } // 荆棘增益到期
+      }
+    }
+    for(const u of units){
+      if(u.hp<=0) continue;
+      if(u.frozen>0){ u.frozen-=TICK; continue; }
+      if(u.stun>0){ u.stun-=TICK; continue; }        // 眩晕/击飞：无法行动
+      if(u.atkDownT>0) u.atkDownT-=TICK;             // 攻击力降低
+      if(u.slowT>0) u.slowT-=TICK;                   // 攻速/移速降低
+      if(u.noShieldT>0) u.noShieldT-=TICK;           // 禁盾
+      if(u.healDownT>0) u.healDownT-=TICK;           // 减疗
+      if(u.tauntT>0) u.tauntT-=TICK;                 // 嘲讽
+      if(u.silenceT>0) u.silenceT-=TICK;             // 沉默：无法回蓝施法
+      if(u.hexT>0) u.hexT-=TICK;                     // 变形：禁用所有技能（含被动）
+      if(u.petrifyT>0) u.petrifyT-=TICK;             // 石化：受物理伤害增加（无法行动由 frozen 承担）
+      if(u.arDownT>0) u.arDownT-=TICK;               // 破甲
+      if(u.mrDownT>0) u.mrDownT-=TICK;               // 减魔抗
+      if(u.blockT>0){ u.blockT-=TICK; if(u.blockT<=0){ u.blockCt = (u.pv&&u.pv.blockCt)||0; u.blockT=0; } } // 格挡增益到期（被动格挡常驻）
+      if(u.drBuffT>0){ u.drBuffT-=TICK; if(u.drBuffT<=0){ u.drBuff=0; u.drBuffT=0; } }   // 减伤增益到期
+      // 多多官方：无常驻回蓝，蓝量仅来自攻击伤害与受击（见 dealDamage）
+      u.cd-=TICK; u.moveCd-=TICK;
+      const foes=units.filter(v=>v.hp>0&&v.side!==u.side);
+      if(!foes.length) break;
+      // 索敌：嘲讽强制优先 → 刺客优先残血 → 最近
+      let tgt;
+      const taunters=foes.filter(f=>f.tauntT>0);
+      if(taunters.length){ tgt=null; let bd=1e9;
+        for(const f of taunters){ const d2=Math.abs(f.x-u.x)+Math.abs(f.y-u.y); if(d2<bd){bd=d2;tgt=f;} } }
+      else if(u.assassin) tgt=foes.reduce((a,b)=>b.hp<a.hp?b:a);
+      else { tgt=null; let bd=1e9;
+        for(const f of foes){ const d2=Math.abs(f.x-u.x)+Math.abs(f.y-u.y); if(d2<bd){bd=d2;tgt=f;} } }
+      const d=byId(u.id);
+      const aspd = d.spd*(u.spdMul||1);
+      if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana){ u.mana=0; castSkill(u,tgt,units,u.skMul); }
+      if(Math.abs(tgt.x-u.x)+Math.abs(tgt.y-u.y)<=d.rng){
+        if(u.cd<=0){
+          const slow = u.slowT>0 ? u.slowA : 0;
+          const dmg = Math.round(eatk(u)*(u.rapid>0?2:1));
+          if(u.rapid>0)u.rapid--;
+          // 攻击表现：远程弹道 / 近战斩击 + 突进动作
+          const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
+          if(ael){ ael.classList.add('lunge'); setTimeout(()=>ael.classList.remove('lunge'),260/SPEED); }
+          if(d.form==='rg') fireProjectile(u,tgt, d.dtype==='phys'?'#ffd24a':'#c77dff');
+          else vfxAt(tgt,'slash',450);
+          const dealt=dealDamage(u,tgt,dmg,units,d.dtype);
+          u.cd = 1150/aspd*(1+slow);   // 快节奏：攻击间隔缩短，TTK 与回蓝同步加快
+          // 攻击回蓝（多多官方）：按最终实际伤害 ÷2.5，法师/咒术/医者单次上限 20、其余 10
+          if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && dealt>0){
+            const cap20 = d.job==='法师'||d.job==='咒术'||d.job==='医者';
+            u.mana=Math.min(u.maxmana, u.mana+Math.min(dealt/2.5, cap20?20:10)*(u.manaRegen?2:1));
+          }
+        }
+      } else if(u.moveCd<=0){
+        u.moveCd=450*(u.slowT>0?(1+u.slowA):1);
+        // BFS 寻路：绕开友方/敌方占位，走到能打到目标的最近空格（修复近战/远程被友军卡住）
+        const step=stepToward(u,tgt,d.rng,units);
+        if(step && freeCell(units,step[0],step[1])){ u.x=step[0]; u.y=step[1]; }
+      }
+    }
+    renderBattle(units);
+    const alive0=units.filter(u=>u.hp>0&&u.side===0).length;
+    const alive1=units.filter(u=>u.hp>0&&u.side===1).length;
+    if(alive0===0||alive1===0||t>60000){
+      stopTickLoop();
+      if(t>60000&&alive0>0&&alive1>0) log('⏱ 战斗超时，存活多者获胜');
+      showResultBanner(alive0>0&&alive0>=alive1, ()=>endBattle(alive0,alive1));
+      return;
+    }
+  };
+  startTickLoop(100/SPEED);
+}
+/* 主动治疗类技能的统一结算（治疗量按攻击/系数/羁绊/减疗折算） */
+function dealDamage(src,tgt,dmg,units,dtype){
+  if(!tgt||tgt.hp<=0) return 0;
+  const raw=dmg;
+  const spv=src&&src.pv;
+  // 格挡：技能/增益赋予的临时格挡，或被动常驻格挡（克物理与普攻；变形期间被动失效）
+  if(tgt.blockCt && tgt.hexT<=0 && Math.random()<tgt.blockCt){
+    dmg=Math.round(dmg*(1-(tgt.blockDmg||.5)));
+    dmgPopup(null,tgt,'格挡','cast');
+  }
+  // 破盾之刃（被动）：对带护盾目标附加特攻伤害（普攻与技能通用；变形期间被动失效）
+  if(src && src.sbAmt && src.hexT<=0 && tgt.shield>0){
+    dmg=Math.round(dmg*(1+src.sbAmt));
+    dmgPopup(src,tgt,'🛡特攻','cast');
+  }
+  // —— 抗性结算（多多官方公式）——
+  // 物理：减免率=(0.052×总护甲)/(0.9+0.048×|总护甲|)，线性叠加、边际递减，负护甲=伤害加深
+  // 魔法：所有魔抗来源百分比乘算 (1-a)(1-b)(…)，无收益上限
+  const dt = dtype || (src && (src.svDtype || byId(src.id).dtype)) || 'phys';
+  if(dt==='phys'){
+    const ar=(tgt.ar||0) - (tgt.arDownT>0?(tgt.arDown||0):0);   // 破甲：护甲可被压到负数（伤害加深）
+    dmg=Math.round(dmg*(1-(0.052*ar)/(0.9+0.048*Math.abs(ar))));
+    if(tgt.petrifyT>0) dmg=Math.round(dmg*1.25);                 // 石化：受到物理伤害增加（多多文档）
+  } else if(dt==='magic'){
+    const mr=(tgt.mr||0) - (tgt.mrDownT>0?(tgt.mrDown||0):0);    // 减魔抗：负魔抗伤害增幅极强
+    dmg=Math.round(dmg*(1-mr));
+  }   // dt==='pure'：纯粹伤害，无视护甲与魔抗
+  if(dt!=='pure') dmg=Math.max(dmg, Math.ceil(raw*0.05));   // 多多官方：任意伤害 5% 保底（纯粹伤害除外）
+  if(tgt.shield>0){
+    const ab=Math.min(tgt.shield,dmg); tgt.shield-=ab; dmg-=ab;
+  }
+  if(tgt.dmgReduce) dmg=Math.round(dmg*(1-tgt.dmgReduce));
+  if(tgt.drBuff && tgt.drBuffT>0) dmg=Math.round(dmg*(1-tgt.drBuff));   // 减伤增益（桃色结界等）
+  tgt.hp-=dmg;
+  // 受击回蓝（多多官方）：随机回蓝 min(伤害/10,25) ~ min(伤害/5,50)
+  if(dmg>0 && !isPassive(tgt) && tgt.silenceT<=0){
+    const lo=Math.min(dmg/10,25), hi=Math.min(dmg/5,50);
+    tgt.mana=Math.min(tgt.maxmana, tgt.mana+(hi>lo? lo+Math.random()*(hi-lo): lo)*(tgt.manaRegen?2:1));
+  }
+  if(src && src.vamp && src.hexT<=0 && src.hp<src.maxhp) src.hp=Math.min(src.maxhp, src.hp+Math.round(dmg*src.vamp));
+  if(src && src.poisonAtk && src.hexT<=0 && tgt.hp>0){ tgt.poisonT=3000; tgt.poisonDmg=Math.round(tgt.maxhp*(src.poisonPow||0.02)); }
+  if(src && src.pAtkDot && src.hexT<=0 && tgt.hp>0){ tgt.poisonT=3000; tgt.poisonDmg=Math.round(tgt.maxhp*src.pAtkDot); }
+  if(tgt.thorns && src && src.hp>0 && dmg>0){ src.hp-=Math.max(1,Math.round(tgt.maxhp*tgt.thorns)); dmgPopup(null,src,'荆棘','cast'); }
+  dmgPopup(src,tgt,'-'+dmg);
+  if(tgt.hp<=0){
+    if(src && src.side===0) S.stats.kills++;
+    log(`💀 ${src&&src.side===0?'我方':'敌方'}${src?byId(src.id).name:'?'} 击败 ${byId(tgt.id).name}`);
+  }
+  return dmg;
+}
+/* 读取棋子的实时视觉位置（含 CSS 过渡中的位置），返回相对 #board 的中心坐标 */
+function unitVisual(u){
+  const el=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
+  if(!el){ return { x:4+u.x*60+25, y:4+u.y*60+25, el:null }; }
+  const br=el.getBoundingClientRect(), brd=$('board').getBoundingClientRect();
+  return { x:br.left-brd.left+br.width/2, y:br.top-brd.top+br.height/2, el };
+}
+function vfxAt(u,cls,dur=900){
+  // 特效直接挂到棋子元素上，跟随其移动
+  const host=unitVisual(u).el;
+  if(!host) return;
+  const v=document.createElement('div');
+  v.className='vfx attached '+cls;
+  host.appendChild(v);
+  setTimeout(()=>v.remove(),dur);
+}
+function shakeCell(x,y){
+  const c=$('board').children[y*BOARD_W+x];
+  if(!c) return;
+  c.classList.add('shake');
+  setTimeout(()=>c.classList.remove('shake'),380/SPEED);
+}
+function beam(u1,u2,color){
+  const a=unitVisual(u1), b=unitVisual(u2);
+  const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+  if(len<1) return;
+  const el=document.createElement('div');
+  el.className='vfx beam';
+  el.style.width=len+'px';
+  el.style.color=color; el.style.background=color;
+  el.style.left=a.x+'px'; el.style.top=(a.y-2.5)+'px';
+  el.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`;
+  $('board').appendChild(el);
+  setTimeout(()=>el.remove(),480/SPEED);
+}
+function freeCell(units,nx,ny){
+  return nx>=0&&nx<BOARD_W&&ny>=0&&ny<BOARD_H && !units.some(v=>v.hp>0&&v.x===nx&&v.y===ny);
+}
+/* 寻路：BFS 到「曼哈顿距离 ≤ rng」的最近可达空格，返回第一步坐标（无路可走返回 null）。
+   只把被存活单位占据的格子当障碍，因此单位会自然绕开友军堵位找角度输出 */
+function stepToward(u,tgt,rng,units){
+  const N=BOARD_W*BOARD_H, key=(x,y)=>y*BOARD_W+x;
+  const blocked=new Uint8Array(N);
+  for(const v of units){ if(v.hp>0 && v!==u) blocked[key(v.x,v.y)]=1; }
+  const inRange=(x,y)=>Math.abs(tgt.x-x)+Math.abs(tgt.y-y)<=rng;
+  if(inRange(u.x,u.y)) return null;
+  const dist=new Int16Array(N).fill(-1), prev=new Int16Array(N).fill(-1);
+  const start=key(u.x,u.y); dist[start]=0;
+  const q=[start]; let head=0, goal=-1;
+  while(head<q.length){
+    const cur=q[head++];
+    const cx=cur%BOARD_W, cy=(cur-cx)/BOARD_W;
+    if(cur!==start && inRange(cx,cy)){ goal=cur; break; }   // BFS 逐层展开，首个命中的就是最近
+    for(const [nx,ny] of [[cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]]){
+      if(nx<0||nx>=BOARD_W||ny<0||ny>=BOARD_H) continue;
+      const k=key(nx,ny);
+      if(dist[k]>=0 || blocked[k]) continue;
+      dist[k]=dist[cur]+1; prev[k]=cur; q.push(k);
+    }
+  }
+  if(goal<0) return null;
+  let cur=goal;
+  while(prev[cur]!==start && prev[cur]!==-1) cur=prev[cur];
+  return prev[cur]===start ? [cur%BOARD_W, (cur-(cur%BOARD_W))/BOARD_W] : null;
+}
+function eatk(u){ // 结算攻击力降低后的有效攻击
+  return Math.max(1, Math.round(u.atk*(u.atkDownT>0?(1-u.atkDownA):1)));
+}
+function fireProjectile(src,tgt,color){
+  const el=document.createElement('div');
+  el.className='vfx proj';
+  el.style.background=color; el.style.boxShadow=`0 0 6px ${color}`;
+  $('board').appendChild(el);
+  const s=unitVisual(src), flight=420/SPEED, t0=performance.now();
+  (function step(){
+    const k=Math.min(1,(performance.now()-t0)/flight);
+    const t=unitVisual(tgt); // 每帧读取目标实时视觉位置 → 追踪移动中的目标
+    el.style.left=(s.x+(t.x-s.x)*k-4)+'px';
+    el.style.top=(s.y+(t.y-s.y)*k-4)+'px';
+    if(k<1) requestAnimationFrame(step); else el.remove();
+  })();
+}
+/* 按棋子变体选择技能目标（默认最近；low=残血 / hi=高攻 / far=最远） */
+function pickFoe(foes,u,sv){
+  const t=sv.tgt, dist=v=>Math.abs(v.x-u.x)+Math.abs(v.y-u.y);
+  if(t==='low') return foes.reduce((a,b)=>b.hp/b.maxhp<a.hp/a.maxhp?b:a);
+  if(t==='hi') return foes.reduce((a,b)=>eatk(b)>eatk(a)?b:a);
+  if(t==='far') return foes.reduce((a,b)=>dist(b)>dist(a)?b:a);
+  return foes.reduce((a,b)=>dist(b)<dist(a)?b:a);
+}
+/* 棋子独有技能特效统一结算（fx 词条 → 既有状态字段） */
+function applyFx(u,f,sv,units,allies,foes,power,dmg){
+  if(!sv.fx || (f && f.hp<=0)) { if(!sv.fx) return; }
+  for(const fx of sv.fx){
+    const [k,a,b]=fx;
+    const hit = f && f.hp>0;
+    switch(k){
+      case 'stun': if(hit){ f.stun=Math.max(f.stun,(a||1)*1000); dmgPopup(u,f,'💫眩晕','cast'); } break;
+      case 'freeze': if(hit){ f.frozen=Math.max(f.frozen,(a||1.5)*1000); } break;
+      case 'slow': if(hit){ f.slowA=a; f.slowT=(b||3)*1000; } break;
+      case 'weaken': if(hit){ f.atkDownA=a; f.atkDownT=(b||3)*1000; dmgPopup(u,f,'🔻攻降','cast'); } break;
+      case 'healdown': if(hit){ f.healDownA=a; f.healDownT=(b||3)*1000; } break;
+      case 'burn': if(hit){ const burn=Math.round(f.maxmana*a); f.mana=Math.max(0,f.mana-burn); if(burn>0) dmgPopup(u,f,'-'+burn+'蓝','cast'); } break;
+      case 'shred': if(hit){ f.arDown=Math.max(f.arDown||0,a); f.arDownT=(b||4)*1000; dmgPopup(u,f,'🪓破甲','cast'); } break;
+      case 'sunder': if(hit){ f.mrDown=Math.max(f.mrDown||0,a); f.mrDownT=(b||4)*1000; dmgPopup(u,f,'🔯减抗','cast'); } break;
+      case 'silence': if(hit){ f.silenceT=Math.max(f.silenceT||0,(a||2)*1000); dmgPopup(u,f,'🔇沉默','cast'); } break;
+      case 'hex': if(hit){ f.hexT=Math.max(f.hexT,(a||2)*1000); dmgPopup(u,f,'🐧变形','cast'); } break;
+      case 'petrify': if(hit){ const pt=(a||2)*1000; f.petrifyT=Math.max(f.petrifyT,pt); f.frozen=Math.max(f.frozen,pt); dmgPopup(u,f,'🗿石化','cast'); } break;
+      case 'shieldself': u.shield+=Math.round(u.maxhp*a); vfxAt(u,'ring shield',900); break;
+      case 'healside': allies.forEach(t=>{ t.hp=Math.min(t.maxhp,t.hp+Math.round(power*a)); vfxAt(t,'ring heal',800); }); break;
+      case 'healshield': allies.forEach(t=>{ t.shield+=Math.round(t.maxhp*a); vfxAt(t,'ring shield',800); }); break;
+      case 'heallow': { if(!allies.length) break;
+        const t=allies.reduce((x,y)=>y.hp/y.maxhp<x.hp/x.maxhp?y:x);
+        const h=Math.round(power*a); t.hp=Math.min(t.maxhp,t.hp+h);
+        vfxAt(t,'ring heal',900); dmgPopup(u,t,'+'+h,'heal'); break; }
+      case 'dot': if(hit){ f.poisonT=3000; f.poisonDmg=Math.round(f.maxhp*a); } break;
+      case 'selfheal': { const h=Math.round((dmg||0)*a); if(h>0) u.hp=Math.min(u.maxhp,u.hp+h); } break;
+      case 'push': if(hit){ const dx=Math.sign(f.x-u.x), dy=Math.sign(f.y-u.y);
+        if((dx||dy)&&freeCell(units,f.x+dx,f.y+dy)){ f.x+=dx; f.y+=dy; shakeCell(f.x,f.y); } } break;
+      case 'vamp': u.vamp=Math.max(u.vamp||0,a); break;
+      case 'atkup': u.atk=Math.round(u.atk*(1+a)); break;
+      case 'allatkup': allies.forEach(t=>{ t.atk=Math.round(t.atk*(1+a)); }); break;
+      case 'splash': { if(!hit) break;
+        const f2=foes.filter(v=>v!==f&&v.hp>0)
+          .sort((x,y)=>(Math.abs(x.x-u.x)+Math.abs(x.y-u.y))-(Math.abs(y.x-u.x)+Math.abs(y.y-u.y)))[0];
+        if(f2){ dealDamage(u,f2,Math.round(power*a),units); dmgPopup(u,f2,'✦溅射','cast'); } break; }
+      case 'foehealdown': foes.forEach(t=>{ if(t.hp>0){ t.healDownA=Math.max(t.healDownA||0,a); t.healDownT=(b||3)*1000; } }); break;
+      case 'exec': if(hit && f.hp>0 && f.hp/f.maxhp<0.35){   // 斩杀：残血目标追加伤害
+        dealDamage(u,f,Math.round(power*a),units); dmgPopup(u,f,'⚔斩杀','cast'); } break;
+      case 'allymana': allies.forEach(t=>{ if(t.hp>0&&!isPassive(t)) t.mana=Math.min(t.maxmana||60,t.mana+a); }); break;
+      case 'thornsbuff': u.thorns=a; u.thornsT=(b||4)*1000; break;
+      case 'drbuff': u.drBuff=a; u.drBuffT=(b||4)*1000; break;
+    }
+  }
+}
+function castSkill(u,tgt,units,skMul){
+  const d=byId(u.id), [nm,arch]=d.sk;
+  const sv=svOf(u.id);
+  const power = Math.round(eatk(u)*(u.side===0?skMul:1)*d.skc*(u.sks||1)*(sv.pow||1)); // 技能倍率随星级增强 × 棋子变体
+  const allies = units.filter(v=>v.hp>0&&v.side===u.side);
+  const foes = units.filter(v=>v.hp>0&&v.side!==u.side);
+  const SUPPORT=new Set(['heal','aheal','manafeed','shell','teamshield','guard','bulwark','cleanse','tauntshield']);
+  if(!foes.length && !SUPPORT.has(arch)) return;
+  const lowest = arr=>arr.reduce((a,b)=>b.hp/b.maxhp<a.hp/a.maxhp?b:a);
+  const dist = v=>Math.abs(v.x-u.x)+Math.abs(v.y-u.y);
+  dmgPopup(u,u,'✦'+nm,'cast');
+  log(`✨ ${u.side===0?'我方':'敌方'}${d.name} 释放【${nm}】！`);
+  shakeCell(u.x,u.y);
+  const hm = u.healMul||1;
+  switch(arch){
+    case 'cleave': {
+      const hits = foes.filter(f=>Math.abs(f.x-u.x)<=1&&Math.abs(f.y-u.y)<=1);
+      hits.forEach(f=>{
+        vfxAt(f,'ring',900);
+        const dd=dealDamage(u,f,Math.round(power*1.5),units);
+        applyFx(u,f,sv,units,allies,foes,power,dd);
+        if(f.hp>0){
+          const dx=Math.sign(f.x-u.x), dy=Math.sign(f.y-u.y);
+          const nx=f.x+dx, ny=f.y+dy;
+          if((dx||dy) && freeCell(units,nx,ny)){ f.x=nx; f.y=ny; shakeCell(nx,ny); }
+        }
+      });
+      break; }
+    case 'dash': {
+      if(!foes.length)break;
+      const ox=u.x, oy=u.y;
+      const far=pickFoe(foes,u,{...sv,tgt:sv.tgt||'far'});
+      const spot=[[far.x-1,far.y],[far.x+1,far.y],[far.x,far.y-1],[far.x,far.y+1]]
+        .find(([x,y])=>freeCell(units,x,y));
+      if(spot){u.x=spot[0];u.y=spot[1];}
+      beam(u,far,'#ffffff');
+      vfxAt(u,'flash',600);
+      vfxAt(far,'ring',900);
+      const dd=dealDamage(u,far,Math.round(power*2),units);
+      applyFx(u,far,sv,units,allies,foes,power,dd);
+      shakeCell(far.x,far.y); break; }
+    case 'heal': { if(!allies.length)break;
+      // 单体/双人治疗（healN 变体）；受疗者附加护盾/回蓝等增益
+      const n=sv.healN||1, per=n>=2?1.3:1.8;
+      const ts=[...allies].sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp).slice(0,n);
+      ts.forEach(t=>{
+        const hd=t.healDownT>0?(1-t.healDownA):1;
+        const h=Math.round(power*per*hm*hd);
+        t.hp=Math.min(t.maxhp,t.hp+h);
+        vfxAt(t,'ring heal',950); dmgPopup(u,t,'+'+h,'heal');
+        const mA=(sv.fx||[]).find(f=>f[0]==='allymana');
+        if(mA && !isPassive(t)) t.mana=Math.min(t.maxmana||60,t.mana+mA[1]);
+      });
+      applyFx(u,ts[0],sv,units,ts,foes,power,0);
+      break; }
+    case 'aheal': allies.forEach(t=>{ const hd=t.healDownT>0?(1-t.healDownA):1;
+      const h=Math.round(power*0.9*hm*hd);
+      t.hp=Math.min(t.maxhp,t.hp+h); vfxAt(t,'ring heal',950); dmgPopup(u,t,'+'+h,'heal'); });
+      applyFx(u,foes[0],sv,units,allies,foes,power,0); break;
+    case 'rapid': u.rapid=sv.rapidN||3; vfxAt(u,'ring',800); vfxAt(u,'flash',600);
+      applyFx(u,null,sv,units,allies,foes,power,0); break;
+    case 'volley': { if(!tgt)break;
+      [tgt,...foes.filter(f=>f!==tgt&&Math.abs(f.x-tgt.x)<=1&&Math.abs(f.y-tgt.y)<=1)]
+        .forEach(f=>{ vfxAt(f,'ring',900); const dd=dealDamage(u,f,Math.round(power*1.2),units);
+          applyFx(u,f,sv,units,allies,foes,power,dd); shakeCell(f.x,f.y); });
+      break; }
+    case 'fireball': { if(!foes.length)break;
+      const f=pickFoe(foes,u,sv);
+      beam(u,f,'#ff9a3d');
+      vfxAt(f,'boom',750);
+      const dd=dealDamage(u,f,Math.round(power*2.5),units);
+      applyFx(u,f,sv,units,allies,foes,power,dd);
+      shakeCell(f.x,f.y); break; }
+    case 'frost': { if(!foes.length)break;
+      const f=pickFoe(foes,u,sv);
+      beam(u,f,'#9fe8ff');
+      vfxAt(f,'ring frost',1050);
+      const dd=dealDamage(u,f,Math.round(power*1.5),units);
+      applyFx(u,f,sv,units,allies,foes,power,dd);
+      if(f.hp>0)f.frozen=Math.max(f.frozen,1500); break; }
+    case 'break': { if(!foes.length)break;
+      const f=pickFoe(foes,u,sv);
+      beam(u,f,'#ffb14a');
+      const stripped=f.shield; f.shield=0; f.noShieldT=3000;
+      vfxAt(f,'boom',750);
+      const dd=dealDamage(u,f,Math.round(power*1.3),units);
+      applyFx(u,f,sv,units,allies,foes,power,dd);
+      shakeCell(f.x,f.y);
+      if(stripped>0) dmgPopup(u,f,'🛡-'+stripped,'cast');
+      dmgPopup(u,f,'🚫禁盾','cast'); break; }
+    case 'slam': {
+      const hits=foes.filter(fl=>Math.abs(fl.x-u.x)<=1&&Math.abs(fl.y-u.y)<=1);
+      if(!hits.length) break;
+      vfxAt(u,'boom',750); shakeCell(u.x,u.y);
+      hits.forEach(f=>{ vfxAt(f,'ring',900); const dd=dealDamage(u,f,Math.round(power*1.2),units);
+        applyFx(u,f,sv,units,allies,foes,power,dd);
+        if(f.hp>0){ f.stun=Math.max(f.stun,800); dmgPopup(u,f,'⬆击飞','cast'); } });
+      break; }
+    case 'purebolt': { if(!foes.length)break;   // 纯粹伤害：无视护甲与魔抗（多多文档 11.4.3）
+      const f=pickFoe(foes,u,sv);
+      beam(u,f,'#e8e2ff');
+      vfxAt(f,'boom',780);
+      const dd=dealDamage(u,f,Math.round(power*1.8),units,'pure');
+      applyFx(u,f,sv,units,allies,foes,power,dd);
+      shakeCell(f.x,f.y); break; }
+    case 'shred': case 'sunder': case 'hex': {   // 破甲 / 减魔抗 / 变形（多多文档破防与控制体系）
+      if(!foes.length)break;
+      const f=pickFoe(foes,u,sv);
+      beam(u,f, arch==='hex'?'#c77dff':'#d9b26a');
+      vfxAt(f,'ring',900);
+      const dd=dealDamage(u,f,Math.round(power*(arch==='hex'?1.1:1.2)),units);
+      applyFx(u,f,sv,units,allies,foes,power,dd);
+      break; }
+    case 'curse': { if(!foes.length)break;
+      const f=pickFoe(foes,u,sv);
+      beam(u,f,'#b0ff6b');
+      vfxAt(f,'ring drain',950);
+      const dd=dealDamage(u,f,Math.round(power*1.0),units);
+      applyFx(u,f,sv,units,allies,foes,power,dd);
+      if(f.hp>0){ f.atkDownA=0.3; f.atkDownT=4000; dmgPopup(u,f,'🔻攻降','cast'); }
+      break; }
+    case 'burn': { if(!foes.length)break;
+      const f=pickFoe(foes,u,sv);
+      beam(u,f,'#4aa8ff');
+      vfxAt(f,'boom',750);
+      const dd=dealDamage(u,f,Math.round(power*1.5),units);
+      applyFx(u,f,sv,units,allies,foes,power,dd);
+      if(f.hp>0){ const burn=Math.round(Math.min(f.mana,f.maxmana*0.3)); f.mana-=burn;
+        if(burn>0) dmgPopup(u,f,'-'+burn+'蓝','cast'); }
+      shakeCell(f.x,f.y); break; }
+    case 'massstun': {
+      if(!foes.length)break;
+      vfxAt(u,'ring',900); shakeCell(u.x,u.y);
+      foes.forEach(f=>{ vfxAt(f,'ring',900); const dd=dealDamage(u,f,Math.round(power*1.0),units);
+        applyFx(u,f,sv,units,allies,foes,power,dd);
+        if(f.hp>0){ f.stun=Math.max(f.stun,1000); dmgPopup(u,f,'💫眩晕','cast'); } });
+      break; }
+    case 'massfreeze': {
+      if(!foes.length)break;
+      vfxAt(u,'ring frost',950); shakeCell(u.x,u.y);
+      foes.forEach(f=>{ vfxAt(f,'ring frost',1050); const dd=dealDamage(u,f,Math.round(power*0.8),units);
+        applyFx(u,f,sv,units,allies,foes,power,dd);
+        if(f.hp>0){ f.frozen=Math.max(f.frozen,1000); } });
+      break; }
+    /* ===== 多多式新增原型 ===== */
+    case 'tauntshield': {   // 魔导屏障：自身护盾+嘲讽（克刺客跳后排）
+      u.shield+=Math.round(u.maxhp*(sv.shieldPct||.35));
+      u.tauntT=(sv.tauntT||2)*1000;
+      vfxAt(u,'ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
+      break; }
+    case 'guard': {         // 忠诚守护：保最低队友+自身盾+嘲讽
+      const mates=allies.filter(v=>v!==u);
+      if(mates.length){ const t=lowest(mates);
+        t.shield+=Math.round(t.maxhp*(sv.allyShield||.3)); vfxAt(t,'ring shield',950); }
+      u.shield+=Math.round(u.maxhp*(sv.selfShield||.2));
+      u.tauntT=(sv.tauntT||1.5)*1000;
+      vfxAt(u,'ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
+      break; }
+    case 'manafeed': {      // 晨间报时：全队回蓝+群疗（与烧蓝对冲，加速法师阵容）
+      allies.forEach(t=>{
+        if(!isPassive(t)) t.mana=Math.min(t.maxmana||60,t.mana+(sv.manaAmt||25));
+        const hd=t.healDownT>0?(1-t.healDownA):1;
+        const h=Math.round(power*0.5*hm*hd);
+        t.hp=Math.min(t.maxhp,t.hp+h); vfxAt(t,'ring heal',900);
+      });
+      dmgPopup(u,u,'+'+(sv.manaAmt||25)+'蓝','cast');
+      break; }
+    case 'shell': {         // 坚壳：高额自盾，可带格挡/荆棘/嘲讽增益
+      u.shield+=Math.round(u.maxhp*(sv.shellPct||.35));
+      if(sv.blockCt){ u.blockCt=Math.max(u.blockCt,sv.blockCt); u.blockDmg=sv.blockDmg||.5; u.blockT=(sv.blockT||4)*1000; }
+      if(sv.thornsB){ u.thorns=sv.thornsB; u.thornsT=(sv.thornsT||4)*1000; }
+      if(sv.tauntT){ u.tauntT=sv.tauntT*1000; dmgPopup(u,u,'🎯嘲讽','cast'); }
+      vfxAt(u,'ring shield',1100); shakeCell(u.x,u.y);
+      break; }
+    case 'teamshield': {    // 团盾：为全体队友附加护盾
+      allies.forEach(t=>{ t.shield+=Math.round(t.maxhp*(sv.teamPct||.12)); vfxAt(t,'ring shield',900); });
+      break; }
+    case 'silence': { if(!foes.length)break;   // 沉默：克制回蓝施法阵容
+      const f=pickFoe(foes,u,sv);
+      beam(u,f,'#b06be8');
+      vfxAt(f,'ring drain',950);
+      const dd=dealDamage(u,f,Math.round(power*1.4),units);
+      applyFx(u,f,sv,units,allies,foes,power,dd);
+      if(f.hp>0){ f.silenceT=(sv.dur||3)*1000; dmgPopup(u,f,'🔇沉默','cast'); }
+      shakeCell(f.x,f.y); break; }
+    case 'chain': { if(!foes.length)break;     // 连锁闪电：衰减三连击
+      const targets=[...foes].sort((a,b)=>dist(a)-dist(b)).slice(0,3);
+      const mult=[1.5,1.2,0.95]; let prev=u;
+      targets.forEach((f,i)=>{ beam(prev,f,'#ffe14a'); prev=f;
+        vfxAt(f,'flash',600);
+        const dd=dealDamage(u,f,Math.round(power*mult[i]),units);
+        applyFx(u,f,sv,units,allies,foes,power,dd); shakeCell(f.x,f.y); });
+      break; }
+    case 'cleanse': {       // 净化：群疗+清除控制/负面（克控制流）
+      allies.forEach(t=>{
+        const hd=t.healDownT>0?(1-t.healDownA):1;
+        const h=Math.round(power*0.9*hm*hd);
+        t.hp=Math.min(t.maxhp,t.hp+h);
+        ['stun','frozen','slowT','atkDownT','healDownT','silenceT','noShieldT','hexT','petrifyT','arDownT','mrDownT'].forEach(k=>t[k]=0);
+        t.slowA=0; t.atkDownA=0; t.healDownA=0;
+        vfxAt(t,'ring heal',950); vfxAt(t,'flash',600);
+      });
+      break; }
+    case 'bulwark': {       // 壁垒：团盾+自身减伤+嘲讽
+      allies.forEach(t=>{ t.shield+=Math.round(t.maxhp*(sv.teamPct||.15)); vfxAt(t,'ring shield',950); });
+      u.drBuff=sv.drB||.15; u.drBuffT=(sv.drT||4)*1000;
+      u.tauntT=(sv.tauntT||2.5)*1000;
+      vfxAt(u,'ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
+      break; }
+    case 'masssilence': { if(!foes.length)break;   // 灵界之门：全体沉默
+      vfxAt(u,'ring drain',950); shakeCell(u.x,u.y);
+      foes.forEach(f=>{ vfxAt(f,'ring drain',950); const dd=dealDamage(u,f,Math.round(power*1.1),units);
+        applyFx(u,f,sv,units,allies,foes,power,dd);
+        if(f.hp>0){ f.silenceT=(sv.dur||2)*1000; dmgPopup(u,f,'🔇沉默','cast'); } });
+      break; }
+  }
+}
+function dmgPopup(src,tgt,text,cls){
+  const b=$('board');
+  const el=document.createElement('div'); el.className='dmg'+(cls?' '+cls:''); el.textContent=text;
+  const p=unitVisual(tgt); // 在目标当前视觉位置弹出
+  el.style.left=(p.x-24)+'px'; el.style.top=(p.y-30)+'px';
+  b.appendChild(el); setTimeout(()=>el.remove(),800/SPEED);
+}
+function renderBattle(units){
+  let layer=document.getElementById('unitLayer');
+  if(!layer){ layer=document.createElement('div'); layer.id='unitLayer'; $('board').appendChild(layer); }
+  const seen=new Set();
+  for(const u of units){
+    if(u.hp<=0) continue;
+    seen.add(String(u.uid));
+    let el=layer.querySelector(`[data-uid="${u.uid}"]`);
+    if(!el){
+      el=document.createElement('div');
+      el.className='unit battle-unit cost'+byId(u.id).cost+(u.side===1?' enemy':' ally');
+      el.dataset.uid=u.uid;
+      el.title=unitHTML(u,false).match(/title="([^"]*)"/)[1];
+      el.innerHTML=unitInner(u);
+      layer.appendChild(el);
+    }
+    el.style.left=(4+u.x*60)+'px';
+    el.style.top=(4+u.y*60)+'px';
+    const hp=el.querySelector('.hpfill');
+    if(hp) hp.style.width=Math.max(0,u.hp/u.maxhp*100)+'%';
+    const mp=el.querySelector('.mpfill');
+    if(mp) mp.style.width=Math.min(100,u.mana/u.maxmana*100)+'%';
+    el.classList.toggle('shielded',u.shield>0);
+    el.classList.toggle('frozen',u.frozen>0);
+    el.classList.toggle('stunned',u.stun>0);
+    el.classList.toggle('weakened',u.atkDownT>0);
+    el.classList.toggle('slowed',u.slowT>0);
+    let fz=el.querySelector('.fz');
+    const stTxt=(u.frozen>0?'❄':'')+(u.stun>0?'💫':'')+(u.atkDownT>0?'🔻':'')+(u.slowT>0?'🐌':'')
+      +(u.noShieldT>0?'🔨':'')+(u.healDownT>0?'💉':'')+(u.silenceT>0?'🔇':'')+(u.tauntT>0?'🎯':'');
+    if(stTxt){
+      if(!fz){ fz=document.createElement('span'); fz.className='fz'; el.appendChild(fz); }
+      fz.textContent=stTxt;
+    } else if(fz) fz.remove();
+  }
+  layer.querySelectorAll('.unit').forEach(el=>{ if(!seen.has(el.dataset.uid)) el.remove(); });
+}
+function showResultBanner(won,cb){
+  if(S.phase!=='battle') return;   // 已在结算流程中，防止重复横幅/重复结算
+  S.phase='settle';
+  const el=document.createElement('div');
+  el.className='result-banner '+(won?'win':'lose');
+  el.textContent=won?'🏆 胜 利':'💀 失 败';
+  if(won){
+    for(let i=0;i<26;i++){
+      const p=document.createElement('div'); p.className='confetti';
+      p.style.left=Math.random()*100+'%';
+      p.style.background=['#ffd24a','#8dff9a','#4aa8ff','#ff8ad8'][i%4];
+      p.style.animationDelay=(Math.random()*0.5)+'s';
+      p.style.animationDuration=(0.9+Math.random()*0.7)+'s';
+      el.appendChild(p);
+    }
+  }
+  $('board').appendChild(el);
+  setTimeout(()=>{ el.remove(); cb(); }, 500/SPEED);   // 结算横幅短停留（随倍速）
+}
+function endBattle(alive0,alive1){
+  if(S.phase==='over') return;     // 已终局，忽略迟到的结算
+  const won = alive0>0 && alive0>=alive1;
+  const survivors = alive1>0 ? alive1 : 0;
+  const isCreep = S.round%5===0;   // 野怪回合（每 5 回合）
+  log(`📋 第 ${S.round} 回合结算：`);
+  // 基础收入阶梯：第 1 回合 1 金 → 第 5 回合起固定 5 金（回合结束发放下一回合的收入）
+  const settleIncome = ()=>{ const inc=Math.min(S.round+1,5);
+    addGold(inc,`基础收入（第 ${S.round+1} 回合 · ${inc} 金）`);
+    addGold(Math.min(5,Math.floor(S.gold/10)),'存款利息（每10金+1，上限5）'); };
+  if(isCreep){
+    /* 多多自走棋野怪规则：失败不扣血、不影响连胜；胜利按进度掉装备（普通回合不掉装备） */
+    if(won){
+      S.stats.wins++;
+      const dropN = DROP_N[S.round]!==undefined ? DROP_N[S.round] : 1;
+      const keys=Object.keys(ITEMS);
+      for(let i=0;i<dropN;i++){
+        const k=keys[Math.floor(Math.random()*keys.length)];
+        S.items.push(k);
+        log(`🎁 野怪掉落：${ITEMS[k].e} ${ITEMS[k].n}（${ITEMS[k].desc}）`);
+      }
+      log(`　🏆 击败【${CREEP[S.round]||'野怪'}】，获得 ${dropN} 件装备（连胜 ${S.streak} 保持不变）`);
+      settleIncome();
+      if(S.round>=MAX_ROUNDS && !S.endless){ stageVictory(); return; }   // 第 25 回合击败最终魔王 = 通关
+    } else {
+      S.stats.losses++;
+      if(S.round>=MAX_ROUNDS && !S.endless){ log('💀 最终魔王战失败，挑战结束！'); gameOver(false); return; }
+      log('　💤 野怪回合失败：不扣血、不影响连胜/连败（多多自走棋规则）');
+      settleIncome();
+    }
+  } else if(won){
+    S.streak++; S.lossStreak=0; S.stats.wins++;
+    S.stats.maxStreak=Math.max(S.stats.maxStreak,S.streak);
+    log(`　🏆 战斗胜利（当前连胜 ${S.streak}）`);
+    const wb = S.streak>=7?4 : S.streak>=5?3 : S.streak>=3?2 : 0;   // 连胜奖励阶梯：3/5/7 → +2/3/4
+    if(wb) addGold(wb,`连胜奖励（${S.streak} 连胜）`);
+    addGold(2,'胜利奖金');                                           // 赢下对局 +2 金
+    settleIncome();
+  } else {
+    S.stats.losses++; S.lossStreak=(S.lossStreak||0)+1; S.streak=0;
+    const dmg = 1 + Math.floor(Math.max(0,survivors-1)/2);
+    S.hp -= dmg; S.stats.dmgTaken+=dmg;
+    log(`　💔 战斗失败：敌方存活 ${survivors} 人，扣 ${dmg} 血（剩余 ${S.hp-dmg<0?0:S.hp-dmg}）`);
+    if(S.hp<=0){ S.hp=0; gameOver(false); return; }
+    const lb = S.lossStreak>=7?4 : S.lossStreak>=5?3 : S.lossStreak>=3?2 : 0; // 连败补偿阶梯：3/5/7 → +2/3/4
+    if(lb) addGold(lb,`连败补偿（${S.lossStreak} 连败）`);
+    settleIncome();
+  }
+  S.round++;
+  S.phase='prep';
+  if(!shopOpen){ shopOpen=true; applyShop(); }   // 战斗结束自动展开商店
+  if(S.lvl<10){ S.xp+=2; checkLevel(); }   // 每回合自然 +2 升级经验（加快凑人口与高星）
+  S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
+  rollShop(); renderAll();
+  $('fightBtn').disabled=false;
+  log(`— 第 ${S.round} 回合备战阶段 —${S.endless?'（♾ 无限模式）':''}`);
+}
+function reportHTML(){
+  const st=S.stats;
+  const lineup=S.board.filter(Boolean).map(u=>byId(u.id).name+(u.star>1?u.star+'★':'')).join('、')||'（空）';
+  const bench=S.bench.filter(Boolean).map(u=>byId(u.id).name).join('、')||'（空）';
+  return `<div style="text-align:left;max-width:460px;margin:0 auto;line-height:2;font-size:14px">
+    <div>到达回合：<b style="color:#ffd24a">第 ${S.round} 回合</b>${S.endless?'（♾ 无限模式）':''}</div>
+    <div>最终生命：${S.hp} ／ 战绩：<b>${st.wins}</b> 胜 <b>${st.losses}</b> 负</div>
+    <div>最高连胜：${st.maxStreak} ／ 击败敌方棋子：${st.kills} 名</div>
+    <div>累计获得金币：${st.goldEarned} ／ 累计花费：${st.goldSpent}</div>
+    <div>购买棋子：${st.bought} 次 ／ 承受伤害：${st.dmgTaken} 点</div>
+    <div style="margin-top:6px">最终阵容：${lineup}</div>
+    <div>备战席：${bench}</div>
+  </div>`;
+}
+function stageVictory(){
+  S.phase='over';
+  $('ovTitle').textContent='🏅 通关成功！';
+  $('ovText').innerHTML=`你撑过了 ${MAX_ROUNDS} 回合并击败最终 Boss！<br>`+reportHTML();
+  $('ovBtn').textContent='📊 结束并查看报告';
+  $('ovBtn').style.display='inline-block';
+  $('ovBtn2').style.display='inline-block';
+  $('overlay').classList.remove('hidden');
+}
+function enterEndless(){
+  S.endless=true; S.round++; S.phase='prep';
+  S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
+  $('overlay').classList.add('hidden');
+  $('fightBtn').disabled=false;
+  rollShop(); renderAll();
+  log('♾ 进入无限模式：从第 26 回合开始，敌方将无限变强！');
+}
+function gameOver(win){
+  S.phase='over';
+  try{ // 写入历史战绩并清除进行中的存档
+    const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
+    h.unshift({ts:Date.now(),win,round:S.round,hp:S.hp,endless:!!S.endless,
+      wins:S.stats.wins,losses:S.stats.losses,kills:S.stats.kills,maxStreak:S.stats.maxStreak});
+    localStorage.setItem('vc_history',JSON.stringify(h.slice(0,20)));
+  }catch(e){}
+  localStorage.removeItem('vc_save');
+  $('ovTitle').textContent = win ? '🏅 最终胜利！' : (S.endless?'♾ 无限模式终结':'💀 挑战失败');
+  $('ovText').innerHTML = (win?'':`在第 ${S.round} 回合倒下。<br>`)+reportHTML();
+  $('ovBtn').textContent='再来一局';
+  $('ovBtn').style.display='inline-block';
+  $('ovBtn2').style.display='none';
+  $('overlay').classList.remove('hidden');
+}
+$('ovBtn').onclick=()=>{ newGame(); renderAll(); $('fightBtn').disabled=false;
+  $('overlay').classList.add('hidden'); log('新的一局开始！'); };
+$('ovBtn2').onclick=enterEndless;
+/* ================= 棋子图鉴（费用/阵营/职业筛选） ================= */
+const BOOK = { cost:new Set(), fac:new Set(), job:new Set() };
+const COST_BORDER = {1:'#9db',2:'#7fc9a0',3:'#b79ae8',4:'#e6b45a',5:'#ffd24a'};
+function renderBook(){
+  const dims=[
+    ['cost','费用',[1,2,3,4,5], v=>v+'费'],
+    ['fac','阵营', Object.keys(FACTIONS), v=>v],
+    ['job','职业', Object.keys(CLASSES), v=>v],
+  ];
+  document.querySelectorAll('#bookFilters .bf-chips').forEach(box=>{
+    const dim=box.dataset.dim;
+    const def=dims.find(x=>x[0]===dim);
+    let html=`<span class="bf-chip all ${BOOK[dim].size===0?'on':''}" data-dim="${dim}" data-val="__all">全部</span>`;
+    html+=def[2].map(v=>`<span class="bf-chip ${BOOK[dim].has(String(v))?'on':''}" data-dim="${dim}" data-val="${v}">${def[3](v)}</span>`).join('');
+    box.innerHTML=html;
+  });
+  const list=UNITS.filter(u=>
+    (BOOK.cost.size===0||BOOK.cost.has(String(u.cost))) &&
+    (BOOK.fac.size===0||BOOK.fac.has(u.fac)) &&
+    (BOOK.job.size===0||BOOK.job.has(u.job)));
+  list.sort((a,b)=>a.cost-b.cost);
+  $('bookCount').textContent=`${list.length} / ${UNITS.length} 名`;
+  $('bookGrid').innerHTML=list.map(u=>{
+    const passive=u.sk.length>2;
+    return `<div class="bcard" style="border-left-color:${COST_BORDER[u.cost]}">
+      <div class="bn"><span>${u.name}</span><span class="bc">💰${u.cost}</span></div>
+      <div class="bf2">${u.fac} · ${u.job} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div>
+      <div class="bs">${u.sk[0]}（${passive?'被动':'主动'}）${passive?'':skillDesc(u)}</div>
+      ${passive?`<div class="bp">${skillDesc(u)}</div>`:''}
+      <div class="bp" style="color:#a99cd0">${u.hp}❤ ${u.atk}⚔ 射程 ${u.rng} 格</div>
+    </div>`;
+  }).join('') || '<div style="color:#6b6288;padding:20px">没有符合条件的棋子</div>';
+}
+$('bookFilters').addEventListener('click', e=>{
+  const c=e.target.closest('.bf-chip'); if(!c) return;
+  const dim=c.dataset.dim, val=c.dataset.val;
+  if(val==='__all') BOOK[dim].clear();
+  else BOOK[dim].has(val) ? BOOK[dim].delete(val) : BOOK[dim].add(val);
+  renderBook();
+});
+$('bookBtn').onclick=()=>{ $('bookModal').classList.remove('hidden'); renderBook(); };
+$('bookClose').onclick=()=>$('bookModal').classList.add('hidden');
+
+/* ================= 存档 / 继续上一局 / 历史战绩 ================= */
+const SAVE_KEY='vc_save3', HIST_KEY='vc_history';
+function saveGame(){ // 仅备战阶段保存（战斗中刷新不损失进度：回到该回合开打前）
+  if(S.phase!=='prep') return;
+  try{ localStorage.setItem(SAVE_KEY,JSON.stringify({round:S.round,hp:S.hp,gold:S.gold,lvl:S.lvl,xp:S.xp,
+    streak:S.streak,lossStreak:S.lossStreak,endless:S.endless,lock:!!S.lock,bench:S.bench,board:S.board,shop:S.shop,
+    uid:S.uid,log:S.log,items:S.items,pool:S.pool,stats:S.stats,ts:Date.now()})); }catch(e){}
+}
+function loadGame(){
+  try{
+    const o=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    if(!o||typeof o.round!=='number'||!Array.isArray(o.board)||!Array.isArray(o.bench)) return false;
+    if(!S) S={}; // 直接从存档启动时 S 尚未初始化
+    Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
+    return true;
+  }catch(e){ return false; }
+}
+function renderHistory(){
+  let h=[]; try{ h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){}
+  $('histList').innerHTML = h.length ? h.map(x=>{
+    const d=new Date(x.ts), p=n=>String(n).padStart(2,'0');
+    return `<div class="hrow"><span>${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</span>
+      <span>${x.win?'🏅 胜利':'💀 失败'}${x.endless?'（无尽）':''}</span>
+      <span>第 ${x.round} 回合 · ❤${x.hp} · 最高连胜${x.maxStreak} · 击杀${x.kills}</span></div>`;
+  }).join('') : '<div style="color:#6b6288;padding:14px;text-align:center">暂无历史对局</div>';
+}
+$('histBtn').onclick=()=>{ renderHistory(); $('histModal').classList.remove('hidden'); };
+$('histClose').onclick=()=>$('histModal').classList.add('hidden');
+/* 商店开关：手机端默认收起，腾出棋盘空间 */
+let shopOpen = true;
+function applyShop(){
+  $('shop').style.display = shopOpen ? '' : 'none';
+  $('shopBtn').classList.toggle('off', !shopOpen);
+  fitBoard();
+}
+$('shopBtn').onclick=()=>{ shopOpen=!shopOpen; applyShop(); };
+if(matchMedia('(max-width:880px),(orientation:landscape) and (max-height:540px)').matches) shopOpen=false;
+applyShop();
+$('resetBtn').onclick=()=>{ if(!confirm('放弃当前进度，重新开一局？')) return;
+  localStorage.removeItem(SAVE_KEY); stopTickLoop(); newGame(); renderAll();
+  $('fightBtn').disabled=false; $('overlay').classList.add('hidden'); log('🔄 已重新开局'); };
+/* 手机端棋盘缩放（横竖屏双约束适配，棋盘+板凳整体缩放；预留空间动态量取顶栏/商店实际高度） */
+function fitBoard(){
+  const w=$('boardwrap'), b=$('board'); if(!w||!b) return;
+  const landscape = innerWidth>innerHeight;
+  const reserved = ($('topbar').offsetHeight||40) + ($('shopbar').offsetHeight||0) + (landscape?16:24);
+  const availW = landscape ? innerWidth-290 : innerWidth-14;
+  const availH = innerHeight - reserved - (landscape?0:6);
+  const s = Math.max(0.35, Math.min(1, availW/w.offsetWidth, availH/w.offsetHeight));
+  w.style.transformOrigin='top center';
+  w.style.transform=`scale(${s})`;
+  w.style.marginBottom = s<1 ? (-w.offsetHeight*(1-s))+'px' : '';
+}
+addEventListener('resize',fitBoard); fitBoard();
+/* 启动：检测到存档时询问继续还是重开 */
+(function initApp(){
+  const saved=localStorage.getItem(SAVE_KEY);
+  if(saved){
+    try{ const o=JSON.parse(saved);
+      $('resumeInfo').textContent=`检测到上一局进度：第 ${o.round} 回合 · ${o.hp}❤ · ${o.gold}💰 · 人口 ${o.lvl}`;
+    }catch(e){}
+    $('resumeOv').classList.remove('hidden');
+  } else { newGame(); renderAll(); }
+})();
+$('resumeYes').onclick=()=>{ if(!loadGame()) newGame();
+  $('resumeOv').classList.add('hidden'); renderAll(); $('fightBtn').disabled=false; log('📂 已恢复上一局进度'); };
+$('resumeNo').onclick=()=>{ localStorage.removeItem(SAVE_KEY);
+  $('resumeOv').classList.add('hidden'); newGame(); renderAll(); $('fightBtn').disabled=false; };
+/* PWA：Service Worker 注册（离线可玩，安卓可添加到主屏幕） */
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>

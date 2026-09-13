@@ -1,0 +1,4 @@
+out/
+.mimosa/
+__pycache__/
+*.log

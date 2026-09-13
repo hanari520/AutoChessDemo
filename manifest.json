@@ -1,0 +1,16 @@
+{
+  "name": "虚拟棋战 VirtuaReal Auto Chess",
+  "short_name": "虚拟棋战",
+  "description": "VirtuaReal 主题自走棋网页游戏",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#12101c",
+  "theme_color": "#1c1830",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

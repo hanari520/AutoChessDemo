@@ -1,0 +1,161 @@
+/* 无头模拟器：加载 index.html 的游戏脚本，用 DOM 桩跑真实战斗逻辑，
+   由"普通玩家"机器人代打，统计 25 回合通关率（含野怪回合掉装备胜率）。用法：node tools/sim.js [局数] */
+const fs = require('fs'), path = require('path');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const code = html.match(/<script>([\s\S]*)<\/script>/)[1] + `
+
+;globalThis.API = { get S(){return S}, setS:v=>{S=v},
+  get currentTick(){return currentTick},
+  byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy };
+`;
+
+/* ---------- DOM 桩 ---------- */
+function makeEl() {
+  const el = {
+    style: {}, dataset: {}, children: [], title: '', textContent: '',
+    _ih: '',
+    classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } },
+    appendChild(c) { if(this.children.length>200) this.children.shift(); this.children.push(c); return c; },
+    removeChild(){}, remove(){},
+    querySelector() { return null; },
+    querySelectorAll() { return []; },
+    addEventListener(){}, setAttribute(){},
+    getBoundingClientRect() { return { left: 0, top: 0, width: 58, height: 58 }; },
+    closest() { return null; },
+  };
+  Object.defineProperty(el, 'innerHTML', { get(){ return this._ih; }, set(v){ this._ih = v; } });
+  Object.defineProperty(el, 'offsetHeight', { get(){ return 40; } });
+  Object.defineProperty(el, 'offsetWidth', { get(){ return 478; } });
+  return el;
+}
+const elCache = {};
+const fakeTimers = []; let fakeClock = 0;
+global.document = {
+  getElementById(id) { return elCache[id] || (elCache[id] = makeEl()); },
+  createElement() { return makeEl(); },
+  querySelector() { return null; },
+  querySelectorAll() { return []; },
+  addEventListener(){}, elementFromPoint() { return null; },
+  body: makeEl(),
+};
+global.window = global;
+global.addEventListener = () => {};
+global.localStorage = { _s:{}, getItem(k){ return this._s[k] ?? null; }, setItem(k,v){ this._s[k]=String(v); }, removeItem(k){ delete this._s[k]; } };
+global.matchMedia = () => ({ matches: false });
+global.requestAnimationFrame = () => 0;
+global.innerWidth = 1280; global.innerHeight = 800;
+global.Worker = class { postMessage(){} terminate(){} };
+global.navigator = { serviceWorker: null };
+global.setInterval = () => 0; global.clearInterval = () => {};
+global.setTimeout = (fn, ms) => { if(fakeTimers.length>20000) fakeTimers.length=0; fakeTimers.push({ t: fakeClock + (ms || 0), fn }); return fakeTimers.length; };
+global.clearTimeout = () => {};
+
+(0, eval)(code);
+const A = globalThis.API;
+
+/* ---------- 普通玩家机器人：直接加载页内版 bot_strategy.js（单一事实来源）。
+   仅做符号改写：经 globalThis.API 访问游戏作用域（indirect eval 顶层 let 不可直接引用） ---------- */
+const botSrc = fs.readFileSync(path.join(__dirname, 'bot_strategy.js'), 'utf8')
+  .replace(/\bS\b/g, 'API.S')
+  .replace(/\bbyId\b/g, 'API.byId')
+  .replace(/\bpairCount\b/g, 'API.pairCount')
+  .replace(/\bbuy\b/g, 'API.buy')
+  .replace(/\bclickUnit\b/g, 'API.clickUnit')
+  .replace(/\brollShop\b/g, 'API.rollShop')
+  .replace(/\bcheckLevel\b/g, 'API.checkLevel')
+  .replace(/\bautoDeploy\b/g, 'API.autoDeploy')
+  .replace(/\brenderAll\b/g, '(() => {})');
+(0, eval)(botSrc);
+const botPrep = globalThis.botPrep;   // indirect eval 的函数声明挂在 globalThis
+
+/* ---------- 战斗驱动：手动推 currentTick，压缩真实时间 ---------- */
+function drainTimers() {
+  fakeTimers.sort((a, b) => a.t - b.t);
+  while (fakeTimers.length && fakeTimers[0].t <= fakeClock) {
+    const { fn } = fakeTimers.shift();
+    fn();
+  }
+}
+function driveBattle(maxTicks = 640) {
+  let used = 0;
+  for (let i = 0; i < maxTicks && A.S.phase === 'battle'; i++) {
+    fakeClock += 100;
+    API.currentTick();
+    drainTimers();
+    used = i + 1;
+  }
+  drainTimers();
+  fakeClock += 3000;   // 推进结算横幅（1100ms）等延迟回调
+  drainTimers();
+  fakeTimers.length = 0;  // 丢弃战斗中的视觉特效定时器，防内存膨胀
+  // 战斗时长统计（游戏内毫秒）：超时 = 打满 60s
+  globalThis.battleMs = globalThis.battleMs || [];
+  globalThis.battleMs.push(used * 100);
+  if (used * 100 >= 59000) globalThis.battleTimeouts = (globalThis.battleTimeouts || 0) + 1;
+  if (process.env.DBG) console.log('[battle end]', A.S.phase, 'round', A.S.round, 'used', used * 100 + 'ms');
+}
+
+/* 内嵌机器人已删除：统一使用上方加载的 bot_strategy.js（与浏览器实跑同一份） */
+
+
+/* ---------- 主循环 ---------- */
+const N = parseInt(process.argv[2] || '100', 10);
+globalThis.hpCurve = {}; globalThis.wrStats = {}; globalThis.creepWR = {};
+const results = [];
+for (let g = 0; g < N; g++) {
+  (0, eval)('newGame()'); (0, eval)('renderAll()');
+  let outcome = null;
+  for (let guard = 0; guard < 40; guard++) {
+    const preWins = A.S.stats.wins, curRound = A.S.round;
+    botPrep();
+    (0, eval)('startBattle')();
+    driveBattle();
+    const S = A.S;
+    if (curRound % 5 === 0 && curRound <= 25) {  // 野怪回合战果：以胜负统计增量为准
+      (globalThis.creepWR[curRound] = globalThis.creepWR[curRound] || []).push(S.stats.wins > preWins ? 1 : 0);
+    }
+    if (process.env.DBG) {
+      const board = S.board.filter(Boolean).map(u => A.byId(u.id).name + (u.star > 1 ? u.star + '★' : '')).join(',');
+      const equipped = S.board.filter(Boolean).reduce((a,u)=>a+(u.items||[]).length,0);
+      const loose = S.items.length;
+      console.log(`r${S.round} hp${S.hp} g${S.gold} lvl${S.lvl} 装${equipped}件/背包${loose} 场上[${board}]`);
+    }
+    if (globalThis.hpCurve) { (hpCurve[S.round] = hpCurve[S.round] || []).push(S.hp); }
+    if (globalThis.lastHp !== undefined && globalThis.lastRound === S.round - 1 + (globalThis.lastRound===S.round?1:0)) {} 
+    if (globalThis.lastHp !== undefined && globalThis.lastHpRound === S.round - 1) {
+      const d = globalThis.lastHp - S.hp;
+      if (d > 0) wrStats[S.round] = (wrStats[S.round]||[]); // loss
+      (wrStats[S.round] = wrStats[S.round]||[]).push(d>0 ? 0 : 1);
+    }
+    globalThis.lastHp = S.hp; globalThis.lastHpRound = S.round;
+    if (S.phase === 'over') {
+      const ovT = String(global.document.getElementById('ovTitle').textContent || '');
+      outcome = { win: ovT.includes('通关'), round: S.round, hp: S.hp, streak: S.stats.maxStreak, kills: S.stats.kills };
+      break;
+    }
+  }
+  results.push(outcome || { win: false, round: -1 });
+}
+const wins = results.filter(r => r.win);
+console.log(`局数=${N} 通关=${wins.length} 通关率=${(wins.length / N * 100).toFixed(1)}%`);
+const lossRounds = results.filter(r => !r.win).map(r => r.round);
+if (lossRounds.length) {
+  const hist = {};
+  lossRounds.forEach(r => hist[r] = (hist[r] || 0) + 1);
+  console.log('失败回合分布:', JSON.stringify(hist));
+}
+const curve = globalThis.hpCurve;
+console.log('各回合平均血量:', Object.keys(curve).sort((a,b)=>a-b).map(r => `r${r}:${(curve[r].reduce((a,b)=>a+b,0)/curve[r].length).toFixed(1)}`).join(' '));
+const wr = globalThis.wrStats;
+console.log('各回合胜率:', Object.keys(wr).sort((a,b)=>a-b).map(r => { const a = wr[r]; return `r${r}:${(a.reduce((x,y)=>x+y,0)/a.length*100).toFixed(0)}%`; }).join(' '));
+const cw = globalThis.creepWR;
+console.log('野怪回合胜率(掉装备=胜):', Object.keys(cw).sort((a,b)=>a-b).map(r => { const a = cw[r]; return `r${r}:${(a.reduce((x,y)=>x+y,0)/a.length*100).toFixed(0)}%`; }).join(' '));
+console.log('平均存活回合:', (results.reduce((s, r) => s + r.round, 0) / N).toFixed(1),
+  '平均最终HP:', (results.reduce((s, r) => s + (r.hp || 0), 0) / N).toFixed(1),
+  '平均最高连胜:', (results.reduce((s, r) => s + (r.streak || 0), 0) / N).toFixed(1));
+const bm = (globalThis.battleMs || []).slice().sort((a, b) => a - b);
+if (bm.length) {
+  const avg = bm.reduce((a, b) => a + b, 0) / bm.length;
+  const pct = p => bm[Math.min(bm.length - 1, Math.floor(bm.length * p))];
+  console.log(`战斗时长(游戏秒): 平均${(avg/1000).toFixed(1)} 中位${(pct(0.5)/1000).toFixed(1)} p90 ${(pct(0.9)/1000).toFixed(1)} | 超时(≥59s) ${globalThis.battleTimeouts||0}/${bm.length} = ${(((globalThis.battleTimeouts||0)/bm.length)*100).toFixed(1)}%`);
+}
