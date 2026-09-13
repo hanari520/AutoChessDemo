@@ -682,15 +682,18 @@ function rollEnemySquad(r){
       return {name:f+'军团', list};
     }
   }
-  let arch=ENEMY_ARCHETYPES[0];
-  if(r>3){   // 前 3 回合固定散兵混编，避免开局被流派阵容压制
+  let arch=ENEMY_ARCHETYPES.find(a=>a.name==='散兵游勇');   // 默认散兵混编
+  if(r>3){   // 前 3 回合固定散兵混编（不抽成型流派），避免开局被流派阵容压制
     const totW=ENEMY_ARCHETYPES.reduce((s,a)=>s+a.w,0);
     let roll=Math.random()*totW;
     for(const a of ENEMY_ARCHETYPES){ roll-=a.w; if(roll<=0){ arch=a; break; } }
   }
   const jobs=arch.jobs?arch.jobs():null;
+  // 前期（r≤3）玩家只有 1-3 人，排除刺客与爆发法系（跳后排/高爆会直接打崩开局），保留其余随机性
+  const earlyPool=['守护','刀客','狂战','游侠','歌势','医者','偶像'];
   for(let i=0;i<total;i++){
     if(jobs) addJob(jobs[i%jobs.length]);
+    else if(r<=3) addJob(earlyPool[Math.floor(Math.random()*earlyPool.length)]);
     else { const all=Object.keys(JOB_ICON); addJob(all[Math.floor(Math.random()*all.length)]); }
   }
   return {name:arch.name, list};
@@ -1497,11 +1500,11 @@ function genEnemy(){
   const cap = r<4?1 : r<7?2 : r<11?3 : r<16?4 : 5;   // 敌方费用上限随回合解锁
   // 动态难度：连败减压（每连败 -10%，最多 -30%）；连胜 4+ 加压 10%
   const dyn = (S.lossStreak>=2 ? Math.max(0.55, 1-0.12*S.lossStreak) : (S.streak>=4?1.1:1)) * (S.hp<=12?0.88:1);
-  // 前期减免：前 5 回合每回合 -1.5% 线性衰减（1 金开局的铺垫期），第 6 回合起与原曲线完全一致
-  const earlyDisc = Math.max(0, 6-r) * 0.015;
   // 无限模式（r>25）成长不封顶：敌方随回合持续变强；普通模式 24 回合封顶
   const capR = S.endless ? 999 : 24;
-  const mul = 0.985 * (1 + Math.min(r-1,capR)*0.073) * dyn - earlyDisc;
+  // 全程渐进难度曲线：前期就有压力、中后期持续加压（指数 0.85 = 前段斜率更大），不再是"前松后紧"
+  const prog = Math.min(r-1, capR) / 24;
+  const mul = 0.985 * (1.19 + 2.15 * Math.pow(prog, 1.05)) * dyn;
   const used=new Set();
   const list=[];
   if(r%5===0){   // 野怪回合（每 5 回合），波次固定按进度强化
@@ -1509,7 +1512,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.30 : 1.48;
+    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.15;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);

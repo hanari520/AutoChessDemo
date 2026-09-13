@@ -106,7 +106,7 @@ for (let g = 0; g < N; g++) {
   (0, eval)('newGame()'); (0, eval)('renderAll()');
   let outcome = null;
   for (let guard = 0; guard < 40; guard++) {
-    const preWins = A.S.stats.wins, curRound = A.S.round;
+    const preWins = A.S.stats.wins, curRound = A.S.round, hpBefore = A.S.hp;
     botPrep();
     (0, eval)('startBattle')();
     driveBattle();
@@ -121,13 +121,11 @@ for (let g = 0; g < N; g++) {
       console.log(`r${S.round} hp${S.hp} g${S.gold} lvl${S.lvl} 装${equipped}件/背包${loose} 场上[${board}]`);
     }
     if (globalThis.hpCurve) { (hpCurve[S.round] = hpCurve[S.round] || []).push(S.hp); }
-    if (globalThis.lastHp !== undefined && globalThis.lastRound === S.round - 1 + (globalThis.lastRound===S.round?1:0)) {} 
-    if (globalThis.lastHp !== undefined && globalThis.lastHpRound === S.round - 1) {
-      const d = globalThis.lastHp - S.hp;
-      if (d > 0) wrStats[S.round] = (wrStats[S.round]||[]); // loss
-      (wrStats[S.round] = wrStats[S.round]||[]).push(d>0 ? 0 : 1);
+    // 单回合胜负：按"刚打完的那一回合"(curRound) 记账，用 HP 是否下降判定（野怪回合不扣血，跳过）
+    if (curRound % 5 !== 0) {
+      const lost = S.hp < hpBefore;   // 普通回合失败必然扣血
+      (wrStats[curRound] = wrStats[curRound] || []).push(lost ? 0 : 1);
     }
-    globalThis.lastHp = S.hp; globalThis.lastHpRound = S.round;
     if (S.phase === 'over') {
       const ovT = String(global.document.getElementById('ovTitle').textContent || '');
       outcome = { win: ovT.includes('通关'), round: S.round, hp: S.hp, streak: S.stats.maxStreak, kills: S.stats.kills };
