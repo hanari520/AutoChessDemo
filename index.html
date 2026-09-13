@@ -376,7 +376,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     </div>
     <div id="pbtns">
       <button class="btn" id="lvlBtn">买经验 (F) +5经验 -5💰</button>
-      <button class="btn" id="deployBtn" title="自动把最强的棋子按职业梯队布阵（A）">⚡ 一键上阵</button>
+      <button class="btn" id="deployBtn" title="自动把最强的棋子按职业梯队布阵（R / A）">⚡ 一键上阵</button>
       <button class="btn" id="tidyBtn" title="整理备战席：把棋子按星级与同名聚拢，空位挪到最后（T）">🧹 整理备战席</button>
       <button class="btn" id="sellBtn" title="出售：单击棋子后按 E（或 X / Delete）；也可直接把棋子拖到这里（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售 (E)</button>
       <button class="btn" id="shopBtn" title="打开/关闭商店">🛒 商店</button>
@@ -430,7 +430,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#8dff9a">绿色=购买即触发羁绊档位</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
-    ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；<b style="color:#8dff9a">一键上阵</b>按羁绊梯队布阵、<b style="color:#8dff9a">整理备战席(T)</b>把棋子按星级/同名聚拢；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
+    ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；<b style="color:#8dff9a">一键上阵(R/A)</b>按羁绊梯队布阵、<b style="color:#8dff9a">整理备战席(T)</b>把棋子按星级/同名聚拢；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
   </p>
   <button id="ovBtn">开始游戏</button>
   <button id="ovBtn2" style="display:none;background:#1e5b2a;color:#8dff9a;">♾ 进入无限模式</button>
@@ -1048,8 +1048,8 @@ function renderTop(){
   if(popTagEl) popTagEl.classList.toggle('pop-warn', !!popLazy);
   $('deployBtn').classList.toggle('pulse', !!popLazy);
   $('deployBtn').title = popLazy
-    ? `⚠ 场上只上了 ${pop}/${S.lvl} 人，还有空位——点这里一键上阵（或拖动棋子）`
-    : '自动把最强的棋子按职业梯队布阵（A）';
+    ? `⚠ 场上只上了 ${pop}/${S.lvl} 人，还有空位——按 R 一键上阵（或拖动棋子）`
+    : '自动把最强的棋子按职业梯队布阵（R / A）';
   $('streak').textContent=S.streak;
   const need=xpNeed(S.lvl);
   $('lvlNum').textContent=S.lvl;
@@ -1495,7 +1495,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='d'||e.key==='D')$('refreshBtn').click();
   if(e.key==='f'||e.key==='F')$('lvlBtn').click();
   if(e.key==='l'||e.key==='L')$('lockBtn').click();
-  if(e.key==='a'||e.key==='A')autoDeploy();
+  if(e.key==='a'||e.key==='A'||e.key==='r'||e.key==='R')autoDeploy();   // R / A 均可一键上阵
   if(e.key==='t'||e.key==='T')tidyBench();
   if((e.key==='Delete'||e.key==='x'||e.key==='X'||e.key==='e'||e.key==='E')&&S.phase==='prep'&&S.selUid!=null)sellSelected();
   if(e.key===' '&&S.phase==='prep'){ e.preventDefault(); $('fightBtn').click(); }
