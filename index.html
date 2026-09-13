@@ -854,7 +854,7 @@ function renderTop(){
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
     : S.streak>=4 ? '难度 ⬆（连胜 4+，敌方增强）' : '难度 ➖ 标准';
   $('enemyInfo').innerHTML = c.boss
-    ? `<b>${c.name}</b> · 野怪回合（${S.round>=20?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">胜利掉 ${DROP_N[S.round]!==undefined?DROP_N[S.round]:1} 件装备 · 失败不扣血、不动连胜${S.round>=25&&!S.endless?' · <b style="color:#ff9a9a">最终决战，战败即结束！</b>':''}</span>`
+    ? `<b>${c.name}</b> · 野怪回合（${S.round>=20&&S.round<25?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">胜利掉 ${DROP_N[S.round]!==undefined?DROP_N[S.round]:1} 件装备 · 失败不扣血、不动连胜${S.round>=25&&!S.endless?' · <b style="color:#ff9a9a">最终决战，战败即结束！</b>':''}</span>`
     : `<b>${c.name}</b>：` + Object.entries(c.mix).map(([j,n])=>`${j}×${n}`).join(' + ')
       + `<br><span style="font-size:11px;color:#8a93c4">${dynTxt} · 胜利 +1 金（装备只在野怪回合掉落）</span>`;
   $('gold2').textContent=S.gold;
@@ -1132,9 +1132,9 @@ function genEnemy(){
     /* 多多自走棋式野怪波次：狼群(纯低费杂兵) → 岩石巨像(3费头目) → 黑龙幼崽(4费)
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
-    const bossStar = r>=20 ? 2 : 1;
-    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.28 : 1.06;
-    if(S.endless && r>25) bossMult = Math.min(1.12 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
+    const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
+    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.28 : 1.15;
+    if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
       if(!heads.length) heads = UNITS.filter(u=>u.cost>=headCost);
