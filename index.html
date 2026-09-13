@@ -78,20 +78,19 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #board .unit.solo, #bench .unit.solo { border-color:#aab3cc; filter:drop-shadow(0 0 2px #ffffff40); }
 #board .unit.pair, #bench .unit.pair { border-color:#ffd24a; filter:drop-shadow(0 0 4px #ffd24acc); box-shadow:0 0 0 1px #ffd24a55; }
 #board .unit.preview { opacity:.9; pointer-events:none; filter:saturate(.85); }
-.card.solo { border-color:#9aa3c0; box-shadow:0 0 4px #ffffff26; }
+/* ===== 商店卡片信息分层（方案A：通道分区，互不冲突）=====
+   ① 费用 → 左侧色条 + 背景色调 + 右下角费用角标（常驻，永不被他项覆盖）
+   ② 边框 → 只表示「买到即可升级」（对子）
+   ③ 状态 → 图标徽章并列，可同时显示多个（对子/追三/羁绊） */
 .card.paircard { border:2px solid #ffd24a !important; box-shadow:0 0 12px #ffd24a88; }
-.card.chase3 { border:2px solid #ff8ad8 !important; box-shadow:0 0 12px #ff8ad8aa; }
-/* 羁绊高亮：整卡加粗描边 + 发光 + 左上角色带，不再只靠文字徽章 */
-.card.syncard { border:2px solid #4ac8ff !important; box-shadow:0 0 12px #4ac8ff77; }
-.card.syntrig { border:2px solid #8dff9a !important; box-shadow:0 0 14px #8dff9aaa; }
-.card.syncard::before, .card.syntrig::before { content:''; position:absolute; inset:0; border-radius:9px; pointer-events:none; }
-.card.syncard::before { background:linear-gradient(180deg,#4ac8ff1f,transparent 55%); }
-.card.syntrig::before { background:linear-gradient(180deg,#8dff9a24,transparent 55%); }
-.card .ctag.cg { color:#8dff9a; }
-.card .ctag.c9 { color:#ffd24a; }
-.card.star3 { border-color:#ffe9a8; box-shadow:0 0 12px #ffd24aaa; }
-.card .ctag { color:#4ac8ff; font-size:10px; font-weight:bold; margin-left:4px; }
-.card .ctag.c3 { color:#ff8ad8; }
+.card .badges { display:flex; flex-wrap:wrap; gap:3px; justify-content:center; margin:4px 0 2px; }
+.card .bd { font-size:9px; font-weight:bold; border-radius:6px; padding:1px 5px; white-space:nowrap;
+  border:1px solid transparent; }
+.card .bd.pair { color:#ffd24a; background:#ffd24a1f; border-color:#ffd24a66; }
+.card .bd.c3   { color:#ff8ad8; background:#ff8ad81f; border-color:#ff8ad866; }
+.card .bd.trig { color:#8dff9a; background:#8dff9a1f; border-color:#8dff9a66; }
+.card .bd.syn  { color:#4ac8ff; background:#4ac8ff1f; border-color:#4ac8ff66; }
+.card .bd.dim  { color:#aab3cc; background:#aab3cc14; border-color:#aab3cc33; }
 #sellBtn.sell-hl { border-color:#ff8ad8 !important; color:#ff8ad8 !important; box-shadow:0 0 12px #ff8ad888; }
 #inspect .in-sell { margin-top:8px; text-align:center; background:#5b1e1e; color:#ffb0b0; border:1px solid #7a3030; border-radius:7px; padding:5px; cursor:pointer; font-weight:bold; }
 #inspect .in-sell:hover { background:#7a2626; border-color:#ff9a9a; }
@@ -109,7 +108,6 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #inspect .in-sk { margin-top:6px; color:#c77dff; font-weight:bold; }
 #inspect .in-desc { color:#cdd6f4; margin:2px 0 6px; }
 #inspect .in-item { color:#8dff9a; }
-.card .cpair { color:#ffd24a; font-size:10px; font-weight:bold; margin-left:4px; }
 .unit.stunned { animation:stunWob .5s infinite; }
 @keyframes stunWob { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
 .unit.weakened { filter:grayscale(.5) brightness(.85); }
@@ -129,7 +127,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .card.cost4{ border-color:#a8762c; background:linear-gradient(180deg,#4a3512,#241e3e 60%); }
 .card.cost5{ border-color:#c99a1f; background:linear-gradient(180deg,#5a3d0a,#241e3e 60%); }
 .card.cost4 .cn,.card.cost5 .cn { text-shadow:0 0 6px #ffd24a66; }
-.card .clabel { position:absolute; top:5px; right:7px; font-size:9px; color:#ffffffa0; letter-spacing:.5px; }
+/* 费用角标：右下角常驻胶囊（不参与任何高亮争夺） */
+.card .cc { position:absolute; right:6px; bottom:6px; font-size:10px; font-weight:bold;
+  border-radius:9px; padding:1px 7px; background:#000000aa; color:#fff; }
 #side { width:300px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex-shrink:0; }
 /* ===== 多多式左侧羁绊竖栏 ===== */
 #synCol { width:136px; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; padding:2px 0; }
@@ -177,7 +177,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 /* 多多式：刷新/锁定按钮紧贴商店两侧 */
 #shopbar .btn.shopctl { padding:5px 8px; font-size:12px; line-height:1.35; min-width:58px; text-align:center; }
 #shop { display:flex; gap:8px; flex:1; align-items:stretch; min-width:0; }
-.card { flex:1; min-width:0; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px;
+.card { flex:1; min-width:0; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px 8px 22px;
   cursor:pointer; text-align:center; transition:transform .1s; position:relative; }
 .card:hover { transform:translateY(-3px); border-color:#ffd24a; }
 .card .cn { font-weight:bold; font-size:14px; }
@@ -185,7 +185,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .card .ct { font-size:11px; color:#a99cd0; margin:3px 0; }
 .card .cs { font-size:10px; color:#9fe8ff; }
 .card .cd { font-size:10px; color:#9fe8ff; min-height:24px; }
-.card .cc { color:#ffd24a; font-size:12px; }
+/* 费用角标样式见上方 .card .cc（右下角常驻胶囊） */
 .card.sold { opacity:.25; pointer-events:none; }
 #bench { display:grid; grid-template-columns:repeat(8,var(--cell)); gap:var(--gap); padding:var(--pad); background:#181428;
   border-top:1px solid #2a2344; border-radius:10px; flex-shrink:0; }
@@ -439,7 +439,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <p id="ovText" style="max-width:560px;line-height:1.7;color:#cdd6f4;font-size:14px;text-align:left">
     单机自动战斗棋局（VirtuaReal + P-SP · 46 名主播 · 限量卡池 · 25 回合通关）<br>
     ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +5 经验（每回合自然 +2，升级更快凑人口）；卖棋 1★原价、合成折价<br>
-    ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#8dff9a">绿色=购买即触发羁绊档位</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
+    ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b><br>
+    &nbsp;&nbsp;<b style="color:#cdd6f4">商店卡片三层信息（互不遮挡）：</b>① 费用看左侧<b style="color:#9dd3e8">色条</b>+右下角 <b>💰N费</b>；② <span style="color:#ffd24a">金边 = 对子（买到即升星）</span>；③ 徽章并列显示：<span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗买下即触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span><br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
     ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；<b style="color:#8dff9a">一键上阵(R/A)</b>按羁绊梯队布阵、<b style="color:#8dff9a">整理备战席(T)</b>把棋子按星级/同名聚拢；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
@@ -1025,27 +1026,26 @@ function renderShop(){
   S.shop.forEach((u,i)=>{
     const c=document.createElement('div');
     c.className='card'+(u?'':' sold');
-    if(u) c.classList.add('cost'+u.cost);   // 按费用着色（1-5 费各自配色，与棋子一致）
-    const isPair = u && pairCount(u.id)>=2; // 买到手即凑齐 3 张升星
-    const isSolo = u && !isPair && pairCount(u.id)===1;
-    const owned3 = u && !isPair && has3star(u.id); // 已有 3★ 同名 → 仍高亮，标记三星达成
-    const owned2 = u && !isPair && !owned3 && has2star(u.id); // 已有 2★ 同名 → 高亮提示追三
-    const trig = u ? synTriggers(u) : [];          // 购买即新触发的羁绊档位（绿色高亮）
-    const synNames = u && !trig.length ? synTags(u) : [];  // 仅补进度的羁绊名
-    if(isPair) c.classList.add('paircard');
-    if(isSolo) c.classList.add('solo');
-    if(owned3) c.classList.add('chase3');
-    if(owned2) c.classList.add('chase3');
-    if(trig.length && !isPair) c.classList.add('syntrig');
-    else if(synNames.length) c.classList.add('syncard');
-    const badge =
-      (isPair?'<span class="cpair">对子!</span>':'')+
-      (owned3?'<span class="ctag c9">三星达成</span>':'')+
-      (owned2?'<span class="ctag c3">追三!</span>':'')+
-      (trig.length?'<span class="ctag cg">✦ '+trig.join(' ')+'</span>':
-       (synNames.length?'<span class="ctag">✦ '+synNames.join('/')+'</span>':''));
-    if(u) c.innerHTML=`<div class="costbar"></div><div class="clabel">${u.cost}费</div>`+
-      `<div class="cn">${u.name}${badge}</div><div class="cfj">${u.form==='me'?'⚔':'🏹'} ${u.fac}·${u.job} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div><div class="ct">${u.hp}❤ ${u.atk}⚔</div><div class="cs">${u.sk[0]}（${u.sk.length>2?'被动':'主动'}）</div><div class="cd" title="${skillText(u)}">${skillDesc(u).replace('被动：','')}</div><div class="cc">💰${u.cost}</div>`;
+    if(u) c.classList.add('cost'+u.cost);   // 通道①费用：背景色调 + 左侧色条 + 右下角角标
+    const isPair = u && pairCount(u.id)>=2;                 // 已有 2 张同名 → 买到手即升星
+    const isSolo = u && !isPair && pairCount(u.id)===1;     // 已有 1 张
+    const owned3 = u && !isPair && has3star(u.id);          // 已有 3★（追满）
+    const owned2 = u && !isPair && !owned3 && has2star(u.id); // 已有 2★ → 追三
+    const trig = u ? synTriggers(u) : [];                   // 买下即新触发的羁绊档位
+    const synNames = u && !trig.length ? synTags(u) : [];   // 仅补进度的羁绊名
+    if(isPair) c.classList.add('paircard');                 // 通道②边框：唯一含义=买到即可升级
+    // 通道③状态徽章：并列显示，互不覆盖（可同时出现多个）
+    const bds=[
+      isPair ? '<span class="bd pair">🎴 对子·可升星</span>' : '',
+      owned3 ? '<span class="bd c3">⭐ 三星达成</span>' : '',
+      owned2 ? '<span class="bd c3">⭐ 追三</span>' : '',
+      trig.length ? '<span class="bd trig">🔗 '+trig.join(' ')+'</span>' : '',
+      (!trig.length && synNames.length) ? '<span class="bd syn">🔗 '+synNames.join('/')+'</span>' : '',
+      (isSolo && !owned2 && !owned3) ? '<span class="bd dim">1/3</span>' : '',
+    ].filter(Boolean).join('');
+    if(u) c.innerHTML=`<div class="costbar"></div>`+
+      (bds?`<div class="badges">${bds}</div>`:'')+
+      `<div class="cn">${u.name}</div><div class="cfj">${u.form==='me'?'⚔':'🏹'} ${u.fac}·${u.job} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div><div class="ct">${u.hp}❤ ${u.atk}⚔</div><div class="cs">${u.sk[0]}（${u.sk.length>2?'被动':'主动'}）</div><div class="cd" title="${skillText(u)}">${skillDesc(u).replace('被动：','')}</div><div class="cc">💰${u.cost}费</div>`;
     c.onclick=()=>buy(i);
     s.appendChild(c);
   });
