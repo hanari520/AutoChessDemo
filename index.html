@@ -11,7 +11,7 @@
 <title>虚拟棋战 VirtuaReal Auto Chess</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
-body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; --spd:1.5; }
+body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; --spd:1; }
 .spd-b { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:5px; padding:2px 7px; cursor:pointer; font-size:12px; }
 .spd-b.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
 #topbar { display:flex; align-items:center; gap:14px; padding:8px 16px; background:#1c1830; border-bottom:2px solid #35294f; font-size:15px; flex-shrink:0; flex-wrap:wrap; }
@@ -304,8 +304,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     <button class="btn" id="resetBtn" title="放弃当前进度，重新开一局">🔄 重开</button>
     <button class="btn" id="endBtn" style="display:none;background:#5b1e1e;color:#ffb0b0" title="结束无限模式，直接查看本局结算">🏁 结束挑战</button>
     <span class="tag" style="display:flex;gap:4px;align-items:center;padding:3px 8px">⏩
-      <button class="spd-b" data-s="1">1×</button>
-      <button class="spd-b on" data-s="1.5">1.5×</button>
+      <button class="spd-b on" data-s="1">1×</button>
+      <button class="spd-b" data-s="1.5">1.5×</button>
       <button class="spd-b" data-s="2">2×</button>
     </span>
   </div>
@@ -1396,7 +1396,7 @@ function genEnemy(){
 }
 
 function prepEnemy(){ S.enemyBoard = genEnemy(); }   // 备战阶段就生成敌方阵容（供玩家观察，开战时直接沿用）
-let battleTimer=null, SPEED=1.5, currentTick=null, tickWorker=null;   // 默认 1.5 倍速
+let battleTimer=null, SPEED=1, currentTick=null, tickWorker=null;   // 默认 1 倍速
 const BATTLE_DELAY = 300;   // 开战后先暂停 0.3 秒（让玩家看清双方站位）再开始移动
 function startTickLoop(ms){ // 用 Worker 驱动战斗时钟，避免后台标签页被浏览器节流
   stopTickLoop();
