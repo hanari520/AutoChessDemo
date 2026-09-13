@@ -313,7 +313,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   </div>
   <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄<br>刷新<br>-2💰</button>
   <div id="shop"></div>
-  <button class="btn shopctl" id="lockBtn" title="锁定当前商店，下回合不自动刷新（L）">🔓<br>锁定<br>(L)</button>
+  <button class="btn shopctl" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）">🔓<br>锁定<br>(L)</button>
   <div id="fightBox">
     <button class="btn" id="fightBtn" style="background:#1e5b2a;color:#8dff9a;border-color:#8dff9a;">⚔ 开战<br>(空格)</button>
   </div>
@@ -1047,10 +1047,10 @@ function tryMerge(){
     }
   }
 }
-$('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<2)return; S.gold-=2; S.stats.goldSpent+=2; rollShop(); renderTop(); };
+$('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<2)return; if(S.lock){ log('🔒 商店已锁定，不消耗金币刷新'); renderTop(); return; } S.gold-=2; S.stats.goldSpent+=2; rollShop(); renderTop(); };
 /* 商店锁定：下回合自动刷新时保留当前货架 */
 $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
-  log(S.lock?'🔒 商店已锁定（下回合保留货架）':'🔓 商店已解锁');
+  log(S.lock?'🔒 商店已锁定（仅保留到下回合，之后自动解锁）':'🔓 商店已解锁');
   $('lockBtn').textContent=S.lock?'🔒 锁定':'🔓 锁定';
   $('lockBtn').classList.toggle('on',S.lock); renderTop(); };
 /* 一键上阵：按战力选主力，坦克前排居中、远程后排，快速完成布阵 */
@@ -1940,7 +1940,9 @@ function endBattle(alive0,alive1){
   if(!shopOpen){ shopOpen=true; applyShop(); }   // 战斗结束自动展开商店
   if(S.lvl<10){ S.xp+=2; checkLevel(); }   // 每回合自然 +2 升级经验（加快凑人口与高星）
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
-  rollShop(); renderAll();
+  rollShop();
+  if(S.lock){ S.lock=false; log('🔓 锁定已释放（商店锁定仅保留一回合）'); }   // 单回合锁：回合结束自动解锁
+  renderAll();
   $('fightBtn').disabled=false;
   log(`— 第 ${S.round} 回合备战阶段 —${S.endless?'（♾ 无限模式）':''}`);
 }
