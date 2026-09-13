@@ -174,8 +174,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #shopbar { display:flex; gap:8px; padding:8px 12px; background:#1c1830; border-top:2px solid #35294f; flex-shrink:0; align-items:stretch; }
 #shopbar .btn { align-self:center; white-space:nowrap; flex-shrink:0; }
 .btn.on { background:#5b4a1e; border-color:#ffd24a; }
-/* 多多式：刷新/锁定按钮紧贴商店两侧 */
-#shopbar .btn.shopctl { padding:5px 8px; font-size:12px; line-height:1.35; min-width:58px; text-align:center; }
+/* 刷新/锁定：纵向并排一列，紧贴商店右侧 */
+#shopctlCol { display:flex; flex-direction:column; gap:5px; justify-content:center; align-self:stretch; flex-shrink:0; }
+#shopctlCol .btn { align-self:stretch; padding:6px 10px; font-size:12px; line-height:1.2; min-width:92px; text-align:center; white-space:nowrap; }
 #shop { display:flex; gap:8px; flex:1; align-items:stretch; min-width:0; }
 .card { flex:1; min-width:0; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px 8px 22px;
   cursor:pointer; text-align:center; transition:transform .1s; position:relative; }
@@ -393,8 +394,10 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     </div>
   </div>
   <div id="shop"></div>
-  <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄<br>刷新<br>-2💰</button>
-  <button class="btn shopctl" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）">🔓<br>锁定<br>(L)</button>
+  <div id="shopctlCol">
+    <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄 刷新 -2💰</button>
+    <button class="btn shopctl" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）">🔓 锁定 (L)</button>
+  </div>
   <div id="fightBox">
     <button class="btn" id="fightBtn" style="background:#1e5b2a;color:#8dff9a;border-color:#8dff9a;">⚔ 开战<br>(空格)</button>
   </div>
@@ -1084,7 +1087,7 @@ function renderTop(){
     $('sellBtn').disabled=true;
   }
   const c = compForRound(S.round);
-  $('lockBtn').textContent=S.lock?'🔒 已锁定':'🔓 锁定';
+  $('lockBtn').textContent=S.lock?'🔒 已锁定 (L)':'🔓 锁定 (L)';
   $('lockBtn').classList.toggle('on',!!S.lock);
   $('endBtn').style.display = (S.endless && S.phase==='prep') ? 'inline-block' : 'none';
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
@@ -1428,7 +1431,7 @@ $('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<2)return; if(S.lock){ 
 /* 商店锁定：下回合自动刷新时保留当前货架 */
 $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
   log(S.lock?'🔒 商店已锁定（仅保留到下回合，之后自动解锁）':'🔓 商店已解锁');
-  $('lockBtn').textContent=S.lock?'🔒 锁定':'🔓 锁定';
+  $('lockBtn').textContent=S.lock?'🔒 已锁定 (L)':'🔓 锁定 (L)';
   $('lockBtn').classList.toggle('on',S.lock); renderTop(); };
 /* 一键上阵：按战力选主力，坦克前排居中、远程后排，快速完成布阵 */
 /* 队伍羁绊评分：已达成档位大分 + 朝下一档的进度小分（同名棋子按 1 个计，与战斗结算一致） */
