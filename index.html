@@ -357,7 +357,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +5 经验（每回合自然 +2，升级更快凑人口）；卖棋 1★原价、合成折价<br>
     ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2<br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>：胜利掉装备（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
-    ④ 战斗数值（多多官方）：全棋子 100 蓝开局清零，攻击回蓝 =伤害÷2.5（法师系上限 20、其他 10），受击回蓝 =伤害 10%~20%（上限 25~50）；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
+    ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
     ⑤ 拖拽布阵（场上最多 10 人），撑过 25 回合并击败最终魔王即通关
   </p>
   <button id="ovBtn">开始游戏</button>
@@ -1133,7 +1133,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = r>=20 ? 2 : 1;
-    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.28 : 1.12;
+    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.28 : 1.06;
     if(S.endless && r>25) bossMult = Math.min(1.12 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1211,7 +1211,7 @@ function setSpeed(s){ SPEED=s; document.body.style.setProperty('--spd',s);
 document.querySelectorAll('.spd-b').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
 function makeBattleUnit(u, side, x, y){
   const d=byId(u.id);
-  const b={...u, side, x, y, cd:0, moveCd:0, maxmana:100, shield:0, frozen:0, rapid:0,
+  const b={...u, side, x, y, cd:0, moveCd:0, maxmana:50, shield:0, frozen:0, rapid:0,
     stun:0, atkDownA:0, atkDownT:0, slowA:0, slowT:0, noShieldT:0, healDownA:0, healDownT:0,
     poisonT:0, poisonDmg:0, atkMul:1, hpMul:1, spdMul:1, vamp:0, dmgReduce:0,
     tauntT:0, silenceT:0, blockCt:0, blockDmg:.5, blockT:0, thorns:0, thornsT:0, drBuff:0, drBuffT:0,
@@ -1397,10 +1397,10 @@ function startBattle(){
           else vfxAt(tgt,'slash',450);
           const dealt=dealDamage(u,tgt,dmg,units,d.dtype);
           u.cd = 1150/aspd*(1+slow);   // 快节奏：攻击间隔缩短，TTK 与回蓝同步加快
-          // 攻击回蓝（多多官方）：按最终实际伤害 ÷2.5，法师/咒术/医者单次上限 20、其余 10
+          // 攻击回蓝（多多公式×2 配合快节奏）：按最终实际伤害 ÷1.25，法师/咒术/医者单次上限 30、其余 15
           if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && dealt>0){
-            const cap20 = d.job==='法师'||d.job==='咒术'||d.job==='医者';
-            u.mana=Math.min(u.maxmana, u.mana+Math.min(dealt/2.5, cap20?20:10)*(u.manaRegen?2:1));
+            const cap30 = d.job==='法师'||d.job==='咒术'||d.job==='医者';
+            u.mana=Math.min(u.maxmana, u.mana+Math.min(dealt/1.25, cap30?30:15)*(u.manaRegen?2:1));
           }
         }
       } else if(u.moveCd<=0){
@@ -1456,9 +1456,9 @@ function dealDamage(src,tgt,dmg,units,dtype){
   if(tgt.dmgReduce) dmg=Math.round(dmg*(1-tgt.dmgReduce));
   if(tgt.drBuff && tgt.drBuffT>0) dmg=Math.round(dmg*(1-tgt.drBuff));   // 减伤增益（桃色结界等）
   tgt.hp-=dmg;
-  // 受击回蓝（多多官方）：随机回蓝 min(伤害/10,25) ~ min(伤害/5,50)
+  // 受击回蓝（多多公式×2）：随机回蓝 min(伤害/5,15) ~ min(伤害/2.5,30)
   if(dmg>0 && !isPassive(tgt) && tgt.silenceT<=0){
-    const lo=Math.min(dmg/10,25), hi=Math.min(dmg/5,50);
+    const lo=Math.min(dmg/5,15), hi=Math.min(dmg/2.5,30);
     tgt.mana=Math.min(tgt.maxmana, tgt.mana+(hi>lo? lo+Math.random()*(hi-lo): lo)*(tgt.manaRegen?2:1));
   }
   if(src && src.vamp && src.hexT<=0 && src.hp<src.maxhp) src.hp=Math.min(src.maxhp, src.hp+Math.round(dmg*src.vamp));
