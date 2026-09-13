@@ -532,7 +532,7 @@ const CLASSES = {
   '游侠': {need:[2,3], desc:['游侠攻速 +40%','游侠攻速 +70%']},
   '法师': {need:[2,4], desc:['技能伤害 +30%','技能伤害 +60%']},
   '咒术': {need:[2,4], desc:['咒术攻击附加毒伤（3 秒共 6% 目标最大生命）','毒伤翻倍（3 秒共 12%）']},
-  '刺客': {need:[2,4], desc:['刺客攻击 +15%，优先攻击残血','刺客攻击 +30%，优先攻击残血']},
+  '刺客': {need:[2,4], desc:['刺客攻击 +15%，开局切入敌方后排','刺客攻击 +30%，开局切入敌方后排']},
   '狂战': {need:[2,3], desc:['狂战吸血 15%','狂战吸血 30%']},
   '医者': {need:[2,4], desc:['开战时生命最低的队友获得 20% 护盾','护盾 35%，全队每秒回复 1 生命']},
   '偶像': {need:[2,4], desc:['全队攻击 +8%','全队攻击 +16%']},
@@ -606,7 +606,7 @@ const SKILL_VAR = {
   tiandou:{healN:2, fx:[['healshield',.05]], txt:'并为她们附加 5% 最大生命护盾'},
   aza:    {fx:[['allatkup',.10]], txt:'并提升全体 10% 攻击（本场战斗）'},
   pako:   {fx:[['heallow',.40]], txt:'并为生命比例最低的队友额外回复 40% 攻击生命'},
-  zhijin: {tgt:'low', pow:1.05, fx:[['vamp',.15]], txt:'优先攻击残血，并永久获得 15% 吸血'},
+  zhijin: {pow:1.05, fx:[['vamp',.15]], txt:'突进至最远的敌人，并永久获得 15% 吸血'},
   sishi:  {pow:1.05, fx:[['slow',.25,2]], txt:'并使命中者减速 25%，持续 2 秒'},
   sumi:   {teamPct:.12},
   /* —— 3 费 —— */
@@ -619,7 +619,7 @@ const SKILL_VAR = {
   lianshiye:{dur:3},
   huize:  {fx:[['slow',.35,3],['dot',.015]], txt:'并使其减速 35%、附加毒伤，持续 3 秒'},
   shengge:{},
-  shadow: {tgt:'low', pow:1.10, fx:[['exec',.60]], txt:'优先攻击残血；目标生命低于 35% 时追加 60% 斩杀伤害'},
+  shadow: {pow:1.10, fx:[['exec',.60]], txt:'突进至最远的敌人；目标生命低于 35% 时追加 60% 斩杀伤害'},
   /* —— 4 费 —— */
   miyue:  {pow:1.10, fx:[['dot',.02]], txt:'并附加每 3 秒 2% 最大生命的毒伤'},
   huali:  {healN:2, fx:[['allymana',15]], txt:'并使受疗者回复 15 点法力'},
@@ -1651,7 +1651,6 @@ function startBattle(){
       u.atk=Math.round(u.atk*(atkMul+(atkJob.get(d.job)||0)+(facAtk[d.fac]||0)));
       u.spdMul=spdMul+(d.job==='游侠'?rgSpd:0);
       u.skMul=skMul; u.healMul=healMul; u.dmgReduce=dmgReduce; u.regen=regen;
-      u.assassin = (d.job==='刺客');   // 多多文档：刺客职业天生扑后排，无需羁绊
       u.poisonPow = poisonPow;
       if(shieldPct>0) u.shield+=Math.round(u.maxhp*shieldPct);
     });
@@ -1725,12 +1724,11 @@ function startBattle(){
       u.cd-=TICK; u.moveCd-=TICK;
       const foes=units.filter(v=>v.hp>0&&v.side!==u.side);
       if(!foes.length) break;
-      // 索敌：嘲讽强制优先 → 刺客优先残血 → 最近
+      // 索敌：嘲讽强制优先 → 否则打最近的敌人（刺客开局已切入敌方后排，就近攻击后排脆皮）
       let tgt;
       const taunters=foes.filter(f=>f.tauntT>0);
       if(taunters.length){ tgt=null; let bd=1e9;
         for(const f of taunters){ const d2=Math.abs(f.x-u.x)+Math.abs(f.y-u.y); if(d2<bd){bd=d2;tgt=f;} } }
-      else if(u.assassin) tgt=foes.reduce((a,b)=>b.hp<a.hp?b:a);
       else { tgt=null; let bd=1e9;
         for(const f of foes){ const d2=Math.abs(f.x-u.x)+Math.abs(f.y-u.y); if(d2<bd){bd=d2;tgt=f;} } }
       const d=byId(u.id);
