@@ -559,7 +559,7 @@ const FACTIONS = {
   '星际':    {need:[2,3], desc:['法师与游侠攻击 +15%','法师与游侠攻击 +25%，攻速 +10%']},
   '毛茸乐园': {need:[2,3], desc:['全队生命 +10%','全队生命 +20%，每秒回复 1.5 生命']},
   '音律':    {need:[2,3], desc:['歌势与医者治疗效果 +25%','治疗效果 +50%']},
-  '四禧丸子': {need:[3,4], desc:['全队攻击 +12%，每秒回复 1.5 生命','全员合体：全队攻击 +20%，团员额外 +15% 攻击']},
+  '四禧丸子': {need:[2,4], desc:['全队攻击 +12%，每秒回复 1.5 生命','全员合体：全队攻击 +20%，团员额外 +15% 攻击']},
   '学园':    {need:[2,3], desc:['全队攻速 +12%','攻速 +20%，学园棋子攻击 +15%']},
   '夜幕':    {need:[2,3], desc:['夜幕棋子攻击 +18%','夜幕棋子攻击 +30%，全队受到伤害 -10%']},
   '花语':    {need:[2,3], desc:['全队生命 +8%，每秒回复 1 生命','全队生命 +15%，每秒回复 2 生命']},
@@ -578,7 +578,7 @@ const CLASSES = {
   '咒术': {need:[2,4], desc:['咒术攻击附加毒伤（3 秒共 6% 目标最大生命）','毒伤翻倍（3 秒共 12%）']},
   '刺客': {need:[2,4], desc:['刺客攻击 +15%，开局切入敌方后排','刺客攻击 +30%，开局切入敌方后排']},
   '狂战': {need:[2,3], desc:['狂战吸血 15%','狂战吸血 30%']},
-  '医者': {need:[2,4], desc:['开战时生命最低的队友获得 20% 护盾','护盾 35%，全队每秒回复 1 生命']},
+  '医者': {need:[2,4], desc:['开战时生命最低的队友获得 20% 护盾，医者治疗附带 25% 回响伤害','护盾 35%，全队每秒回复 1 生命，回响伤害提升至 50%']},
   '偶像': {need:[2,4], desc:['全队攻击 +8%','全队攻击 +16%']},
 };
 /* 技能效果按费用分级增强：1费×0.92 → 3费×1.12 → 5费×1.32 */
@@ -1627,7 +1627,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.48;
+    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.60;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1800,7 +1800,7 @@ function startBattle(){
     t=tierOf(clsCnt,CLASSES,'刺客'); if(t>=1) addAtkJob('刺客',0.15); if(t>=2) addAtkJob('刺客',0.15);
     t=tierOf(clsCnt,CLASSES,'狂战'); if(t>=1){ const v=t>=2?0.3:0.15;
       mine.filter(u=>byId(u.id).job==='狂战').forEach(u=>u.vamp=Math.max(u.vamp,v)); }
-    if(tierOf(clsCnt,CLASSES,'医者')>=2) regen+=1;
+    const mT=tierOf(clsCnt,CLASSES,'医者'); if(mT>=2) regen+=1;
     t=tierOf(clsCnt,CLASSES,'偶像'); if(t>=1) atkMul+=0.08; if(t>=2) atkMul+=0.08;
     // —— 应用到每个棋子 ——
     mine.forEach(u=>{
@@ -1810,10 +1810,10 @@ function startBattle(){
       u.spdMul=spdMul+(d.job==='游侠'?rgSpd:0);
       u.skMul=skMul; u.healMul=healMul; u.dmgReduce=dmgReduce; u.regen=regen;
       u.poisonPow = poisonPow;
+      u.medEcho = (d.job==='医者' && mT>=1) ? (mT>=2?0.5:0.25) : 0;   // 医者羁绊：治疗回响比例
       if(shieldPct>0) u.shield+=Math.round(u.maxhp*shieldPct);
     });
-    // 医者羁绊：生命最低队友护盾
-    const mT=tierOf(clsCnt,CLASSES,'医者');
+    // 医者羁绊：生命最低队友护盾（治疗回响在 dealDamage 的 medEcho() 中结算）
     if(mT>=1){
       const lowest=mine.reduce((a,b)=>b.hp/b.maxhp<a.hp/a.maxhp?b:a);
       lowest.shield+=Math.round(lowest.maxhp*(mT>=2?0.35:0.2));
@@ -1942,6 +1942,14 @@ function startBattle(){
     }
   };
   startTickLoop(100/SPEED);
+}
+/* 医者羁绊「治疗回响」：医者棋子的主动治疗按 u.medEcho 比例转化为
+   对敌方生命比例最低单位的魔法伤害（溢出治疗不结算，防止无中生有的伤害循环） */
+function medEcho(src, healed, units, foes){
+  if(!src || !src.medEcho || !(healed>0)) return;
+  const tgt=[...foes].filter(f=>f.hp>0).sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0];
+  if(!tgt) return;
+  dealDamage(src, tgt, Math.max(1, Math.round(healed*src.medEcho)), units, 'magic');
 }
 /* 主动治疗类技能的统一结算（治疗量按攻击/系数/羁绊/减疗折算） */
 function dealDamage(src,tgt,dmg,units,dtype){
@@ -2208,7 +2216,8 @@ function castSkill(u,tgt,units,skMul){
       ts.forEach(t=>{
         const hd=t.healDownT>0?(1-t.healDownA):1;
         const h=Math.round(power*per*hm*hd);
-        t.hp=Math.min(t.maxhp,t.hp+h);
+        const real=Math.min(t.maxhp,t.hp+h)-t.hp; t.hp+=real;
+        medEcho(u,real,units,foes);
         vfxAt(t,'ring heal',950); dmgPopup(u,t,'+'+h,'heal');
         const mA=(sv.fx||[]).find(f=>f[0]==='allymana');
         if(mA && !isPassive(t)) t.mana=Math.min(t.maxmana||60,t.mana+mA[1]);
@@ -2217,7 +2226,9 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'aheal': allies.forEach(t=>{ const hd=t.healDownT>0?(1-t.healDownA):1;
       const h=Math.round(power*0.9*hm*hd);
-      t.hp=Math.min(t.maxhp,t.hp+h); vfxAt(t,'ring heal',950); dmgPopup(u,t,'+'+h,'heal'); });
+      const real=Math.min(t.maxhp,t.hp+h)-t.hp; t.hp+=real;
+      medEcho(u,real,units,foes);
+      vfxAt(t,'ring heal',950); dmgPopup(u,t,'+'+h,'heal'); });
       applyFx(u,foes[0],sv,units,allies,foes,power,0); break;
     case 'rapid': u.rapid=sv.rapidN||3; vfxAt(u,'ring',800); vfxAt(u,'flash',600);
       applyFx(u,null,sv,units,allies,foes,power,0); break;
@@ -2327,7 +2338,9 @@ function castSkill(u,tgt,units,skMul){
         if(t!==u && !isPassive(t)) t.mana=Math.min(t.maxmana||50,t.mana+(sv.manaAmt||25));
         const hd=t.healDownT>0?(1-t.healDownA):1;
         const h=Math.round(power*0.5*hm*hd);
-        t.hp=Math.min(t.maxhp,t.hp+h); vfxAt(t,'ring heal',900);
+        const real=Math.min(t.maxhp,t.hp+h)-t.hp; t.hp+=real;
+        medEcho(u,real,units,foes);
+        vfxAt(t,'ring heal',900);
       });
       dmgPopup(u,u,'+'+(sv.manaAmt||25)+'蓝','cast');
       break; }
@@ -2361,7 +2374,8 @@ function castSkill(u,tgt,units,skMul){
       allies.forEach(t=>{
         const hd=t.healDownT>0?(1-t.healDownA):1;
         const h=Math.round(power*0.9*hm*hd);
-        t.hp=Math.min(t.maxhp,t.hp+h);
+        const real=Math.min(t.maxhp,t.hp+h)-t.hp; t.hp+=real;
+        medEcho(u,real,units,foes);
         ['stun','frozen','slowT','atkDownT','healDownT','silenceT','noShieldT','hexT','petrifyT','arDownT','mrDownT'].forEach(k=>t[k]=0);
         t.slowA=0; t.atkDownA=0; t.healDownA=0;
         vfxAt(t,'ring heal',950); vfxAt(t,'flash',600);
