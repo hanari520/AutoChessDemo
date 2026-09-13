@@ -197,9 +197,17 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .btn.off { background:#2a2344; color:#8a93c4; border-color:#4a3d6e; }
 .btn:disabled { opacity:.4; cursor:default; }
 #overlay { position:fixed; inset:0; background:#0b0912e0; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:14px; z-index:10; text-align:center; }
+  justify-content:center; gap:14px; z-index:10; text-align:center; padding:16px; overflow-y:auto; }
 #overlay.hidden { display:none; }
-#overlay h1 { font-size:36px; color:#ffd24a; }
+/* 弹窗卡片：限制高度，正文可滚动，按钮区始终可见（避免长文案把按钮挤出屏幕） */
+#ovCard { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:620px;
+  max-height:92vh; background:#161226; border:2px solid #35294f; border-radius:16px; padding:18px 20px; position:relative; }
+#ovText { overflow-y:auto; flex:1 1 auto; min-height:0; }
+#ovClose { position:absolute; top:8px; right:12px; cursor:pointer; color:#8a93c4; font-size:20px; line-height:1;
+  padding:4px 8px; border-radius:8px; user-select:none; }
+#ovClose:hover { color:#fff; background:#ffffff18; }
+#ovBtns { display:flex; gap:10px; flex-shrink:0; flex-wrap:wrap; justify-content:center; }
+#overlay h1 { font-size:32px; color:#ffd24a; flex-shrink:0; }
 #overlay button { padding:12px 40px; font-size:18px; border:none; border-radius:24px; background:#ffd24a; color:#223; font-weight:bold; cursor:pointer; }
 .fight-btn-row { display:flex; gap:10px; margin-top:6px; }
 .dmg { position:absolute; color:#ff7b7b; font-weight:bold; font-size:13px; pointer-events:none; z-index:9;
@@ -423,8 +431,10 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 </div>
 <div id="inspect" class="hidden"></div>
 <div id="overlay">
+ <div id="ovCard">
+  <span id="ovClose" title="关闭（Esc）">✕</span>
   <h1 id="ovTitle">虚拟棋战 🎲</h1>
-  <p id="ovText" style="max-width:520px;line-height:1.8;color:#cdd6f4">
+  <p id="ovText" style="max-width:560px;line-height:1.7;color:#cdd6f4;font-size:14px;text-align:left">
     单机自动战斗棋局（VirtuaReal + P-SP · 46 名主播 · 限量卡池 · 25 回合通关）<br>
     ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +5 经验（每回合自然 +2，升级更快凑人口）；卖棋 1★原价、合成折价<br>
     ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b>；商店高亮：<span style="color:#ffd24a">金色=对子</span> / <span style="color:#ff8ad8">粉色=已有 2★ 追三</span> / <span style="color:#8dff9a">绿色=购买即触发羁绊档位</span> / <span style="color:#4ac8ff">蓝色=可补全羁绊</span><br>
@@ -432,8 +442,11 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
     ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；<b style="color:#8dff9a">一键上阵(R/A)</b>按羁绊梯队布阵、<b style="color:#8dff9a">整理备战席(T)</b>把棋子按星级/同名聚拢；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
   </p>
-  <button id="ovBtn">开始游戏</button>
-  <button id="ovBtn2" style="display:none;background:#1e5b2a;color:#8dff9a;">♾ 进入无限模式</button>
+  <div id="ovBtns">
+    <button id="ovBtn">开始游戏</button>
+    <button id="ovBtn2" style="display:none;background:#1e5b2a;color:#8dff9a;">♾ 进入无限模式</button>
+  </div>
+ </div>
 </div>
 <script>
 /* ================= 名单：46 人（VirtuaReal 38 + P-SP 8，按 2026-09-12 修改建议重编） =================
@@ -2430,7 +2443,7 @@ function reportHTML(){
   </div>`;
 }
 function stageVictory(){
-  S.phase='over'; ovMode='start';
+  S.phase='over'; ovMode='start'; hideOvClose();
   $('ovTitle').textContent='🏅 通关成功！';
   $('ovText').innerHTML=`你撑过了 ${MAX_ROUNDS} 回合并击败最终 Boss！<br>`+reportHTML();
   $('ovBtn').textContent='📊 结束并查看报告';
@@ -2447,7 +2460,7 @@ function enterEndless(){
   log('♾ 进入无限模式：从第 26 回合开始，敌方将无限变强！');
 }
 function gameOver(win){
-  S.phase='over'; ovMode='start';
+  S.phase='over'; ovMode='start'; hideOvClose();
   try{ // 写入历史战绩并清除进行中的存档
     const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
     h.unshift({ts:Date.now(),win,round:S.round,hp:S.hp,endless:!!S.endless,
@@ -2486,14 +2499,22 @@ function showIntro(resume){
   ovMode = resume ? 'resume' : 'start';
   $('ovBtn').textContent = resume ? '▶ 继续游戏' : '开始游戏';
   $('ovBtn2').style.display='none';
+  if($('ovClose')) $('ovClose').style.display='block';   // 介绍弹窗可关闭
   $('overlay').classList.remove('hidden');
 }
-$('helpBtn').onclick=()=>showIntro(S && S.phase!=='over' ? true : false);
-$('ovBtn').onclick=()=>{
-  if(ovMode==='resume'){ $('overlay').classList.add('hidden'); return; }   // 查看玩法：关闭即继续当前对局
+/* 结算/通关画面：隐藏 ✕（那时"关闭"语义是再来一局，由按钮承担） */
+function hideOvClose(){ if($('ovClose')) $('ovClose').style.display='none'; }
+/* 关闭弹窗：对局中(resume)只是收起；开局前(start)等同于"开始游戏"，避免关掉后无界面 */
+function closeIntro(){
+  if(ovMode==='resume'){ $('overlay').classList.add('hidden'); return; }
   ovMode='start';
   newGame(); renderAll(); $('fightBtn').disabled=false;
-  $('overlay').classList.add('hidden'); log('新的一局开始！'); };
+  $('overlay').classList.add('hidden'); log('新的一局开始！');
+}
+$('helpBtn').onclick=()=>showIntro(S && S.phase!=='over' ? true : false);
+$('ovClose').onclick=closeIntro;                                  // 右上角 ✕
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('overlay').classList.contains('hidden')) closeIntro(); });
+$('ovBtn').onclick=closeIntro;   // 开局=开始游戏 / 对局中查看=继续游戏（同一逻辑，见 closeIntro）
 $('ovBtn2').onclick=enterEndless;
 /* ================= 棋子图鉴（费用/阵营/职业筛选） ================= */
 const BOOK = { cost:new Set(), fac:new Set(), job:new Set() };
