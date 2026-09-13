@@ -390,7 +390,6 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
       <button class="btn" id="deployBtn" title="自动把最强的棋子按职业梯队布阵（R / A）">⚡ 一键上阵</button>
       <button class="btn" id="tidyBtn" title="整理备战席：把棋子按星级与同名聚拢，空位挪到最后（T）">🧹 整理备战席</button>
       <button class="btn" id="sellBtn" title="出售：单击棋子后按 E（或 X / Delete）；也可直接把棋子拖到这里（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售 (E)</button>
-      <button class="btn" id="shopBtn" title="打开/关闭商店">🛒 商店</button>
     </div>
   </div>
   <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄<br>刷新<br>-2💰</button>
@@ -2489,7 +2488,7 @@ function endBattle(alive0,alive1){
   checkSynRewards();   // 羁绊凑档奖励（首次达成 +1 金，鼓励凑羁绊）
   S.round++;
   S.phase='prep';
-  if(!shopOpen){ shopOpen=true; applyShop(); }   // 战斗结束自动展开商店
+  // 商店常驻显示，无需在战斗结束后再展开
   if(S.lvl<10){ S.xp+=2; checkLevel(); }   // 每回合自然 +2 升级经验（加快凑人口与高星）
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
   prepEnemy();   // 提前生成本回合敌方阵容，备战期即可观察
@@ -2666,16 +2665,6 @@ function renderHistory(){
 }
 $('histBtn').onclick=()=>{ renderHistory(); $('histModal').classList.remove('hidden'); };
 $('histClose').onclick=()=>$('histModal').classList.add('hidden');
-/* 商店开关：手机端默认收起，腾出棋盘空间 */
-let shopOpen = true;
-function applyShop(){
-  $('shop').style.display = shopOpen ? '' : 'none';
-  $('shopBtn').classList.toggle('off', !shopOpen);
-  fitBoard();
-}
-$('shopBtn').onclick=()=>{ shopOpen=!shopOpen; applyShop(); };
-if(matchMedia('(max-width:880px),(orientation:landscape) and (max-height:540px)').matches) shopOpen=false;
-applyShop();
 $('resetBtn').onclick=()=>{ if(!confirm('放弃当前进度，重新开一局？')) return;
   localStorage.removeItem(SAVE_KEY); stopTickLoop(); newGame(); renderAll();
   $('fightBtn').disabled=false; $('overlay').classList.add('hidden'); log('🔄 已重新开局'); };
