@@ -655,18 +655,46 @@ const ITEMS = {
   vamp: {n:'饮血魔剑', e:'🩸', desc:'攻击吸血 20%'},
   mana: {n:'潮汐法螺', e:'🔮', desc:'攻击/受击回蓝效率 +100%，更快施放技能'},
 };
-/* 有针对性的对手阵容模板（普通回合轮换；每 5 回合为野怪回合） */
-const COMPS = [
-  {name:'杂牌游勇',   mix:{守护:1, 刀客:2}},
-  {name:'刀客快攻队',  mix:{刀客:2, 守护:1}},
-  {name:'守护奶妈队', mix:{守护:2, 歌势:1, 医者:1}},
-  {name:'游侠风筝队', mix:{游侠:3, 守护:1}},
-  {name:'法师轰击队', mix:{法师:2, 守护:1, 游侠:1}},
-  {name:'刺客猎杀队', mix:{刺客:3, 歌势:1}},
-  {name:'咒术消耗队', mix:{咒术:2, 守护:1, 狂战:1}},
-  {name:'狂战冲锋队', mix:{狂战:3, 偶像:1}},
-  {name:'全员恶人',   mix:{刀客:2, 法师:2, 游侠:1}},
+/* 敌方阵容原型池：每回合随机抽一个流派（不再固定轮换），配合梯队布阵与羁绊结算，
+   敌方每局每回合的阵容构成、站位、羁绊都不同 */
+const ENEMY_ARCHETYPES=[
+  {name:'铁壁防线', w:2,   jobs:()=>['守护','狂战','刀客','守护','狂战','刀客']},
+  {name:'远程压制', w:2,   jobs:()=>['游侠','法师','咒术','游侠','法师','游侠']},
+  {name:'刺客突袭', w:1.5, jobs:()=>['刺客','刺客','游侠','歌势','医者']},
+  {name:'法术轰击', w:1.5, jobs:()=>['法师','咒术','法师','守护','游侠']},
+  {name:'毒疫消耗', w:1,   jobs:()=>['咒术','医者','咒术','守护','狂战']},
+  {name:'散兵游勇', w:1.5, jobs:null},   // 全职业随机混编
 ];
+/* 随机抽取本回合敌方普通阵容：30% 概率出现「同门军团」（整套同阵营，会真实触发羁绊），
+   否则从流派原型中加权抽取；返回 {name, list(图鉴数据数组)} */
+function rollEnemySquad(r){
+  const cap=r<4?1:r<7?2:r<11?3:r<16?4:5;
+  const total=Math.min(1+Math.floor(r/2), S.endless?9:7);
+  const used=new Set(), list=[];
+  const addJob=j=>list.push(pickFor(j,cap,used));
+  if(Math.random()<0.30){   // 同门军团：抽一个在该费用段成员足够的阵营
+    const facs=Object.keys(FACTIONS).filter(f=>UNITS.filter(u=>u.fac===f&&u.cost<=cap).length>=3);
+    if(facs.length){
+      const f=facs[Math.floor(Math.random()*facs.length)];
+      UNITS.filter(u=>u.fac===f&&u.cost<=cap).slice(0,total)
+        .forEach(u=>{ if(!used.has(u.id)){ used.add(u.id); list.push(u); } });
+      while(list.length<total) addJob(['守护','刀客','游侠','法师'][Math.floor(Math.random()*4)]);
+      return {name:f+'军团', list};
+    }
+  }
+  let arch=ENEMY_ARCHETYPES[0];
+  if(r>3){   // 前 3 回合固定散兵混编，避免开局被流派阵容压制
+    const totW=ENEMY_ARCHETYPES.reduce((s,a)=>s+a.w,0);
+    let roll=Math.random()*totW;
+    for(const a of ENEMY_ARCHETYPES){ roll-=a.w; if(roll<=0){ arch=a; break; } }
+  }
+  const jobs=arch.jobs?arch.jobs():null;
+  for(let i=0;i<total;i++){
+    if(jobs) addJob(jobs[i%jobs.length]);
+    else { const all=Object.keys(JOB_ICON); addJob(all[Math.floor(Math.random()*all.length)]); }
+  }
+  return {name:arch.name, list};
+}
 /* 野怪回合（多多自走棋式中立生物）：失败不扣血、不影响连胜；胜利按进度掉装备 */
 const CREEP = {5:'🐺 野狼群', 10:'🗿 岩石巨像', 15:'🐉 黑龙幼崽', 20:'🦣 远古凶兽', 25:'👑 最终魔王'};
 /* 野怪回合：失败不扣血、不动连胜；掉落装备——胜利 2 件、失败保底 1 件（见 endBattle） */
@@ -859,8 +887,8 @@ function sellSelected(){
 }
 function compForRound(r){
   if(r%5===0) return {name:CREEP[r]||'🐗 野怪', boss:true};
-  const normal = COMPS.filter(c=>!c.boss);
-  return normal[(r-1)%normal.length];
+  if(S.enemyComp && S.enemyComp.round===r) return S.enemyComp;   // prepEnemy 已随机好的本回合阵容
+  return {name:'杂牌部队', mix:{守护:1, 刀客:2}};
 }
 
 /* ================= 渲染 ================= */
@@ -1473,16 +1501,15 @@ function genEnemy(){
   const earlyDisc = Math.max(0, 6-r) * 0.015;
   // 无限模式（r>25）成长不封顶：敌方随回合持续变强；普通模式 24 回合封顶
   const capR = S.endless ? 999 : 24;
-  const mul = 0.985 * (1 + Math.min(r-1,capR)*0.072) * dyn - earlyDisc;
+  const mul = 0.985 * (1 + Math.min(r-1,capR)*0.073) * dyn - earlyDisc;
   const used=new Set();
-  const comp = compForRound(r);
   const list=[];
-  if(comp.boss){
+  if(r%5===0){   // 野怪回合（每 5 回合），波次固定按进度强化
     /* 多多自走棋式野怪波次：狼群(纯低费杂兵) → 岩石巨像(3费头目) → 黑龙幼崽(4费)
        → 远古凶兽(4费2★) → 最终魔王(5费2★)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.30 : 1.42;
+    let bossMult = r<10?1.0 : r<15?1.15 : r<20?1.25 : r<25?1.30 : 1.48;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
@@ -1499,14 +1526,12 @@ function genEnemy(){
     const extra = Math.max(0, total - list.length);
     for(let i=0;i<extra;i++) list.push({d:pickFor(jobs[i%jobs.length], Math.min(cap,addCap), used), star:1});
   } else {
-    for(const [job,n] of Object.entries(comp.mix)) for(let i=0;i<n;i++) list.push({d:pickFor(job,cap,used), star:1});
+    // 随机流派/同门军团阵容：先抽阵容，再按图鉴数据生成敌兵
+    const squad = rollEnemySquad(r);
+    squad.list.forEach(u=>list.push({d:u, star:1}));
+    S.enemyComp = {round:r, name:squad.name, mix:squad.list.reduce((m,u)=>{ m[u.job]=(m[u.job]||0)+1; return m; }, {})};
     // 敌方总数跟随「棋手等级=人口」节奏：1级1人、2级2人…缓增至 7 人（无限模式 9 人），与玩家成长曲线对齐
     const total = Math.min(1 + Math.floor(r/2), S.endless ? 9 : 7);
-    const extra = Math.max(0, total - list.length);
-    // 填充杂兵避开模板主职业（mix 中已有 2+ 人的职业不再堆叠），避免敌方白凑 T2 羁绊
-    const mainJobs = Object.entries(comp.mix).filter(([j,n])=>n>=2).map(([j])=>j);
-    const fillJobs = ['刀客','守护','游侠','法师','歌势','咒术','刺客','狂战'].filter(j=>!mainJobs.includes(j));
-    for(let i=0;i<extra;i++) list.push({d:pickFor(fillJobs[Math.floor(Math.random()*fillJobs.length)],cap,used), star:1});
     // 前期（r≤3）敌方人数与玩家人口节奏同步：1级1人、2级2人、3级3人以内
     // 避免 1 金/1 级开局被多打少，也避免敌方白凑 T2 羁绊压制玩家
     if(r<=3){
@@ -1602,20 +1627,7 @@ function startBattle(){
   window.__bu=units; // 调试：战斗单位快照
   S.board.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,0,i%BOARD_W,Math.floor(i/BOARD_W))); });
   S.enemyBoard.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,1,i%BOARD_W,Math.floor(i/BOARD_W))); });
-  // 刺客开局瞬移切后排：先记录目标格，开战缓冲结束时再飞过去（带飞行动画），不在此刻改坐标
-  units.filter(u=>byId(u.id).job==='刺客').forEach(a=>{
-    const dir = a.side===0 ? -1 : 1;           // 我方往上切，敌方往下切
-    const baseRow = a.side===0 ? 0 : BOARD_H-1;
-    const cols=[0,1,2,3,4,5,6,7].sort((p,q)=>Math.abs(p-a.x)-Math.abs(q-a.x));
-    for(const row of [baseRow, baseRow-dir, baseRow-2*dir]){   // 后排→其次靠前两排
-      if(row<0||row>=BOARD_H) continue;
-      for(const x of cols){
-        const occupied=units.some(v=>v!==a&&v.hp>0&&v.x===x&&v.y===row)
-          || units.some(v=>v!==a&&v.dashTo&&v.dashTo[0]===x&&v.dashTo[1]===row);
-        if(!occupied){ a.dashTo=[x,row]; return; }
-      }
-    }
-  });
+  // 刺客的"切入后排"不再是开局瞬移：留在大部队中，开战后的第一次移动同步切入敌方最后一排（见 currentTick）
   // —— 双方羁绊结算（分级强化） ——
   const tierOf=(cnt,tbl,k)=>{ let t=0; for(const n of tbl[k].need) if(cnt[k]>=n) t++; return t; };
   for(const side of [0,1]){
@@ -1694,29 +1706,14 @@ function startBattle(){
       if(tt>0) parts.push(`${k}${tt>=2?'·T'+tt:''}×${n}`); });
     if(parts.length) log(`${side===0?'🔥 我方':'⚔ 敌方'}羁绊：${parts.join('、')}`);
   }
-  let t=0, delayLeft=BATTLE_DELAY, released=false, dashPending=units.some(u=>u.dashTo); const TICK=100;
-  const DASH_FLIGHT=450;   // 刺客突进飞行时间（这段时间不行动，让动画播完）
-  const doDash=()=>{   // 缓冲结束：刺客飞向敌方后排（CSS 过渡播放飞行动画）
-    units.forEach(u=>{
-      if(!u.dashTo) return;
-      const el=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
-      if(el) el.classList.add('dashing');
-      u.x=u.dashTo[0]; u.y=u.dashTo[1]; delete u.dashTo;
-    });
-    renderBattle(units);
-    units.forEach(u=>{   // 落地闪光
-      const el=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
-      if(el && el.classList.contains('dashing')) setTimeout(()=>el.classList.remove('dashing'), DASH_FLIGHT/SPEED);
-    });
-  };
+  let t=0, delayLeft=BATTLE_DELAY, released=false; const TICK=100;
   currentTick=()=>{
     if(S.phase!=='battle') return;  // 非战斗阶段，任何残余时钟都是空操作
     t+=TICK;
-    // 开战缓冲：先静止 0.3 秒看清初始站位 → 刺客飞出（0.45 秒动画）→ 之后才开始行动
+    // 开战缓冲：先静止 0.3 秒看清初始站位，之后双方同步开始行动（刺客的切入也在此时发生）
     if(!released){
       delayLeft-=TICK;
       if(delayLeft>0){ renderBattle(units); return; }
-      if(dashPending){ doDash(); dashPending=false; delayLeft=DASH_FLIGHT; return; }
       released=true;
     }
     // 每秒：回血 & 毒伤 & 增益到期
@@ -1748,6 +1745,27 @@ function startBattle(){
       if(u.drBuffT>0){ u.drBuffT-=TICK; if(u.drBuffT<=0){ u.drBuff=0; u.drBuffT=0; } }   // 减伤增益到期
       // 多多官方：无常驻回蓝，蓝量仅来自攻击伤害与受击（见 dealDamage）
       u.cd-=TICK; u.moveCd-=TICK;
+      // 刺客切入：开战后随大部队同步行动——它的第一次移动改为瞬移到敌方最后一排（带飞行动画）
+      if(byId(u.id).job==='刺客' && !u.jumped && u.moveCd<=0){
+        u.jumped=true;
+        const rows = u.side===0 ? [0,1,2] : [BOARD_H-1,BOARD_H-2,BOARD_H-3];   // 敌方最后一排→其次两排
+        const cols=[0,1,2,3,4,5,6,7].sort((p,q)=>Math.abs(p-u.x)-Math.abs(q-u.x));
+        let done=false;
+        for(const row of rows){
+          for(const x of cols){
+            const occupied=units.some(v=>v!==u&&v.hp>0&&v.x===x&&v.y===row);
+            if(!occupied){
+              u.x=x; u.y=row; done=true;
+              const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
+              if(ael){ ael.classList.add('dashing'); setTimeout(()=>ael.classList.remove('dashing'), 450/SPEED); }
+              u.cd=500;   // 落地小硬直，随后立即投入战斗
+              break;
+            }
+          }
+          if(done) break;
+        }
+        // 找不到空位就不跳，照常走位
+      }
       const foes=units.filter(v=>v.hp>0&&v.side!==u.side);
       if(!foes.length) break;
       // 索敌：嘲讽强制优先 → 否则打最近的敌人（刺客开局已切入敌方后排，就近攻击后排脆皮）
