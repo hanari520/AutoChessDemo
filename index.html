@@ -448,7 +448,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <h1 id="ovTitle">虚拟棋战 🎲</h1>
   <p id="ovText" style="max-width:560px;line-height:1.7;color:#cdd6f4;font-size:14px;text-align:left">
     单机自动战斗棋局（VirtuaReal + P-SP · 50 名主播 · 限量卡池 · 25 回合通关）<br>
-    ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +4 经验（每回合自然 +2；人口 2 级开局、11 级封顶，<b style="color:#ffd24a">第 1 回合不可升级人口</b>）；卖棋 1★原价、合成折价<br>
+    ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +4 经验（每回合自然 +2；人口 2 级开局、11 级封顶，<b style="color:#ffd24a">第 1 回合不可购买经验</b>）；卖棋 1★原价、合成折价<br>
     ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b><br>
     &nbsp;&nbsp;<b style="color:#cdd6f4">商店卡片三层信息（互不遮挡）：</b>① 费用看左侧<b style="color:#9dd3e8">色条</b>+右下角 <b>💰N费</b>；② <span style="color:#ffd24a">金边 = 对子（买到即升星）</span>；③ 徽章并列显示：<span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗买下即触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span><br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；头目为 <b style="color:#ffd24a">2×2 大体型模型</b>；普通回合胜利只给金币<br>
@@ -764,7 +764,7 @@ const CREEP = {5:'🐺 野狼群', 10:'🗿 岩石巨像', 15:'🐉 黑龙幼崽
 const SHOP_SIZE=5, MAX_ROUNDS=25, BENCH=8, MAX_EQUIP=2;
 const BOARD_W=8, BOARD_H=8;                 // 8×8 四边形棋盘（每方 32 格，下半 4 行为我方布阵区）
 const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节奏更线性）；蓝量全棋子统一 100、开局清零
-/* 升级人口经验表（多多式）：每回合自然 +2 经验，5 金币固定买 4 经验；2 级起步、11 级封顶，第 1 回合不可升级 */
+/* 升级人口经验表（多多式）：每回合自然 +2 经验，5 金币固定买 4 经验；2 级起步、11 级封顶；第 1 回合仅禁购买经验（自然积累照常升级） */
 const XP_NEED = {1:1, 2:2, 3:3, 4:5, 5:8, 6:12, 7:16, 8:20, 9:28, 10:36};
 function xpNeed(lvl){ return XP_NEED[lvl]||Infinity; }
 function checkLevel(){ let need=xpNeed(S.lvl);
@@ -1099,7 +1099,7 @@ function renderTop(){
   $('lvlNum').textContent=S.lvl;
   $('xpText').textContent = S.lvl>=11 ? '人口已满' : `经验 ${S.xp}/${need}`;
   $('xpFill').style.width = S.lvl>=11 ? '100%' : Math.min(100,S.xp/need*100)+'%';
-  $('lvlBtn').textContent = S.lvl>=11 ? '人口已满' : (S.round===1 ? '首回合不可升级人口' : '买经验 (F) +4经验 -5💰');
+  $('lvlBtn').textContent = S.lvl>=11 ? '人口已满' : (S.round===1 ? '首回合不可买经验' : '买经验 (F) +4经验 -5💰');
   $('lvlBtn').disabled = S.lvl>=11 || S.gold<4 || S.round===1;
   $('refreshBtn').disabled = S.gold<2;
   // 出售按钮：选中棋子后解锁，并预览回购价（多多式：1★原价、合成折价）
@@ -1604,7 +1604,7 @@ function tidyBench(){
 }
 $('tidyBtn').onclick=tidyBench;
 $('lvlBtn').onclick=()=>{ if(S.phase!=='prep'||S.lvl>=11)return;   // 5 金币买 4 经验（更快升人口凑羁绊）
-  if(S.round===1){ log('⚠ 第 1 回合不可升级人口（第 2 回合起可购买经验）'); return; }
+  if(S.round===1){ log('⚠ 第 1 回合不可购买经验（第 2 回合起可购买，自然经验不受影响）'); return; }
   if(S.gold<5){ log('⚠ 金币不足，无法购买升级经验'); return; }
   S.gold-=5; S.stats.goldSpent+=5; S.xp+=4;
   checkLevel(); renderAll(); };
@@ -2613,7 +2613,7 @@ function endBattle(alive0,alive1){
   S.round++;
   S.phase='prep';
   // 商店常驻显示，无需在战斗结束后再展开
-  if(S.lvl<11){ S.xp+=2; if(S.round>2) checkLevel(); }   // 每回合自然 +2 升级经验；第 1 回合只攒经验不升级（首回合禁升级人口，此处 S.round 已指向新回合）
+  if(S.lvl<11){ S.xp+=2; checkLevel(); }   // 每回合自然 +2 升级经验，照常触发升级（首回合仅禁止"购买"经验，不影响自然积累）
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
   prepEnemy();   // 提前生成本回合敌方阵容，备战期即可观察
   rollShop();
