@@ -1241,7 +1241,7 @@ function renderTop(){
   $('lockBtn').classList.toggle('on',!!S.lock);
   $('endBtn').style.display = (S.endless && S.phase==='prep') ? 'inline-block' : 'none';
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
-    : S.streak>=4 ? '难度 ⬆（连胜 4+，敌方增强）' : '难度 ➖ 标准';
+    : S.streak>=4 ? `难度 ⬆（连胜 ${S.streak}，敌方增强 +${Math.min(8, 2*(S.streak-3))}%）` : '难度 ➖ 标准';
   $('enemyInfo').innerHTML = c.boss
     ? `<b>${c.name}</b> · 野怪回合（${S.round>=20&&S.round<25?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">🏆 胜利掉 <b style="color:#8dff9a">2</b> 件装备 · 💤 失败不扣血、不动连胜，仍掉 <b style="color:#8dff9a">1</b> 件${S.round>=25&&!S.endless?' · <b style="color:#ff9a9a">最终决战，战败即结束！</b>':''}</span>`
     : `<b>${c.name}</b>：` + Object.entries(c.mix).map(([j,n])=>`${j}×${n}`).join(' + ')
@@ -1771,8 +1771,10 @@ function pickFor(job, cap, used){
 function genEnemy(){
   const r=S.round;
   const cap = r<4?1 : r<7?2 : r<11?3 : r<16?4 : 5;   // 敌方费用上限随回合解锁
-  // 动态难度：连败减压（每连败 -10%，最多 -30%）；连胜 4+ 加压 10%
-  const dyn = (S.lossStreak>=2 ? Math.max(0.55, 1-0.12*S.lossStreak) : (S.streak>=4?1.1:1)) * (S.hp<=12?0.88:1);
+  // 动态难度：连败减压（每连败 -12%，下限 0.55）；濒死减压（hp≤12 ×0.88）；
+  // 连胜加压改渐进小步：4 连胜起每多 1 胜 +2%，封顶 +8%（4=×1.02 / 5=×1.04 / 6=×1.06 / 8+=×1.08）
+  const dyn = (S.lossStreak>=2 ? Math.max(0.55, 1-0.12*S.lossStreak)
+              : (S.streak>=4 ? Math.min(1.08, 1+0.02*(S.streak-3)) : 1)) * (S.hp<=12?0.88:1);
   // 无限模式（r>25）成长不封顶：敌方随回合持续变强；普通模式 24 回合封顶
   const capR = S.endless ? 999 : 24;
   // 全程渐进难度曲线：前期就有压力、中后期持续加压（指数 0.85 = 前段斜率更大），不再是"前松后紧"

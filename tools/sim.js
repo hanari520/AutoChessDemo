@@ -107,7 +107,7 @@ for (let g = 0; g < N; g++) {
   (0, eval)('newGame()'); (0, eval)('renderAll()');
   let outcome = null;
   for (let guard = 0; guard < 40; guard++) {
-    const preWins = A.S.stats.wins, curRound = A.S.round, hpBefore = A.S.hp;
+    const preWins = A.S.stats.wins, curRound = A.S.round, hpBefore = A.S.hp, preStreak = A.S.streak;
     botPrep();
     (0, eval)('startBattle')();
     driveBattle();
@@ -126,6 +126,9 @@ for (let g = 0; g < N; g++) {
     if (curRound % 5 !== 0) {
       const lost = S.hp < hpBefore;   // 普通回合失败必然扣血
       (wrStats[curRound] = wrStats[curRound] || []).push(lost ? 0 : 1);
+      // 连胜状态条件胜率：开战前连胜≥4（敌方难度 dyn 已按该连胜加压）的回合单独统计
+      const sk = preStreak >= 4 ? 'streak4p' : 'streak0_3';
+      (globalThis.streakWR = globalThis.streakWR || {})[sk] = (globalThis.streakWR[sk] || []).concat(lost ? 0 : 1);
     }
     if (S.phase === 'over') {
       const ovT = String(global.document.getElementById('ovTitle').textContent || '');
@@ -147,6 +150,9 @@ const curve = globalThis.hpCurve;
 console.log('各回合平均血量:', Object.keys(curve).sort((a,b)=>a-b).map(r => `r${r}:${(curve[r].reduce((a,b)=>a+b,0)/curve[r].length).toFixed(1)}`).join(' '));
 const wr = globalThis.wrStats;
 console.log('各回合胜率:', Object.keys(wr).sort((a,b)=>a-b).map(r => { const a = wr[r]; return `r${r}:${(a.reduce((x,y)=>x+y,0)/a.length*100).toFixed(0)}%`; }).join(' '));
+const swr = globalThis.streakWR || {};
+['streak4p','streak0_3'].forEach(k => { const a = swr[k];
+  if (a && a.length) console.log(`连胜≥4状态回合胜率(${k}): ${(a.reduce((x,y)=>x+y,0)/a.length*100).toFixed(1)}%  样本=${a.length}`); });
 const cw = globalThis.creepWR;
 console.log('野怪回合胜率(掉装备=胜):', Object.keys(cw).sort((a,b)=>a-b).map(r => { const a = cw[r]; return `r${r}:${(a.reduce((x,y)=>x+y,0)/a.length*100).toFixed(0)}%`; }).join(' '));
 console.log('平均存活回合:', (results.reduce((s, r) => s + r.round, 0) / N).toFixed(1),
