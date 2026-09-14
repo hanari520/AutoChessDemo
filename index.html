@@ -35,12 +35,11 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .unit.battle-unit { position:absolute; inset:auto; width:calc(var(--cell) - 8px); height:calc(var(--cell) - 8px); pointer-events:auto; isolation:isolate;
   transition:left calc(.45s/var(--spd)) ease, top calc(.45s/var(--spd)) ease, transform calc(.12s/var(--spd)) ease; overflow:visible; }
 .unit.battle-unit.lunge { transform:scale(1.15); }
-/* 头目野怪 2×2 大模型：战斗/备战预览均视觉占 2×2 格（逻辑占位仍为 1 格，位置由 JS 居中并夹回棋盘内） */
+/* 头目野怪 2×2 体格：战斗/备战预览均以锚点格真实占据 2×2（占格互斥由引擎保证，此处只负责尺寸与层级） */
 .unit.battle-unit.big, #board .unit.preview.big { width:calc(var(--cell)*2 + var(--gap) - 8px); height:calc(var(--cell)*2 + var(--gap) - 8px); z-index:6; }
 .unit.battle-unit.big .nm { font-size:15px; }
 .unit.battle-unit.big .st { font-size:12px; }
 .unit.battle-unit.big .fj { font-size:10px; }
-#board .unit.preview.big { inset:auto; left:calc((var(--cell) + var(--gap) - 8px)/-2); top:calc((var(--cell) + var(--gap) - 8px)/-2); }
 .unit.battle-unit.big .vfx.attached, #board .unit.preview.big .vfx.attached { left:-8px !important; top:-8px !important; width:calc(var(--cell)*2 + var(--gap)); height:calc(var(--cell)*2 + var(--gap)); }
 /* 刺客突进：飞行动画（缩放+拖影+提速过渡） */
 .unit.battle-unit.dashing { z-index:9; transition:left calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), top calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), transform calc(.45s/var(--spd)) ease;
@@ -451,7 +450,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +4 经验（每回合自然 +2；人口 2 级开局、11 级封顶，<b style="color:#ffd24a">第 1 回合不可购买经验</b>）；卖棋 1★原价、合成折价<br>
     ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b><br>
     &nbsp;&nbsp;<b style="color:#cdd6f4">商店卡片三层信息（互不遮挡）：</b>① 费用看左侧<b style="color:#9dd3e8">色条</b>+右下角 <b>💰N费</b>；② <span style="color:#ffd24a">金边 = 对子（买到即升星）</span>；③ 徽章并列显示：<span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗买下即触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span><br>
-    ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；头目为 <b style="color:#ffd24a">2×2 大体型模型</b>；普通回合胜利只给金币<br>
+    ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；头目<b style="color:#ffd24a">真实占据 2×2 格</b>（其他棋子需让位绕行，近战可从任意相邻格攻击它）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
     ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；<b style="color:#8dff9a">一键上阵(R/A)</b>按羁绊梯队布阵、<b style="color:#8dff9a">整理备战席(T)</b>把棋子按星级/同名聚拢；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
   </p>
@@ -999,11 +998,8 @@ function renderBoard(){
     else if(y<BOARD_H/2 && S.phase==='prep' && S.enemyBoard && S.enemyBoard[i]){
       // 备战期显示敌方阵容预览：可单击查看详情（数据取自图鉴），但不可拖动
       cell.innerHTML=unitHTML(S.enemyBoard[i], false).replace('<div class="unit ','<div class="unit preview ');
-      if(S.enemyBoard[i].boss){   // 头目 2×2 大模型预览：与战斗渲染同款几何（居中、越界夹回棋盘）
-        const pe=cell.querySelector('.unit'); pe.classList.add('big');
-        const bb=bigBoxRect(x,y);
-        pe.style.left=Math.round(bb.bx-x*cellStep())+'px';
-        pe.style.top=Math.round(bb.by-y*cellStep())+'px';
+      if(S.enemyBoard[i].big){   // 2×2 头目预览：从锚点格铺满 4 格（其余格为空，点击仅取消选中）
+        const pe=cell.querySelector('.unit'); if(pe) pe.classList.add('big');
       }
       cell.classList.add('enemy-preview-cell');
       isEnemyPreview=true;
@@ -1209,12 +1205,12 @@ const JOB_BAND = {'守护':0,'刀客':1,'狂战':1,'歌势':2,'医者':2,'偶像
 function unitBand(u){ const d=byId(u.id); return (d.job in JOB_BAND) ? JOB_BAND[d.job] : 2; }
 /* 把 cands 按梯队填入 4 行棋盘：rows = [最前排行号, …, 最后排行号]（长度为 4，按纵深从近到远）。
    同带内按战力降序；每行从中间列向两侧展开；本带行满则向后顺延。 */
-function placeFormation(board, rows, cands){
+function placeFormation(board, rows, cands, preUsed){
   const bands=[[],[],[],[],[]];
   cands.forEach(u=>bands[unitBand(u)].push(u));
   const desc=u=>Math.pow(u.star||1,2)*(u.maxhp||0)+(u.atk||0)*(u.star||1)*4;
   bands.forEach(b=>b.sort((a,b2)=>desc(b2)-desc(a)));
-  const cols=[3,4,2,5,1,6,0,7], used=new Set();
+  const cols=[3,4,2,5,1,6,0,7], used=new Set(preUsed||[]);   // preUsed：已被 2×2 头目占据的格子，其余棋子让位
   const startRow=[0,1,2,2,3];        // 各梯队起始行（刺客=最后一行）
   const putOne=(u,sr)=>{
     for(let r=sr;r<4;r++){ const y=rows[r];
@@ -1691,16 +1687,26 @@ function genEnemy(){
     }
   }
   const b=Array(BOARD_H*BOARD_W).fill(null);
-  // 敌方半区在上方：用统一梯队布阵。rows 从贴近中线（第3行）到最远（第0行）：
-  // 守卫 row3 → 战士 row2 → 辅助/法师 row1 → 刺客 row0（敌方最后一排）
   const placed=[];
   for(const x of list){
     const m = mul * (x.bossMult||1) * Math.pow(STAR_M[x.d.cost]||1.8, x.star-1) * HP_SCALE;
     placed.push({uid:S.uid++, id:x.d.id, star:x.star, sks:Math.pow(SKILL_STAR_M[x.d.cost]||1.1, x.star-1),
       hp:Math.round(x.d.hp*m), maxhp:Math.round(x.d.hp*m),
-      atk:Math.round(x.d.atk*m), enemy:true, boss:!!x.boss});
+      atk:Math.round(x.d.atk*m), enemy:true, boss:!!x.boss, big:x.boss?2:0});   // big:2=真实占据 2×2 格
   }
-  placeFormation(b, [3,2,1,0], placed);
+  // 2×2 头目优先布阵：锚点 y≤2 保证整块落在敌方半区（rows 0-3），从中线前排、居中向两侧找第一个空位
+  const bossU=placed.find(p=>p.big), rest=bossU?placed.filter(p=>p!==bossU):placed;
+  let preUsed=[];
+  if(bossU){
+    outer:
+    for(const y of [2,1,0]) for(const x of [3,4,2,5,1,6,0]){
+      const cells=[y*BOARD_W+x, y*BOARD_W+x+1, (y+1)*BOARD_W+x, (y+1)*BOARD_W+x+1];
+      if(cells.every(k=>!b[k])){ b[cells[0]]=bossU; preUsed=cells; break outer; }
+    }
+  }
+  // 敌方半区在上方：用统一梯队布阵。rows 从贴近中线（第3行）到最远（第0行）：
+  // 守卫 row3 → 战士 row2 → 辅助/法师 row1 → 刺客 row0（敌方最后一排）
+  placeFormation(b, [3,2,1,0], rest, preUsed);
   return b;
 }
 
@@ -1935,14 +1941,14 @@ function startBattle(){
       if(u.skillCd>0) u.skillCd-=TICK;   // 技能内置冷却（防止满蓝后每帧反复施法）
       u.cd-=TICK; u.moveCd-=TICK;
       // 刺客切入：开战后随大部队同步行动——它的第一次移动改为瞬移到敌方最后一排（带飞行动画）
-      if(byId(u.id).job==='刺客' && !u.jumped && u.moveCd<=0){
+      if(byId(u.id).job==='刺客' && !u.big && !u.jumped && u.moveCd<=0){
         u.jumped=true;
         const rows = u.side===0 ? [0,1,2] : [BOARD_H-1,BOARD_H-2,BOARD_H-3];   // 敌方最后一排→其次两排
         const cols=[0,1,2,3,4,5,6,7].sort((p,q)=>Math.abs(p-u.x)-Math.abs(q-u.x));
         let done=false;
         for(const row of rows){
           for(const x of cols){
-            const occupied=units.some(v=>v!==u&&v.hp>0&&v.x===x&&v.y===row);
+            const occupied=cellOccupied(units,x,row,u);   // 2×2 头目的格子同样不可落入
             if(!occupied){
               u.x=x; u.y=row; done=true;
               const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
@@ -1962,15 +1968,15 @@ function startBattle(){
       let tgt;
       const taunters=foes.filter(f=>f.tauntT>0);
       if(taunters.length){ tgt=null; let bd=1e9;
-        for(const f of taunters){ const d2=Math.abs(f.x-u.x)+Math.abs(f.y-u.y); if(d2<bd){bd=d2;tgt=f;} } }
+        for(const f of taunters){ const d2=unitDist(f,u); if(d2<bd){bd=d2;tgt=f;} } }
       else { tgt=null; let bd=1e9;
-        for(const f of foes){ const d2=Math.abs(f.x-u.x)+Math.abs(f.y-u.y); if(d2<bd){bd=d2;tgt=f;} } }
+        for(const f of foes){ const d2=unitDist(f,u); if(d2<bd){bd=d2;tgt=f;} } }
       const d=byId(u.id);
       const aspd = d.spd*(u.spdMul||1);
       if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana && u.skillCd<=0){
         u.mana=0; u.skillCd=SKILL_CD; castSkill(u,tgt,units,u.skMul);
       }
-      if(Math.abs(tgt.x-u.x)+Math.abs(tgt.y-u.y)<=d.rng){
+      if(unitDist(tgt,u)<=d.rng){   // 距离按占据格集合算：贴 2×2 头目任意一格即在射程内
         if(u.cd<=0){
           const slow = u.slowT>0 ? u.slowA : 0;
           let dmg = Math.round(eatk(u)*(u.rapid>0?2:1));
@@ -2094,12 +2100,27 @@ function boardGeo(){
 const CELL_PX = () => boardGeo().cell;
 const PAD_PX  = () => boardGeo().pad;
 const cellStep = () => boardGeo().step;
-/* 头目 2×2 大模型几何：以逻辑格为中心铺满 2×2 格，越界时夹回棋盘内（返回棋盘内区坐标与尺寸 px） */
-function bigBoxRect(x,y){
-  const g=boardGeo(), size=2*g.cell+g.gap-8, st=g.cell+g.gap, span=8*st-g.gap;
-  let bx=x*st+g.cell/2-size/2, by=y*st+g.cell/2-size/2;
-  bx=Math.max(0,Math.min(bx,span-size)); by=Math.max(0,Math.min(by,span-size));
-  return { bx, by, size };
+/* ===== 2×2 头目体格：以 (x,y) 为左上锚点真实占据 4 格，其余棋子 1 格 ===== */
+function cellsOf(u){
+  if(!u) return [];
+  return u.big ? [[u.x,u.y],[u.x+1,u.y],[u.x,u.y+1],[u.x+1,u.y+1]] : [[u.x,u.y]];
+}
+function unitDist(a,b){   // 两棋子占据格集合间的最小曼哈顿距离（近战贴头目任意一格即可输出）
+  let m=1e9;
+  for(const [ax,ay] of cellsOf(a)) for(const [bx,by] of cellsOf(b)){
+    const d2=Math.abs(ax-bx)+Math.abs(ay-by); if(d2<m) m=d2;
+  }
+  return m;
+}
+function cellOccupied(units,x,y,ignore){   // 该格是否被任一存活棋子占据（含 2×2 头目的 4 格）
+  return units.some(v=>v!==ignore&&v.hp>0&&cellsOf(v).some(([cx,cy])=>cx===x&&cy===y));
+}
+function nearCells(f,u,r){   // 两棋子占据格集合的切比雪夫距离 ≤ r（cleave/slam/volley 的"周围 N 格"）
+  return cellsOf(f).some(([fx,fy])=>cellsOf(u).some(([ux,uy])=>Math.abs(fx-ux)<=r&&Math.abs(fy-uy)<=r));
+}
+function bigFits(units,u,x,y){   // 2×2 方块锚点 (x,y) 是否放得下（越界或压到其他棋子都不行，忽略自身）
+  if(x<0||y<0||x+1>=BOARD_W||y+1>=BOARD_H) return false;
+  return ![[x,y],[x+1,y],[x,y+1],[x+1,y+1]].some(([cx,cy])=>cellOccupied(units,cx,cy,u));
 }
 function unitVisual(u){
   const el=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
@@ -2120,10 +2141,11 @@ function vfxAt(u,cls,dur=900){
 function vfxAoe(u,R,colorCls='',dur=700){
   const cell=CELL_PX(), gap=boardGeo().gap, step=cellStep(), pad=PAD_PX()-2;
   const size=Math.round((2*R+1)*cell + 2*R*gap);
+  const ax=u.x+(u.big?0.5:0), ay=u.y+(u.big?0.5:0);   // 2×2 头目以方块中心为圆心
   const el=document.createElement('div');
   el.className='vfx aoe '+colorCls;
-  el.style.left=Math.round(pad+u.x*step-gap/2)+'px';
-  el.style.top=Math.round(pad+u.y*step-gap/2)+'px';
+  el.style.left=Math.round(pad+ax*step-gap/2)+'px';
+  el.style.top=Math.round(pad+ay*step-gap/2)+'px';
   el.style.width=size+'px'; el.style.height=size+'px';
   const layer=document.getElementById('unitLayer') || $('board');
   layer.appendChild(el);
@@ -2149,15 +2171,16 @@ function beam(u1,u2,color){
   setTimeout(()=>el.remove(),480/SPEED);
 }
 function freeCell(units,nx,ny){
-  return nx>=0&&nx<BOARD_W&&ny>=0&&ny<BOARD_H && !units.some(v=>v.hp>0&&v.x===nx&&v.y===ny);
+  return nx>=0&&nx<BOARD_W&&ny>=0&&ny<BOARD_H && !cellOccupied(units,nx,ny);
 }
-/* 寻路：BFS 到「曼哈顿距离 ≤ rng」的最近可达空格，返回第一步坐标（无路可走返回 null）。
-   只把被存活单位占据的格子当障碍，因此单位会自然绕开友军堵位找角度输出 */
+/* 寻路：BFS 到「占据格间最小曼哈顿距离 ≤ rng」的最近可达空格，返回第一步坐标（无路可走返回 null）。
+   只把被存活单位占据的格子当障碍（2×2 头目占 4 格），因此单位会自然绕开友军堵位找角度输出 */
 function stepToward(u,tgt,rng,units){
+  if(u.big) return stepTowardBig(u,tgt,rng,units);
   const N=BOARD_W*BOARD_H, key=(x,y)=>y*BOARD_W+x;
   const blocked=new Uint8Array(N);
-  for(const v of units){ if(v.hp>0 && v!==u) blocked[key(v.x,v.y)]=1; }
-  const inRange=(x,y)=>Math.abs(tgt.x-x)+Math.abs(tgt.y-y)<=rng;
+  for(const v of units){ if(v.hp>0 && v!==u) cellsOf(v).forEach(([cx,cy])=>blocked[key(cx,cy)]=1); }
+  const inRange=(x,y)=>cellsOf(tgt).some(([bx,by])=>Math.abs(bx-x)+Math.abs(by-y)<=rng);
   if(inRange(u.x,u.y)) return null;
   const dist=new Int16Array(N).fill(-1), prev=new Int16Array(N).fill(-1);
   const start=key(u.x,u.y); dist[start]=0;
@@ -2178,6 +2201,32 @@ function stepToward(u,tgt,rng,units){
   while(prev[cur]!==start && prev[cur]!==-1) cur=prev[cur];
   return prev[cur]===start ? [cur%BOARD_W, (cur-(cur%BOARD_W))/BOARD_W] : null;
 }
+/* 2×2 头目的刚体寻路：对锚点位置 BFS，移动全程整块四格都不得越界或压到其他棋子 */
+function stepTowardBig(u,tgt,rng,units){
+  const key=(x,y)=>y*BOARD_W+x;
+  const distAt=(x,y)=>{ let m=1e9;
+    for(const [bx,by] of cellsOf(tgt)) for(const [cx,cy] of [[x,y],[x+1,y],[x,y+1],[x+1,y+1]]){
+      const d2=Math.abs(bx-cx)+Math.abs(by-cy); if(d2<m) m=d2; }
+    return m; };
+  if(distAt(u.x,u.y)<=rng) return null;
+  const start=key(u.x,u.y), seen=new Set([start]), prev=new Map();
+  const q=[[u.x,u.y]]; let head=0;
+  while(head<q.length){
+    const [cx,cy]=q[head++];
+    if((cx!==u.x||cy!==u.y) && distAt(cx,cy)<=rng){
+      let cur=key(cx,cy);
+      while(prev.get(cur)!==start) cur=prev.get(cur);
+      return [cur%BOARD_W, Math.floor(cur/BOARD_W)];
+    }
+    for(const [nx,ny] of [[cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]]){
+      const k=key(nx,ny);
+      if(nx<0||nx+1>=BOARD_W||ny<0||ny+1>=BOARD_H||seen.has(k)) continue;
+      if(!bigFits(units,u,nx,ny)) continue;
+      seen.add(k); prev.set(k,key(cx,cy)); q.push([nx,ny]);
+    }
+  }
+  return null;
+}
 function eatk(u){ // 结算攻击力降低后的有效攻击
   return Math.max(1, Math.round(u.atk*(u.atkDownT>0?(1-u.atkDownA):1)));
 }
@@ -2197,14 +2246,14 @@ function fireProjectile(src,tgt,color){
 }
 /* 按棋子变体选择技能目标（默认最近；low=残血 / hi=高攻 / far=最远） */
 function pickFoe(foes,u,sv){
-  const t=sv.tgt, dist=v=>Math.abs(v.x-u.x)+Math.abs(v.y-u.y);
+  const t=sv.tgt, dist=v=>unitDist(v,u);
   if(t==='low') return foes.reduce((a,b)=>b.hp/b.maxhp<a.hp/a.maxhp?b:a);
   if(t==='hi') return foes.reduce((a,b)=>eatk(b)>eatk(a)?b:a);
   if(t==='far') return foes.reduce((a,b)=>dist(b)>dist(a)?b:a);
   return foes.reduce((a,b)=>dist(b)<dist(a)?b:a);
 }
-/* 范围型 AoE：只命中施法者周围 R 格内的敌人（曼哈顿距离），不再全场生效 */
-function aoeFoes(u,foes,r){ return foes.filter(f=>Math.abs(f.x-u.x)+Math.abs(f.y-u.y)<=r); }
+/* 范围型 AoE：只命中施法者周围 R 格内的敌人（按占据格集合的最小曼哈顿距离），不再全场生效 */
+function aoeFoes(u,foes,r){ return foes.filter(f=>unitDist(f,u)<=r); }
 /* 技能 AoE 半径（格）；范围越小伤害/控制可给得越强。3 格 ≈ 覆盖半数战场的环形区域 */
 const AOE_RADIUS={ massstun:3, massfreeze:3, masssilence:3, foehealdown:2 };
 /* 棋子独有技能特效统一结算（fx 词条 → 既有状态字段） */
@@ -2234,14 +2283,14 @@ function applyFx(u,f,sv,units,allies,foes,power,dmg){
         vfxAt(t,'ring heal',900); dmgPopup(u,t,'+'+h,'heal'); break; }
       case 'dot': if(hit){ f.poisonT=3000; f.poisonDmg=Math.round(f.maxhp*a); } break;
       case 'selfheal': { const h=Math.round((dmg||0)*a); if(h>0) u.hp=Math.min(u.maxhp,u.hp+h); } break;
-      case 'push': if(hit){ const dx=Math.sign(f.x-u.x), dy=Math.sign(f.y-u.y);
+      case 'push': if(hit && !f.big){ const dx=Math.sign(f.x-u.x), dy=Math.sign(f.y-u.y);   // 2×2 头目巨体免击退
         if((dx||dy)&&freeCell(units,f.x+dx,f.y+dy)){ f.x+=dx; f.y+=dy; shakeCell(f.x,f.y); } } break;
       case 'vamp': u.vamp=Math.max(u.vamp||0,a); break;
       case 'atkup': u.atk=Math.round(u.atk*(1+a)); break;
       case 'allatkup': allies.forEach(t=>{ t.atk=Math.round(t.atk*(1+a)); }); break;
       case 'splash': { if(!hit) break;
         const f2=foes.filter(v=>v!==f&&v.hp>0)
-          .sort((x,y)=>(Math.abs(x.x-u.x)+Math.abs(x.y-u.y))-(Math.abs(y.x-u.x)+Math.abs(y.y-u.y)))[0];
+          .sort((x,y)=>unitDist(x,u)-unitDist(y,u))[0];
         if(f2){ dealDamage(u,f2,Math.round(power*a),units); dmgPopup(u,f2,'✦溅射','cast'); } break; }
       case 'foehealdown': aoeFoes(u,foes,AOE_RADIUS.foehealdown).forEach(t=>{ if(t.hp>0){ t.healDownA=Math.max(t.healDownA||0,a); t.healDownT=(b||3)*1000; } }); break;
       case 'exec': if(hit && f.hp>0 && f.hp/f.maxhp<0.35){   // 斩杀：残血目标追加伤害
@@ -2261,19 +2310,19 @@ function castSkill(u,tgt,units,skMul){
   const SUPPORT=new Set(['heal','aheal','manafeed','shell','teamshield','guard','bulwark','cleanse','tauntshield']);
   if(!foes.length && !SUPPORT.has(arch)) return;
   const lowest = arr=>arr.reduce((a,b)=>b.hp/b.maxhp<a.hp/a.maxhp?b:a);
-  const dist = v=>Math.abs(v.x-u.x)+Math.abs(v.y-u.y);
+  const dist = v=>unitDist(v,u);
   dmgPopup(u,u,'✦'+nm,'cast');
   log(`✨ ${u.side===0?'我方':'敌方'}${d.name} 释放【${nm}】！`);
   shakeCell(u.x,u.y);
   const hm = u.healMul||1;
   switch(arch){
     case 'cleave': {
-      const hits = foes.filter(f=>Math.abs(f.x-u.x)<=1&&Math.abs(f.y-u.y)<=1);
+      const hits = foes.filter(f=>nearCells(f,u,1));   // 周围 1 格按占据格集合算（2×2 头目覆盖更宽）
       hits.forEach(f=>{
         vfxAt(f,'ring',900);
         const dd=dealDamage(u,f,Math.round(power*1.5),units);
         applyFx(u,f,sv,units,allies,foes,power,dd);
-        if(f.hp>0){
+        if(f.hp>0 && !f.big){   // 2×2 头目巨体免击退
           const dx=Math.sign(f.x-u.x), dy=Math.sign(f.y-u.y);
           const nx=f.x+dx, ny=f.y+dy;
           if((dx||dy) && freeCell(units,nx,ny)){ f.x=nx; f.y=ny; shakeCell(nx,ny); }
@@ -2284,8 +2333,10 @@ function castSkill(u,tgt,units,skMul){
       if(!foes.length)break;
       const ox=u.x, oy=u.y;
       const far=pickFoe(foes,u,{...sv,tgt:sv.tgt||'far'});
-      const spot=[[far.x-1,far.y],[far.x+1,far.y],[far.x,far.y-1],[far.x,far.y+1]]
-        .find(([x,y])=>freeCell(units,x,y));
+      const spots=[];
+      cellsOf(far).forEach(([bx,by])=>spots.push([bx-1,by],[bx+1,by],[bx,by-1],[bx,by+1]));   // 目标任意格的相邻位（2×2 头目=更多落点）
+      const spot = u.big ? spots.find(([x,y])=>bigFits(units,u,x,y))   // 2×2 突进者整块落地
+                         : spots.find(([x,y])=>freeCell(units,x,y));
       if(spot){u.x=spot[0];u.y=spot[1];}
       beam(u,far,'#ffffff');
       vfxAt(u,'flash',600);
@@ -2317,7 +2368,7 @@ function castSkill(u,tgt,units,skMul){
     case 'rapid': u.rapid=sv.rapidN||3; vfxAt(u,'ring',800); vfxAt(u,'flash',600);
       applyFx(u,null,sv,units,allies,foes,power,0); break;
     case 'volley': { if(!tgt)break;
-      [tgt,...foes.filter(f=>f!==tgt&&Math.abs(f.x-tgt.x)<=1&&Math.abs(f.y-tgt.y)<=1)]
+      [tgt,...foes.filter(f=>f!==tgt&&nearCells(f,tgt,1))]
         .forEach(f=>{ vfxAt(f,'ring',900); const dd=dealDamage(u,f,Math.round(power*1.2),units);
           applyFx(u,f,sv,units,allies,foes,power,dd); shakeCell(f.x,f.y); });
       break; }
@@ -2346,7 +2397,7 @@ function castSkill(u,tgt,units,skMul){
       if(stripped>0) dmgPopup(u,f,'🛡-'+stripped,'cast');
       dmgPopup(u,f,'🚫禁盾','cast'); break; }
     case 'slam': {
-      const hits=foes.filter(fl=>Math.abs(fl.x-u.x)<=1&&Math.abs(fl.y-u.y)<=1);
+      const hits=foes.filter(fl=>nearCells(fl,u,1));
       if(!hits.length) break;
       vfxAt(u,'boom',750); shakeCell(u.x,u.y);
       hits.forEach(f=>{ vfxAt(f,'ring',900); const dd=dealDamage(u,f,Math.round(power*1.2),units);
@@ -2516,15 +2567,9 @@ function renderBattle(units){
       layer.appendChild(el);
     }
     const st=cellStep(), off=PAD_PX()-2;   // 棋子层相对棋盘留 2px 边距
-    el.classList.toggle('big',!!u.boss);
-    if(u.boss){   // 头目 2×2 大模型：以逻辑格为中心铺满 2×2，越界夹回棋盘（逻辑占位/索敌/移动不变）
-      const bb=bigBoxRect(u.x,u.y);
-      el.style.left=Math.round(bb.bx-2)+'px';
-      el.style.top=Math.round(bb.by-2)+'px';
-    } else {
-      el.style.left=(off+u.x*st)+'px';
-      el.style.top=(off+u.y*st)+'px';
-    }
+    el.classList.toggle('big',!!u.big);   // 2×2 头目：锚点格定位 + CSS 放大，布阵已保证整块在界内
+    el.style.left=(off+u.x*st)+'px';
+    el.style.top=(off+u.y*st)+'px';
     const hp=el.querySelector('.hpfill');
     if(hp) hp.style.width=Math.max(0,u.hp/u.maxhp*100)+'%';
     const mp=el.querySelector('.mpfill');
