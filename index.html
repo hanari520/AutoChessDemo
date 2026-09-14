@@ -102,6 +102,12 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .card .bd.syn  { color:#4ac8ff; background:#4ac8ff1f; border-color:#4ac8ff66; }
 .card .bd.dim  { color:#aab3cc; background:#aab3cc14; border-color:#aab3cc33; }
 #sellBtn.sell-hl { border-color:#ff8ad8 !important; color:#ff8ad8 !important; box-shadow:0 0 12px #ff8ad888; }
+/* 拖棋子到商店卡片区出售：容器红色 tint（box-shadow inset，不拦截点击）+ pointer-events:none 横幅 */
+#shop.sell-zone { background:#3a1c26; box-shadow: inset 0 0 0 2px #ff8ad8aa; border-radius:8px; }
+#sellBanner { position:fixed; z-index:120; pointer-events:none; display:none; padding:4px 14px;
+  background:#2a1520; color:#ff9a9a; border:1px solid #ff8ad8; border-radius:8px;
+  font-size:13px; font-weight:bold; white-space:nowrap; }
+#dragGhost.in-sell { opacity:.35; }   // 进入出售区：幽灵半透明上移，不遮商店卡片
 #inspect .in-sell { margin-top:8px; text-align:center; background:#5b1e1e; color:#ffb0b0; border:1px solid #7a3030; border-radius:7px; padding:5px; cursor:pointer; font-weight:bold; }
 #inspect .in-sell:hover { background:#7a2626; border-color:#ff9a9a; }
 /* ===== 棋子详情面板（停靠右栏：装备栏上方） ===== */
@@ -510,14 +516,14 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     </div>
     <div id="pbtns">
       <button class="btn" id="lvlBtn">买经验 (F) +4经验 -5💰</button>
-      <button class="btn" id="deployBtn" title="自动把最强的棋子按职业梯队布阵（R / A）">⚡ 一键上阵</button>
-      <button class="btn" id="tidyBtn" title="整理备战席：把棋子按星级与同名聚拢，空位挪到最后（T）">🧹 整理备战席</button>
-      <button class="btn" id="sellBtn" title="出售：单击棋子后按 E（或 X / Delete）；也可直接把棋子拖到这里（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售 (E)</button>
+      <button class="btn" id="deployBtn" title="自动把最强的棋子按职业梯队布阵（R / A 均可触发；每次布阵在多种列阵型间轮换）">⚡ 一键上阵 (R)</button>
+      <button class="btn" id="tidyBtn" title="整理备战席：把棋子按星级与同名聚拢，空位挪到最后（T）">🧹 整理备战席 (T)</button>
+      <button class="btn" id="sellBtn" title="出售：单击棋子后按 E（或 X / Delete）；也可直接把棋子拖到这里或拖到下方商店卡片区松手（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售 (E)</button>
     </div>
   </div>
   <div id="shop"></div>
   <div id="shopctlCol">
-    <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄 刷新 -2💰</button>
+    <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄 刷新 (D) -2💰</button>
     <button class="btn shopctl" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）">🔓 锁定 (L)</button>
   </div>
   <div id="fightBox">
@@ -525,6 +531,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   </div>
 </div>
 <div id="dragGhost"></div>
+<div id="sellBanner"></div>
 <div id="histModal" class="hidden">
   <div id="histPanel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -575,7 +582,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     &nbsp;&nbsp;<b style="color:#cdd6f4">商店卡片三层信息（互不遮挡）：</b>① 费用看左侧<b style="color:#9dd3e8">色条</b>+右下角 <b>💰N费</b>；② <span style="color:#ffd24a">金边 = 对子（买到即升星）</span>；③ 徽章并列显示：<span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗买下即触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span><br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；头目<b style="color:#ffd24a">真实占据 2×2 格</b>（其他棋子需让位绕行，近战可从任意相邻格攻击它）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
-    ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；<b style="color:#8dff9a">一键上阵(R/A)</b>按羁绊梯队布阵、<b style="color:#8dff9a">整理备战席(T)</b>把棋子按星级/同名聚拢；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
+    ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；把棋子<b style="color:#8dff9a">拖到左下出售按钮或商店卡片区</b>松手即出售（1★原价、合成折价，装备自动卸回）；<b style="color:#8dff9a">一键上阵 (R/A)</b>按羁绊梯队布阵（每次在多种列阵型间轮换）、<b style="color:#8dff9a">整理备战席 (T)</b>把棋子按星级/同名聚拢；开战时人口不满会按羁绊优先自动补位（不动你的已有站位）。<b style="color:#ffd24a">快捷键：R/A 一键上阵 · T 整理备战席 · D 刷新 · F 买经验 · L 锁定 · E/X/Delete 出售 · 空格 开战</b>；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
   </p>
   <div id="ovBtns">
     <button id="ovBtn">开始游戏</button>
@@ -1230,10 +1237,10 @@ function renderTop(){
   const sel = S.selUid!=null ? findUnit(S.selUid) : null;
   if(sel){
     const u=getAt(sel[0],sel[1]);
-    $('sellBtn').textContent=`💸 出售 +${sellRefund(u)}💰`;
+    $('sellBtn').textContent=`💸 出售 +${sellRefund(u)}💰 (E)`;
     $('sellBtn').disabled=false;
   } else {
-    $('sellBtn').textContent='💸 出售';
+    $('sellBtn').textContent='💸 出售 (E)';
     $('sellBtn').disabled=true;
   }
   const c = compForRound(S.round);
@@ -1302,7 +1309,7 @@ function renderEquip(){
     e.appendChild(c);
   });
 }
-function renderAll(){ renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); saveGame(); }
+function renderAll(){ window.__S=S; renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); saveGame(); }
 
 /* ================= 交互：点击选择流 ================= */
 function benchClick(i){ clickUnit('bench', i); }
@@ -1337,15 +1344,27 @@ function findUnit(uid){
    band 越小越靠前：0 守卫 / 1 战士(刀客·狂战) / 2 辅助(歌势·医者·偶像) / 3 法师·咒术·游侠 / 4 刺客 */
 const JOB_BAND = {'守护':0,'刀客':1,'狂战':1,'歌势':2,'医者':2,'偶像':2,'法师':3,'咒术':3,'游侠':3,'刺客':4};
 function unitBand(u){ const d=byId(u.id); return (d.job in JOB_BAND) ? JOB_BAND[d.job] : 2; }
+/* 列展开变体：中央 / 左倾 / 右倾 / 交错。一键上阵与择优编队每次调用在变体间轮换——
+   同一批棋子仅水平站位不同，梯队行分配（前排仍前排、刺客仍最后一排）不变。
+   我方与敌方 genEnemy 共用 placeFormation，双方布阵同步吃到当前变体。 */
+const FORMA_COLS=[[3,4,2,5,1,6,0,7],[1,2,0,3,4,5,6,7],[6,7,5,4,3,2,1,0],[2,0,4,6,3,1,5,7]];
+let FORMA_IDX=0;
+const formaCols=()=>FORMA_COLS[FORMA_IDX%FORMA_COLS.length];
+const nextForma=()=>{ FORMA_IDX=(FORMA_IDX+1)%FORMA_COLS.length; };
+/* 各梯队起始行（0=最前排）：守护/刀客/狂战三个近战带全部顶最前排，先填满前排再向后排溢出，
+   不再从第二排起步浪费接敌时间；辅助/法系从第二排起步；刺客保持最后一排（开战跳后排）。
+   整队无近战时远程整体前移一排补位，不许集体缩在 5-7 行白挨打。 */
+const BAND_START=[0,0,1,1,3];
+function bandStartRow(band, noMelee){ return (noMelee && band>=2 && band<=3) ? 0 : BAND_START[band]; }
 /* 把 cands 按梯队填入 4 行棋盘：rows = [最前排行号, …, 最后排行号]（长度为 4，按纵深从近到远）。
-   同带内按战力降序；每行从中间列向两侧展开；本带行满则向后顺延。 */
+   同带内按战力降序；每行按当前列变体展开；本带行满则向后顺延。 */
 function placeFormation(board, rows, cands, preUsed){
   const bands=[[],[],[],[],[]];
   cands.forEach(u=>bands[unitBand(u)].push(u));
   const desc=u=>Math.pow(u.star||1,2)*(u.maxhp||0)+(u.atk||0)*(u.star||1)*4;
   bands.forEach(b=>b.sort((a,b2)=>desc(b2)-desc(a)));
-  const cols=[3,4,2,5,1,6,0,7], used=new Set(preUsed||[]);   // preUsed：已被 2×2 头目占据的格子，其余棋子让位
-  const startRow=[0,1,2,2,3];        // 各梯队起始行（刺客=最后一行）
+  const cols=formaCols(), used=new Set(preUsed||[]);   // preUsed：已被 2×2 头目占据的格子，其余棋子让位
+  const noMelee = !bands[0].length && !bands[1].length;
   const putOne=(u,sr)=>{
     for(let r=sr;r<4;r++){ const y=rows[r];
       for(const x of cols){ const k=y*BOARD_W+x; if(!used.has(k)){ used.add(k); board[k]=u; return true; } } }
@@ -1353,7 +1372,7 @@ function placeFormation(board, rows, cands, preUsed){
       for(const x of cols){ const k=y*BOARD_W+x; if(!used.has(k)){ used.add(k); board[k]=u; return true; } } }
     return false;
   };
-  for(let b=0;b<5;b++) bands[b].forEach(u=>putOne(u,startRow[b]));
+  for(let b=0;b<5;b++) bands[b].forEach(u=>putOne(u, bandStartRow(b,noMelee)));
 }
 /* ===== 攻击范围提示：选中/拖动时在棋盘上浅色高亮可攻击格 ===== */
 let rangeFocus=null;   // {idx:棋盘格索引, rng:射程}
@@ -1483,6 +1502,25 @@ document.addEventListener('pointermove', e=>{
     if(c) c.classList.add('drop-hl');
     const sb=tgt&&tgt.closest && tgt.closest('#sellBtn');
     if(sb) sb.classList.add('sell-hl');
+    // 拖到商店卡片区（#shop，不含 #shopbar 的按钮/等级面板）= 第二个出售落点
+    const inShop = tgt && tgt.closest && tgt.closest('#shop');
+    const shopEl=$('shop'), bn=$('sellBanner');
+    shopEl.classList.toggle('sell-zone', !!inShop);
+    if(inShop){
+      const su=getAt(drag.t,drag.i);
+      if(su){
+        bn.textContent=`🗑 松手出售 +${sellRefund(su)}💰`;
+        bn.style.display='block';
+        const r=shopEl.getBoundingClientRect();
+        bn.style.left=Math.max(8, Math.min(innerWidth-210, r.left+r.width/2-90))+'px';
+        bn.style.top=Math.max(6, r.top-34)+'px';
+      }
+      drag.ghost.style.top=(e.clientY-34-24)+'px';   // 幽灵上移 24px，不遮商店卡片
+      drag.ghost.classList.add('in-sell');
+    } else {
+      bn.style.display='none';
+      drag.ghost.classList.remove('in-sell');
+    }
   }
 });
 document.addEventListener('pointerup', e=>{
@@ -1491,10 +1529,16 @@ document.addEventListener('pointerup', e=>{
     const id=itemDrag; itemDrag=null;
     document.querySelectorAll('.equip-hl').forEach(x=>x.classList.remove('equip-hl'));
     $('dragGhost').style.display='none';
+    $('shop').classList.remove('sell-zone'); $('sellBanner').style.display='none'; $('dragGhost').classList.remove('in-sell');
     if(id.ghost){                       // 真的拖动了
       const hit=paintEquipDrop(e.clientX,e.clientY);
       if(hit) equipTo(hit.u, id.i);
-      else log('⚠ 请把装备拖到棋子身上');
+      else {
+        const ov=document.elementFromPoint(e.clientX,e.clientY);
+        log(ov&&ov.closest&&ov.closest('#shop')
+          ? '⚠ 装备不能出售：请拖到棋子身上穿戴（右键棋子可卸下装备）'
+          : '⚠ 请把装备拖到棋子身上');
+      }
     } else {                            // 未移动 = 视为点击选中（保持原有点选流程）
       S.selItem = S.selItem===id.i ? null : id.i; renderEquip();
     }
@@ -1506,10 +1550,11 @@ document.addEventListener('pointerup', e=>{
   $('dragGhost').style.display='none';
   document.querySelectorAll('.drop-hl').forEach(x=>x.classList.remove('drop-hl'));
   document.querySelectorAll('.sell-hl').forEach(x=>x.classList.remove('sell-hl'));
+  $('shop').classList.remove('sell-zone'); $('sellBanner').style.display='none'; $('dragGhost').classList.remove('in-sell');
   if(!d.ghost) return;
   const tgt=document.elementFromPoint(e.clientX,e.clientY);
-  // 拖到出售按钮 = 出售该棋子（TFT 式）
-  const sell=tgt&&tgt.closest && tgt.closest('#sellBtn');
+  // 拖到出售按钮 / 商店卡片区 = 出售该棋子（TFT 式，两个落点同一出口）
+  const sell=tgt&&tgt.closest && tgt.closest('#sellBtn,#shop');
   if(sell && S.phase==='prep'){
     const u=getAt(d.t,d.i);
     if(u){ S.selUid=u.uid; sellSelected(); }
@@ -1636,6 +1681,7 @@ function autoDeployBest(){
   team.sort((a,b)=>unitBand(a)-unitBand(b)||b.maxhp-a.maxhp);   // 按梯队排序后再布阵（placeFormation 依赖此顺序）
   for(let y=4;y<8;y++) for(let x=0;x<8;x++) S.board[y*BOARD_W+x]=null;
   placeFormation(S.board, [4,5,6,7], team);
+  nextForma();   // 布阵变体轮换：下一次布阵换一种列展开（同批棋子仅水平站位不同）
   const rest=all.slice(S.lvl);   // 与历史基线一致（保持已验证的强度）
   for(let i=0;i<BENCH;i++) S.bench[i]=null;
   rest.forEach((u,i)=>{ if(i<BENCH) S.bench[i]=u; });
@@ -1673,15 +1719,16 @@ function autoDeploy(){
     picked.push(pool.splice(best,1)[0]);
   }
 
-  // 若已有空位就在原位保留；然后为补入者找位置（按梯队行的空位优先）
+  // 若已有空位就在原位保留；然后为补入者找位置（按梯队行的空位优先，近战顶前排）
   const occupied=new Set();
   onBoardAll.forEach(x=>occupied.add(x.i));
-  const rows=[4,5,6,7], cols=[3,4,2,5,1,6,0,7];
+  const rows=[4,5,6,7], cols=formaCols();
   picked.forEach(u=>{
     const band=unitBand(u);
     // 先尝试本梯队及之后的行的空位，再退到任意空位
+    const sr=BAND_START[band];
     const order=[];
-    for(let r=band;r<4;r++) order.push(rows[r]);
+    for(let r=sr;r<4;r++) order.push(rows[r]);
     for(let r=0;r<4;r++) if(!order.includes(rows[r])) order.push(rows[r]);
     let placed=false;
     for(const y of order){
@@ -1700,6 +1747,7 @@ function autoDeploy(){
   S.board.forEach((u,i)=>{ if(u) keepPos.set(u.uid, i); });
   for(let y=4;y<8;y++) for(let x=0;x<8;x++) S.board[y*BOARD_W+x]=null;
   placeFormation(S.board, [4,5,6,7], teamNow);
+  nextForma();   // 布阵变体轮换：下一次布阵换一种列展开（同批棋子仅水平站位不同）
 
   // 备战席：移除已上场的，其余按原顺序填回
   const upSet=new Set(teamNow.map(u=>u.uid));
@@ -1720,14 +1768,17 @@ function tidyBench(){
   const power=u=>Math.pow(u.star||1,2)*(u.maxhp||0)+(u.atk||0)*(u.star||1)*4;
   const groups={};
   items.forEach(u=>{ (groups[u.id]=groups[u.id]||[]).push(u); });
-  const ordered=[];
   Object.values(groups).forEach(g=>{
     g.sort((a,b)=>b.star-a.star || power(b)-power(a));   // 同名内：高星→高战力
-    ordered.push(...g);
   });
-  ordered.sort((a,b)=> b.star-a.star
-    || (groups[a.id].length<groups[b.id].length?1:groups[a.id].length>groups[b.id].length?-1:0)  // 数量多的对子靠前，便于合成
-    || byId(b.id).cost-byId(a.id).cost);
+  // 组间排序一律用「组属性」：组内最高星 → 组大小（对子/追三优先靠前便于合成）→ 费用。
+  // 绝不用单个棋子的 star 作第一键——那会把同名组拆散插进别的组中间。
+  const groupList=Object.values(groups);
+  groupList.sort((a,b)=> b[0].star-a[0].star
+    || b.length-a.length
+    || byId(b[0].id).cost-byId(a[0].id).cost);
+  const ordered=[];
+  groupList.forEach(g=>ordered.push(...g));
   for(let i=0;i<BENCH;i++) S.bench[i] = ordered[i] || null;
   log(`🧹 备战席已整理：${ordered.length} 名棋子按星级/同名聚拢，空位挪到最后`);
   renderAll();
@@ -1903,9 +1954,58 @@ function makeBattleUnit(u, side, x, y){
   b.mana = 0;
   return b;
 }
+/* 开战人口兜底：场上人数 < 人口上限且备战席有货时，按「羁绊优先」自动上阵补满。
+   两条红线：①只往空格放棋子，绝不移动/重排玩家已有站位（不调 placeFormation 全队重排）；
+   ②绝不触发 tryMerge（合成会吞掉玩家已在场的同名棋子，等同改阵型）。合成机会留给玩家手动。 */
+function fillBoardBeforeBattle(){
+  if(S.phase!=='prep') return 0;
+  const onBoard=[]; S.board.forEach((u,i)=>{ if(u) onBoard.push({u,i}); });
+  const need=S.lvl-onBoard.length;
+  if(need<=0) return 0;
+  const benchPool=S.bench.filter(Boolean);
+  if(!benchPool.length) return 0;
+  const power=u=>Math.pow(u.star||1,2)*u.maxhp+u.atk*(u.star||1)*4;
+  const boardTeam=onBoard.map(x=>x.u);
+  const picked=[], pool=[...benchPool];
+  while(picked.length<need && pool.length){   // 与一键上阵同一套贪心：羁绊增量×300 + 战力 + 同名加分
+    let best=0, bestSc=-Infinity;
+    pool.forEach((u,idx)=>{
+      const delta=teamSynScore(boardTeam.concat(picked,u)) - teamSynScore(boardTeam.concat(picked));
+      const isDupe=boardTeam.concat(picked).some(x=>x.id===u.id);
+      const sc=delta*300 + power(u)*0.1 + (isDupe?power(u)*0.05:0);
+      if(sc>bestSc){ bestSc=sc; best=idx; }
+    });
+    picked.push(pool.splice(best,1)[0]);
+  }
+  const occupied=new Set(onBoard.map(x=>x.i));
+  const rows=[4,5,6,7], cols=formaCols();
+  const upSet=new Set(picked.map(u=>u.uid));
+  picked.forEach(u=>{
+    const sr=BAND_START[unitBand(u)];   // 梯队行偏好：近战补前排空位、远程靠后（与一键上阵落位一致）
+    const order=[];
+    for(let r=sr;r<4;r++) order.push(rows[r]);
+    for(let r=0;r<4;r++) if(!order.includes(rows[r])) order.push(rows[r]);
+    let placed=false;
+    for(const y of order){
+      for(const x of cols){
+        const k=y*BOARD_W+x;
+        if(!occupied.has(k) && !S.board[k]){ occupied.add(k); S.board[k]=u; placed=true; break; }
+      }
+      if(placed) break;
+    }
+    if(!placed){ for(let i=0;i<BOARD_H*BOARD_W;i++){ if(!S.board[i] && Math.floor(i/BOARD_W)>=4){ S.board[i]=u; break; } } }
+  });
+  S.bench=S.bench.map(u=>u && upSet.has(u.uid) ? null : u);   // 备战席移除已上场者，其余保持原位
+  if(picked.length){
+    log(`⚡ 人口未满：已自动上阵 ${picked.length} 名（羁绊优先，原有站位未动）`);
+    S.selUid=null; S.selItem=null; hideInspect(); clearRangeFocus();
+  }
+  return picked.length;
+}
 function startBattle(){
   if(S.phase!=='prep') return;
   stopTickLoop(); // 关闭任何残余的战斗时钟
+  fillBoardBeforeBattle();   // 人口不满先自动补位（只上场、不动阵型、不合成）；全空则维持原拦截
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
   S.phase='battle'; if(!S.enemyBoard || !S.enemyBoard.some(Boolean)) S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null; hideInspect(); clearRangeFocus();
   const c=compForRound(S.round);

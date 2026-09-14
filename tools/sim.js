@@ -6,7 +6,12 @@ const code = html.match(/<script>([\s\S]*)<\/script>/)[1] + `
 
 ;globalThis.API = { get S(){return S}, setS:v=>{S=v},
   get currentTick(){return currentTick},
-  byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy, autoDeployBest };
+  byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy, autoDeployBest,
+  /* 诊断插桩（DBG/T1 测试用，只读导出，不影响游戏逻辑） */
+  get ITEMS(){return ITEMS}, get UNITS(){return UNITS}, get FACTIONS(){return FACTIONS}, get CLASSES(){return CLASSES},
+  get SKILL_VAR(){return SKILL_VAR}, get SKILL_INFO(){return SKILL_INFO}, get FORMA_COLS(){return FORMA_COLS},
+  placeFormation, genEnemy, prepEnemy, tidyBench, fillBoardBeforeBattle, unitBand, makeBattleUnit, equipTo, sellSelected,
+  get sfx(){return typeof sfx==='function'?sfx:null}, get battleStats(){return typeof battleStats!=='undefined'?battleStats:null} };
 `;
 
 /* ---------- DOM 桩 ---------- */
@@ -97,6 +102,9 @@ function driveBattle(maxTicks = 640) {
 }
 
 /* 内嵌机器人已删除：统一使用上方加载的 bot_strategy.js（与浏览器实跑同一份） */
+
+/* ---------- 功能断言测试（T1=Phase1 布阵/备战席/补位；用 node 后即退出，不跑主循环） ---------- */
+if (process.env.T1) { require('./_t1_tests.js').run(A, driveBattle); process.exit(0); }
 
 
 /* ---------- 主循环 ---------- */
