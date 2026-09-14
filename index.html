@@ -35,6 +35,13 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .unit.battle-unit { position:absolute; inset:auto; width:calc(var(--cell) - 8px); height:calc(var(--cell) - 8px); pointer-events:auto; isolation:isolate;
   transition:left calc(.45s/var(--spd)) ease, top calc(.45s/var(--spd)) ease, transform calc(.12s/var(--spd)) ease; overflow:visible; }
 .unit.battle-unit.lunge { transform:scale(1.15); }
+/* 头目野怪 2×2 大模型：战斗/备战预览均视觉占 2×2 格（逻辑占位仍为 1 格，位置由 JS 居中并夹回棋盘内） */
+.unit.battle-unit.big, #board .unit.preview.big { width:calc(var(--cell)*2 + var(--gap) - 8px); height:calc(var(--cell)*2 + var(--gap) - 8px); z-index:6; }
+.unit.battle-unit.big .nm { font-size:15px; }
+.unit.battle-unit.big .st { font-size:12px; }
+.unit.battle-unit.big .fj { font-size:10px; }
+#board .unit.preview.big { inset:auto; left:calc((var(--cell) + var(--gap) - 8px)/-2); top:calc((var(--cell) + var(--gap) - 8px)/-2); }
+.unit.battle-unit.big .vfx.attached, #board .unit.preview.big .vfx.attached { left:-8px !important; top:-8px !important; width:calc(var(--cell)*2 + var(--gap)); height:calc(var(--cell)*2 + var(--gap)); }
 /* 刺客突进：飞行动画（缩放+拖影+提速过渡） */
 .unit.battle-unit.dashing { z-index:9; transition:left calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), top calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), transform calc(.45s/var(--spd)) ease;
   filter:drop-shadow(0 0 10px #c77dff) drop-shadow(0 0 18px #c77dff88); }
@@ -346,7 +353,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <span class="tag">回合 <b id="round">1</b><span id="roundMax">/25</span></span>
   <span class="tag">❤️ <b id="hp">40</b></span>
   <span class="tag" title="利息：每10金+1，上限5。下回合利息预览见绿色数字">💰 <b id="gold">10</b><span id="interest" style="font-size:11px;color:#8dff9a;margin-left:3px"></span></span>
-  <span class="tag">人口 <b id="pop">0</b>/<b id="popMax">4</b></span>
+  <span class="tag">人口 <b id="pop">0</b>/<b id="popMax">11</b></span>
   <span class="tag" title="连胜/连败 3→+1金、5→+2金、7+→+3金">🔥 连胜 <b id="streak">0</b></span>
   <div class="fight-btn-row">
     <button class="btn" id="histBtn">📜 战绩</button>
@@ -382,7 +389,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 <div id="shopbar">
   <div id="playerBox">
     <div id="lvlBox">
-      <div class="lvl-row"><span>Lv.<b id="lvlNum">4</b>（人口 <b id="pop2">0</b>/<b id="popMax2">4</b>）</span><span>💰 <b id="gold2">10</b></span></div>
+      <div class="lvl-row"><span>Lv.<b id="lvlNum">2</b>（人口 <b id="pop2">0</b>/<b id="popMax2">11</b>）</span><span>💰 <b id="gold2">10</b></span></div>
       <div class="lvl-row" style="margin-bottom:4px"><span id="xpText">经验 0/6</span><span style="color:#8dff9a;font-size:11px" id="interest2">利息 +1</span></div>
       <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
     </div>
@@ -441,10 +448,10 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <h1 id="ovTitle">虚拟棋战 🎲</h1>
   <p id="ovText" style="max-width:560px;line-height:1.7;color:#cdd6f4;font-size:14px;text-align:left">
     单机自动战斗棋局（VirtuaReal + P-SP · 50 名主播 · 限量卡池 · 25 回合通关）<br>
-    ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +4 经验（每回合自然 +2）；卖棋 1★原价、合成折价<br>
+    ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +4 经验（每回合自然 +2；人口 2 级开局、11 级封顶，<b style="color:#ffd24a">第 1 回合不可升级人口</b>）；卖棋 1★原价、合成折价<br>
     ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b><br>
     &nbsp;&nbsp;<b style="color:#cdd6f4">商店卡片三层信息（互不遮挡）：</b>① 费用看左侧<b style="color:#9dd3e8">色条</b>+右下角 <b>💰N费</b>；② <span style="color:#ffd24a">金边 = 对子（买到即升星）</span>；③ 徽章并列显示：<span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗买下即触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span><br>
-    ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；普通回合胜利只给金币<br>
+    ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；头目为 <b style="color:#ffd24a">2×2 大体型模型</b>；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
     ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；<b style="color:#8dff9a">一键上阵(R/A)</b>按羁绊梯队布阵、<b style="color:#8dff9a">整理备战席(T)</b>把棋子按星级/同名聚拢；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；撑过 25 回合并击败最终魔王即通关
   </p>
@@ -757,16 +764,16 @@ const CREEP = {5:'🐺 野狼群', 10:'🗿 岩石巨像', 15:'🐉 黑龙幼崽
 const SHOP_SIZE=5, MAX_ROUNDS=25, BENCH=8, MAX_EQUIP=2;
 const BOARD_W=8, BOARD_H=8;                 // 8×8 四边形棋盘（每方 32 格，下半 4 行为我方布阵区）
 const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节奏更线性）；蓝量全棋子统一 100、开局清零
-/* 升级人口经验表（多多式）：每回合自然 +1 经验，5 金币固定买 4 经验；1 级起步 */
-const XP_NEED = {1:1, 2:2, 3:3, 4:5, 5:8, 6:12, 7:16, 8:20, 9:28};
+/* 升级人口经验表（多多式）：每回合自然 +2 经验，5 金币固定买 4 经验；2 级起步、11 级封顶，第 1 回合不可升级 */
+const XP_NEED = {1:1, 2:2, 3:3, 4:5, 5:8, 6:12, 7:16, 8:20, 9:28, 10:36};
 function xpNeed(lvl){ return XP_NEED[lvl]||Infinity; }
 function checkLevel(){ let need=xpNeed(S.lvl);
-  while(S.lvl<10 && S.xp>=need){ S.lvl++; S.xp-=need; log('⬆ 人口升级至 '+S.lvl+'（回合经验积累）'); need=xpNeed(S.lvl); } }
+  while(S.lvl<11 && S.xp>=need){ S.lvl++; S.xp-=need; log('⬆ 人口升级至 '+S.lvl+'（回合经验积累）'); need=xpNeed(S.lvl); } }
 
 /* ================= 状态 ================= */
 let S;
 function newGame(){
-  S = { round:1, hp:40, gold:10, lvl:1, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[],
+  S = { round:1, hp:40, gold:10, lvl:2, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[],
     bench:Array(BENCH).fill(null), board:Array(BOARD_H*BOARD_W).fill(null),
     shop:[], enemyBoard:[], uid:1, log:[], items:[], selItem:null, selUid:null, pool:{},
     stats:{wins:0,losses:0,maxStreak:0,kills:0,dmgTaken:0,goldEarned:0,goldSpent:0,bought:0} };
@@ -885,10 +892,10 @@ function skillText(u){ return (isPassive(u)?'':'主动：')+skillDesc(u); }
 /* 各人口等级刷新概率（1~5 费，%）——5 个卡槽每格独立判定，概率仅与等级绑定，无隐藏修正 */
 const SHOP_ODDS = {1:[100,0,0,0,0], 2:[70,30,0,0,0], 3:[60,35,5,0,0], 4:[50,35,15,0,0],
   5:[40,35,23,2,0], 6:[33,30,30,7,0], 7:[30,30,28,10,2], 8:[23,29,28,16,4],
-  9:[18,26,27,22,7], 10:[15,22,25,27,11]};
+  9:[18,26,27,22,7], 10:[15,22,25,27,11], 11:[10,18,24,32,16]};
 function drawFromPool(){ // 按等级概率决定费用档，再从卡池余量中抽取
   const lv=S.lvl;
-  const odds = (SHOP_ODDS[lv]||SHOP_ODDS[10]).map(x=>x/100);
+  const odds = (SHOP_ODDS[lv]||SHOP_ODDS[11]).map(x=>x/100);
   // 主档按概率掷出；缺货时按概率从高到低顺延到其他档位
   const roll=Math.random(); let acc=0, primary=5;
   for(let i=0;i<5;i++){ acc+=odds[i]; if(roll<acc){ primary=i+1; break; } }
@@ -992,6 +999,12 @@ function renderBoard(){
     else if(y<BOARD_H/2 && S.phase==='prep' && S.enemyBoard && S.enemyBoard[i]){
       // 备战期显示敌方阵容预览：可单击查看详情（数据取自图鉴），但不可拖动
       cell.innerHTML=unitHTML(S.enemyBoard[i], false).replace('<div class="unit ','<div class="unit preview ');
+      if(S.enemyBoard[i].boss){   // 头目 2×2 大模型预览：与战斗渲染同款几何（居中、越界夹回棋盘）
+        const pe=cell.querySelector('.unit'); pe.classList.add('big');
+        const bb=bigBoxRect(x,y);
+        pe.style.left=Math.round(bb.bx-x*cellStep())+'px';
+        pe.style.top=Math.round(bb.by-y*cellStep())+'px';
+      }
       cell.classList.add('enemy-preview-cell');
       isEnemyPreview=true;
     }
@@ -1070,7 +1083,7 @@ function renderTop(){
   $('round').textContent=S.endless ? S.round+' ♾' : S.round;
   $('roundMax').textContent = S.endless ? '' : '/25';
   $('hp').textContent=S.hp; $('gold').textContent=S.gold;
-  $('interest').textContent = S.phase==='prep' && S.lvl<10 ? `+${Math.min(5,Math.floor(S.gold/10))}` : '';
+  $('interest').textContent = S.phase==='prep' && S.lvl<11 ? `+${Math.min(5,Math.floor(S.gold/10))}` : '';
   const pop=S.board.filter(Boolean).length;
   $('pop').textContent=pop; $('popMax').textContent=S.lvl;
   // 人口未上满提醒：备战阶段若场上人数 < 人口上限，高亮人口标签 + 一键上阵按钮脉冲
@@ -1084,10 +1097,10 @@ function renderTop(){
   $('streak').textContent=S.streak;
   const need=xpNeed(S.lvl);
   $('lvlNum').textContent=S.lvl;
-  $('xpText').textContent = S.lvl>=10 ? '人口已满' : `经验 ${S.xp}/${need}`;
-  $('xpFill').style.width = S.lvl>=10 ? '100%' : Math.min(100,S.xp/need*100)+'%';
-  $('lvlBtn').textContent = S.lvl>=10 ? '人口已满' : '买经验 (F) +4经验 -5💰';
-  $('lvlBtn').disabled = S.lvl>=10 || S.gold<4;
+  $('xpText').textContent = S.lvl>=11 ? '人口已满' : `经验 ${S.xp}/${need}`;
+  $('xpFill').style.width = S.lvl>=11 ? '100%' : Math.min(100,S.xp/need*100)+'%';
+  $('lvlBtn').textContent = S.lvl>=11 ? '人口已满' : (S.round===1 ? '首回合不可升级人口' : '买经验 (F) +4经验 -5💰');
+  $('lvlBtn').disabled = S.lvl>=11 || S.gold<4 || S.round===1;
   $('refreshBtn').disabled = S.gold<2;
   // 出售按钮：选中棋子后解锁，并预览回购价（多多式：1★原价、合成折价）
   const sel = S.selUid!=null ? findUnit(S.selUid) : null;
@@ -1590,7 +1603,8 @@ function tidyBench(){
   renderAll();
 }
 $('tidyBtn').onclick=tidyBench;
-$('lvlBtn').onclick=()=>{ if(S.phase!=='prep'||S.lvl>=10)return;   // 5 金币买 5 经验（加码：更快升人口凑羁绊）
+$('lvlBtn').onclick=()=>{ if(S.phase!=='prep'||S.lvl>=11)return;   // 5 金币买 4 经验（更快升人口凑羁绊）
+  if(S.round===1){ log('⚠ 第 1 回合不可升级人口（第 2 回合起可购买经验）'); return; }
   if(S.gold<5){ log('⚠ 金币不足，无法购买升级经验'); return; }
   S.gold-=5; S.stats.goldSpent+=5; S.xp+=4;
   checkLevel(); renderAll(); };
@@ -2080,6 +2094,13 @@ function boardGeo(){
 const CELL_PX = () => boardGeo().cell;
 const PAD_PX  = () => boardGeo().pad;
 const cellStep = () => boardGeo().step;
+/* 头目 2×2 大模型几何：以逻辑格为中心铺满 2×2 格，越界时夹回棋盘内（返回棋盘内区坐标与尺寸 px） */
+function bigBoxRect(x,y){
+  const g=boardGeo(), size=2*g.cell+g.gap-8, st=g.cell+g.gap, span=8*st-g.gap;
+  let bx=x*st+g.cell/2-size/2, by=y*st+g.cell/2-size/2;
+  bx=Math.max(0,Math.min(bx,span-size)); by=Math.max(0,Math.min(by,span-size));
+  return { bx, by, size };
+}
 function unitVisual(u){
   const el=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
   if(!el){ const st=cellStep(), c=CELL_PX(); return { x:PAD_PX()+u.x*st+c/2, y:PAD_PX()+u.y*st+c/2, el:null }; }
@@ -2495,8 +2516,15 @@ function renderBattle(units){
       layer.appendChild(el);
     }
     const st=cellStep(), off=PAD_PX()-2;   // 棋子层相对棋盘留 2px 边距
-    el.style.left=(off+u.x*st)+'px';
-    el.style.top=(off+u.y*st)+'px';
+    el.classList.toggle('big',!!u.boss);
+    if(u.boss){   // 头目 2×2 大模型：以逻辑格为中心铺满 2×2，越界夹回棋盘（逻辑占位/索敌/移动不变）
+      const bb=bigBoxRect(u.x,u.y);
+      el.style.left=Math.round(bb.bx-2)+'px';
+      el.style.top=Math.round(bb.by-2)+'px';
+    } else {
+      el.style.left=(off+u.x*st)+'px';
+      el.style.top=(off+u.y*st)+'px';
+    }
     const hp=el.querySelector('.hpfill');
     if(hp) hp.style.width=Math.max(0,u.hp/u.maxhp*100)+'%';
     const mp=el.querySelector('.mpfill');
@@ -2585,7 +2613,7 @@ function endBattle(alive0,alive1){
   S.round++;
   S.phase='prep';
   // 商店常驻显示，无需在战斗结束后再展开
-  if(S.lvl<10){ S.xp+=2; checkLevel(); }   // 每回合自然 +2 升级经验（加快凑人口与高星）
+  if(S.lvl<11){ S.xp+=2; if(S.round>2) checkLevel(); }   // 每回合自然 +2 升级经验；第 1 回合只攒经验不升级（首回合禁升级人口，此处 S.round 已指向新回合）
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
   prepEnemy();   // 提前生成本回合敌方阵容，备战期即可观察
   rollShop();
