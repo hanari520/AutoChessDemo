@@ -12,10 +12,10 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
 body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; --spd:1;
-  --cell:70px; --gap:2px; --pad:6px; }
-.spd-b { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:5px; padding:2px 7px; cursor:pointer; font-size:12px; }
+  --cell:78px; --gap:2px; --pad:7px; }
+.spd-b { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:5px; padding:2px 7px; cursor:pointer; font-size:13px; }
 .spd-b.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
-#topbar { display:flex; align-items:center; gap:14px; padding:8px 16px; background:#1c1830; border-bottom:2px solid #35294f; font-size:15px; flex-shrink:0; flex-wrap:wrap; }
+#topbar { display:flex; align-items:center; gap:14px; padding:9px 16px; background:#1c1830; border-bottom:2px solid #35294f; font-size:16px; flex-shrink:0; flex-wrap:wrap; }
 #topbar b { color:#ffd24a; }
 .tag { background:#2a2344; padding:3px 10px; border-radius:6px; }
 .tag.pop-warn { background:#5b3a1e; box-shadow:0 0 0 1px #ffd24a, 0 0 10px #ffd24a55; animation:popPulse 1.2s ease-in-out infinite; }
@@ -23,12 +23,12 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 @keyframes popPulse { 0%,100%{ box-shadow:0 0 0 1px #ffd24a, 0 0 4px #ffd24a44; } 50%{ box-shadow:0 0 0 1px #ffd24a, 0 0 12px #ffd24aaa; } }
 #deployBtn.pulse { animation:deployPulse 1.1s ease-in-out infinite; }
 @keyframes deployPulse { 0%,100%{ box-shadow:0 0 0 0 #ffd24a00; } 50%{ box-shadow:0 0 0 2px #ffd24a, 0 0 14px #ffd24a88; } }
-#main { flex:1; display:flex; justify-content:center; padding:10px; gap:20px; overflow:hidden; }
+#main { flex:1; display:flex; justify-content:center; padding:10px; padding-bottom:128px; gap:20px; overflow:hidden; }
 #boardwrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
 /* 多多式：棋盘上方对手信息横幅 */
 #oppBar { width:calc(8*var(--cell) + 7*var(--gap) + 2*var(--pad) + 4px); max-width:96vw; background:#1c1830; border:1px solid #35294f; border-radius:10px;
   padding:5px 12px; text-align:center; flex-shrink:0; }
-#oppBar #enemyInfo { font-size:13px; line-height:1.55; }
+#oppBar #enemyInfo { font-size:14px; line-height:1.55; }
 #board { display:grid; grid-template-columns:repeat(8,var(--cell)); grid-template-rows:repeat(8,var(--cell)); gap:var(--gap);
   background:#221c38; padding:var(--pad); border-radius:10px; border:2px solid #35294f; position:relative; }
 #unitLayer { position:absolute; left:var(--pad); top:var(--pad); width:calc(8*var(--cell) + 7*var(--gap)); height:calc(8*var(--cell) + 7*var(--gap)); pointer-events:none; z-index:2; }
@@ -58,13 +58,13 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .item-ghost { display:flex; align-items:center; justify-content:center; font-size:10px; text-align:center;
   background:#241e3e; border:1px solid #8dff9a; border-radius:8px; color:#8dff9a; padding:2px; }
 .unit { position:absolute; inset:4px; border-radius:6px; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; cursor:grab; font-size:9px; text-align:center; line-height:1.1; overflow:visible;
+  justify-content:center; cursor:grab; font-size:10px; text-align:center; line-height:1.1; overflow:visible;
   border:2px solid #888; background:#5b6b8c; z-index:2; }
 .unit .nm { font-weight:bold; padding:0 1px; }
-.unit .st { font-size:9px; opacity:.85; }
-.unit .sk { font-size:8px; color:#9fe8ff; }
-.unit .fj { font-size:7px; color:#c8bfe8; letter-spacing:.3px; }
-.unit .its { position:absolute; top:2px; left:3px; font-size:9px; letter-spacing:-2px; z-index:2; }
+.unit .st { font-size:10px; opacity:.85; }
+.unit .sk { font-size:9px; color:#9fe8ff; }
+.unit .fj { font-size:8px; color:#c8bfe8; letter-spacing:.3px; }
+.unit .its { position:absolute; top:2px; left:3px; font-size:10px; letter-spacing:-2px; z-index:2; }
 .unit.sel { border-color:#ffd24a; box-shadow:0 0 4px #ffd24a88; z-index:3; }
 .unit.ally { border-color:#4aa8ff; }
 .unit.enemy { border-color:#e05555; box-shadow:inset 0 0 0 999px rgba(224,85,85,.30); }
@@ -101,7 +101,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #inspect .in-sell { margin-top:8px; text-align:center; background:#5b1e1e; color:#ffb0b0; border:1px solid #7a3030; border-radius:7px; padding:5px; cursor:pointer; font-weight:bold; }
 #inspect .in-sell:hover { background:#7a2626; border-color:#ff9a9a; }
 /* ===== 棋子详情面板（停靠右栏：装备栏上方） ===== */
-#inspect { font-size:12px; line-height:1.55; color:#dcd6f0; }
+#inspect { font-size:13px; line-height:1.55; color:#dcd6f0; }
 #inspect .in-empty { color:#8a93c4; text-align:center; padding:10px 0; }
 #inspect .in-hd { font-size:14px; color:#ffd24a; display:flex; align-items:center; gap:6px; }
 #inspect .in-star { color:#ffd24a; letter-spacing:1px; }
@@ -136,19 +136,22 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 /* 费用角标：右下角常驻胶囊（不参与任何高亮争夺） */
 .card .cc { position:absolute; right:6px; bottom:6px; font-size:10px; font-weight:bold;
   border-radius:9px; padding:1px 7px; background:#000000aa; color:#fff; }
-#side { width:300px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex-shrink:0; }
+#side { width:320px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex-shrink:0; }
 /* ===== 多多式左侧羁绊竖栏 ===== */
-#synCol { width:136px; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; padding:2px 0; }
-.syn-head { font-size:11px; color:#a99cd0; padding:3px 6px 2px; border-bottom:1px solid #2a2344; margin-bottom:3px; }
-.syn-badge { display:flex; align-items:center; gap:6px; background:#161228; border:1px solid #2a2344; border-left:3px solid #3a3055;
-  border-radius:8px; padding:4px 7px; margin:0 2px 4px; font-size:12px; color:#5e5580; cursor:default; }
-.syn-badge .ico { font-size:14px; filter:grayscale(1); opacity:.55; }
-.syn-badge .cnt { margin-left:auto; font-weight:bold; font-size:11px; white-space:nowrap; }
+#synCol { width:172px; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; padding:2px 0; }
+.syn-head { font-size:12px; color:#a99cd0; padding:3px 6px 2px; border-bottom:1px solid #2a2344; margin-bottom:3px; }
+.syn-badge { display:block; background:#161228; border:1px solid #2a2344; border-left:3px solid #3a3055;
+  border-radius:8px; padding:5px 7px; margin:0 2px 4px; font-size:13px; color:#5e5580; cursor:default; }
+.syn-badge .syn-top { display:flex; align-items:center; gap:6px; }
+.syn-badge .ico { font-size:15px; filter:grayscale(1); opacity:.55; }
+.syn-badge .cnt { margin-left:auto; font-weight:bold; font-size:12px; white-space:nowrap; }
 .syn-badge.on { color:#d8d2ea; }
 .syn-badge.on .ico { filter:none; opacity:1; }
 .syn-badge.t1 { border-left-color:#c98a4b; background:#231a10; color:#e8cf9a; }
 .syn-badge.t2 { border-left-color:#ffd24a; background:#2b2410; color:#ffe9a8; box-shadow:0 0 6px #ffd24a30; }
-.syn-empty { color:#565073; font-size:11px; padding:4px 6px; }
+.syn-empty { color:#565073; font-size:12px; padding:4px 6px; }
+/* 已触发档位的效果文本（直接展示，不再只显示 2/4 / MAX） */
+.syn-eff { font-size:11px; line-height:1.4; margin-top:3px; padding-top:2px; border-top:1px dashed #ffffff1a; opacity:.92; word-break:break-all; }
 /* 羁绊档位点阵（多多式铜/金档点亮） */
 .syn-badge .pips { display:flex; gap:2px; margin-left:5px; }
 .syn-badge .pips i { width:6px; height:6px; border-radius:50%; background:#3a3055; }
@@ -156,38 +159,39 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .syn-badge.t1 .pips i.on { background:#c98a4b; box-shadow:0 0 4px #c98a4b88; }
 /* ===== 多多式底部玩家信息盒 ===== */
 #shopbar { gap:10px; }
-#playerBox { display:flex; flex-direction:column; gap:6px; width:300px; flex-shrink:0; justify-content:center; }
+#playerBox { display:flex; flex-direction:column; gap:6px; width:320px; flex-shrink:0; justify-content:center; }
 #lvlBox { background:#161228; border:1px solid #35294f; border-radius:8px; padding:5px 8px; }
-.lvl-row { display:flex; justify-content:space-between; font-size:12px; color:#cdd6f4; margin-bottom:4px; }
+.lvl-row { display:flex; justify-content:space-between; font-size:13px; color:#cdd6f4; margin-bottom:4px; }
 .xpbar { height:8px; background:#221c38; border-radius:4px; overflow:hidden; border:1px solid #4a3d6e; }
 .xpfill { height:100%; width:0%; background:linear-gradient(90deg,#4aa8ff,#8dd0ff); transition:width .3s; }
 #pbtns { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-#pbtns .btn { font-size:13px; padding:8px 6px; white-space:nowrap; overflow:hidden; }
+#pbtns .btn { font-size:14px; padding:8px 6px; white-space:nowrap; overflow:hidden; }
 #fightBox { display:flex; align-items:center; flex-shrink:0; }
 #fightBox .btn { padding:14px 16px; font-size:16px; line-height:1.25; }
 .panel { background:#1c1830; border:1px solid #35294f; border-radius:10px; padding:10px; }
-.panel h3 { font-size:13px; color:#a99cd0; margin-bottom:8px; }
+.panel h3 { font-size:14px; color:#a99cd0; margin-bottom:8px; }
 #synergy { font-size:12px; }
 #synergy .grp { margin-bottom:4px; }
 #synergy span { display:inline-block; background:#2a2344; border-radius:6px; padding:2px 6px; margin:2px; font-size:11px; }
 #synergy span.on { background:#5b4a1e; color:#ffd24a; }
-#enemyInfo { font-size:13px; color:#ffb0b0; line-height:1.6; }
+#enemyInfo { font-size:14px; color:#ffb0b0; line-height:1.6; }
 #enemyInfo b { color:#ffd24a; }
 #equip { display:flex; flex-wrap:wrap; gap:6px; min-height:34px; }
 .item-chip { background:#2a2344; border:1px solid #4a3d6e; border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; }
 .item-chip.sel { border-color:#ffd24a; background:#5b4a1e; box-shadow:0 0 6px #ffd24a66; }
-#log { font-size:12px; color:#b0a8c8; max-height:280px; overflow-y:auto; line-height:1.7; }
-#shopbar { display:flex; gap:8px; padding:8px 12px; background:#1c1830; border-top:2px solid #35294f; flex-shrink:0; align-items:stretch; }
+#log { font-size:13px; color:#b0a8c8; max-height:280px; overflow-y:auto; line-height:1.7; }
+#shopbar { display:flex; gap:8px; padding:8px 12px; background:#1c1830; border-top:2px solid #35294f; flex-shrink:0; align-items:stretch;
+  position:fixed; left:0; right:0; bottom:0; z-index:25; justify-content:center; box-shadow:0 -4px 16px #00000077; }
 #shopbar .btn { align-self:center; white-space:nowrap; flex-shrink:0; }
 .btn.on { background:#5b4a1e; border-color:#ffd24a; }
 /* 刷新/锁定：纵向并排一列，紧贴商店右侧 */
 #shopctlCol { display:flex; flex-direction:column; gap:5px; justify-content:center; align-self:stretch; flex-shrink:0; }
-#shopctlCol .btn { align-self:stretch; padding:6px 10px; font-size:12px; line-height:1.2; min-width:92px; text-align:center; white-space:nowrap; }
+#shopctlCol .btn { align-self:stretch; padding:6px 10px; font-size:13px; line-height:1.2; min-width:92px; text-align:center; white-space:nowrap; }
 #shop { display:flex; gap:8px; flex:1; align-items:stretch; min-width:0; }
 .card { flex:1; min-width:0; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px 8px 22px;
   cursor:pointer; text-align:center; transition:transform .1s; position:relative; }
 .card:hover { transform:translateY(-3px); border-color:#ffd24a; }
-.card .cn { font-weight:bold; font-size:14px; }
+.card .cn { font-weight:bold; font-size:15px; }
 .card .cfj { font-size:10px; color:#c8bfe8; }
 .card .ct { font-size:11px; color:#a99cd0; margin:3px 0; }
 .card .cs { font-size:10px; color:#9fe8ff; }
@@ -199,12 +203,12 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .bslot { width:var(--cell); height:var(--cell); background:#221c38; border:1px dashed #4a3d6e; border-radius:6px; position:relative; }
 .bslot .unit { inset:3px; }
 .btn { background:#5b4a1e; color:#ffd24a; border:1px solid #ffd24a; border-radius:8px; padding:6px 14px;
-  cursor:pointer; font-size:14px; font-weight:bold; }
+  cursor:pointer; font-size:15px; font-weight:bold; }
 .btn:hover { background:#7a6528; }
 .btn.off { background:#2a2344; color:#8a93c4; border-color:#4a3d6e; }
 .btn:disabled { opacity:.4; cursor:default; }
 #overlay { position:fixed; inset:0; background:#0b0912e0; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:14px; z-index:10; text-align:center; padding:16px; overflow-y:auto; }
+  justify-content:center; gap:14px; z-index:40; text-align:center; padding:16px; overflow-y:auto; }
 #overlay.hidden { display:none; }
 /* 弹窗卡片：限制高度，正文可滚动，按钮区始终可见（避免长文案把按钮挤出屏幕） */
 #ovCard { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:620px;
@@ -226,8 +230,17 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #dragGhost { position:fixed; z-index:99; pointer-events:none; opacity:.85; width:calc(var(--cell) - 8px); height:calc(var(--cell) - 8px); display:none; }
 #dragGhost .unit { position:relative; inset:0; width:100%; height:100%; }
 /* ===== 图鉴 ===== */
-#bookModal { position:fixed; inset:0; background:#0b0912e6; z-index:9; display:flex; align-items:center; justify-content:center; }
+#bookModal { position:fixed; inset:0; background:#0b0912e6; z-index:40; display:flex; align-items:center; justify-content:center; }
 #bookModal.hidden { display:none; }
+/* 图鉴·羁绊说明（全部阵营/职业羁绊的档位与效果） */
+#bookSyn { display:grid; grid-template-columns:1fr 1fr; gap:5px 14px; margin:8px 0 12px; }
+.bsy-title { grid-column:1/-1; font-size:14px; color:#a99cd0; border-bottom:1px solid #2a2344; padding:2px 0 5px; }
+.bsy-item { background:#161228; border:1px solid #2a2344; border-radius:8px; padding:6px 9px; font-size:12.5px; color:#cdd6f4; }
+.bsy-item b { color:#ffd24a; margin-right:6px; }
+.bsy-ico { margin-right:2px; }
+.bsy-need { color:#8dff9a; font-size:11.5px; }
+.bsy-desc { color:#a9a2c8; margin-top:3px; line-height:1.45; }
+.bsy-mem { color:#565073; font-size:11px; margin-top:3px; }
 /* ===== 存档恢复 / 战绩 / 移动端 ===== */
 #resumeOv { position:fixed; inset:0; background:#0b0912ee; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:18px; z-index:60; text-align:center; padding:20px; }
@@ -329,12 +342,12 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   animation:boom calc(.5s/var(--spd)) ease-out forwards; }
 /* ===== 战斗结果横幅 ===== */
 .result-banner { position:absolute; inset:0; z-index:12; display:flex; align-items:center; justify-content:center;
-  font-size:34px; font-weight:bold; pointer-events:none; overflow:hidden; border-radius:8px;
-  animation:bannerPop .5s ease-out; }
+  font-size:36px; font-weight:bold; pointer-events:none; overflow:hidden; border-radius:8px;
+  animation:bannerPop .9s ease-out; }
 .result-banner.win { color:#ffd24a; text-shadow:0 0 18px #ffd24a,0 2px 4px #000;
   background:linear-gradient(180deg,#ffd24a22,transparent); }
 .result-banner.lose { color:#ff7b7b; text-shadow:0 0 18px #ff5a5a,0 2px 4px #000;
-  background:linear-gradient(180deg,#ff5a5a22,transparent); animation:bannerPop .5s ease-out, shakeB .35s .25s 2; }
+  background:linear-gradient(180deg,#ff5a5a22,transparent); animation:bannerPop .9s ease-out, shakeB .5s .45s 2; }
 @keyframes bannerPop { from{transform:scale(.3);opacity:0} 60%{transform:scale(1.12)} to{transform:scale(1);opacity:1} }
 @keyframes shakeB { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
 .confetti { position:absolute; top:-12px; width:7px; height:11px; animation:confFall linear forwards; }
@@ -429,6 +442,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
       <div class="bf-row"><span class="bf-label">阵营</span><div class="bf-chips" data-dim="fac"></div></div>
       <div class="bf-row"><span class="bf-label">职业</span><div class="bf-chips" data-dim="job"></div></div>
     </div>
+    <div id="bookSyn"></div>
     <div id="bookGrid"></div>
   </div>
 </div>
@@ -1128,17 +1142,23 @@ function renderTop(){
 }
 const FAC_ICON={'深海':'🌊','星际':'🚀','毛茸乐园':'🐾','音律':'🎵','四禧丸子':'🍡','学园':'🎓','夜幕':'🌙','花语':'🌸','魔道':'🔮','森之国':'🌲','工造':'⚙️','P-SP':'🎬'};
 const JOB_ICON={'刀客':'🗡️','守护':'🛡️','歌势':'🎤','游侠':'🏹','法师':'☄️','咒术':'☠️','刺客':'🥷','狂战':'🪓','医者':'💊','偶像':'✨'};
-/* 多多式羁绊徽章：图标+名称+档位进度；T1 铜色/T2 金色点亮，未达档位灰显 */
+/* 多多式羁绊徽章：图标+名称+档位进度；已触发的排前面（档位深者优先），未触发的按「距下一档缺口」升序（差1的排在差2的前面）；
+   已触发档位的效果直接显示在徽章下方（不再只显示 2/4 / MAX） */
 function synBadges(cnt,cfg,icons){
-  return Object.entries(cfg).map(([k,c])=>{
+  const items=Object.entries(cfg).map(([k,c])=>{
     const n=cnt[k]||0;
-    if(n===0) return '';
+    if(n===0) return null;
     const tier=c.need.filter(x=>x<=n).length;
     const maxN=c.need[c.need.length-1];
-    const prog = n>=maxN ? 'MAX' : `${n}/${c.need.find(x=>x>n)}`;
+    const next=c.need.find(x=>x>n);
+    return {k,c,tier,n,gap:next?next-n:0,prog:n>=maxN?'MAX':`${n}/${next}`};
+  }).filter(Boolean)
+    .sort((a,b)=>(b.tier>0?1:0)-(a.tier>0?1:0) || b.tier-a.tier || a.gap-b.gap);
+  return items.map(({k,c,tier,n,prog})=>{
     const pips = c.need.map((x,i)=>`<i class="${i<tier?'on':''}"></i>`).join('');
+    const effs = c.desc.slice(0,tier).map((d,i)=>`<div class="syn-eff">T${i+1} ${d}</div>`).join('');
     return `<div class="syn-badge ${tier>0?('on t'+tier):''}" title="${k}\n${c.desc.map((d,i)=>`T${i+1}(${c.need[i]}人)：${d}`).join('\n')}">
-      <span class="ico">${icons[k]||'❓'}</span><span>${k}</span><span class="pips">${pips}</span><span class="cnt">${prog}</span></div>`;
+      <div class="syn-top"><span class="ico">${icons[k]||'❓'}</span><span>${k}</span><span class="pips">${pips}</span><span class="cnt">${prog}</span></div>${effs}</div>`;
   }).join('') || '<div class="syn-empty">上场棋子后显示羁绊</div>';
 }
 function renderSynergy(){
@@ -2625,13 +2645,13 @@ function showResultBanner(won,cb){
       const p=document.createElement('div'); p.className='confetti';
       p.style.left=Math.random()*100+'%';
       p.style.background=['#ffd24a','#8dff9a','#4aa8ff','#ff8ad8'][i%4];
-      p.style.animationDelay=(Math.random()*0.5)+'s';
-      p.style.animationDuration=(0.9+Math.random()*0.7)+'s';
+      p.style.animationDelay=(Math.random()*0.8)+'s';
+      p.style.animationDuration=(1.5+Math.random()*0.9)+'s';
       el.appendChild(p);
     }
   }
   $('board').appendChild(el);
-  setTimeout(()=>{ el.remove(); cb(); }, 500/SPEED);   // 结算横幅短停留（随倍速）
+  setTimeout(()=>{ el.remove(); cb(); }, 1000/SPEED);   // 结算横幅停留（随倍速），动画放慢后多留一会
 }
 function endBattle(alive0,alive1){
   if(S.phase==='over') return;     // 已终局，忽略迟到的结算
@@ -2791,6 +2811,16 @@ $('ovBtn2').onclick=enterEndless;
 const BOOK = { cost:new Set(), fac:new Set(), job:new Set() };
 const COST_BORDER = {1:'#9db',2:'#7fc9a0',3:'#b79ae8',4:'#e6b45a',5:'#ffd24a'};
 function renderBook(){
+  // 羁绊说明：全部阵营/职业羁绊的档位与效果（刀塔式总览）
+  const synRow=(tbl,icons,title)=>`<div class="bsy-title">${title}</div>`+
+    Object.entries(tbl).map(([k,c])=>{
+      const members=UNITS.filter(u=>facsOf(u).includes(k)||jobsOf(u).includes(k)).length;
+      return `<div class="bsy-item"><span class="bsy-ico">${icons[k]||'❓'}</span><b>${k}</b>`+
+        `<span class="bsy-need">${c.need.join(' / ')} 人</span>`+
+        c.desc.map((d,i)=>`<div class="bsy-desc">T${i+1}（${c.need[i]}人）：${d}</div>`).join('')+
+        `<div class="bsy-mem">现有成员 ${members} 名</div></div>`;
+    }).join('');
+  $('bookSyn').innerHTML = synRow(FACTIONS,FAC_ICON,'🔗 阵营羁绊（12）') + synRow(CLASSES,JOB_ICON,'⚔ 职业羁绊（10）');
   const dims=[
     ['cost','费用',[1,2,3,4,5], v=>v+'费'],
     ['fac','阵营', Object.keys(FACTIONS), v=>v],
