@@ -38,7 +38,7 @@ const A = globalThis.API;
 const out = A.UNITS.map(u => {
   const sv = A.SKILL_VAR[u.id] || {};
   return {
-    id:u.id, name:u.name, cost:u.cost, fac:u.fac, job:u.job,
+    id:u.id, name:u.name, cost:u.cost, fac:u.fac, job:u.job, fac2:u.fac2||'', job2:u.job2||'',
     hp:u.hp, atk:u.atk, rng:u.rng, spd:u.spd,
     form:u.form==='me'?'近战':'远程', dtype:u.dtype==='phys'?'物理':'法术',
     skName:u.sk[0], passive:u.sk.length>2?'被动':'主动',

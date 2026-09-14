@@ -144,19 +144,20 @@ function botPrep() {
     }
     if (fi >= 0) buy(fi);
   }
-  // 2) 购买：只买锁内棋子（对子优先，锁内高费优先于低费）
+  // 2) 购买：锁内优先（对子 > 质量卡），锁外作为填人口骨架（对子或高费）
   const keepGold = S.round <= 1 ? 0 : (S.hp >= 12 ? 8 : 2);
   let bought = true, iterGuard = 0;
   while (bought && iterGuard++ < 40) {
     bought = false;
     let bestI = -1, bestSc = -1;
     for (let i = 0; i < S.shop.length; i++) {
-      const u = S.shop[i]; if (!u || !inLock(u) || u.cost > S.gold - keepGold) continue;
+      const u = S.shop[i]; if (!u || u.cost > S.gold - keepGold) continue;
       const pc = pairCount(u.id);
-      const sc = (pc >= 2 ? 100 : 50) + u.cost;
+      const sc = inLock(u) ? (pc >= 2 ? 200 : 120) + u.cost
+                           : (pc >= 2 ? 100 : 0) + u.cost * 2;
       if (sc > bestSc) { bestSc = sc; bestI = i; }
     }
-    if (bestI < 0) break;
+    if (bestI < 0 || bestSc <= 0) break;
     const canSlot = S.bench.filter(x => !x).length > 0;
     if (canSlot || pairCount(S.shop[bestI].id) >= 2) { buy(bestI); bought = true; }
     else if (sellIdle()) bought = true;
@@ -174,15 +175,26 @@ function botPrep() {
     });
     if (bi >= 0) { const b2 = S.bench[bi], bd = byId(b2.id); S.gold += bd.cost; S.pool[b2.id] += 1; S.bench[bi] = null; buy(i); }
   }
-  // 3.5) 已有锁内棋子：清掉全部临时替补（先备战席后场上，场上留人以便开战由编队保证）
+  // 3.5) 锁内棋子已到手：保留锁内核心，同时允许「锁外棋子填人口」。
+  //      说明：3 人小羁绊（星际/花语/工造等）最多只有 3 个不同棋子，死磕锁内 =
+  //      2-3 个单位打敌方 7 个，数学上不可能通关（刀塔的小羁绊也从不是独立成型，
+  //      都是混搭进主流阵容）。本测试的真实语义是「以该羁绊为核心」的阵容：
+  //      锁内棋子优先且永不出售（保证吃满羁绊效果），人口空位用锁外高质量棋子补。
+  //      仅当备战席已满、且要腾位给锁内棋子时才卖锁外棋子（先卖最弱的）。
   if (lockOwned() > 0) {
     let cg = 0;
     while (cg++ < 10) {
-      const bi2 = S.bench.findIndex(u => u && !inLock(u));
-      if (bi2 >= 0) { sellAt('bench', bi2); continue; }
-      const fi2 = S.board.findIndex(u => u && !inLock(u));
-      if (fi2 >= 0) { sellAt('board', fi2); continue; }
-      break;
+      const needSlot = S.bench.filter(x => !x).length === 0;
+      if (!needSlot) break;                       // 有空位就不清人（保留锁外填充）
+      // 卖锁外棋子中最弱的一个（低费、非对子优先）
+      let bi2 = -1, bv2 = 1e9;
+      S.bench.forEach((u, i) => {
+        if (!u || inLock(u) || pairCount(u.id) >= 2) return;
+        const v = byId(u.id).cost;
+        if (v < bv2) { bv2 = v; bi2 = i; }
+      });
+      if (bi2 < 0) break;
+      sellAt('bench', bi2);
     }
   }
   // 4) 升级人口节奏（与普通机器人一致）
@@ -191,17 +203,25 @@ function botPrep() {
   for (let k = 0; k < 8 && S.lvl < target; k++) {
     if (S.gold >= 5 + (S.hp >= 12 ? 4 : 2)) { S.gold -= 5; S.xp += 4; checkLevel(); } else break;
   }
-  // 5) 富余 roll down：只收锁内棋子
+  // 5) 富余 roll down：费用自适应。锁内棋子优先（对子/质量卡），锁内刷不到时
+  //    买入锁外高质量棋子填人口（保证「以该羁绊为核心」的阵容能站满人口位）。
+  const lockCosts = [...LOCK].map(id => byId(id).cost).sort((a,b)=>a-b);
+  const medCost = lockCosts.length ? lockCosts[Math.floor(lockCosts.length/2)] : 2;
+  const deepRun = medCost <= 2;              // 低费羁绊：可买任意锁内棋子
   let rolls = 0;
-  while (S.gold >= keepGold + 14 && rolls++ < 25) {
+  while (S.gold >= keepGold + 2 && rolls++ < (deepRun ? 50 : 35)) {
     if (S.bench.filter(x => !x).length === 0 && !sellIdle()) break;
     S.gold -= 2; rollShop();
     for (let i = 0; i < S.shop.length; i++) {
-      const u = S.shop[i]; if (!u || !inLock(u) || u.cost > S.gold - keepGold) continue;
-      if (pairCount(u.id) >= 2) buy(i);
-      else if (S.bench.filter(x => !x).length > 0 && u.cost >= 3) buy(i);
+      const u = S.shop[i]; if (!u || u.cost > S.gold - keepGold) continue;
+      if (S.bench.filter(x => !x).length <= 0) break;
+      if (inLock(u)) {
+        if (pairCount(u.id) >= 2 || deepRun || u.cost >= 3) buy(i);
+      } else if (u.cost >= 4 || pairCount(u.id) >= 2) {
+        buy(i);                              // 锁外高费/对子：填人口的骨架
+      }
     }
-    if (S.gold >= 30 && S.lvl < 10 && S.gold - 5 >= 14) { S.gold -= 5; S.xp += 4; checkLevel(); }
+    if (S.gold >= 26 && S.lvl < 10 && S.gold - 5 >= keepGold) { S.gold -= 5; S.xp += 4; checkLevel(); }
   }
   // 6) 择优编队
   autoDeployBest();

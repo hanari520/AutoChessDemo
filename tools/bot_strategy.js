@@ -82,18 +82,24 @@ function botPrep() {
   for (let k = 0; k < 8 && S.lvl < target; k++) {
     if (S.gold >= 5 + (S.hp >= 12 ? 4 : 2)) { S.gold -= 5; S.xp += 4; checkLevel(); } else break;
   }
-  // 5) 富余 roll down
+  // 5) 富余 roll down（费用自适应）：老策略留 keepGold+14 不花 → 后期只摆 3-4 人打敌 7 人。
+  //    低费阵容深搜追三（副本=战力）；高费阵容同样把钱花出去，但只认「对子 或 ≥3 费」，
+  //    避免低费散子塞满备战席、把核心高价卡挤到买不进来。
+  const myCosts = [...S.board, ...S.bench].filter(Boolean).map(u => byId(u.id).cost).sort((a,b)=>a-b);
+  const medCost = myCosts.length ? myCosts[Math.floor(myCosts.length/2)] : 2;
+  const deepRun = medCost <= 2;
   let rolls = 0;
-  while (S.gold >= keepGold + 14 && rolls++ < 25) {
+  while (S.gold >= keepGold + 2 && rolls++ < (deepRun ? 50 : 35)) {
     if (!sellIdle() && S.bench.filter(x=>!x).length === 0) break;
     S.gold -= 2; rollShop();
     for (let i = 0; i < S.shop.length; i++) {
       const u = S.shop[i]; if (!u || u.cost > S.gold - keepGold) continue;
+      const rev = mainTags.has(u.fac)||mainTags.has(u.job)||myTags.has(u.fac)||myTags.has(u.job);
       if (pairCount(u.id) >= 2) buy(i);
-      else if (S.bench.filter(x=>!x).length > 0 && (u.cost >= 4 || ((mainTags.has(u.fac)||mainTags.has(u.job)) && u.cost <= 3))) buy(i);
+      else if (S.bench.filter(x=>!x).length > 0 && (deepRun || rev || u.cost >= 3)) buy(i);
     }
     // 金币太多继续升人口（5 金 4 经验）
-    if (S.gold >= 30 && S.lvl < 10 && S.gold - 5 >= 14) { S.gold -= 5; S.xp += 4; checkLevel(); }
+    if (S.gold >= 26 && S.lvl < 10 && S.gold - 5 >= keepGold) { S.gold -= 5; S.xp += 4; checkLevel(); }
   }
   // 6) 择优编队：机器人像真人一样主动换人，选出当前最强阵容（按钮的 autoDeploy 只补位不换人）
   autoDeployBest();
