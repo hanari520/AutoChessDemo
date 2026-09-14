@@ -12,10 +12,12 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
 body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; --spd:1;
-  --cell:78px; --gap:2px; --pad:7px; }
+  /* 棋盘格自适应：9 行（棋盘8+板凳1，含棋盘内边距与板凳标签行）+ 顶栏/信息栏/商店实测约 390px，宽受羁绊栏+侧栏约束 */
+  --cell:min(85px, calc((100vh - 390px)/9), calc((100vw - 580px)/8)); --gap:2px; --pad:7px; }
 .spd-b { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:5px; padding:2px 7px; cursor:pointer; font-size:13px; }
 .spd-b.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
 #topbar { display:flex; align-items:center; gap:14px; padding:9px 16px; background:#1c1830; border-bottom:2px solid #35294f; font-size:16px; flex-shrink:0; flex-wrap:wrap; }
+#main { flex:1; display:flex; justify-content:center; padding:10px; gap:20px; overflow:hidden; }
 #topbar b { color:#ffd24a; }
 .tag { background:#2a2344; padding:3px 10px; border-radius:6px; }
 .tag.pop-warn { background:#5b3a1e; box-shadow:0 0 0 1px #ffd24a, 0 0 10px #ffd24a55; animation:popPulse 1.2s ease-in-out infinite; }
@@ -58,20 +60,22 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .item-ghost { display:flex; align-items:center; justify-content:center; font-size:10px; text-align:center;
   background:#241e3e; border:1px solid #8dff9a; border-radius:8px; color:#8dff9a; padding:2px; }
 .unit { position:absolute; inset:4px; border-radius:6px; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; cursor:grab; font-size:10px; text-align:center; line-height:1.1; overflow:visible;
-  border:2px solid #888; background:#5b6b8c; z-index:2; }
+  justify-content:center; cursor:grab; text-align:center; line-height:1.1; overflow:hidden;
+  border:2px solid #888; background:#5b6b8c; z-index:2;
+  /* 文字随格子等比缩放：格子小（自适应下限）时不会溢出格界 */
+  font-size:calc(var(--cell)*.16); }
 .unit .nm { font-weight:bold; padding:0 1px; }
-.unit .st { font-size:10px; opacity:.85; }
-.unit .sk { font-size:9px; color:#9fe8ff; }
-.unit .fj { font-size:8px; color:#c8bfe8; letter-spacing:.3px; }
-.unit .its { position:absolute; top:2px; left:3px; font-size:10px; letter-spacing:-2px; z-index:2; }
+.unit .st { font-size:calc(var(--cell)*.15); opacity:.85; }
+.unit .sk { font-size:calc(var(--cell)*.135); color:#9fe8ff; }
+.unit .fj { font-size:calc(var(--cell)*.115); color:#c8bfe8; letter-spacing:.3px; }
+.unit .its { position:absolute; top:2px; left:3px; font-size:calc(var(--cell)*.15); letter-spacing:-2px; z-index:2; }
 .unit.sel { border-color:#ffd24a; box-shadow:0 0 4px #ffd24a88; z-index:3; }
 .unit.ally { border-color:#4aa8ff; }
 .unit.enemy { border-color:#e05555; box-shadow:inset 0 0 0 999px rgba(224,85,85,.30); }
-.unit .side { position:absolute; top:2px; right:3px; font-size:8px; padding:0 3px; border-radius:4px; color:#fff; z-index:2; }
+.unit .side { position:absolute; top:2px; right:3px; font-size:calc(var(--cell)*.115); padding:0 3px; border-radius:4px; color:#fff; z-index:2; }
 .unit.ally .side { background:#3b82f6; }
 .unit.enemy .side { background:#e05555; }
-.unit .fz { position:absolute; top:2px; right:22px; font-size:10px; z-index:2; }
+.unit .fz { position:absolute; top:2px; right:22px; font-size:calc(var(--cell)*.14); z-index:2; }
 .unit.shielded { box-shadow:0 0 6px 2px #4aa8ff99; }
 .unit .hpbar { position:absolute; bottom:2px; left:4px; right:4px; height:4px; background:#333; border-radius:2px; }
 .unit .hpfill { height:100%; background:#5dd35d; border-radius:2px; transition:width .2s; }
@@ -180,8 +184,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .item-chip { background:#2a2344; border:1px solid #4a3d6e; border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; }
 .item-chip.sel { border-color:#ffd24a; background:#5b4a1e; box-shadow:0 0 6px #ffd24a66; }
 #log { font-size:13px; color:#b0a8c8; max-height:280px; overflow-y:auto; line-height:1.7; }
-#shopbar { display:flex; gap:8px; padding:8px 12px; background:#1c1830; border-top:2px solid #35294f; flex-shrink:0; align-items:stretch;
-  position:fixed; left:0; right:0; bottom:0; z-index:25; justify-content:center; box-shadow:0 -4px 16px #00000077; }
+#shopbar { display:flex; gap:8px; padding:8px 12px; background:#1c1830; border-top:2px solid #35294f; flex-shrink:0; align-items:stretch; }
 #shopbar .btn { align-self:center; white-space:nowrap; flex-shrink:0; }
 .btn.on { background:#5b4a1e; border-color:#ffd24a; }
 /* 刷新/锁定：纵向并排一列，紧贴商店右侧 */
@@ -259,7 +262,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   padding:8px 4px; border-bottom:1px solid #2a2344; color:#cdd6f4; }
 @media (max-width:880px){
   body { --cell:56px; }
-  #main { flex-direction:column; align-items:center; overflow-y:auto; padding:6px; gap:8px; }
+  #main { flex-direction:column; align-items:center; overflow-y:auto; padding:6px; padding-bottom:150px; gap:8px; }
   #side { width:min(96vw,520px); }
   #synCol { width:min(96vw,520px); flex-direction:row; flex-wrap:wrap; gap:2px; }
   #synCol .syn-head { display:none; }
@@ -299,6 +302,13 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   display:flex; flex-direction:column; padding:14px 16px; }
 #bookHead { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
 #bookHead h2 { font-size:18px; color:#ffd24a; }
+/* 图鉴双标签：棋子（默认）/ 羁绊说明 */
+#bookTabs { display:flex; gap:6px; margin-left:auto; margin-right:12px; }
+.btab { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:14px; padding:4px 14px; cursor:pointer; font-size:13px; }
+.btab.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
+#bookUnits.hidden, #bookSyn.hidden { display:none; }
+#bookUnits { display:flex; flex-direction:column; min-height:0; flex:1; }
+#bookSyn { overflow-y:auto; min-height:0; flex:1; }
 #bookFilters { border-bottom:1px solid #2a2344; padding-bottom:8px; margin-bottom:10px; }
 .bf-row { display:flex; align-items:flex-start; gap:8px; margin:4px 0; }
 .bf-label { font-size:12px; color:#a99cd0; width:32px; flex-shrink:0; padding-top:5px; }
@@ -435,15 +445,21 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <div id="bookPanel">
     <div id="bookHead">
       <h2>📖 棋子图鉴 <span id="bookCount" style="font-size:13px;color:#a99cd0"></span></h2>
+      <div id="bookTabs">
+        <button class="btab on" data-tab="units">👥 棋子</button>
+        <button class="btab" data-tab="syn">🔗 羁绊</button>
+      </div>
       <button class="btn" id="bookClose">✕ 关闭</button>
     </div>
-    <div id="bookFilters">
-      <div class="bf-row"><span class="bf-label">费用</span><div class="bf-chips" data-dim="cost"></div></div>
-      <div class="bf-row"><span class="bf-label">阵营</span><div class="bf-chips" data-dim="fac"></div></div>
-      <div class="bf-row"><span class="bf-label">职业</span><div class="bf-chips" data-dim="job"></div></div>
+    <div id="bookUnits">
+      <div id="bookFilters">
+        <div class="bf-row"><span class="bf-label">费用</span><div class="bf-chips" data-dim="cost"></div></div>
+        <div class="bf-row"><span class="bf-label">阵营</span><div class="bf-chips" data-dim="fac"></div></div>
+        <div class="bf-row"><span class="bf-label">职业</span><div class="bf-chips" data-dim="job"></div></div>
+      </div>
+      <div id="bookGrid"></div>
     </div>
-    <div id="bookSyn"></div>
-    <div id="bookGrid"></div>
+    <div id="bookSyn" class="hidden"></div>
   </div>
 </div>
 <div id="resumeOv" class="hidden">
@@ -487,7 +503,7 @@ const UNITS = [
   {id:'songlv', name:'小松绿',      cost:1, fac:'森之国',  job:'狂战', hp:58,  atk:10, rng:1, spd:1.05,sk:['盘根重锤','slam']},
   {id:'likou',  name:'莉蔻',        cost:1, fac:'学园',    job:'医者', hp:44,  atk:10, rng:3, spd:0.9, sk:['救急手册','heal']},
   {id:'agari',  name:'东爱璃',      cost:1, fac:'P-SP',    job:'偶像', hp:50,  atk:9,  rng:3, spd:0.9, sk:['四十八人应援','aheal']},
-  {id:'hoshimi',name:'星弥',        cost:1, fac:'夜幕',    job:'刺客', hp:60,  atk:11, rng:1, spd:1.15,sk:['星屑突袭','dash']},
+  {id:'hoshimi',name:'星弥',        cost:1, fac:'夜幕',    job:'刺客', hp:69,  atk:11, rng:1, spd:1.15,sk:['星屑突袭','dash']},
   {id:'chiharu',name:'千春',        cost:1, fac:'森之国',  job:'刀客', hp:60,  atk:11, rng:1, spd:1.05,sk:['春岚斩','cleave']},
   // ---------- 2 费（10 人 × 40 张） ----------
   {id:'suiji',  name:'岁己Sui',     cost:2, fac:'森之国',  job:'歌势', hp:48,  atk:10, rng:3, spd:0.9, sk:['十小时续航','manafeed']},
@@ -497,7 +513,7 @@ const UNITS = [
   {id:'tiandou',name:'恬豆',        cost:2, fac:'四禧丸子', job:'歌势', hp:52,  atk:10, rng:3, spd:0.9, sk:['点心投喂','heal']},
   {id:'aza',    name:'阿萨Aza',     cost:2, fac:'音律',    job:'狂战', hp:88,  atk:6,  rng:1, spd:0.8, sk:['节拍堡垒','aheal']},
   {id:'pako',   name:'帕可',        cost:2, fac:'学园',    job:'医者', hp:50,  atk:10, rng:3, spd:0.9, sk:['善意收集','heal']},
-  {id:'zhijin', name:'枝堇',        cost:2, fac:'花语',    job:'刺客', fac2:'森之国', hp:66,  atk:12, rng:1, spd:1.2, sk:['紫藤突刺','dash']},
+  {id:'zhijin', name:'枝堇',        cost:2, fac:'花语',    job:'刺客', fac2:'森之国', hp:76,  atk:12, rng:1, spd:1.2, sk:['紫藤突刺','dash']},
   {id:'sishi',  name:'四时小路',    cost:2, fac:'音律',    job:'游侠', hp:46,  atk:11, rng:4, spd:1.2, sk:['四季轮舞','volley']},
   {id:'sumi',   name:'礼墨',        cost:2, fac:'P-SP',    job:'守护', hp:90,  atk:6,  rng:1, spd:0.8, sk:['墨龙结界','teamshield']},
   // ---------- 3 费（10 人 × 30 张） ----------
@@ -506,12 +522,12 @@ const UNITS = [
   {id:'xuezhu', name:'雪烛',        cost:3, fac:'夜幕',    job:'法师', hp:44,  atk:15, rng:3, spd:0.7, sk:['奇门冰封','frost']},
   {id:'zeyin',  name:'泽音',        cost:3, fac:'深海',    job:'医者', hp:52,  atk:12, rng:3, spd:0.9, sk:['泽畔歌声','aheal']},
   {id:'sanli',  name:'三理',        cost:3, fac:'音律',    job:'法师', hp:48,  atk:15, rng:3, spd:0.75,sk:['梦境三重奏','chain']},
-  {id:'diansu', name:'点酥',        cost:3, fac:'魔道',    job:'刺客', hp:48,  atk:16, rng:3, spd:0.7, sk:['邪修石符','petrify']},
+  {id:'diansu', name:'点酥',        cost:3, fac:'魔道',    job:'刺客', hp:55,  atk:16, rng:3, spd:0.7, sk:['邪修石符','petrify']},
   {id:'lianshiye',name:'恋诗夜',    cost:3, fac:'夜幕',    job:'刀客', hp:60,  atk:11, rng:1, spd:1.05,sk:['失忆挽歌','silence']},
   {id:'huize',  name:'灰泽满',      cost:3, fac:'深海',    job:'咒术', hp:48,  atk:16, rng:3, spd:0.7, sk:['果冻封印','curse']},
   {id:'shengge',name:'笙歌',        cost:3, fac:'P-SP',    job:'歌势', hp:50,  atk:12, rng:3, spd:0.9, sk:['笙歌净化','cleanse']},
-  {id:'shadow', name:'李豆沙',      cost:3, fac:'P-SP',    job:'刺客', hp:68,  atk:13, rng:1, spd:1.3, sk:['熊猫跃袭','dash']},
-  {id:'nox',    name:'诺莺',        cost:4, fac:'毛茸乐园', job:'刺客', hp:66,  atk:13, rng:1, spd:1.25,sk:['夜莺回响','dash']},
+  {id:'shadow', name:'李豆沙',      cost:3, fac:'P-SP',    job:'刺客', hp:78,  atk:13, rng:1, spd:1.3, sk:['熊猫跃袭','dash']},
+  {id:'nox',    name:'诺莺',        cost:4, fac:'毛茸乐园', job:'刺客', hp:76,  atk:13, rng:1, spd:1.25,sk:['夜莺回响','dash']},
   // ---------- 4 费（10 人 × 20 张） ----------
   {id:'miyue',  name:'弥月',        cost:4, fac:'夜幕',    job:'刀客', hp:60,  atk:12, rng:1, spd:1.1, sk:['月影斩','dash']},
   {id:'huali',  name:'花礼',        cost:4, fac:'花语',    job:'偶像', hp:52,  atk:11, rng:3, spd:0.9, sk:['小花的祝福','heal']},
@@ -520,14 +536,14 @@ const UNITS = [
   {id:'ruiya',  name:'瑞娅',        cost:4, fac:'星际',    job:'法师', fac2:'工造', hp:46,  atk:16, rng:3, spd:0.7, sk:['时空禁锢','frost']},
   {id:'mumu',   name:'沐霂',        cost:3, fac:'四禧丸子', job:'偶像', hp:54,  atk:12, rng:3, spd:0.9, sk:['东风润物','heal']},
   {id:'kroya',  name:'克罗雅',      cost:4, fac:'学园',    job:'法师', hp:46,  atk:16, rng:3, spd:0.7, sk:['混沌裂界','fireball']},
-  {id:'shiliu', name:'十六萤',      cost:4, fac:'森之国',  job:'刺客', job2:'游侠', hp:70,  atk:13, rng:1, spd:1.2, sk:['浣熊洗劫','break']},
+  {id:'shiliu', name:'十六萤',      cost:4, fac:'森之国',  job:'刺客', job2:'游侠', hp:80,  atk:13, rng:3, spd:1.2, sk:['浣熊洗劫','break']},
   {id:'seki',   name:'星汐',        cost:4, fac:'P-SP',    job:'咒术', fac2:'魔道', hp:46,  atk:16, rng:3, spd:0.7, sk:['星蚀低语','silence']},
   {id:'haruka', name:'白神遥',      cost:4, fac:'P-SP',    job:'刀客', hp:58,  atk:12, rng:1, spd:1.1, sk:['白刃拍击','cleave']},
   {id:'mielie', name:'咩栗',        cost:5, fac:'毛茸乐园', job:'狂战', hp:68,  atk:13, rng:1, spd:1.10,sk:['栗刺旋风','cleave']},
   // ---------- 5 费（8 人 × 10 张） ----------
   {id:'nana7mi',name:'七海Nana7mi', cost:5, fac:'深海',    job:'刀客', hp:62,  atk:12, rng:1, spd:1.05,sk:['鲨皇旋流','cleave']},
   {id:'liAn',   name:'梨安',        cost:5, fac:'四禧丸子', job:'法师', hp:48,  atk:17, rng:3, spd:0.7, sk:['海豚安魂曲','massfreeze']},
-  {id:'youyi',  name:'又一',        cost:4, fac:'四禧丸子', job:'刺客', job2:'刀客', hp:80,  atk:13, rng:1, spd:1.15,sk:['一心同体','drain','passive']},
+  {id:'youyi',  name:'又一',        cost:4, fac:'四禧丸子', job:'刺客', job2:'刀客', hp:92,  atk:13, rng:1, spd:1.15,sk:['一心同体','drain','passive']},
   {id:'azi',    name:'阿梓',        cost:5, fac:'工造',    job:'歌势', fac2:'音律', hp:52,  atk:15, rng:3, spd:1.0, sk:['高音震魂','massstun']},
   {id:'taodai', name:'桃代',        cost:5, fac:'花语',    job:'守护', hp:96,  atk:8,  rng:1, spd:0.8, sk:['桃香结界','bulwark']},
   {id:'miki',   name:'弥希',        cost:5, fac:'星际',    job:'医者', hp:48,  atk:14, rng:3, spd:0.9, sk:['星海庇护','heal']},
@@ -536,7 +552,7 @@ const UNITS = [
 ];
 /* ===== 攻击形式：近战(me)/远程(rg) × 物理(phys)/法术(magic) =====
    职业默认：刀客/守护/狂战/刺客=近战物理，游侠=远程物理，法师/咒术/歌势/医者/偶像=远程法术 */
-const MELEE_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco','aza','lianshiye','hoshimi','chiharu','nox','mielie']);
+const MELEE_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shadow','sumi','haruka','rinco','aza','lianshiye','hoshimi','chiharu','nox','mielie']);
 const PHYS_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco','yuji','yujiu','sishi','aza','lianshiye','hoshimi','chiharu','nox','mielie']);
 UNITS.forEach(u=>{ u.form = MELEE_IDS.has(u.id)?'me':'rg'; u.dtype = PHYS_IDS.has(u.id)?'phys':'magic'; });
 /* ===== 双标签（刀塔式兼职）：第二阵营/第二职业 fac2/job2 只参与「羁绊计数」，
@@ -990,9 +1006,9 @@ function unitInner(u){
   return `${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${sideTag}
     <span class="nm">${d.name}</span>
     <span class="st">${'★'.repeat(u.star)}<span style="opacity:.8">${d.form==='me'?'⚔':'🏹'}</span></span>
-    <span class="fj">${facLabel(d)}·${jobLabel(d)}</span>
+    ${inBattle?'':`<span class="fj">${facLabel(d)}·${jobLabel(d)}</span>`}
     ${mp}
-    <div class="hpbar"><div class="hpfill" style="width:${Math.max(0,w)}%"></div></div>`;
+    ${inBattle?`<div class="hpbar"><div class="hpfill" style="width:${Math.max(0,w)}%"></div></div>`:''}`;
 }
 function unitHTML(u,sel){
   const d=byId(u.id);
@@ -1327,7 +1343,7 @@ function equipTo(u, bagIdx){
 }
 document.addEventListener('pointerdown', e=>{
   if(e.button!==0) return; // 仅左键可拖拽（右键留给卸装备）
-  if(S.phase!=='prep') return;
+  if(!S || S.phase!=='prep') return;
   const el = e.target.closest && e.target.closest('.unit');
   if(!el) return;
   if(el.classList.contains('preview')) return;   // 敌方阵容预览不可拖拽
@@ -1368,7 +1384,7 @@ document.addEventListener('pointermove', e=>{
       // 拖动预览：把范围提示移到光标所在格（拖到哪就看到哪的攻击范围）
       const tt2 = c.classList.contains('cell')?'board':'bench';
       const ti2 = c.classList.contains('cell')?+c.dataset.i:+c.dataset.bi;
-      if(tt2==='board'){ const du=getAt(d.t,d.i); if(du){ setRangeFocus(ti2, byId(du.id).rng); paintRange(); } }
+      if(tt2==='board'){ const du=getAt(drag.t,drag.i); if(du){ setRangeFocus(ti2, byId(du.id).rng); paintRange(); } }
       else { clearRangeFocus(); paintRange(); }
     }
     if(c) c.classList.add('drop-hl');
@@ -1892,6 +1908,7 @@ function startBattle(){
       if(hasJob(d,'守护') && knP>0){ u.knightP=knP; u.knightSh=knSh; u.knightCd=3000; }  // 骑士式周期护盾
       if(hasJob(d,'游侠') && hgBounce>0) u.bounceP=hgBounce;       // 猎人式弹射
       if(hasJob(d,'刺客') && asCrit>0){ u.crit=asCrit; u.critM=asCritM; }    // 刺客式常驻暴击
+      if(hasJob(d,'刺客')) u.moveMul=0.8;                        // 刺客职业特性：移动力 +25%（跳后排后步频更快、不易被围死）
       if(hasJob(d,'狂战') && wkVamp>0) u.vamp=Math.max(u.vamp,wkVamp);       // 术士式吸血
       u.skMul=facSkMul; u.healMul=1; u.regen=regen;
       u.sonic = (hasJob(d,'歌势') && gT>=1) ? (gT>=2?2.0:1.0)+0.55*gCnt : 0; // 歌势音波（demo 原设计）
@@ -2053,7 +2070,7 @@ function startBattle(){
           }
         }
       } else if(u.moveCd<=0){
-        u.moveCd=450*(u.slowT>0?(1+u.slowA):1);
+        u.moveCd=(u.moveMul||1)*450*(u.slowT>0?(1+u.slowA):1);   // 刺客移动力加成（moveMul 0.8 = 步频更快）
         // BFS 寻路：绕开友方/敌方占位，走到能打到目标的最近空格（修复近战/远程被友军卡住）
         const step=stepToward(u,tgt,d.rng,units);
         if(step && freeCell(units,step[0],step[1])){ u.x=step[0]; u.y=step[1]; }
@@ -2130,17 +2147,18 @@ function dealDamage(src,tgt,dmg,units,dtype){
   return dmg;
 }
 /* ===== 棋盘几何（跟随 CSS 变量 --cell/--gap/--pad，放大棋盘时坐标不会错位）
-   首次读取后缓存，避免战斗每帧调用 getComputedStyle；提供默认值兼容无 DOM 环境 ===== */
+   读取后缓存避免战斗每帧调用 getComputedStyle；--cell 随视口自适应，
+   故缓存附带视口指纹：浏览器缩放/改窗口尺寸导致视口变化时自动重算（否则战斗层整体错位） ===== */
 let _geo=null;
 function boardGeo(){
-  if(_geo) return _geo;
+  if(_geo && _geo.vw===innerWidth && _geo.vh===innerHeight) return _geo;
   let c=58, g=2, p=6;
   try{ const cs=getComputedStyle(document.body);
     c=parseFloat(cs.getPropertyValue('--cell'))||c;
     g=parseFloat(cs.getPropertyValue('--gap'))||g;
     p=parseFloat(cs.getPropertyValue('--pad'))||p;
   }catch(e){}
-  return (_geo={cell:c, gap:g, pad:p, step:c+g});
+  return (_geo={cell:c, gap:g, pad:p, step:c+g, vw:innerWidth, vh:innerHeight});
 }
 const CELL_PX = () => boardGeo().cell;
 const PAD_PX  = () => boardGeo().pad;
@@ -2858,6 +2876,12 @@ $('bookFilters').addEventListener('click', e=>{
   renderBook();
 });
 $('bookBtn').onclick=()=>{ $('bookModal').classList.remove('hidden'); renderBook(); };
+// 图鉴标签切换：棋子（默认）/ 羁绊说明
+document.querySelectorAll('#bookTabs .btab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#bookTabs .btab').forEach(x=>x.classList.toggle('on',x===b));
+  $('bookUnits').classList.toggle('hidden', b.dataset.tab!=='units');
+  $('bookSyn').classList.toggle('hidden', b.dataset.tab!=='syn');
+});
 $('bookClose').onclick=()=>$('bookModal').classList.add('hidden');
 
 /* ================= 存档 / 继续上一局 / 历史战绩 ================= */
@@ -2892,17 +2916,21 @@ $('histClose').onclick=()=>$('histModal').classList.add('hidden');
 $('resetBtn').onclick=()=>{ if(!confirm('放弃当前进度，重新开一局？')) return;
   localStorage.removeItem(SAVE_KEY); stopTickLoop(); newGame(); renderAll();
   $('fightBtn').disabled=false; $('overlay').classList.add('hidden'); log('🔄 已重新开局'); };
-/* 手机端棋盘缩放（横竖屏双约束适配，棋盘+板凳整体缩放；预留空间动态量取顶栏/商店实际高度） */
+/* 手机端棋盘缩放（横竖屏双约束适配，棋盘+板凳整体缩放）。
+   仅小屏启用：桌面端 --cell 已随 vh/vw 自适应，若再叠加 transform 缩放，
+   浏览器缩放（Ctrl+滚轮）时两次缩放互相叠加会导致布局错乱 */
 function fitBoard(){
   const w=$('boardwrap'), b=$('board'); if(!w||!b) return;
+  const st=w.style;
+  if(innerWidth>880){ st.transform=''; st.marginBottom=''; return; }   // 桌面端：只清除，不二次缩放
   const landscape = innerWidth>innerHeight;
-  const reserved = ($('topbar').offsetHeight||40) + ($('shopbar').offsetHeight||0) + (landscape?16:24);
-  const availW = landscape ? innerWidth-290 : innerWidth-14;
+  const reserved = ($('shopbar').offsetHeight||0) + (landscape?16:24);
+  const availW = landscape ? innerWidth-440 : innerWidth-14;
   const availH = innerHeight - reserved - (landscape?0:6);
   const s = Math.max(0.35, Math.min(1, availW/w.offsetWidth, availH/w.offsetHeight));
-  w.style.transformOrigin='top center';
-  w.style.transform=`scale(${s})`;
-  w.style.marginBottom = s<1 ? (-w.offsetHeight*(1-s))+'px' : '';
+  st.transformOrigin='top center';
+  st.transform = s<1 ? `scale(${s})` : '';
+  st.marginBottom = s<1 ? (-w.offsetHeight*(1-s))+'px' : '';
 }
 addEventListener('resize',fitBoard); fitBoard();
 /* 启动：检测到存档时询问继续还是重开 */
