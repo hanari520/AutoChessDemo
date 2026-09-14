@@ -106,6 +106,7 @@ function driveBattle(maxTicks = 640) {
 /* ---------- 功能断言测试（T1=Phase1 布阵/备战席/补位；用 node 后即退出，不跑主循环） ---------- */
 if (process.env.T1) { require('./_t1_tests.js').run(A, driveBattle); process.exit(0); }
 if (process.env.T2) { require('./_t2_tests.js').run(A, driveBattle); process.exit(0); }
+if (process.env.T3) { require('./_t3_tests.js').run(A, driveBattle); process.exit(0); }
 
 
 /* ---------- 主循环 ---------- */

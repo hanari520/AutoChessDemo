@@ -108,6 +108,10 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   background:#2a1520; color:#ff9a9a; border:1px solid #ff8ad8; border-radius:8px;
   font-size:13px; font-weight:bold; white-space:nowrap; }
 #dragGhost.in-sell { opacity:.35; }   // 进入出售区：幽灵半透明上移，不遮商店卡片
+/* 装备合成：背包合成预览行 + 成品芯片金边 + 详情面板就地合成行 */
+.combo-row { font-size:11px; color:#ffd24a; background:#2a2344; border:1px dashed #6b5a1e; border-radius:6px; padding:2px 8px; margin-bottom:4px; display:flex; align-items:center; justify-content:space-between; }
+.item-chip.crafted { border-color:#ffd24a; color:#ffd24a; background:#2e2718; }
+.in-combo { margin:5px 0; padding:5px 8px; border:1px dashed #ffd24a; border-radius:6px; color:#ffd24a; font-size:12px; cursor:pointer; }
 #inspect .in-sell { margin-top:8px; text-align:center; background:#5b1e1e; color:#ffb0b0; border:1px solid #7a3030; border-radius:7px; padding:5px; cursor:pointer; font-weight:bold; }
 #inspect .in-sell:hover { background:#7a2626; border-color:#ff9a9a; }
 /* ===== 棋子详情面板（停靠右栏：装备栏上方） ===== */
@@ -840,15 +844,84 @@ const SKILL_VAR = {
   rinco:  {pow:1.15, fx:[['silence',1.5],['vamp',.20]], txt:'十二点准时拉闸：命中者额外沉默 1.5 秒，自身获得 20% 吸血'},
 };
 const svOf=id=>SKILL_VAR[id]||{};
-/* 装备 */
+/* 装备：6 件基础装（野怪掉落池）+ 13 件合成成品（两件基础装 → 一件成品，TFT 式）。
+   成品效果 = 两件基础效果并集 + 一条专属新效果（战斗生效见 makeBattleUnit 的 ITEM_FX 表）。
+   crafted 标记：成品只来自合成，绝不进入野怪掉落池（掉落件数/频率不变）。 */
 const ITEMS = {
   sword:{n:'屠龙大剑', e:'🗡', desc:'+40% 攻击'},
   staff:{n:'秘法权杖', e:'🪄', desc:'+25% 攻击'},
   armor:{n:'骑士板甲', e:'🛡', desc:'+30% 生命'},
   bow:  {n:'疾风反曲弓',e:'🏹', desc:'+35% 攻速'},
   vamp: {n:'饮血魔剑', e:'🩸', desc:'攻击吸血 20%'},
-  mana: {n:'潮汐法螺', e:'🔮', desc:'攻击/受击回蓝效率 +100%，更快施放技能'},
+  mana: {n:'潮汐法螺', e:'🔮', desc:'攻击/受击回蓝效率 +100%'},
+  /* —— 合成成品 —— */
+  flamejudge:{n:'炽焰裁决剑', e:'⚡', crafted:1, from:['sword','sword'], desc:'+80% 攻击 · 20% 暴击（暴伤 2.5×）'},
+  galehunt:  {n:'疾风猎杀',   e:'🌪', crafted:1, from:['sword','bow'],   desc:'+25% 攻击 · +35% 攻速'},
+  soulblade: {n:'饮魂战刃',   e:'💀', crafted:1, from:['sword','vamp'],  desc:'+40% 攻击 · 吸血 20% · 击杀回复 15% 生命'},
+  sagestaff: {n:'贤者遗杖',   e:'📜', crafted:1, from:['staff','staff'], desc:'+50% 攻击 · 技能伤害 +18%'},
+  hexdrinker:{n:'噬魔之拥',   e:'🪄', crafted:1, from:['staff','vamp'],  desc:'+25% 攻击 · 技能伤害 15% 吸血'},
+  tidejewel: {n:'蓝玉潮涌',   e:'💠', crafted:1, from:['staff','mana'],  desc:'+25% 攻击 · 开局 +20 蓝'},
+  aegis:     {n:'不朽圣盾',   e:'🛡', crafted:1, from:['armor','armor'], desc:'+45% 生命 · 每 3 秒获得 8% 生命护盾'},
+  bramble:   {n:'荆棘反甲',   e:'🌵', crafted:1, from:['armor','vamp'],  desc:'+30% 生命 · 受击反弹 4% 最大生命'},
+  windmail:  {n:'灵风甲胄',   e:'🍃', crafted:1, from:['armor','bow'],   desc:'+30% 生命 · +35% 攻速 · 闪避 12%'},
+  twinbows:  {n:'旋风连弩',   e:'🎯', crafted:1, from:['bow','bow'],     desc:'+70% 攻速 · 普攻 25% 概率弹射'},
+  swiftecho: {n:'迅影回响',   e:'💠', crafted:1, from:['bow','mana'],    desc:'+35% 攻速 · 每秒回 3 蓝'},
+  bloodcore: {n:'血魔之心',   e:'❤', crafted:1, from:['vamp','vamp'],   desc:'吸血 35% · 技能伤害 15% 吸血'},
+  twinshell: {n:'双生海螺',   e:'🐚', crafted:1, from:['mana','mana'],   desc:'攻击/受击回蓝效率 +200%'},
 };
+/* 合成配方表：'a|b'（字典序）→ 成品 key。未列出的组合（如 bow+vamp）不开放合成，按原效果独立佩戴 */
+const COMBOS={};
+Object.keys(ITEMS).forEach(k=>{ const f=ITEMS[k].from; if(f) COMBOS[[...f].sort().join('|')]=k; });
+function comboKey(a,b){ return [a,b].sort().join('|'); }
+/* 输出/防御装备分类（bot 穿戴决策用；成品按其攻向归类） */
+function isDmgItem(k){ return ['sword','staff','bow','vamp','flamejudge','galehunt','soulblade','sagestaff','hexdrinker','tidejewel','twinbows','swiftecho','bloodcore'].includes(k); }
+function comboOf(a,b){ return COMBOS[comboKey(a,b)]||null; }
+/* 背包内合成一对基础装（i/j 为 S.items 下标）；返回成品 key 或 null */
+function combineBagPair(i,j){
+  if(S.phase!=='prep') return null;
+  const a=S.items[i], b=S.items[j];
+  const prod=comboOf(a,b);
+  if(!prod) return null;
+  const hi=Math.max(i,j), lo=Math.min(i,j);
+  S.items.splice(hi,1); S.items.splice(lo,1);
+  S.items.push(prod);
+  log(`⛓ 装备合成：${ITEMS[a].e}${ITEMS[a].n} + ${ITEMS[b].e}${ITEMS[b].n} → ${ITEMS[prod].e}${ITEMS[prod].n}（${ITEMS[prod].desc}）`);
+  renderAll();
+  return prod;
+}
+/* 棋子已佩戴的两件就地合成（腾出的格子保留空位） */
+function combineWorn(u){
+  if(!u || (u.items||[]).length<2) return null;
+  const prod=comboOf(u.items[0],u.items[1]);
+  if(!prod) return null;
+  u.items=[prod];
+  log(`⛓ ${byId(u.id).name} 佩戴装备就地合成 → ${ITEMS[prod].e}${ITEMS[prod].n}（${ITEMS[prod].desc}）`);
+  renderAll();
+  return prod;
+}
+function combineWornByUid(uid){   // 详情面板就地合成入口（合成后刷新详情）
+  const pos=findUnit(uid); if(!pos) return;
+  const u=getAt(pos[0],pos[1]);
+  if(combineWorn(u)) showInspect(u);
+}
+/* 机器人用：把背包与场上所有可合成的对子全部合成（返回合成次数） */
+function botCombineItems(){
+  if(S.phase!=='prep') return 0;
+  let n=0;
+  for(let guard=0; guard<20; guard++){
+    let done=false;
+    outer:
+    for(let i=0;i<S.items.length;i++) for(let j=i+1;j<S.items.length;j++){
+      if(comboOf(S.items[i],S.items[j])){ combineBagPair(i,j); n++; done=true; break outer; }
+    }
+    if(!done){
+      const all=[...S.board,...S.bench];
+      for(const u of all){ if(u && (u.items||[]).length>=2 && comboOf(u.items[0],u.items[1])){ combineWorn(u); n++; done=true; break; } }
+    }
+    if(!done) break;
+  }
+  return n;
+}
 /* 敌方阵容原型池：每回合随机抽一个流派（不再固定轮换），配合梯队布阵与羁绊结算，
    敌方每局每回合的阵容构成、站位、羁绊都不同 */
 const ENEMY_ARCHETYPES=[
@@ -1304,11 +1377,19 @@ function renderSynergy(){
 function renderEquip(){
   const e=$('equip');
   if(!S.items.length){ e.innerHTML='<span style="color:#6b6288;font-size:12px">暂无装备，战斗胜利后掉落</span>'; return; }
-  e.innerHTML='';
+  // 可合成预览：背包内两件基础装凑成配方时给出合成入口（未定义配方的组合不强凑，保持独立佩戴）
+  const pairs=[];
+  for(let i=0;i<S.items.length;i++) for(let j=i+1;j<S.items.length;j++){
+    const prod=comboOf(S.items[i],S.items[j]);
+    if(prod) pairs.push({i,j,prod,a:S.items[i],b:S.items[j]});
+  }
+  e.innerHTML=pairs.slice(0,3).map(p=>
+    `<div class="combo-row" title="合成预览：${ITEMS[p.a].n} + ${ITEMS[p.b].n} → ${ITEMS[p.prod].n}（${ITEMS[p.prod].desc}）">⛓ ${ITEMS[p.a].e}+${ITEMS[p.b].e}→${ITEMS[p.prod].e}${ITEMS[p.prod].n}
+      <button class="btn" style="padding:1px 8px;font-size:11px;margin-left:4px" onclick="combineBagPair(${p.i},${p.j})">合成</button></div>`).join('');
   S.items.forEach((k,i)=>{
     const it=ITEMS[k];
     const c=document.createElement('div');
-    c.className='item-chip'+(S.selItem===i?' sel':'');
+    c.className='item-chip'+(S.selItem===i?' sel':'')+(it.crafted?' crafted':'');
     c.title=it.desc+'（拖到棋子上穿戴，或点选后再点棋子）';
     c.innerHTML=`${it.e} ${it.n}`;
     c.onclick=()=>{ S.selItem = S.selItem===i?null:i; renderEquip(); };
@@ -1420,6 +1501,7 @@ function showInspect(u){
     <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
     <div class="in-desc">${skillDesc(u)}</div>
     <div class="in-item">🎒 装备：${items}</div>
+    ${(u.items&&u.items.length>=2&&comboOf(u.items[0],u.items[1]))?`<div class="in-combo" onclick="combineWornByUid(${u.uid})">⛓ 就地合成 → ${(()=>{const pr=comboOf(u.items[0],u.items[1]);return ITEMS[pr].e+ITEMS[pr].n;})()}（${ITEMS[comboOf(u.items[0],u.items[1])].desc}）</div>`:''}
     <div class="in-sell" onclick="sellInspect()">💸 出售（+${sellRefund(u)}💰）</div>`;
   S.inspectUid=u.uid;
 }
@@ -1943,6 +2025,30 @@ function bsRec(u){
   return battleStats.units[u.uid] || (battleStats.units[u.uid]={side:u.side, name:byId(u.id).name, deal:0, take:0, heal:0, kills:0});
 }
 function bsHeal(u, real){ if(real>0){ const r=bsRec(u); if(r) r.heal+=real; } }
+/* 装备战斗生效表（基础装 + 合成成品统一走这里）。成品新通道：
+   critPct/critItemM 暴击、skillVamp 技能吸血、thorns 反伤、shieldTick 周期护盾、
+   manaStart 开局蓝、manaPerSec 每秒回蓝、killHeal 击杀回复、bounceP 弹射、skMul 技伤 */
+const ITEM_FX={
+  sword:b=>b.atkMul*=1.4,
+  staff:b=>b.atkMul*=1.25,
+  armor:b=>b.hpMul*=1.3,
+  bow:  b=>b.spdMul*=1.35,
+  vamp: b=>b.vamp=Math.max(b.vamp,0.2),
+  mana: b=>b.manaRegenMul=Math.max(b.manaRegenMul||1,2),
+  flamejudge:b=>{b.atkMul*=1.8; b.critPct=(b.critPct||0)+0.20; b.critItemM=2.5;},
+  galehunt:  b=>{b.atkMul*=1.25; b.spdMul*=1.35;},
+  soulblade: b=>{b.atkMul*=1.4; b.vamp=Math.max(b.vamp,0.2); b.killHeal=0.15;},
+  sagestaff: b=>{b.atkMul*=1.5; b.skMul=(b.skMul||1)+0.18;},
+  hexdrinker:b=>{b.atkMul*=1.25; b.skillVamp=0.15;},
+  tidejewel: b=>{b.atkMul*=1.25; b.manaStart=(b.manaStart||0)+20;},
+  aegis:     b=>{b.hpMul*=1.45; b.shieldTick=0.08; b.itemShieldCd=3000;},
+  bramble:   b=>{b.hpMul*=1.3; b.thorns=Math.max(b.thorns||0,0.04);},
+  windmail:  b=>{b.hpMul*=1.3; b.spdMul*=1.35; b.dodge=Math.max(b.dodge||0,0.12);},
+  twinbows:  b=>{b.spdMul*=1.7; b.bounceP=Math.max(b.bounceP||0,0.25);},
+  swiftecho: b=>{b.spdMul*=1.35; b.manaPerSec=(b.manaPerSec||0)+3;},
+  bloodcore: b=>{b.vamp=Math.max(b.vamp,0.35); b.skillVamp=0.15;},
+  twinshell: b=>{b.manaRegenMul=Math.max(b.manaRegenMul||1,3);},
+};
 function makeBattleUnit(u, side, x, y){
   const d=byId(u.id);
   const b={...u, side, x, y, cd:0, moveCd:0, skillCd:0, maxmana:50, shield:0, frozen:0, rapid:0,
@@ -1951,14 +2057,9 @@ function makeBattleUnit(u, side, x, y){
     tauntT:0, silenceT:0, blockCt:0, blockDmg:.5, blockT:0, thorns:0, thornsT:0, drBuff:0, drBuffT:0,
     arDown:0, arDownT:0, mrDown:0, mrDownT:0, hexT:0, petrifyT:0, dodge:0, crit:0};   // 破甲/减魔抗/变形/石化/闪避/暴击
   b.ar=d.ar||0; b.mr=d.mr||0;   // 抗性以图鉴数据为唯一来源（敌方镜像同样生效）
-  (u.items||[]).forEach(k=>{
-    if(k==='sword')b.atkMul*=1.4;
-    if(k==='staff')b.atkMul*=1.25;
-    if(k==='armor')b.hpMul*=1.3;
-    if(k==='bow')b.spdMul*=1.35;
-    if(k==='vamp')b.vamp=Math.max(b.vamp,0.2);
-    if(k==='mana')b.manaRegen=true; // 潮汐法螺：每秒回蓝翻倍
-  });
+  (u.items||[]).forEach(k=>{ if(ITEM_FX[k]) ITEM_FX[k](b); });   // 装备效果统一生效表
+  // 装备暴击与暴伤并入通用暴击通道（率与刺客羁绊相加封顶 60%、暴伤取最大——与 SKILL_VAR.p 专属暴击同一套合并规则）
+  if(b.critPct){ b.crit=Math.min(0.6,(b.crit||0)+b.critPct); b.critM=Math.max(b.critM||0,b.critItemM||0); }
   b.atk=Math.round(b.atk*b.atkMul);
   if(b.hpMul)b.maxhp=Math.round(b.maxhp*b.hpMul);
   b.hp=b.maxhp;
@@ -1971,8 +2072,8 @@ function makeBattleUnit(u, side, x, y){
     if(pv.vampPct) b.vamp=Math.max(b.vamp,pv.vampPct);          // 被动吸血
     if(pv.atkDot) b.pAtkDot=pv.atkDot;                          // 攻击附带毒伤
   }
-  // 多多官方：蓝量开局清零，仅靠攻击/受击回蓝攒满 100 施放大招
-  b.mana = 0;
+  // 多多官方：蓝量开局清零，仅靠攻击/受击回蓝攒满 100 施放大招（蓝玉潮涌：开局 +20 蓝）
+  b.mana = b.manaStart || 0;
   return b;
 }
 /* 开战人口兜底：场上人数 < 人口上限且备战席有货时，按「羁绊优先」自动上阵补满。
@@ -2119,15 +2220,15 @@ function startBattle(){
       if(dwRng>0 && hasFac(d,'学园')) u.rng+=dwRng;               // 刀塔矮人式：射程 +1
       if(facHp>0){ u.maxhp=Math.round(u.maxhp*(1+facHp)); u.hp=u.maxhp; }
       u.atk=Math.round(u.atk*atkMul);
-      u.spdMul=1+facSpd;
+      u.spdMul=(u.spdMul||1)+facSpd;   // 音律攻速为加法叠加：保留装备攻速（修复既有缺陷——原无条件赋值曾把弓类装备攻速清空）
       if(mrBuff>0) u.mr=Math.min(0.85,(u.mr||0)+mrBuff);          // 娜迦式：全队魔抗（封顶 85%）
       if(hasJob(d,'刀客') && waT>=1) u.ar += waT>=3?14 : waT>=2?11 : 7;      // 战士式护甲
       if(hasJob(d,'守护') && knP>0){ u.knightP=knP; u.knightSh=knSh; u.knightCd=3000; }  // 骑士式周期护盾
       if(hasJob(d,'游侠') && hgBounce>0) u.bounceP=hgBounce;       // 猎人式弹射
-      if(hasJob(d,'刺客') && asCrit>0){ u.crit=asCrit; u.critM=asCritM; }    // 刺客式常驻暴击
+      if(hasJob(d,'刺客') && asCrit>0){ u.crit=Math.min(0.6,(u.crit||0)+asCrit); u.critM=Math.max(u.critM||0,asCritM); }    // 刺客暴击与装备/专属暴击合并：率相加封顶60%、暴伤取大
       if(hasJob(d,'刺客')) u.moveMul=0.8;                        // 刺客职业特性：移动力 +25%（跳后排后步频更快、不易被围死）
       if(hasJob(d,'狂战') && wkVamp>0) u.vamp=Math.max(u.vamp,wkVamp);       // 术士式吸血
-      u.skMul=facSkMul; u.healMul=1; u.regen=regen;
+      u.skMul=(u.skMul||1)+facSkMul-1; u.healMul=1; u.regen=regen;   // 装备技伤加成与星际技伤叠加保留
       u.sonic = (hasJob(d,'歌势') && gT>=1) ? (gT>=2?2.0:1.0)+0.55*gCnt : 0; // 歌势音波（demo 原设计）
     });
     // 亡灵·夜幕：敌方全体减甲（护甲可被压至负数，物理伤害加深）
@@ -2171,6 +2272,7 @@ function startBattle(){
         if(u.hp<=0) continue;
         const hd = u.healDownT>0 ? (1-u.healDownA) : 1;
         if(u.regen && u.hp<u.maxhp){ const rb=u.hp; u.hp=Math.min(u.maxhp,u.hp+u.regen*hd); bsHeal(u,u.hp-rb); }
+        if(u.manaPerSec && !isPassive(u) && u.silenceT<=0) u.mana=Math.min(u.maxmana,u.mana+u.manaPerSec);   // 迅影回响
         if(u.poisonT>0){ u.poisonT-=1000; u.hp-=u.poisonDmg;
           dmgPopup(null,u,'☠'+u.poisonDmg,'poison'); }
         if(u.thornsT>0){ u.thornsT-=1000; if(u.thornsT<=0){ u.thorns=0; u.thornsT=0; } } // 荆棘增益到期
@@ -2194,6 +2296,11 @@ function startBattle(){
         u.knightCd-=TICK;
         if(u.knightCd<=0){ u.knightCd=3000;
           if(Math.random()<u.knightP){ u.shield+=Math.round(u.maxhp*u.knightSh); dmgPopup(null,u,'🛡盾','cast'); } }
+      }
+      if(u.shieldTick){                               // 不朽圣盾：每 3 秒稳定获得 8% 生命护盾（禁盾期间不生效）
+        if(u.itemShieldCd>0) u.itemShieldCd-=TICK;
+        else { u.itemShieldCd=3000;
+          if(u.noShieldT<=0){ u.shield+=Math.round(u.maxhp*u.shieldTick); vfxAt(u,'ring shield',800); } }
       }
       if(u.blockT>0){ u.blockT-=TICK; if(u.blockT<=0){ u.blockCt = (u.pv&&u.pv.blockCt)||0; u.blockT=0; } } // 格挡增益到期（被动格挡常驻）
       if(u.drBuffT>0){ u.drBuffT-=TICK; if(u.drBuffT<=0){ u.drBuff=0; u.drBuffT=0; } }   // 减伤增益到期
@@ -2288,7 +2395,7 @@ function startBattle(){
           // 攻击回蓝（多多公式×2 配合快节奏）：按最终实际伤害 ÷1.25，法师/咒术/医者单次上限 30、其余 15
           if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && dealt>0){
             const cap30 = d.job==='法师'||d.job==='咒术'||d.job==='医者';
-            u.mana=Math.min(u.maxmana, u.mana+Math.min(dealt/1.25, cap30?30:15)*(u.manaRegen?2:1));
+            u.mana=Math.min(u.maxmana, u.mana+Math.min(dealt/1.25, cap30?30:15)*(u.manaRegenMul||1));
           }
         }
       } else if(u.moveCd<=0){
@@ -2355,9 +2462,12 @@ function dealDamage(src,tgt,dmg,units,dtype){
   // 受击回蓝（多多公式×2）：随机回蓝 min(伤害/5,15) ~ min(伤害/2.5,30)
   if(dmg>0 && !isPassive(tgt) && tgt.silenceT<=0){
     const lo=Math.min(dmg/5,15), hi=Math.min(dmg/2.5,30);
-    tgt.mana=Math.min(tgt.maxmana, tgt.mana+(hi>lo? lo+Math.random()*(hi-lo): lo)*(tgt.manaRegen?2:1));
+    tgt.mana=Math.min(tgt.maxmana, tgt.mana+(hi>lo? lo+Math.random()*(hi-lo): lo)*(tgt.manaRegenMul||1));
   }
-  if(src && src.vamp && src.hexT<=0 && src.hp<src.maxhp){ src.hp=Math.min(src.maxhp, src.hp+Math.round(dmg*src.vamp)); threadFx(src,tgt); }
+  if(src && src.vamp && src.hexT<=0 && src.hp<src.maxhp && dmg>0){ src.hp=Math.min(src.maxhp, src.hp+Math.round(dmg*src.vamp)); threadFx(src,tgt); }   // 吸血：普攻与技能伤害均生效（保持既有语义）
+  if(src && src.skillVamp && src._casting===true && src.hexT<=0 && src.hp<src.maxhp && dmg>0){
+    const sv2=Math.round(dmg*src.skillVamp); const real=Math.min(src.maxhp,src.hp+sv2)-src.hp; src.hp+=real; bsHeal(src,real); threadFx(src,tgt);
+  }
   if(src && src.poisonAtk && src.hexT<=0 && tgt.hp>0){ tgt.poisonT=3000; tgt.poisonDmg=Math.round(tgt.maxhp*(src.poisonPow||0.02)); }
   if(src && src.pAtkDot && src.hexT<=0 && tgt.hp>0){ tgt.poisonT=3000; tgt.poisonDmg=Math.round(tgt.maxhp*src.pAtkDot); }
   if(tgt.thorns && src && src.hp>0 && dmg>0){ src.hp-=Math.max(1,Math.round(tgt.maxhp*tgt.thorns)); dmgPopup(null,src,'荆棘','cast'); }
@@ -2370,6 +2480,10 @@ function dealDamage(src,tgt,dmg,units,dtype){
     if(src && src.side===0) S.stats.kills++;
     if(src){ const rk=bsRec(src); if(rk) rk.kills++; }
     log(`💀 ${src&&src.side===0?'我方':'敌方'}${src?byId(src.id).name:'?'} 击败 ${byId(tgt.id).name}`);
+    if(src && src.killHeal && src.hp>0 && src.hp<src.maxhp){   // 饮魂战刃：击杀回复自身生命
+      const kh=Math.round(src.maxhp*src.killHeal); const real=Math.min(src.maxhp,src.hp+kh)-src.hp; src.hp+=real; bsHeal(src,real);
+      dmgPopup(src,src,'+'+real,'heal');
+    }
   }
   return dmg;
 }
@@ -2725,6 +2839,7 @@ function applyFx(u,f,sv,units,allies,foes,power,dmg){
 function castSkill(u,tgt,units,skMul){
   const d=byId(u.id), [nm,arch]=d.sk;
   const sv=svOf(u.id);
+  u._casting=true;   // 施法标记：dealDamage 的技能吸血通道据此区分技能伤害与普攻伤害（同步清除）
   const power = Math.round(eatk(u)*(u.side===0?skMul:1)*d.skc*(u.sks||1)*(sv.pow||1)); // 技能倍率随星级增强 × 棋子变体
   const allies = units.filter(v=>v.hp>0&&v.side===u.side);
   const foes = units.filter(v=>v.hp>0&&v.side!==u.side);
@@ -2987,6 +3102,7 @@ function castSkill(u,tgt,units,skMul){
       dmgPopup(u,f2,'🎵音波','cast');
     }
   }
+  u._casting=false;   // 施法结束：技能吸血通道关闭（castSkill 同步执行完毕，异常路径由下一帧覆盖）
 }
 function dmgPopup(src,tgt,text,cls){
   const b=$('board');
@@ -3083,7 +3199,7 @@ function endBattle(alive0,alive1){
     addGold(Math.min(5,Math.floor(S.gold/10)),'存款利息（每10金+1，上限5）',blk); };
   if(isCreep){
     /* 野怪回合：失败不扣血、不影响连胜；掉落装备——胜利 2 件、失败也有 1 件（保底） */
-    const dropGear = n=>{ const keys=Object.keys(ITEMS);
+    const dropGear = n=>{ const keys=Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted);   // 成品不进掉落池
       for(let i=0;i<n;i++){ const k=keys[Math.floor(Math.random()*keys.length)];
         S.items.push(k); blk.push(`　🎁 掉落：${ITEMS[k].e} ${ITEMS[k].n}（${ITEMS[k].desc}）`); } };
     if(won){

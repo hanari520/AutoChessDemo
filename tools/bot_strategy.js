@@ -10,11 +10,13 @@ function botPrep() {
   const myTags = new Set(mainTags);
   S.board.filter(Boolean).forEach(u => { const d = byId(u.id); myTags.add(d.fac); myTags.add(d.job); });
 
+  // 0) 装备合成：穿装备前先把背包/已佩戴可合成的两件基础装合成成品（TFT 式运营），再按原逻辑穿戴
+  if (typeof botCombineItems === 'function') botCombineItems();
   // 1) 穿装备：输出装给高攻主C，防御装给前排
   let guard = 0;
   while (S.items.length > 0 && guard++ < 10) {
     const it = S.items[0];
-    const dmgItem = ['sword','staff','bow','vamp'].includes(it);
+    const dmgItem = (typeof isDmgItem === 'function') ? isDmgItem(it) : ['sword','staff','bow','vamp'].includes(it);
     let ti = -1, best = -1;
     S.board.forEach((u, i) => {
       if (!u) return; if (!u.items) u.items = [];
