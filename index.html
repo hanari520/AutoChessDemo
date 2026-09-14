@@ -632,7 +632,7 @@ const UNITS = [
   {id:'shiliu', name:'十六萤',      cost:4, fac:'森之国',  job:'刺客', job2:'游侠', hp:80,  atk:13, rng:3, spd:1.2, sk:['浣熊洗劫','break']},
   {id:'seki',   name:'星汐',        cost:4, fac:'P-SP',    job:'咒术', fac2:'魔道', hp:46,  atk:16, rng:3, spd:0.7, sk:['星蚀低语','silence']},
   {id:'haruka', name:'白神遥',      cost:4, fac:'P-SP',    job:'刀客', hp:58,  atk:12, rng:1, spd:1.1, sk:['白刃拍击','cleave']},
-  {id:'mielie', name:'咩栗',        cost:5, fac:'毛茸乐园', job:'狂战', hp:68,  atk:13, rng:1, spd:1.10,sk:['栗刺旋风','cleave']},
+  {id:'mahiru', name:'真绯瑠',      cost:5, fac:'毛茸乐园', job:'狂战', hp:68,  atk:13, rng:1, spd:1.10,sk:['绯红旋风','cleave']},
   // ---------- 5 费（8 人 × 10 张） ----------
   {id:'nana7mi',name:'七海Nana7mi', cost:5, fac:'深海',    job:'刀客', hp:62,  atk:12, rng:1, spd:1.05,sk:['鲨皇旋流','cleave']},
   {id:'liAn',   name:'梨安',        cost:5, fac:'四禧丸子', job:'法师', hp:48,  atk:17, rng:3, spd:0.7, sk:['海豚安魂曲','massfreeze']},
@@ -645,8 +645,8 @@ const UNITS = [
 ];
 /* ===== 攻击形式：近战(me)/远程(rg) × 物理(phys)/法术(magic) =====
    职业默认：刀客/守护/狂战/刺客=近战物理，游侠=远程物理，法师/咒术/歌势/医者/偶像=远程法术 */
-const MELEE_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shadow','sumi','haruka','rinco','aza','lianshiye','hoshimi','chiharu','nox','mielie']);
-const PHYS_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco','yuji','yujiu','sishi','aza','lianshiye','hoshimi','chiharu','nox','mielie']);
+const MELEE_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shadow','sumi','haruka','rinco','aza','lianshiye','hoshimi','chiharu','nox','mahiru']);
+const PHYS_IDS = new Set(['ein','kouichi','yukie','goutan','kanban','zhouyi','miyue','taodai','youyu','quanrong','nana7mi','youyi','zhijin','songlv','shiliu','shadow','sumi','haruka','rinco','yuji','yujiu','sishi','aza','lianshiye','hoshimi','chiharu','nox','mahiru']);
 UNITS.forEach(u=>{ u.form = MELEE_IDS.has(u.id)?'me':'rg'; u.dtype = PHYS_IDS.has(u.id)?'phys':'magic'; });
 /* ===== 双标签（刀塔式兼职）：第二阵营/第二职业 fac2/job2 只参与「羁绊计数」，
    站位分带/抗性/攻击形式一律取主标签（改造面最小、行为可预期） ===== */
