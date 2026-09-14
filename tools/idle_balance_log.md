@@ -1,0 +1,49 @@
+# 平衡迭代日志（2026-09-15 起）
+
+## Phase 0 通读（完成）
+- syn_check：50 棋子 / 12 阵营 / 10 职业，0 结构问题。
+- 难度链（index.html genEnemy ~L1678-1736）：`cap` 费用解锁 → `dyn`（连败救济/濒死救济/连胜 4+ 一刀切 ×1.1）→ `mul = 0.985*(1.22+2.60*prog^1.22)*dyn*0.85` → 单兵乘 `mul*(bossMult)*STAR_M^star*0.92`。bossMult 档：r<10:1.0 / <15:1.08 / <20:1.15 / <25:1.20 / 25:1.68。
+- dynTxt（~L1150）与 dyn 逻辑要同步改。
+- 羁绊结算块 L1831-1939（双方对称生效，敌方同门军团 30% 概率真实触发羁绊）。
+- 特效系统：vfxAt（挂棋子元素）/vfxAoe/fireProjectile(rAF)/beam/dmgPopup；CSS .vfx.{ring,aoe,boom,flash,beam,proj,slash,crit}，全部 calc(x/var(--spd)) 缩放。renderBoard 每次 innerHTML='' 重建 → 战斗结束棋盘零残留有保证。
+- sim.js/syn_test.js：DOM 桩 style 为普通对象（**不能用 style.setProperty**，用 style['--xx'] 赋值）；rAF 返回 0 不回调；setTimeout 进 fakeTimers。
+- ⚠ 疑点：castSkill switch 无 `case 'petrify'`（点酥·邪修石符 sk[1]='petrify'），SKILL_VAR.diansu={pow:1} 也无 fx → 该技能疑似空转（只有施法文案+popups，无伤害无控制）。Phase 2 基线后用 DBG 验证，若属实按缺陷修复处理（计入魔道/刺客强度）。
+- 战斗单位无 job 字段 → 用 byId(u.id).job；双标签走 hasJob/hasFac。
+
+## Phase 1 视觉特效升级（完成，commit 待提交）
+实现（纯视觉，不动数值/判定/布局）：
+- 新增 fxNode 预算层：**全部 .vfx 生成通道**（fxNode 自由粒子 + vfxAt 挂载 + vfxAoe + beam + fireProjectile）统一计入 _vfxN≤40，到时 remove，时长/SPEED 缩放；vfxAt 原先 remove 不除 SPEED 的不一致一并修正。
+- 原型落地：pt 火花/chip 碎屑/shard(ice/gl/stone) 碎片/slashline 斩击线(带攻击方向)/rune 符文/impact 冲击圈/proj 拖尾+magic 白芯/sweep 扇形剑气/shock 冲击波/smoke+squash 变形/crack 石化/staticring 静电环/bolt(+su) 闪电/ember 余烬/mote 光点/pillar 光柱/thread 吸血丝线/dying 灰化死亡/crit 大数字+quake 棋盘震。
+- 挂点：currentTick（近战 hitFx/暴击分支/petrifyProc/silProc）、dealDamage（vamp→threadFx）、startBattle（咒术开战变形 hexFx）、castSkill（cleave/heal/aheal/fireball/frost/break/slam/burn/silence/chain/massfreeze/shred/sunder/hex/masssilence）、renderBattle（deathFx）。
+- 验收：语法 OK；sim 3 局冒烟 OK；浏览器 3 局全程 × 25 回合：peak=40（贴预算上限达标）、残留 0、console 0 报错；特效画廊（2× 缩放+裁剪棋盘）21 原型全部清晰可见、三色碎片/双闪电可区分、无重叠溢出。首轮画廊发现的"过小过淡"已通过加大粒子(6→9px/加光晕)、碎片(11→16px)、斩击线(38×3→48×4)修正后复验通过。
+
+## Phase 2 基线（特效升级后数值体系，N 见下）
+- 整体（sim N=300）：**通关率 63.0%**（目标 55~65，偏上沿）；失败回合 {24:1, 25:110}；平均最高连胜 6.5；战斗时长均值 8.3s / 超时 0.0%。
+- 22 羁绊专精（syn_test N=100）：
+
+| 羁绊 | 档位 | 实测% | 目标% | 差值 | 判定 |
+|---|---|---|---|---|---|
+| 法师 | 输出 | 79.0 | 70 | +9.0 | 必须调 |
+| 星际 | 输出 | 76.0 | 70 | +6.0 | 微调 |
+| 毛茸乐园 | 输出 | 73.0 | 70 | +3.0 | 达标 |
+| 夜幕 | 输出 | 73.0 | 70 | +3.0 | 达标 |
+| 咒术 | 输出 | 68.0 | 70 | -2.0 | 达标 |
+| 刺客 | 输出 | 64.0 | 70 | -6.0 | 微调 |
+| 魔道 | 输出 | 59.0 | 70 | -11.0 | 必须调 |
+| 游侠 | 输出 | 59.0 | 70 | -11.0 | 必须调 |
+| 狂战 | 输出 | 58.0 | 70 | -12.0 | 必须调 |
+| 音律 | 普通 | 73.0 | 60 | +13.0 | 必须调 |
+| P-SP | 普通 | 69.0 | 60 | +9.0 | 必须调 |
+| 刀客 | 普通 | 66.0 | 60 | +6.0 | 微调 |
+| 守护 | 普通 | 65.0 | 60 | +5.0 | 达标(边界) |
+| 森之国 | 普通 | 60.0 | 60 | 0 | 达标 |
+| 深海 | 普通 | 59.0 | 60 | -1.0 | 达标 |
+| 歌势 | 普通 | 57.0 | 60 | -3.0 | 达标 |
+| 四禧丸子 | 普通 | 54.0 | 60 | -6.0 | 微调 |
+| 工造 | 普通 | 53.0 | 60 | -7.0 | 微调(边界) |
+| 偶像 | 辅助 | 78.0 | 50 | +28.0 | 必须调 |
+| 学园 | 辅助 | 69.0 | 50 | +19.0 | 必须调 |
+| 花语 | 辅助 | 64.0 | 50 | +14.0 | 必须调 |
+| 医者 | 辅助 | 58.0 | 50 | +8.0 | 必须调(边界) |
+
+读数：辅助类全员偏高（偶像+28 最重）；输出类两极（法师+9 / 狂战-12）；普通类音律/P-SP 偏高、工造/四禧偏低。整体 63% 贴上限 → 辅助类下调与整体回落方向一致。
