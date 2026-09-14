@@ -39,6 +39,12 @@ GALLERY = """() => {
     put('pillar'),                                                     // 18 光柱
     put('thread', e=>{e.style.width='110px';e.style['--rot']='25deg';}), // 19 吸血丝线
     put('chip', e=>{e.style.background='#ffb14a';e.style['--dx']='-10px';e.style['--dy']='18px';}), // 20 碎屑
+    pt('#ff6b81','-20px','-6px'),                                      // 21 四禧丸子（阵营暖红）
+    pt('#6b5bd6','12px','-16px'),                                      // 22 夜幕（阵营冷紫）
+    pt('#6bffab','20px','10px'),                                       // 23 森之国（阵营薄荷绿）
+    put('charge'),                                                     // 24 施法蓄力预兆
+    put('staticring s3'),                                              // 25 3★ 分层（放大+金晕）
+    put('crit gold'),                                                  // 26 专属暴击金色爆闪
   ];
   // 铺在我方半区空行（4~6 行），每格一个原型，间隔铺开避免重叠
   items.forEach((fn, i) => { const col = 1 + (i % 7), row = 4 + Math.floor(i / 7); fn(col, row); });

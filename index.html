@@ -359,6 +359,10 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   animation:boom calc(.4s/var(--spd)) ease-out forwards; }
 /* 刺客暴击：紫色爆裂特效 */
 .vfx.crit.gold { background:radial-gradient(circle,#ffd24acc 15%,#c8960a66 50%,transparent 72%); box-shadow:0 0 16px #ffd24a99; }
+.vfx.charge { border:2px solid #fff; border-radius:50%; box-shadow:0 0 12px #ffffff66, inset 0 0 8px #ffffff44; opacity:0;
+  animation:chargeIn calc(.26s/var(--spd)) ease-in forwards; }
+@keyframes chargeIn { 0%{transform:scale(1.8);opacity:0} 55%{opacity:.95} 100%{transform:scale(.5);opacity:0} }
+.vfx.s3 { zoom:1.25; filter:drop-shadow(0 0 5px #ffd24abb); }   /* 3★ 施法特效分层：放大 + 金晕 */
 .vfx.crit { border-radius:50%; background:radial-gradient(circle,#c77dffaa 15%,#7a3fd455 50%,transparent 72%);
   animation:boom calc(.5s/var(--spd)) ease-out forwards; }
 /* ===== 命中/技能特效扩展（纯装饰层：transform/opacity 动画，时长随 --spd 缩放；
@@ -487,6 +491,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
     <button class="btn" id="helpBtn">❓ 玩法</button>
     <button class="btn" id="resetBtn" title="放弃当前进度，重新开一局">🔄 重开</button>
     <button class="btn" id="endBtn" style="display:none;background:#5b1e1e;color:#ffb0b0" title="结束无限模式，直接查看本局结算">🏁 结束挑战</button>
+    <button class="btn" id="sfxBtn" title="音效开关">🔊</button>
     <span class="tag" style="display:flex;gap:4px;align-items:center;padding:3px 8px">⏩
       <button class="spd-b on" data-s="1">1×</button>
       <button class="spd-b" data-s="1.5">1.5×</button>
@@ -888,6 +893,7 @@ function combineBagPair(i,j){
   const hi=Math.max(i,j), lo=Math.min(i,j);
   S.items.splice(hi,1); S.items.splice(lo,1);
   S.items.push(prod);
+  sfx('equip');
   log(`⛓ 装备合成：${ITEMS[a].e}${ITEMS[a].n} + ${ITEMS[b].e}${ITEMS[b].n} → ${ITEMS[prod].e}${ITEMS[prod].n}（${ITEMS[prod].desc}）`);
   renderAll();
   return prod;
@@ -978,7 +984,7 @@ const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节
 const XP_NEED = {1:1, 2:2, 3:3, 4:5, 5:8, 6:12, 7:16, 8:20, 9:28, 10:36};
 function xpNeed(lvl){ return XP_NEED[lvl]||Infinity; }
 function checkLevel(){ let need=xpNeed(S.lvl);
-  while(S.lvl<11 && S.xp>=need){ S.lvl++; S.xp-=need; log('⬆ 人口升级至 '+S.lvl+'（回合经验积累）'); need=xpNeed(S.lvl); } }
+  while(S.lvl<11 && S.xp>=need){ S.lvl++; S.xp-=need; sfx('pop'); log('⬆ 人口升级至 '+S.lvl+'（回合经验积累）'); need=xpNeed(S.lvl); } }
 
 /* ================= 状态 ================= */
 let S;
@@ -1000,6 +1006,102 @@ function initPool(){ UNITS.forEach(u=>{ S.pool[u.id]=POOL_COPIES[u.cost]; }); } 
 const $=id=>document.getElementById(id);
 function log(t){ S.log.unshift(t); if(S.log.length>60)S.log.pop();   // 上限 60：结算块 6~9 行/回合，40 会把上回合块冲掉太快
   $('log').innerHTML = S.log.map(x=>'· '+x).join('<br>'); }
+/* ================= 声音系统（Web Audio 程序化合成，纯表现层） =================
+   单一 sfx(key) 入口；无 AudioContext（sim 桩/无头环境）一律静默 no-op；
+   同 key ≥100ms 限流 + 全局并发 ≤8 voices + 音高 ±5% 微调；音效绝不改变任何结算顺序/时序/数值。 */
+let _actx=null, _sfxOn=true;
+try{ _sfxOn = localStorage.getItem('vc_sfx')!=='0'; }catch(e){}
+const SFX_BUS={ui:.5, battle:.42, global:.6};   // 分类音量总线（默认克制）
+const SFX_DEF={
+  buy:{t:'ui',f:[880,1318],dur:.10,type:'sine',vol:.5},          // 购买：清脆金币叮
+  sell:{t:'ui',f:[520,340],dur:.13,type:'triangle',vol:.45},     // 出售：金币回笼（低沉）
+  roll:{t:'ui',f:[320,230],dur:.07,type:'square',vol:.12,noise:.25}, // 刷新：轻纸声
+  lvlup:{t:'ui',f:[440,660,880],dur:.28,type:'triangle',vol:.45},// 买经验：上扬短音
+  pop:{t:'ui',f:[392,523,659,784],dur:.45,type:'triangle',vol:.5},// 人口升级：更隆重
+  equip:{t:'ui',f:[1250,940],dur:.06,type:'square',vol:.18},     // 装备穿戴：金属轻扣
+  deploy:{t:'ui',f:[500,720],dur:.11,type:'sawtooth',vol:.2,noise:.18}, // 一键上阵：唰
+  tidy:{t:'ui',noise:.7,dur:.09,type:'noise',vol:.2},            // 整理备战席：轻刷
+  drag:{t:'ui',f:[700],dur:.045,type:'sine',vol:.16},            // 拿起棋子
+  sellhint:{t:'ui',f:[900,1250],dur:.08,type:'sine',vol:.28},    // 进入出售区
+  merge2:{t:'ui',f:[523,659,784],dur:.3,type:'triangle',vol:.5},     // 2★ 升星琶音
+  merge3:{t:'ui',f:[523,659,784,1046,1318],dur:.65,type:'triangle',vol:.55}, // 3★ 长琶音
+  slash:{t:'battle',noise:.5,f:[900,320],dur:.13,type:'sawtooth',vol:.3},   // 斩击 whoosh
+  spellFire:{t:'battle',f:[210,90],dur:.24,type:'sawtooth',vol:.32,noise:.25}, // 爆裂
+  spellIce:{t:'battle',f:[1500,950,620],dur:.22,type:'sine',vol:.28},          // 冰晶
+  spellZap:{t:'battle',f:[1800,420],dur:.09,type:'square',vol:.22},            // 电弧
+  spellDark:{t:'battle',f:[300,150,80],dur:.3,type:'triangle',vol:.3,noise:.2},// 暗雾
+  heal:{t:'battle',f:[620,930],dur:.18,type:'sine',vol:.28},       // 治疗：柔和上扬
+  shield:{t:'battle',f:[220,330],dur:.2,type:'sine',vol:.3},       // 护盾：能量罩嗡
+  stunHit:{t:'battle',f:[150,80],dur:.15,type:'square',vol:.32,noise:.15}, // 控制命中：闷响
+  crit:{t:'battle',f:[1000,1650],dur:.1,type:'square',vol:.42},    // 暴击：更响更高
+  die:{t:'battle',f:[220,110],dur:.2,type:'triangle',vol:.28},     // 死亡：低沉（限流防齐响）
+  win:{t:'global',f:[523,659,784,1046],dur:.5,type:'triangle',vol:.5},   // 胜利 jingle
+  lose:{t:'global',f:[420,300,200],dur:.5,type:'triangle',vol:.45},      // 失败 jingle
+  finalWin:{t:'global',f:[523,659,784,1046,1318],dur:1.0,type:'triangle',vol:.55}, // 通关
+  horn:{t:'global',f:[262,262,330],dur:.55,type:'sawtooth',vol:.32},     // 野怪号角预警
+  settle:{t:'global',f:[740],dur:.06,type:'sine',vol:.16},       // 回合结算轻提示
+};
+const SFX_SKILL={cleave:'slash',dash:'slash',shred:'slash',rapid:'slash',
+  fireball:'spellFire',burn:'spellFire',volley:'spellFire',
+  frost:'spellIce',massfreeze:'spellIce',chain:'spellZap',sunder:'spellZap',break:'spellZap',sonic:'spellZap',
+  purebolt:'spellDark',curse:'spellDark',hex:'spellDark',silence:'spellDark',masssilence:'spellDark',
+  heal:'heal',aheal:'heal',cleanse:'heal',manafeed:'heal',
+  shell:'shield',teamshield:'shield',guard:'shield',bulwark:'shield',tauntshield:'shield',
+  petrify:'stunHit',massstun:'stunHit',slam:'stunHit'};
+const _sfxLast={}; let _sfxVoices=0;
+function sfxCtx(){
+  if(_actx!==null) return _actx;
+  try{ const AC=(typeof window!=='undefined')&&(window.AudioContext||window.webkitAudioContext);
+    if(!AC) return (_actx=false); _actx=new AC(); }catch(e){ return (_actx=false); }
+  return _actx;
+}
+function sfx(key){
+  if(window.__sfxCount){ window.__sfxCount[key]=(window.__sfxCount[key]||0)+1; }   // DBG 计数（不计静音状态）
+  if(!_sfxOn) return;
+  const ctx=sfxCtx();
+  if(!ctx||ctx.state!=='running') return;   // 无音频环境/无手势：静默 no-op
+  const d=SFX_DEF[key]; if(!d) return;
+  if(window.__sfxPlayed!=null) window.__sfxPlayed++;   // DBG：实际发声计数（静音/无音频环境不增长）
+  const now=ctx.currentTime;
+  if(_sfxLast[key] && now-_sfxLast[key]<0.1) return;   // 同 key 限流 ≥100ms
+  if(_sfxVoices>=8) return;                            // 全局并发 ≤8 voices
+  _sfxLast[key]=now;
+  const vol=(d.vol||.3)*(SFX_BUS[d.t]||.5);
+  const step=(d.dur||.1)/Math.max(1,(d.f||[]).length);
+  try{
+    if(d.noise){   // 噪声层（纸声/whoosh/闷响颗粒）
+      const len=Math.max(1,Math.ceil(ctx.sampleRate*(d.dur||.1)));
+      const buf=ctx.createBuffer(1,len,ctx.sampleRate), ch=buf.getChannelData(0);
+      for(let i=0;i<len;i++) ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,1.6);
+      const src=ctx.createBufferSource(); src.buffer=buf;
+      const g=ctx.createGain(); g.gain.value=vol*Math.min(1,d.noise);
+      src.connect(g); g.connect(ctx.destination);
+      src.start(now); src.stop(now+(d.dur||.1)+.02);
+      _sfxVoices++; src.onended=()=>{ _sfxVoices--; };
+    }
+    if(d.type && d.type!=='noise' && (d.f||[]).length){   // 振荡器琶音（每音独立包络 + ±5% 音高抖动）
+      (d.f).forEach((f0,i)=>{
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type=d.type; o.frequency.value=Math.max(30, f0*(1+(Math.random()*.1-.05)));
+        const st=now+i*step*.62;
+        g.gain.setValueAtTime(.0001,st);
+        g.gain.exponentialRampToValueAtTime(Math.max(.001,vol), st+.012);
+        g.gain.exponentialRampToValueAtTime(.0001, st+step+.04);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(st); o.stop(st+step+.06);
+        _sfxVoices++; o.onended=()=>{ _sfxVoices--; };
+      });
+    }
+  }catch(e){}
+}
+/* 自动播放策略：首次用户手势 resume（此前静默不报错） */
+if(typeof document!=='undefined' && document.addEventListener){
+  const _sfxUnlock=()=>{ const c=sfxCtx(); if(c&&c.state==='suspended'){ try{c.resume();}catch(e){} } };
+  document.addEventListener('pointerdown',_sfxUnlock,{passive:true});
+  document.addEventListener('keydown',_sfxUnlock,{passive:true});
+}
+function paintSfxBtn(){ const b=$('sfxBtn'); if(!b) return; b.textContent=_sfxOn?'🔊':'🔇'; b.title=_sfxOn?'音效：开（点击静音，状态本地保存）':'音效：关（点击开启，状态本地保存）'; b.classList.toggle('on',_sfxOn); }
+function toggleSfx(){ _sfxOn=!_sfxOn; try{ localStorage.setItem('vc_sfx', _sfxOn?'1':'0'); }catch(e){} paintSfxBtn(); }
 function byId(id){ return UNITS.find(u=>u.id===id); }
 /* 经济分类记账（只增字段）：reason 关键词映射到 goldBy 分类，供战报结算块与一局总结使用 */
 const GOLD_CAT=[['基础收入','base'],['利息','interest'],['连胜','streak'],['连败','loss'],['胜利奖金','win'],['羁绊奖励','syn'],['出售','sell']];
@@ -1166,6 +1268,7 @@ function sellSelected(){
   (u.items||[]).forEach(k=>S.items.push(k)); // 装备卸下回装备栏
   setAt(pos[0],pos[1],null);
   S.selUid=null; hideInspect();
+  sfx('sell');
   log(`💸 出售 ${d.name}${u.star>1?'（'+u.star+'★折价）':''}：+${refund} 金币，${copies} 张返还卡池`);
   if(u.items&&u.items.length) log(`　　装备卸下回装备栏：${u.items.map(k=>ITEMS[k].e+ITEMS[k].n).join('、')}`);
   renderAll();
@@ -1547,6 +1650,7 @@ function equipTo(u, bagIdx){
   const k=S.items[bagIdx];
   u.items.push(k);
   S.items.splice(bagIdx,1); S.selItem=null;
+  sfx('equip');
   log(`🎒 ${byId(u.id).name} 装备了 ${ITEMS[k].n}`);
   renderAll();
   const pos=findUnit(u.uid); if(pos) showInspectFor(pos[0],pos[1]);
@@ -1561,7 +1665,7 @@ document.addEventListener('pointerdown', e=>{
   const cell = el.closest('.cell'), slot = el.closest('.bslot');
   if(!cell && !slot) return;
   drag = { t: cell?'board':'bench', i: cell?+cell.dataset.i:+slot.dataset.bi,
-           x0:e.clientX, y0:e.clientY, ghost:null, el };
+           x0:e.clientX, y0:e.clientY, ghost:null, el, wasInSell:false };
   // 拖动开始时显示该棋子的攻击范围（棋盘上的棋子才显示）
   if(drag.t==='board'){ const u=getAt('board',drag.i); if(u){ setRangeFocus(drag.i, byId(u.id).rng); paintRange(); } }
 });
@@ -1616,9 +1720,11 @@ document.addEventListener('pointermove', e=>{
       }
       drag.ghost.style.top=(e.clientY-34-24)+'px';   // 幽灵上移 24px，不遮商店卡片
       drag.ghost.classList.add('in-sell');
+      if(!drag.wasInSell){ drag.wasInSell=true; sfx('sellhint'); }   // 进入出售区提示音（一次）
     } else {
       bn.style.display='none';
       drag.ghost.classList.remove('in-sell');
+      drag.wasInSell=false;
     }
   }
 });
@@ -1703,7 +1809,7 @@ function buy(i){
   else S.bench[slot]=nu;
   tryMerge();
   if(S.bench.length>BENCH) S.bench.length=BENCH;   // 修剪临时超编位
-  log('购买 '+d.name); renderAll();
+  sfx('buy'); log('购买 '+d.name); renderAll();
 }
 function tryMerge(){
   for(const d of UNITS){
@@ -1727,13 +1833,14 @@ function tryMerge(){
           atk:Math.round(d.atk*Math.pow(STAR_M[d.cost]||1.8, star)), items};
         group.forEach(s=>setAt(s[0],s[1],null));
         setAt(keep[0],keep[1],upgraded);
+        sfx(star+1>=3?'merge3':'merge2');
         log(`✨ ${d.name} 升至 ${star+1} 星！`);
         tryMerge(); return;
       }
     }
   }
 }
-$('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<2)return; if(S.lock){ log('🔒 商店已锁定，不消耗金币刷新'); renderTop(); return; } S.gold-=2; S.stats.goldSpent+=2; rollShop(); renderTop(); };
+$('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<2)return; if(S.lock){ log('🔒 商店已锁定，不消耗金币刷新'); renderTop(); return; } S.gold-=2; S.stats.goldSpent+=2; sfx('roll'); rollShop(); renderTop(); };
 /* 商店锁定：下回合自动刷新时保留当前货架 */
 $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
   log(S.lock?'🔒 商店已锁定（仅保留到下回合，之后自动解锁）':'🔓 商店已解锁');
@@ -1854,6 +1961,7 @@ function autoDeploy(){
   for(let i=0;i<BENCH;i++) S.bench[i]=null;
   rest.forEach((u,i)=>{ if(i<BENCH) S.bench[i]=u; });
   tryMerge();   // 上阵搬动后可能凑齐 3 个同名，需重新检查合成
+  sfx('deploy');
   renderAll();
   if(need>0 && picked.length) log(`⚡ 一键上阵：补入 ${picked.length} 名棋子（原有棋子保持不动）`);
   else if(need<=0) log('⚡ 一键上阵：人口已满，仅整理站位（不会替换已有棋子）');
@@ -1879,6 +1987,7 @@ function tidyBench(){
   const ordered=[];
   groupList.forEach(g=>ordered.push(...g));
   for(let i=0;i<BENCH;i++) S.bench[i] = ordered[i] || null;
+  sfx('tidy');
   log(`🧹 备战席已整理：${ordered.length} 名棋子按星级/同名聚拢，空位挪到最后`);
   renderAll();
 }
@@ -1887,7 +1996,7 @@ $('lvlBtn').onclick=()=>{ if(S.phase!=='prep'||S.lvl>=11)return;   // 5 金币�
   if(S.round===1){ log('⚠ 第 1 回合不可购买经验（第 2 回合起可购买，自然经验不受影响）'); return; }
   if(S.gold<5){ log('⚠ 金币不足，无法购买升级经验'); return; }
   S.gold-=5; S.stats.goldSpent+=5; S.xp+=4;
-  checkLevel(); renderAll(); };
+  sfx('lvlup'); checkLevel(); renderAll(); };
 $('sellBtn').onclick=sellSelected;
 $('fightBtn').onclick=startBattle;
 window.addEventListener('keydown',e=>{
@@ -2021,6 +2130,8 @@ function setSpeed(s){ SPEED=s; document.body.style.setProperty('--spd',s);
   if(S.phase==='battle') startTickLoop(100/SPEED);
 }
 document.querySelectorAll('.spd-b').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
+$('sfxBtn').onclick=toggleSfx;
+paintSfxBtn();
 /* ===== 战斗统计插桩（纯只读：不改任何伤害公式/判定/数值）。每场战斗一个容器，
    在 dealDamage/治疗结算处聚合 造成伤害/承受伤害/治疗量/击杀；endBattle 消费后置空。
    红线：绝不写入棋子持久状态，绝不触碰 S.stats 既有字段 ===== */
@@ -2137,6 +2248,7 @@ function startBattle(){
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
   S.phase='battle'; if(!S.enemyBoard || !S.enemyBoard.some(Boolean)) S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null; hideInspect(); clearRangeFocus();
   const c=compForRound(S.round);
+  if(S.round%5===0) sfx('horn');   // 野怪回合号角预警
   log(`⚔ 第 ${S.round} 回合开战！对手：【${c.name}】`);
   $('fightBtn').disabled=true; $('refreshBtn').disabled=true; $('lvlBtn').disabled=true;
   renderAll();
@@ -2365,6 +2477,7 @@ function startBattle(){
             dmg=Math.round(dmg*cm);
             dmgPopup(u,tgt,'⚡暴击×'+cm,'crit'); vfxAt(tgt, u.ownCrit?'crit gold':'crit', 500);
             fxSparks(tgt, u.ownCrit?'#ffd24a':'#c77dff', 4, 30); boardQuake();
+            sfx('crit');
             if(window.__critN!=null) window.__critN++;   // DBG：暴击计数
           }
           // 攻击表现：远程弹道 / 近战斩击 + 突进动作
@@ -2488,6 +2601,7 @@ function dealDamage(src,tgt,dmg,units,dtype){
   if(tgt.hp<=0){
     if(src && src.side===0) S.stats.kills++;
     if(src){ const rk=bsRec(src); if(rk) rk.kills++; }
+    sfx('die');
     log(`💀 ${src&&src.side===0?'我方':'敌方'}${src?byId(src.id).name:'?'} 击败 ${byId(tgt.id).name}`);
     if(src && src.killHeal && src.hp>0 && src.hp<src.maxhp){   // 饮魂战刃：击杀回复自身生命
       const kh=Math.round(src.maxhp*src.killHeal); const real=Math.min(src.maxhp,src.hp+kh)-src.hp; src.hp+=real; bsHeal(src,real);
@@ -2548,13 +2662,18 @@ function unitVisual(u){
   // 棋子 offsetParent 是 unitLayer：层内偏移 + 层在棋盘内的偏移 = 棋盘坐标系中心
   return { x:layer.offsetLeft+el.offsetLeft+el.offsetWidth/2, y:layer.offsetTop+el.offsetTop+el.offsetHeight/2, el };
 }
+/* 12 阵营主题色表：技能特效（弹道/粒子）继承施法者主阵营色——深海/夜幕/魔道等冷色
+   与毛茸/花语等暖色肉眼可区分。仅替换技能弹道与粒子配色，不新增任何并发节点。 */
+const FAC_TINT={'深海':'#4aa8ff','星际':'#7fd4ff','毛茸乐园':'#ff9a6b','音律':'#ffd24a','四禧丸子':'#ff6b81',
+  '学园':'#8dff9a','夜幕':'#6b5bd6','花语':'#ff8ad8','魔道':'#b06bff','森之国':'#6bffab','工造':'#d9b26a','P-SP':'#ff5f5f'};
+function facTint(u){ const d=byId(u.id); return FAC_TINT[d.fac]||'#c77dff'; }
 function vfxAt(u,cls,dur=900){
   // 特效直接挂到棋子元素上，跟随其移动（同样受 _vfxN≤40 预算约束）
   if(_vfxN>=40) return;
   const host=unitVisual(u).el;
   if(!host) return;
   const v=document.createElement('div');
-  v.className='vfx attached '+cls;
+  v.className='vfx attached '+cls+(u.star>=3?' s3':'');   // 3★ 升星分层：特效放大 1.25× + 金晕（纯视觉）
   _vfxN++;
   host.appendChild(v);
   setTimeout(()=>{ v.remove(); _vfxN--; },dur/SPEED);
@@ -2857,6 +2976,8 @@ function castSkill(u,tgt,units,skMul){
   const lowest = arr=>arr.reduce((a,b)=>b.hp/b.maxhp<a.hp/a.maxhp?b:a);
   const dist = v=>unitDist(v,u);
   dmgPopup(u,u,'✦'+nm,'cast');
+  vfxAt(u,'charge',260);   // 施法蓄力预兆：起手 0.26s 收束环（纯视觉，预算内复用 vfxAt 通道）
+  sfx(SFX_SKILL[arch]||'spellDark');   // 技能分组音色（斩击/法术/治疗/护盾/控制）
   log(`✨ ${u.side===0?'我方':'敌方'}${d.name} 释放【${nm}】！`);
   shakeCell(u.x,u.y);
   const hm = u.healMul||1;
@@ -2888,7 +3009,7 @@ function castSkill(u,tgt,units,skMul){
       const spot = u.big ? spots.find(([x,y])=>bigFits(units,u,x,y))   // 2×2 突进者整块落地
                          : spots.find(([x,y])=>freeCell(units,x,y));
       if(spot){u.x=spot[0];u.y=spot[1];}
-      beam(u,far,'#ffffff');
+      beam(u,far,facTint(u));
       vfxAt(u,'flash',600);
       vfxAt(far,'ring',900);
       const dd=dealDamage(u,far,Math.round(power*2),units);
@@ -2924,10 +3045,10 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'fireball': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f,'#ff9a3d');
+      beam(u,f,facTint(u));
       vfxAt(f,'boom',750);
       { const pf=unitVisual(f); fxNode('shock',pf.x,pf.y,520); }   // 落点爆炸冲击波
-      fxSparks(f,'#ff9a3d',4,26); fxChips(f,'#ff9a3d',3);          // + 碎屑
+      fxSparks(f,facTint(u),4,26); fxChips(f,facTint(u),3);        // + 碎屑（阵营色）
       const dd=dealDamage(u,f,Math.round(power*2.5),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
       shakeCell(f.x,f.y); break; }
@@ -2960,7 +3081,7 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'purebolt': { if(!foes.length)break;   // 纯粹伤害：无视护甲与魔抗（多多文档 11.4.3）
       const f=pickFoe(foes,u,sv);
-      beam(u,f,'#e8e2ff');
+      beam(u,f,facTint(u));
       vfxAt(f,'boom',780);
       const dd=dealDamage(u,f,Math.round(power*1.8),units,'pure');
       applyFx(u,f,sv,units,allies,foes,power,dd);
@@ -2968,7 +3089,7 @@ function castSkill(u,tgt,units,skMul){
     case 'shred': case 'sunder': case 'hex': {   // 破甲 / 减魔抗 / 变形（多多文档破防与控制体系）
       if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f, arch==='hex'?'#c77dff':'#d9b26a');
+      beam(u,f, arch==='hex'?'#c77dff':facTint(u));   // 变形保持紫色识别，破甲/减抗走阵营色
       if(arch==='shred') fxChips(f,'#ffb14a',3);      // 橙色护甲碎屑
       else if(arch==='sunder') boltFx(u,f,true);      // 紫色电弧
       else hexFx(f);                                  // 烟雾团包裹 + 变形落地弹性
@@ -2989,7 +3110,7 @@ function castSkill(u,tgt,units,skMul){
       shakeCell(f.x,f.y); break; }
     case 'curse': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f,'#b0ff6b');
+      beam(u,f,facTint(u));
       vfxAt(f,'ring drain',950);
       const dd=dealDamage(u,f,Math.round(power*1.0),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
@@ -2997,7 +3118,7 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'burn': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f,'#4aa8ff');
+      beam(u,f,facTint(u));
       fxRise(f,'ember',3);                                          // 余烬火星上飘
       vfxAt(f,'boom',750);
       const dd=dealDamage(u,f,Math.round(power*1.5),units);
@@ -3060,7 +3181,7 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'silence': { if(!foes.length)break;   // 沉默：克制回蓝施法阵容
       const f=pickFoe(foes,u,sv);
-      beam(u,f,'#b06be8');
+      beam(u,f,facTint(u));
       staticFx(f);                                     // 静电环
       const dd=dealDamage(u,f,Math.round(power*1.4),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
@@ -3164,6 +3285,7 @@ function renderBattle(units){
 function showResultBanner(won,cb){
   if(S.phase!=='battle') return;   // 已在结算流程中，防止重复横幅/重复结算
   S.phase='settle';
+  sfx(won?'win':'lose');   // 战斗结果 jingle
   const el=document.createElement('div');
   el.className='result-banner '+(won?'win':'lose');
   el.textContent=won?'🏆 胜 利':'💀 失 败';
@@ -3250,6 +3372,7 @@ function endBattle(alive0,alive1){
     : S.streak>=4 ? `难度 ⬆（连胜 ${S.streak}，敌方增强 +${Math.min(8, 2*(S.streak-3))}%）` : '难度 ➖ 标准';
   blk.push(`　⏭ 下回合：${nx}`);
   flush();
+  sfx('settle');   // 回合结算轻提示
   checkSynRewards();   // 羁绊凑档奖励（首次达成 +1 金，鼓励凑羁绊）
   S.round++;
   S.phase='prep';
@@ -3308,6 +3431,7 @@ function reportHTML(kind){
 }
 function stageVictory(){
   S.phase='over'; ovMode='start'; hideOvClose();
+  sfx('finalWin');   // 通关 jingle
   $('ovTitle').textContent='🏅 通关成功！';
   $('ovText').innerHTML=`你撑过了 ${MAX_ROUNDS} 回合并击败最终 Boss！<br>`+reportHTML('win');
   $('ovBtn').textContent='📊 结束并查看报告';
