@@ -2146,23 +2146,29 @@ function dealDamage(src,tgt,dmg,units,dtype){
   }
   return dmg;
 }
-/* ===== 棋盘几何（跟随 CSS 变量 --cell/--gap/--pad，放大棋盘时坐标不会错位）
-   读取后缓存避免战斗每帧调用 getComputedStyle；--cell 随视口自适应，
-   故缓存附带视口指纹：浏览器缩放/改窗口尺寸导致视口变化时自动重算（否则战斗层整体错位） ===== */
+/* ===== 棋盘几何：不做任何数值假设，直接测量真实格子的布局尺寸。
+   --cell 是 min(85px, calc(...)) 这类表达式，getComputedStyle 拿到的是未解析的
+   token 流（parseFloat 得 NaN），不同玩家视口/缩放下实际格子各不相同，
+   唯一可靠的来源就是格子元素本身的 offsetWidth/offsetLeft/offsetTop
+   （布局像素，不受 CSS transform 缩放影响）。以棋盘盒尺寸作缓存指纹，
+   视口/窗口变化导致格子尺寸变化时自动重算 ===== */
 let _geo=null;
 function boardGeo(){
-  if(_geo && _geo.vw===innerWidth && _geo.vh===innerHeight) return _geo;
-  let c=58, g=2, p=6;
-  try{ const cs=getComputedStyle(document.body);
-    c=parseFloat(cs.getPropertyValue('--cell'))||c;
-    g=parseFloat(cs.getPropertyValue('--gap'))||g;
-    p=parseFloat(cs.getPropertyValue('--pad'))||p;
+  const b=$('board');
+  const fp=b?b.offsetWidth+'x'+b.offsetHeight:'0x0';
+  if(_geo && _geo.fp===fp) return _geo;
+  let cw=54, ch=54, gx=2, gy=2, sx=56, sy=56, cellX=0, cellY=0;
+  try{
+    const c0=b.children[0], c1=b.children[1], cr=b.children[BOARD_W];
+    if(c0 && c0.classList.contains('cell') && c1){
+      cw=c0.offsetWidth; ch=c0.offsetHeight;
+      sx=c1.offsetLeft-c0.offsetLeft; sy=cr?cr.offsetTop-c0.offsetTop:sx;
+      gx=Math.max(0,sx-cw); gy=Math.max(0,sy-ch);
+      cellX=c0.offsetLeft; cellY=c0.offsetTop;   // 相对棋盘（offsetParent=#board）
+    }
   }catch(e){}
-  return (_geo={cell:c, gap:g, pad:p, step:c+g, vw:innerWidth, vh:innerHeight});
+  return (_geo={cw,ch,gx,gy,sx,sy,cellX,cellY,fp});
 }
-const CELL_PX = () => boardGeo().cell;
-const PAD_PX  = () => boardGeo().pad;
-const cellStep = () => boardGeo().step;
 /* ===== 2×2 头目体格：以 (x,y) 为左上锚点真实占据 4 格，其余棋子 1 格 ===== */
 function cellsOf(u){
   if(!u) return [];
@@ -2186,10 +2192,11 @@ function bigFits(units,u,x,y){   // 2×2 方块锚点 (x,y) 是否放得下（�
   return ![[x,y],[x+1,y],[x,y+1],[x+1,y+1]].some(([cx,cy])=>cellOccupied(units,cx,cy,u));
 }
 function unitVisual(u){
-  const el=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
-  if(!el){ const st=cellStep(), c=CELL_PX(); return { x:PAD_PX()+u.x*st+c/2, y:PAD_PX()+u.y*st+c/2, el:null }; }
-  const br=el.getBoundingClientRect(), brd=$('board').getBoundingClientRect();
-  return { x:br.left-brd.left+br.width/2, y:br.top-brd.top+br.height/2, el };
+  const g=boardGeo(), layer=document.getElementById('unitLayer');
+  const el=layer&&layer.querySelector(`[data-uid="${u.uid}"]`);
+  if(!el){ return { x:g.cellX+u.x*g.sx+g.cw/2, y:g.cellY+u.y*g.sy+g.ch/2, el:null }; }
+  // 棋子 offsetParent 是 unitLayer：层内偏移 + 层在棋盘内的偏移 = 棋盘坐标系中心
+  return { x:layer.offsetLeft+el.offsetLeft+el.offsetWidth/2, y:layer.offsetTop+el.offsetTop+el.offsetHeight/2, el };
 }
 function vfxAt(u,cls,dur=900){
   // 特效直接挂到棋子元素上，跟随其移动
@@ -2200,17 +2207,19 @@ function vfxAt(u,cls,dur=900){
   host.appendChild(v);
   setTimeout(()=>v.remove(),dur);
 }
-/* AoE 范围圈：画在棋盘层，以施法者为中心覆盖 (2R+1) 格的方形区域（视觉上标出技能范围） */
+/* AoE 范围圈：画在棋子图层，以施法者方块中心为圆心覆盖 (2R+1) 格的方形区域（视觉上标出技能范围） */
 function vfxAoe(u,R,colorCls='',dur=700){
-  const cell=CELL_PX(), gap=boardGeo().gap, step=cellStep(), pad=PAD_PX()-2;
-  const size=Math.round((2*R+1)*cell + 2*R*gap);
-  const ax=u.x+(u.big?0.5:0), ay=u.y+(u.big?0.5:0);   // 2×2 头目以方块中心为圆心
+  const g=boardGeo();
+  const layer=document.getElementById('unitLayer') || $('board');
+  const inLayer=(layer.id==='unitLayer');
+  const ox=inLayer?g.cellX-layer.offsetLeft:g.cellX, oy=inLayer?g.cellY-layer.offsetTop:g.cellY;
+  const size=Math.round((2*R+1)*g.cw + 2*R*g.gx);
+  const bw=u.big?2*g.cw+g.gx:g.cw, bh=u.big?2*g.ch+g.gy:g.ch;   // 2×2 头目以方块中心为圆心
   const el=document.createElement('div');
   el.className='vfx aoe '+colorCls;
-  el.style.left=Math.round(pad+ax*step-gap/2)+'px';
-  el.style.top=Math.round(pad+ay*step-gap/2)+'px';
+  el.style.left=Math.round(ox+u.x*g.sx+bw/2-size/2)+'px';
+  el.style.top =Math.round(oy+u.y*g.sy+bh/2-size/2)+'px';
   el.style.width=size+'px'; el.style.height=size+'px';
-  const layer=document.getElementById('unitLayer') || $('board');
   layer.appendChild(el);
   setTimeout(()=>el.remove(), dur/SPEED);
 }
@@ -2629,10 +2638,12 @@ function renderBattle(units){
       el.innerHTML=unitInner(u);
       layer.appendChild(el);
     }
-    const st=cellStep(), off=PAD_PX()-2;   // 棋子层相对棋盘留 2px 边距
+    const g=boardGeo();
+    const lx=g.cellX-layer.offsetLeft, ly=g.cellY-layer.offsetTop;   // 格子原点在棋子图层坐标系
     el.classList.toggle('big',!!u.big);   // 2×2 头目：锚点格定位 + CSS 放大，布阵已保证整块在界内
-    el.style.left=(off+u.x*st)+'px';
-    el.style.top=(off+u.y*st)+'px';
+    const bw=u.big?2*g.cw+g.gx:g.cw, bh=u.big?2*g.ch+g.gy:g.ch;
+    el.style.left=(lx+u.x*g.sx+(bw-el.offsetWidth)/2)+'px';    // 用元素实测尺寸居中，兼容任意格子宽度
+    el.style.top =(ly+u.y*g.sy+(bh-el.offsetHeight)/2)+'px';
     const hp=el.querySelector('.hpfill');
     if(hp) hp.style.width=Math.max(0,u.hp/u.maxhp*100)+'%';
     const mp=el.querySelector('.mpfill');
