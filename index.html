@@ -358,6 +358,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   background:radial-gradient(circle,#ffffffcc 8%,#ffffff44 38%,transparent 62%);
   animation:boom calc(.4s/var(--spd)) ease-out forwards; }
 /* 刺客暴击：紫色爆裂特效 */
+.vfx.crit.gold { background:radial-gradient(circle,#ffd24acc 15%,#c8960a66 50%,transparent 72%); box-shadow:0 0 16px #ffd24a99; }
 .vfx.crit { border-radius:50%; background:radial-gradient(circle,#c77dffaa 15%,#7a3fd455 50%,transparent 72%);
   animation:boom calc(.5s/var(--spd)) ease-out forwards; }
 /* ===== 命中/技能特效扩展（纯装饰层：transform/opacity 动画，时长随 --spd 缩放；
@@ -800,6 +801,7 @@ const SKILL_VAR = {
   songlv: {fx:[['selfheal',.35]], txt:'园艺师扎根：回复自身相当于伤害 35% 的生命'},
   likou:  {fx:[['healshield',.06]], txt:'并为其附加 6% 最大生命护盾'},
   agari:  {fx:[['healshield',.04]], txt:'并使全体获得 4% 最大生命护盾'},
+  hoshimi:{p:{critPct:.20, critMul:2.2}},   // 星屑突袭：专属暴击 20%/2.2×
   /* —— 2 费 —— */
   suiji:  {manaAmt:25, txt:'为队友回蓝（不含自己，避免自充能）'},
   kanban: {shellPct:.30, blockCt:.25, blockDmg:.5, blockT:4},
@@ -808,7 +810,7 @@ const SKILL_VAR = {
   tiandou:{healN:2, fx:[['healshield',.05]], txt:'并为她们附加 5% 最大生命护盾'},
   aza:    {fx:[['allatkup',.10]], txt:'并提升全体 10% 攻击（本场战斗）'},
   pako:   {fx:[['heallow',.40]], txt:'并为生命比例最低的队友额外回复 40% 攻击生命'},
-  zhijin: {pow:1.05, fx:[['vamp',.15]], txt:'突进至最远的敌人，并永久获得 15% 吸血'},
+  zhijin: {pow:1.05, fx:[['vamp',.15]], p:{critPct:.20, critMul:2.2}, txt:'突进至最远的敌人，并永久获得 15% 吸血（专属暴击 20%/2.2×）'},
   sishi:  {pow:1.05, fx:[['slow',.25,2]], txt:'并使命中者减速 25%，持续 2 秒'},
   sumi:   {teamPct:.12},
   /* —— 3 费 —— */
@@ -821,9 +823,10 @@ const SKILL_VAR = {
   lianshiye:{dur:3},
   huize:  {fx:[['slow',.35,3],['dot',.015]], txt:'并使其减速 35%、附加毒伤，持续 3 秒'},
   shengge:{},
-  shadow: {pow:1.10, fx:[['exec',.60]], txt:'突进至最远的敌人；目标生命低于 35% 时追加 60% 斩杀伤害'},
+  shadow: {pow:1.10, fx:[['exec',.60]], p:{critPct:.20, critMul:2.5}, txt:'突进至最远的敌人；目标生命低于 35% 时追加 60% 斩杀伤害（专属暴击 20%/2.5×）'},
   /* —— 4 费 —— */
-  miyue:  {pow:1.10, fx:[['dot',.02]], txt:'并附加每 3 秒 2% 最大生命的毒伤'},
+  nox:    {p:{critPct:.25, critMul:2.5}},   // 夜莺回响：专属暴击 25%/2.5×
+  miyue:  {pow:1.10, fx:[['dot',.02]], p:{critPct:.15, critMul:2.2}, txt:'并附加每 3 秒 2% 最大生命的毒伤（专属暴击 15%/2.2×）'},
   huali:  {healN:2, fx:[['allymana',15]], txt:'并使受疗者回复 15 点法力'},
   youyu:  {pow:1.05},
   quanrong:{shellPct:.40, thornsB:.05, thornsT:5, tauntT:2},
@@ -836,7 +839,7 @@ const SKILL_VAR = {
   /* —— 5 费 —— */
   nana7mi:{pow:1.15, fx:[['dot',.02],['slow',.25,2]], txt:'鲨皇撕咬：附加毒伤并减速 25%'},
   liAn:   {fx:[['freeze',1.5]]},
-  youyi:  {p:{vampPct:.30,atkDot:.010}},
+  youyi:  {p:{vampPct:.30, atkDot:.010, critPct:.15, critMul:2.0}},
   azi:    {pow:1.10, fx:[['stun',1.5]]},
   taodai: {teamPct:.15, drB:.15, drT:4, tauntT:2.5},
   miki:   {healN:2, fx:[['healshield',.08],['allymana',10]], txt:'并为其附加 8% 护盾、回复 10 点法力'},
@@ -1498,6 +1501,8 @@ function showInspect(u){
     <div class="in-row"><span>护甲</span><b>${d.ar||0}</b><span>魔抗</span><b>${Math.round((d.mr||0)*100)}%</b></div>
     <div class="in-row"><span>射程</span><b>${d.rng} 格</b><span>攻速</span><b>${d.spd.toFixed(2)}/s</b></div>
     <div class="in-row"><span>形式</span><b>${d.form==='me'?'近战':'远程'}·${d.dtype==='phys'?'物理':'法术'}</b><span>出售</span><b>${sellRefund(u)}💰</b></div>
+    ${(svOf(d.id).p&&svOf(d.id).p.critPct)?`<div class="in-row"><span>专属暴击</span><b>${Math.round(svOf(d.id).p.critPct*100)}%</b><span>暴伤</span><b>${svOf(d.id).p.critMul}×</b></div>
+    <div class="in-tag" style="font-size:10px;color:#8a93c4">叠加规则：与刺客羁绊/装备暴击率相加（封顶 60%），暴伤取最大</div>`:''}
     <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
     <div class="in-desc">${skillDesc(u)}</div>
     <div class="in-item">🎒 装备：${items}</div>
@@ -2058,12 +2063,7 @@ function makeBattleUnit(u, side, x, y){
     arDown:0, arDownT:0, mrDown:0, mrDownT:0, hexT:0, petrifyT:0, dodge:0, crit:0};   // 破甲/减魔抗/变形/石化/闪避/暴击
   b.ar=d.ar||0; b.mr=d.mr||0;   // 抗性以图鉴数据为唯一来源（敌方镜像同样生效）
   (u.items||[]).forEach(k=>{ if(ITEM_FX[k]) ITEM_FX[k](b); });   // 装备效果统一生效表
-  // 装备暴击与暴伤并入通用暴击通道（率与刺客羁绊相加封顶 60%、暴伤取最大——与 SKILL_VAR.p 专属暴击同一套合并规则）
-  if(b.critPct){ b.crit=Math.min(0.6,(b.crit||0)+b.critPct); b.critM=Math.max(b.critM||0,b.critItemM||0); }
-  b.atk=Math.round(b.atk*b.atkMul);
-  if(b.hpMul)b.maxhp=Math.round(b.maxhp*b.hpMul);
-  b.hp=b.maxhp;
-  const pv=svOf(d.id).p;                  // 被动参数（仅轴伊/雨纪/又一 3 人有）
+  const pv=svOf(d.id).p;                  // 被动参数（轴伊/雨纪/又一 + 专属暴击组）
   b.svDtype = svOf(d.id).dtype || null;   // 主动技伤害类型覆盖（如纯粹伤害）
   if(pv){
     b.pv=pv;
@@ -2071,7 +2071,13 @@ function makeBattleUnit(u, side, x, y){
     if(pv.blockCt){ b.blockCt=pv.blockCt; b.blockDmg=pv.blockDmg||.5; } // 常驻格挡
     if(pv.vampPct) b.vamp=Math.max(b.vamp,pv.vampPct);          // 被动吸血
     if(pv.atkDot) b.pAtkDot=pv.atkDot;                          // 攻击附带毒伤
+    if(pv.critPct){ b.critPct=(b.critPct||0)+pv.critPct; b.critItemM=Math.max(b.critItemM||0, pv.critMul||2); b.ownCrit=true; }  // 专属暴击（金色爆闪）
   }
+  // 装备/专属暴击并入通用暴击通道：率与刺客羁绊相加封顶 60%、暴伤取最大（同一套合并规则）
+  if(b.critPct){ b.crit=Math.min(0.6,(b.crit||0)+b.critPct); b.critM=Math.max(b.critM||0,b.critItemM||0); }
+  b.atk=Math.round(b.atk*b.atkMul);
+  if(b.hpMul)b.maxhp=Math.round(b.maxhp*b.hpMul);
+  b.hp=b.maxhp;
   // 多多官方：蓝量开局清零，仅靠攻击/受击回蓝攒满 100 施放大招（蓝玉潮涌：开局 +20 蓝）
   b.mana = b.manaStart || 0;
   return b;
@@ -2141,7 +2147,8 @@ function startBattle(){
   const layer=document.createElement('div'); layer.id='unitLayer';
   $('board').appendChild(layer);
   const units=[];
-  window.__bu=units; // 调试：战斗单位快照
+  window.__bu=units;   // 调试：战斗单位快照
+  window.__atkN=0; window.__critN=0;   // 调试：普攻/暴击计数（专属暴击触发率实测用）
   battleStats={units:{}};   // 本场战斗统计容器（endBattle 消费后置空）
   S.board.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,0,i%BOARD_W,Math.floor(i/BOARD_W))); });
   S.enemyBoard.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,1,i%BOARD_W,Math.floor(i/BOARD_W))); });
@@ -2345,6 +2352,7 @@ function startBattle(){
       }
       if(unitDist(tgt,u)<=d.rng){   // 距离按占据格集合算：贴 2×2 头目任意一格即在射程内
         if(u.cd<=0){
+          if(window.__atkN!=null) window.__atkN++;   // DBG：普攻计数（专属暴击触发率实测）
           const slow = u.slowT>0 ? u.slowA : 0;
           let dmg = Math.round(eatk(u)*(u.rapid>0?2:1));
           if(u.rapid>0)u.rapid--;
@@ -2352,11 +2360,12 @@ function startBattle(){
             dmg=Math.round(dmg*ASSASSIN_CRIT_MULT); u.assassinCrit=false;
             dmgPopup(u,tgt,'⚡暴击×'+ASSASSIN_CRIT_MULT,'crit'); vfxAt(tgt,'crit',500);
             fxSparks(tgt,'#c77dff',4,30); boardQuake();
-          } else if(u.crit>0 && Math.random()<u.crit){   // 刀塔刺客：常驻暴击（T1 ×3 / T2 ×4）
+          } else if(u.crit>0 && Math.random()<u.crit){   // 常驻暴击：刺客羁绊（紫）/ 专属与装备（金）
             const cm=u.critM||ASSASSIN_CRIT_MULT;
             dmg=Math.round(dmg*cm);
-            dmgPopup(u,tgt,'⚡暴击×'+cm,'crit'); vfxAt(tgt,'crit',500);
-            fxSparks(tgt,'#c77dff',4,30); boardQuake();
+            dmgPopup(u,tgt,'⚡暴击×'+cm,'crit'); vfxAt(tgt, u.ownCrit?'crit gold':'crit', 500);
+            fxSparks(tgt, u.ownCrit?'#ffd24a':'#c77dff', 4, 30); boardQuake();
+            if(window.__critN!=null) window.__critN++;   // DBG：暴击计数
           }
           // 攻击表现：远程弹道 / 近战斩击 + 突进动作
           const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
@@ -3408,6 +3417,7 @@ function renderBook(){
     return `<div class="bcard" style="border-left-color:${COST_BORDER[u.cost]}">
       <div class="bn"><span>${u.name}</span><span class="bc">💰${u.cost}</span></div>
       <div class="bf2">${facLabel(u)} · ${jobLabel(u)} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div>
+      ${(SKILL_VAR[u.id]&&SKILL_VAR[u.id].p&&SKILL_VAR[u.id].p.critPct)?`<div class="bp" style="color:#ffd24a">⚡ 专属暴击 ${Math.round(SKILL_VAR[u.id].p.critPct*100)}% · 暴伤 ${SKILL_VAR[u.id].p.critMul}×（与刺客羁绊/装备相加封顶 60%，暴伤取最大）</div>`:''}
       <div class="bs">${u.sk[0]}（${passive?'被动':'主动'}）${passive?'':skillDesc(u)}</div>
       ${passive?`<div class="bp">${skillDesc(u)}</div>`:''}
       <div class="bp" style="color:#a99cd0">${u.hp}❤ ${u.atk}⚔ 射程 ${u.rng} 格</div>

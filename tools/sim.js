@@ -107,6 +107,7 @@ function driveBattle(maxTicks = 640) {
 if (process.env.T1) { require('./_t1_tests.js').run(A, driveBattle); process.exit(0); }
 if (process.env.T2) { require('./_t2_tests.js').run(A, driveBattle); process.exit(0); }
 if (process.env.T3) { require('./_t3_tests.js').run(A, driveBattle); process.exit(0); }
+if (process.env.T4) { require('./_t4_tests.js').run(A, driveBattle); process.exit(0); }
 
 
 /* ---------- 主循环 ---------- */
