@@ -114,11 +114,21 @@ if (process.env.T4) { require('./_t4_tests.js').run(A, driveBattle); process.exi
 const N = parseInt(process.argv[2] || '100', 10);
 globalThis.hpCurve = {}; globalThis.wrStats = {}; globalThis.creepWR = {};
 const results = [];
+let ch1Wins = 0;
 for (let g = 0; g < N; g++) {
   (0, eval)('newGame()'); (0, eval)('renderAll()');
   let outcome = null;
-  for (let guard = 0; guard < 40; guard++) {
+  let chapters = 0, ch1 = false;
+  for (let guard = 0; guard < 130; guard++) {
     const preWins = A.S.stats.wins, curRound = A.S.round, hpBefore = A.S.hp, preStreak = A.S.streak;
+    if (A.S.phase === 'chapter') {   // 章节结算：记录守关胜负 → 选增强 → 继续下一章（败亡即终局）
+      const won = !!A.S.settleWon;
+      if (won && chapters === 0) ch1Wins++;
+      chapters++;
+      if (typeof globalThis.pickAug === 'function' && A.S.settleOffer && A.S.settlePick == null) globalThis.pickAug(0);
+      globalThis.chapterContinue();
+      continue;
+    }
     botPrep();
     (0, eval)('startBattle')();
     driveBattle();
@@ -142,20 +152,20 @@ for (let g = 0; g < N; g++) {
       (globalThis.streakWR = globalThis.streakWR || {})[sk] = (globalThis.streakWR[sk] || []).concat(lost ? 0 : 1);
     }
     if (S.phase === 'over') {
-      const ovT = String(global.document.getElementById('ovTitle').textContent || '');
-      outcome = { win: ovT.includes('通关'), round: S.round, hp: S.hp, streak: S.stats.maxStreak, kills: S.stats.kills };
+      outcome = { win: chapters > 0, chapters, round: S.round, hp: S.hp, streak: S.stats.maxStreak, kills: S.stats.kills };
       break;
     }
   }
-  results.push(outcome || { win: false, round: -1 });
+  if (!outcome) outcome = { win: chapters > 0, chapters, round: A.S.round, hp: A.S.hp, streak: A.S.stats.maxStreak, kills: A.S.stats.kills };
+  results.push(outcome);
 }
-const wins = results.filter(r => r.win);
-console.log(`局数=${N} 通关=${wins.length} 通关率=${(wins.length / N * 100).toFixed(1)}%`);
+const wins = results.filter(r => r.chapters >= 1);
+console.log(`局数=${N} 击败r25守关魔王=${ch1Wins} (${(ch1Wins / N * 100).toFixed(1)}%)  到达结算=${wins.length}  平均推进章节数=${(results.reduce((s,r)=>s+r.chapters,0)/N).toFixed(2)}  平均最终回合=${(results.reduce((s,r)=>s+r.round,0)/N).toFixed(1)}`);
 const lossRounds = results.filter(r => !r.win).map(r => r.round);
 if (lossRounds.length) {
   const hist = {};
   lossRounds.forEach(r => hist[r] = (hist[r] || 0) + 1);
-  console.log('失败回合分布:', JSON.stringify(hist));
+  console.log('终局回合分布:', JSON.stringify(hist));
 }
 const curve = globalThis.hpCurve;
 console.log('各回合平均血量:', Object.keys(curve).sort((a,b)=>a-b).map(r => `r${r}:${(curve[r].reduce((a,b)=>a+b,0)/curve[r].length).toFixed(1)}`).join(' '));

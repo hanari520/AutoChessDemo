@@ -3797,19 +3797,31 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
 function autoStoreGet(){ try{ return localStorage.getItem('vc_auto')==='1' }catch(e){ return false } }
 function autoStoreSet(v){ try{ localStorage.setItem('vc_auto', v?'1':'0') }catch(e){} }
 let autoBusy=false;
-function autoPilot(delay=600){
+function autoPilot(delay=900){
   if(!S || !S.auto || S.phase!=='prep' || autoBusy) return;
   autoBusy=true;
   setTimeout(()=>{ autoBusy=false;
     if(!S.auto || S.phase!=='prep' || S.hp<=0) return;
-    try{
-      botPrep();   // 买牌/卖闲子/穿装备/合成/升级/择优编队（bot_strategy.js）
-      if(S.phase==='prep' && !S.board.some(Boolean)){ rollShop(); botPrep(); }   // 极端空场兜底：补一轮刷新+购买
-      if(S.phase==='prep'){
-        if(S.board.some(Boolean)) startBattle();
-        else log('⚠️ 托管：无法上阵（金币/卡牌不足），请手动处理');
-      }
-    }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} }
+    const finish=()=>{
+      try{
+        if(S.phase==='prep' && !S.board.some(Boolean)){ rollShop(); if(typeof botPrep==='function') botPrep(); }   // 极端空场兜底
+        if(S.phase==='prep'){
+          if(S.board.some(Boolean)) startBattle();
+          else log('⚠️ 托管：无法上阵（金币/卡牌不足），请手动处理');
+        }
+      }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} }
+    };
+    const steps = (typeof botPrepSteps==='function') ? botPrepSteps() : [];   // 装备→购买→升级→刷新→锁定→编队
+    if(!steps.length){ finish(); return; }
+    let i=0;
+    const runNext=()=>{
+      if(!S.auto || S.phase!=='prep') return;   // 中途关闭托管或手动开战即停
+      try{ steps[i].fn(); renderAll(); }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} }
+      i++;
+      if(i<steps.length) setTimeout(runNext, 550+Math.round(Math.random()*350));
+      else setTimeout(finish, 500);
+    };
+    runNext();
   }, delay);
 }
 function setAutoUI(){ try{ const b=$('autoBtn'); if(b) b.classList.toggle('auto-on', !!S.auto); }catch(e){} }
