@@ -70,11 +70,11 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .unit .fj { font-size:calc(var(--cell)*.115); color:#c8bfe8; letter-spacing:.3px; }
 .unit .its { position:absolute; top:2px; left:3px; font-size:calc(var(--cell)*.15); letter-spacing:-2px; z-index:2; }
 .unit.sel { border-color:#ffd24a; box-shadow:0 0 4px #ffd24a88; z-index:3; }
-.unit.ally { border-color:#4aa8ff; }
+.unit.ally { border-color:#4aa8ff; box-shadow:inset 0 0 0 999px rgba(74,168,255,.24); }
 .unit.enemy { border-color:#e05555; box-shadow:inset 0 0 0 999px rgba(224,85,85,.30); }
-.unit .side { position:absolute; top:2px; right:3px; font-size:calc(var(--cell)*.115); padding:0 3px; border-radius:4px; color:#fff; z-index:2; }
-.unit.ally .side { background:#3b82f6; }
-.unit.enemy .side { background:#e05555; }
+/* 选中金光与阵营底罩叠加 */
+.unit.sel.ally { box-shadow:0 0 4px #ffd24a88, inset 0 0 0 999px rgba(74,168,255,.24); }
+.unit.sel.enemy { box-shadow:0 0 4px #ffd24a88, inset 0 0 0 999px rgba(224,85,85,.30); }
 .unit .fz { position:absolute; top:2px; right:22px; font-size:calc(var(--cell)*.14); z-index:2; }
 /* 棋子立绘：底层像素头像 + 文字浮层（文字加投影保证可读） */
 .unit .pt { position:absolute; left:4%; right:4%; top:6%; bottom:8%;
@@ -83,13 +83,12 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.45)); }
 .unit .nm { position:absolute; left:2px; right:2px; bottom:3px; z-index:1; font-weight:bold; padding:1px 0;
   background:rgba(10,12,24,.6); border-radius:4px; text-shadow:0 1px 2px #000; }
-/* 羁绊徽章：备战态在名字下方一行（名字自动上移让位）；战斗态在名字上方（避开血条/蓝条） */
-.unit .syn { position:absolute; bottom:1px; left:0; right:0; display:flex; justify-content:center; gap:2px; z-index:1; pointer-events:none; }
+/* 羁绊徽章：固定右上角（备战/战斗同位）；战斗态敌我标签下移、状态表情移到星级下方让位 */
+.unit .syn { position:absolute; top:2px; right:3px; display:flex; justify-content:flex-end; gap:2px; z-index:1; pointer-events:none; }
 .unit .syn .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:center;
   background-repeat:no-repeat; background-size:contain; image-rendering:pixelated; pointer-events:auto;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
-.unit:has(.syn) .nm { bottom:calc(var(--cell)*.23); }
-.unit:has(.hpbar) .syn { bottom:26px; }
+.unit:has(.hpbar) .fz { top:15px; left:3px; right:auto; }
 .unit.big .syn .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
 .unit:has(.hpbar) .nm { bottom:12px; }
 .unit .st { position:absolute; top:2px; left:3px; z-index:1; font-size:calc(var(--cell)*.15);
@@ -1313,11 +1312,10 @@ function unitInner(u){
   const fz = st ? `<span class="fz">${st}</span>` : '';
   const w = u.hp!=null ? (u.hp/u.maxhp*100) : 100;
   const m = u.maxmana ? (u.mana/u.maxmana*100) : 0;
-  const sideTag = u.side!=null ? `<span class="side">${u.side===1?'敌':'我'}</span>` : '';
   const inBattle = u.side===0||u.side===1;
   const mp = inBattle ? (isPassive(u) ? '<span class="sk">被动</span>'
       : `<div class="mpbar"><div class="mpfill" style="width:${m}%"></div></div>`) : '';
-  return `<i class="pt" style="background-image:url(assets/units/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${sideTag}${synIconsHTML(d)}
+  return `<i class="pt" style="background-image:url(assets/units/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d)}
     <span class="st">${'★'.repeat(u.star)}<span style="opacity:.8">${d.form==='me'?'⚔':'🏹'}</span></span>
     <span class="nm">${d.name}</span>
     ${mp}
