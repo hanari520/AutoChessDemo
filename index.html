@@ -2461,7 +2461,7 @@ function startBattle(){
       const act=[...Object.keys(facCnt).map(k=>({k,t:tierOf(facCnt,FACTIONS,k)})),
                  ...Object.keys(clsCnt).map(k=>({k,t:tierOf(clsCnt,CLASSES,k)}))].filter(x=>x.t>0);
       act.sort((a,b)=>b.t-a.t);
-      act.slice(0,2).forEach((x,i)=>{ const key=BOND_ST[x.k]; if(key) setTimeout(()=>sfx(key), 120+i*220); });
+      const top=act[0]; if(top){ const key=BOND_ST[top.k]; if(key) setTimeout(()=>sfx(key), 150); }   // 只播 1 个最高档羁绊（用户反馈开局音效太多）
     }
     // —— 应用到每个棋子 ——
     mine.forEach(u=>{
