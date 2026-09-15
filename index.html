@@ -125,6 +125,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 @keyframes hexbob{ from{ transform:translateY(-4%) } to{ transform:translateY(6%) } }
 .vfx.ripple{ border:2px solid #f2a7c3; border-radius:50%; animation:ripplez .6s both; }
 @keyframes ripplez{ from{ transform:scale(.3); opacity:.9 } to{ transform:scale(1.5); opacity:0 } }
+#aliveBar{ position:absolute; top:-30px; left:50%; transform:translateX(-50%); z-index:6; display:flex; gap:10px; align-items:center;
+  background:rgba(10,12,24,.78); border:1px solid #4a3d6e; border-radius:10px; padding:2px 12px; font-size:13px; font-weight:bold; white-space:nowrap; }
+#aliveBar .ab-me{ color:#4aa8ff; } #aliveBar .ab-foe{ color:#ff7a7a; }
 /* 章节结算：结算动画 + 3 选 1 全局增强卡片 */
 .settle-hero{ text-align:center; font-size:17px; font-weight:bold; margin:6px 0; animation:augIn .5s both; }
 .settle-hero.win{ color:#8dff9a; } .settle-hero.lose{ color:#ff9a9a; }
@@ -2383,6 +2386,9 @@ function startBattle(){
   $('board').querySelectorAll('.cell .unit').forEach(e=>e.remove());
   const layer=document.createElement('div'); layer.id='unitLayer';
   $('board').appendChild(layer);
+  const ab=document.createElement('div'); ab.id='aliveBar';   // 双方存活计数（战斗中实时）
+  ab.innerHTML='<span class="ab-me">🔵 我 <b>0</b></span><span class="ab-sep">:</span><span class="ab-foe"><b>0</b> 🔴 敌</span>';
+  $('board').appendChild(ab);
   const units=[];
   window.__bu=units;   // 调试：战斗单位快照
   window.__atkN=0; window.__critN=0;   // 调试：普攻/暴击计数（专属暴击触发率实测用）
@@ -3470,6 +3476,10 @@ function renderBattle(units){
     } else if(fz) fz.remove();
   }
   layer.querySelectorAll('.unit').forEach(el=>{ if(!seen.has(el.dataset.uid)) deathFx(el,layer); });
+  const ab=document.getElementById('aliveBar');   // 双方存活实时计数
+  if(ab){ const mb=ab.querySelector('.ab-me b'), fb=ab.querySelector('.ab-foe b');
+    if(mb) mb.textContent=units.filter(u=>u.hp>0&&u.side===0).length;
+    if(fb) fb.textContent=units.filter(u=>u.hp>0&&u.side===1).length; }
 }
 function showResultBanner(won,cb){
   if(S.phase!=='battle') return;   // 已在结算流程中，防止重复横幅/重复结算
@@ -3559,7 +3569,7 @@ function chapterContinue(){
 }
 function chapterStop(){
   if(S.phase!=='chapter') return;
-  S.phase='over';
+  S.phase='over'; endRunCleanup();   // 收兵：托管一并关闭
   try{ const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
     h.unshift({ts:Date.now(),win:true,round:S.round,hp:S.hp,endless:true,wins:S.stats.wins,losses:S.stats.losses,kills:S.stats.kills,maxStreak:S.stats.maxStreak});
     localStorage.setItem('vc_history',JSON.stringify(h.slice(0,20)));
@@ -3578,6 +3588,7 @@ function autoSettle(){   // 托管：自动选增强（随机）并继续下一�
 }
 function endBattle(alive0,alive1){
   if(S.phase==='over') return;     // 已终局，忽略迟到的结算
+  { const ab=document.getElementById('aliveBar'); if(ab) ab.remove(); }   // 存活计数条仅战斗中显示
   const won = alive0>0 && alive0>=alive1;
   const survivors = alive1>0 ? alive1 : 0;
   const isCreep = S.round%5===0;   // 野怪回合（每 5 回合）
@@ -3721,8 +3732,12 @@ function enterEndless(){
   log('♾ 进入无限模式：从第 26 回合开始，敌方将无限变强！');
   autoPilot();
 }
+function endRunCleanup(){   // 终局统一收尾：托管关闭（下一局默认手动），UI 同步
+  S.auto=false; autoStoreSet(false); setAutoUI();
+}
+function restartGame(){ $('overlay').classList.add('hidden'); newGame(); }
 function gameOver(win){
-  S.phase='over'; ovMode='start'; hideOvClose();
+  S.phase='over'; ovMode='start'; hideOvClose(); endRunCleanup();
   try{ // 写入历史战绩并清除进行中的存档
     const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
     h.unshift({ts:Date.now(),win,round:S.round,hp:S.hp,endless:!!S.endless,
@@ -3733,13 +3748,14 @@ function gameOver(win){
   $('ovTitle').textContent = win ? '🏅 最终胜利！' : (S.endless?'♾ 无限模式终结':'💀 挑战失败');
   $('ovText').innerHTML = (win?'':`在第 ${S.round} 回合倒下。<br>`)+reportHTML(win?'win':'lose');
   $('ovBtn').textContent='再来一局';
+  $('ovBtn').onclick=restartGame;   // 显式重绑：防止残留上一流程（章节继续）的 onclick 导致按钮失灵
   $('ovBtn').style.display='inline-block';
   $('ovBtn2').style.display='none';
   $('overlay').classList.remove('hidden');
 }
 function endEndless(){  // 无限模式主动结束：直接进入结算画面
   if(!S.endless||S.phase!=='prep') return;
-  S.phase='over';
+  S.phase='over'; endRunCleanup();
   try{ // 记入历史（能进无限模式=已通关，记为胜局）
     const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
     h.unshift({ts:Date.now(),win:true,round:S.round,hp:S.hp,endless:true,
@@ -3750,6 +3766,7 @@ function endEndless(){  // 无限模式主动结束：直接进入结算画面
   $('ovTitle').textContent='♾ 无限模式结算';
   $('ovText').innerHTML=`主动结束挑战，安然退场。<br>`+reportHTML('endless');
   $('ovBtn').textContent='再来一局';
+  $('ovBtn').onclick=restartGame;   // 显式重绑（同 gameOver，防 onclick 残留）
   $('ovBtn').style.display='inline-block';
   $('ovBtn2').style.display='none';
   $('overlay').classList.remove('hidden');
