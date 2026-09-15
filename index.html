@@ -90,6 +90,15 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
 .unit:has(.hpbar) .fz { top:15px; left:3px; right:auto; }
 .btn.auto-on { border-color:#8dff9a; color:#8dff9a; box-shadow:0 0 8px #8dff9a55; }
+/* 羁绊反馈：激活图标点亮 / 刀客脚下金弧 / 溅射与冰封禁地 */
+.unit .syn .sy.on{ filter:brightness(1.35) saturate(1.25) drop-shadow(0 0 4px #ffd24a); }
+.unit .arcs{ position:absolute; left:8%; right:8%; bottom:2px; height:30%; pointer-events:none; z-index:1; }
+.unit .arcs::after{ content:''; position:absolute; inset:0; border:2px solid transparent; border-radius:50%; }
+.unit .arcs.a1::after{ border-bottom-color:#ffd24acc; }
+.unit .arcs.a2::after{ border-bottom-color:#ffd24acc; border-top-color:#ffd24a55; }
+.unit .arcs.a3::after{ border-color:#ffd24acc; box-shadow:0 0 6px #ffd24a44; }
+.vfx.splashfx{ border-radius:50%; border:2px solid #9fe8ff; background:radial-gradient(circle,#9fe8ff44 0%,transparent 70%); }
+.vfx.aoe.frost{ background:rgba(159,232,255,.16); border:2px solid rgba(159,232,255,.6); box-shadow:inset 0 0 22px rgba(159,232,255,.4); border-radius:12px; }
 /* 章节结算：结算动画 + 3 选 1 全局增强卡片 */
 .settle-hero{ text-align:center; font-size:17px; font-weight:bold; margin:6px 0; animation:augIn .5s both; }
 .settle-hero.win{ color:#8dff9a; } .settle-hero.lose{ color:#ff9a9a; }
@@ -758,7 +767,7 @@ Object.values(skGroups).forEach(members=>{
    恶魔「唯一加成」与单机重复友好设计冲突，未搬运；矮人/食人魔的 1 人起效改为 2 人（单机无独苗）；
    地精 3/6、精灵 3/6/9 按阵营成员数适配为 2/4、3/6；龙 T3 在满蓝上追加技能伤害以区分档位） ===== */
 const FACTIONS = {
-  '深海':    {need:[2,4], desc:['全队魔法抗性 +20%','全队魔法抗性 +40%']},
+  '深海':    {need:[2,4], desc:['全队魔法抗性 +12%','全队魔法抗性 +30%']},
   '星际':    {need:[2,3], desc:['星际棋子开局蓝量拉满','星际棋子开局蓝量拉满，技能伤害 +12%']},
   '毛茸乐园': {need:[2,4,6], desc:['全队攻击 +7%','全队攻击 +14%','全队攻击 +21%']},
   '音律':    {need:[2,4], desc:['音律棋子攻速 +22%','音律棋子攻速 +36%']},
@@ -840,14 +849,14 @@ const SKILL_INFO = {
 const SKILL_VAR = {
   /* —— 1 费 —— */
   ein:    {shieldPct:.32, tauntT:2.0},
-  kouichi:{tgt:'far', fx:[['selfheal',.40]], txt:'中单切入最远敌人，并回复自身相当于伤害 40% 的生命'},
+  kouichi:{tgt:'far', fx:[['selfheal',.40],['splash',.5,1,3]], txt:'中单切入最远敌人，回复自身相当于伤害 40% 的生命，并溅射周围 1 格敌人 50% 伤害'},
   yua:    {pow:1.05, dur:1.6},
   goutan: {allyShield:.30, selfShield:.20, tauntT:1.5},
   yujiu:  {arShred:24, dur:4},
   songlv: {fx:[['selfheal',.35]], txt:'园艺师扎根：回复自身相当于伤害 35% 的生命'},
   likou:  {fx:[['healshield',.06]], txt:'并为其附加 6% 最大生命护盾'},
   agari:  {fx:[['healshield',.04]], txt:'并使全体获得 4% 最大生命护盾'},
-  hoshimi:{p:{critPct:.20, critMul:2.2}},   // 星屑突袭：专属暴击 20%/2.2×
+  hoshimi:{fx:[['splash',.5,1,3]], p:{critPct:.20, critMul:2.2}, txt:'星屑突袭：突进并溅射周围 1 格敌人 50% 伤害（专属暴击 20%/2.2×）'},
   /* —— 2 费 —— */
   suiji:  {manaAmt:25, txt:'为队友回蓝（不含自己，避免自充能）'},
   kanban: {shellPct:.30, blockCt:.25, blockDmg:.5, blockT:4},
@@ -862,7 +871,7 @@ const SKILL_VAR = {
   /* —— 3 费 —— */
   yukie:  {pow:1.10, fx:[['dot',.015]], txt:'并附加每 3 秒 1.5% 最大生命的毒伤'},
   miting: {mrShred:.30, dur:4},
-  xuezhu: {pow:1.20, fx:[['freeze',2.0]]},
+  xuezhu: {pow:1.20, fx:[['freeze',2.0]], zone:{r:1,dur:2500,dps:.4}, txt:'目标冻结，并在落点留下冰封禁地 2.5 秒：区域内敌人每秒受 40% 攻击魔法伤害'},
   zeyin:  {fx:[['foehealdown',.20,3]], txt:'并使周围敌人受到的治疗降低 20%，持续 3 秒'},
   sanli:  {pow:1.05},
   diansu: {pow:1},
@@ -871,10 +880,10 @@ const SKILL_VAR = {
   shengge:{},
   shadow: {pow:1.10, fx:[['exec',.60]], p:{critPct:.20, critMul:2.5}, txt:'突进至最远的敌人；目标生命低于 35% 时追加 60% 斩杀伤害（专属暴击 20%/2.5×）'},
   /* —— 4 费 —— */
-  nox:    {p:{critPct:.25, critMul:2.5}},   // 夜莺回响：专属暴击 25%/2.5×
-  miyue:  {pow:1.10, fx:[['dot',.02]], p:{critPct:.15, critMul:2.2}, txt:'并附加每 3 秒 2% 最大生命的毒伤（专属暴击 15%/2.2×）'},
+  nox:    {fx:[['splash',.5,1,3]], p:{critPct:.25, critMul:2.5}, txt:'夜莺回响：突进斩击溅射周围 1 格敌人 50% 伤害（专属暴击 25%/2.5×）'},
+  miyue:  {pow:1.10, fx:[['dot',.02],['splash',.5,1,3]], p:{critPct:.15, critMul:2.2}, txt:'并附加每 3 秒 2% 最大生命的毒伤，溅射周围 1 格敌人 50% 伤害（专属暴击 15%/2.2×）'},
   huali:  {healN:2, fx:[['allymana',15]], txt:'并使受疗者回复 15 点法力'},
-  youyu:  {pow:1.05},
+  youyu:  {pow:1.05, fx:[['splash',.4,1,3]], txt:'幽魂斩波及周围 1 格敌人 40% 伤害'},
   quanrong:{shellPct:.40, thornsB:.05, thornsT:5, tauntT:2},
   ruiya:  {fx:[['freeze',2.2]]},
   mumu:   {healN:2},
@@ -1083,6 +1092,35 @@ const SFX_DEF={
   finalWin:{t:'global',f:[523,659,784,1046,1318],dur:1.0,type:'triangle',vol:.55}, // 通关
   horn:{t:'global',f:[262,262,330],dur:.55,type:'sawtooth',vol:.32},     // 野怪号角预警
   settle:{t:'global',f:[740],dur:.06,type:'sine',vol:.16},       // 回合结算轻提示
+  splash:{t:'battle',f:[620,300],dur:.12,type:'sine',vol:.2,noise:.3},
+  zone:{t:'battle',f:[240,360],dur:.5,type:'sine',vol:.24},
+  rockcrack:{t:'battle',noise:.7,f:[180,110],dur:.18,type:'square',vol:.3},
+  dodgeleaf:{t:'battle',noise:.6,f:[900,1250],dur:.13,type:'noise',vol:.2},
+  vampbite:{t:'battle',f:[300,170],dur:.12,type:'sawtooth',vol:.16},
+  bounce:{t:'battle',f:[840,640],dur:.08,type:'sine',vol:.15},
+  bleat:{t:'battle',f:[560,420,520],dur:.3,type:'sawtooth',vol:.26},
+  stShenhai:{t:'global',f:[300,210],dur:.4,type:'sine',vol:.28,noise:.4},
+  stXingji:{t:'global',f:[700,1050,1400],dur:.4,type:'sine',vol:.26},
+  stMaorong:{t:'global',f:[160,240],dur:.3,type:'sawtooth',vol:.26,noise:.3},
+  stYinlv:{t:'global',f:[880,1174],dur:.25,type:'triangle',vol:.26},
+  stSixi:{t:'global',f:[196,262,196],dur:.3,type:'triangle',vol:.26},
+  stXueyuan:{t:'global',noise:.6,dur:.15,type:'noise',vol:.2},
+  stYemu:{t:'global',f:[180,120],dur:.5,type:'sine',vol:.26,noise:.3},
+  stHuayu:{t:'global',f:[1046,1318],dur:.3,type:'sine',vol:.24},
+  stModao:{t:'global',f:[140,90],dur:.4,type:'sawtooth',vol:.28},
+  stSenzhi:{t:'global',noise:.6,f:[400,600],dur:.25,type:'noise',vol:.2},
+  stGongzao:{t:'global',f:[500,660],dur:.2,type:'square',vol:.2},
+  stPSP:{t:'global',f:[900,600],dur:.2,type:'square',vol:.2},
+  stDaoke:{t:'global',f:[700,520],dur:.2,type:'square',vol:.26},
+  stShouhu:{t:'global',f:[330,440],dur:.35,type:'sine',vol:.28},
+  stGeshi:{t:'global',f:[660,880],dur:.35,type:'sine',vol:.26},
+  stYouxia:{t:'global',noise:.5,dur:.12,type:'noise',vol:.18},
+  stFashi:{t:'global',f:[240,360,480],dur:.4,type:'sine',vol:.26},
+  stZhoushu:{t:'global',f:[200,100],dur:.4,type:'triangle',vol:.26},
+  stCike:{t:'global',f:[1200,800],dur:.15,type:'square',vol:.24},
+  stKuangzhan:{t:'global',f:[150,100],dur:.35,type:'sawtooth',vol:.28,noise:.3},
+  stYizhe:{t:'global',f:[740,988],dur:.3,type:'sine',vol:.24},
+  stOuxiang:{t:'global',f:[659,784,988],dur:.35,type:'triangle',vol:.28},
 };
 const SFX_SKILL={cleave:'slash',dash:'slash',shred:'slash',rapid:'slash',
   fireball:'spellFire',burn:'spellFire',volley:'spellFire',
@@ -1338,6 +1376,7 @@ function unitInner(u){
   return `<i class="pt" style="background-image:url(assets/units/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d)}
     <span class="st">${'★'.repeat(u.star)}<span style="opacity:.8">${d.form==='me'?'⚔':'🏹'}</span></span>
     <span class="nm">${d.name}</span>
+    ${u.arcs?`<span class="arcs a${Math.min(3,u.arcs)}"></span>`:''}
     ${mp}
     ${inBattle?`<div class="hpbar"><div class="hpfill" style="width:${Math.max(0,w)}%"></div></div>`:''}`;
 }
@@ -1493,8 +1532,9 @@ const FAC_ICON={'深海':'🌊','星际':'🚀','毛茸乐园':'🐾','音律':'
 const JOB_ICON={'刀客':'🗡️','守护':'🛡️','歌势':'🎤','游侠':'🏹','法师':'☄️','咒术':'☠️','刺客':'🥷','狂战':'🪓','医者':'💊','偶像':'✨'};
 /* 棋子羁绊徽章（assets/syn/ 像素图标，tools/gen_syn_icons.py 生成） */
 const SYN_IMG={'深海':'shenhai','星际':'xingji','毛茸乐园':'maorong','音律':'yinlv','四禧丸子':'sixi','学园':'xueyuan','夜幕':'yemu','花语':'huayu','魔道':'modao','森之国':'senzhiguo','工造':'gongzao','P-SP':'psp','刀客':'daoke','守护':'shouhu','游侠':'youxia','刺客':'cike','法师':'fashi','咒术':'zhoushu','医者':'yizhe','歌势':'geshi','偶像':'ouxiang','狂战':'kuangzhan'};
-const synIconsHTML = d => { const ks=[...facsOf(d),...jobsOf(d)];
-  return ks.length?`<span class="syn">${ks.map(k=>SYN_IMG[k]?`<i class="sy" title="${k}" style="background-image:url(assets/syn/${SYN_IMG[k]}.png)"></i>`:'').join('')}</span>`:''; };
+const BV={};
+const synIconsHTML = (d, side) => { const ks=[...facsOf(d),...jobsOf(d)]; const bv=(typeof BV!=='undefined'&&BV[side])||{};
+  return ks.length?`<span class="syn">${ks.map(k=>SYN_IMG[k]?`<i class="sy${bv[k]?' on':''}" title="${k}" style="background-image:url(assets/syn/${SYN_IMG[k]}.png)"></i>`:'').join('')}</span>`:''; };
 /* 多多式羁绊徽章：图标+名称+档位进度；已触发的排前面（档位深者优先），未触发的按「距下一档缺口」升序（差1的排在差2的前面）；
    已触发档位的效果直接显示在徽章下方（不再只显示 2/4 / MAX） */
 function synBadges(cnt,cfg,icons){
@@ -2327,6 +2367,7 @@ function startBattle(){
   // —— 双方羁绊结算（分级强化） ——
   const tierOf=(cnt,tbl,k)=>{ let t=0; for(const n of tbl[k].need) if(cnt[k]>=n) t++; return t; };
   for(const side of [0,1]){
+    BV[side]={};
     const mine = units.filter(u=>u.side===side);
     const facCnt={}, clsCnt={};
     const seen=new Set(); // 羁绊按不同棋子计数：同名重复副本只算 1 个
@@ -2334,11 +2375,13 @@ function startBattle(){
       const d=byId(u.id);
       facsOf(d).forEach(f=>facCnt[f]=(facCnt[f]||0)+1);
       jobsOf(d).forEach(j=>clsCnt[j]=(clsCnt[j]||0)+1); });
+    Object.keys(facCnt).forEach(k=>{ const t=tierOf(facCnt,FACTIONS,k); if(t>0) BV[side][k]=t; });
+    Object.keys(clsCnt).forEach(k=>{ const t=tierOf(clsCnt,CLASSES,k); if(t>0) BV[side][k]=t; });
     // 数值聚合（刀塔式：数值光环 + 机制触发）
     let atkMul=1, regen=0, t;
     // —— 阵营档位（刀塔种族效果移植） ——
     t=tierOf(facCnt,FACTIONS,'深海');          // 娜迦：全队魔抗
-    const mrBuff = t>=2 ? 0.40 : t>=1 ? 0.20 : 0;
+    const mrBuff = t>=2 ? 0.30 : t>=1 ? 0.12 : 0;
     t=tierOf(facCnt,FACTIONS,'星际');          // 龙：开局满蓝，T3 追加技能伤害
     const starFull=t>=1, starSk=t>=2 ? 1.12 : 1;
     t=tierOf(facCnt,FACTIONS,'毛茸乐园');       // 野兽：全队攻击 +10%/档
@@ -2382,6 +2425,12 @@ function startBattle(){
     if(t>=1) regen+=1; if(t>=2) regen+=1;
     t=tierOf(clsCnt,CLASSES,'偶像');           // demo 原设计：全队攻击
     if(t>=1) atkMul+=0.005; if(t>=2) atkMul+=0.005;
+    if(side===0){   // 羁绊启动音：至多 2 个已达档位羁绊（表现层）
+      const act=[...Object.keys(facCnt).map(k=>({k,t:tierOf(facCnt,FACTIONS,k)})),
+                 ...Object.keys(clsCnt).map(k=>({k,t:tierOf(clsCnt,CLASSES,k)}))].filter(x=>x.t>0);
+      act.sort((a,b)=>b.t-a.t);
+      act.slice(0,2).forEach((x,i)=>{ const key=BOND_ST[x.k]; if(key) setTimeout(()=>sfx(key), 120+i*220); });
+    }
     // —— 应用到每个棋子 ——
     mine.forEach(u=>{
       const d=byId(u.id);
@@ -2400,7 +2449,7 @@ function startBattle(){
       u.atk=Math.round(u.atk*atkMul);
       u.spdMul=(u.spdMul||1)+facSpd;   // 音律攻速为加法叠加：保留装备攻速（修复既有缺陷——原无条件赋值曾把弓类装备攻速清空）
       if(mrBuff>0) u.mr=Math.min(0.85,(u.mr||0)+mrBuff);          // 娜迦式：全队魔抗（封顶 85%）
-      if(hasJob(d,'刀客') && waT>=1) u.ar += waT>=3?14 : waT>=2?11 : 7;      // 战士式护甲
+      if(hasJob(d,'刀客') && waT>=1){ u.ar += waT>=3?14 : waT>=2?11 : 7; u.arcs=waT; }      // 战士式护甲 + 脚下金弧
       if(hasJob(d,'守护') && knP>0){ u.knightP=knP; u.knightSh=knSh; u.knightCd=3000; }  // 骑士式周期护盾
       if(hasJob(d,'游侠') && hgBounce>0) u.bounceP=hgBounce;       // 猎人式弹射
       if(hasJob(d,'刺客') && asCrit>0){ u.crit=Math.min(0.6,(u.crit||0)+asCrit); u.critM=Math.max(u.critM||0,asCritM); }    // 刺客暴击与装备/专属暴击合并：率相加封顶60%、暴伤取大
@@ -2418,7 +2467,7 @@ function startBattle(){
       const foes=units.filter(o=>o.side!==side&&o.hp>0);
       if(foes.length){ const v=foes[Math.floor(Math.random()*foes.length)];
         v.hexT=Math.max(v.hexT||0,2500);
-        hexFx(v);
+        hexFx(v); sfx('bleat');
         log(`🐑 ${side===0?'我方':'敌方'}咒术师将 ${byId(v.id).name} 变形了！`); }
     }
     // 地精·工造：随机友军获得护甲与每秒回血
@@ -2473,7 +2522,7 @@ function startBattle(){
       if(u.knightCd>0){                              // 刀塔骑士（守护）：每 3 秒概率获得生命护盾
         u.knightCd-=TICK;
         if(u.knightCd<=0){ u.knightCd=3000;
-          if(Math.random()<u.knightP){ u.shield+=Math.round(u.maxhp*u.knightSh); dmgPopup(null,u,'🛡盾','cast'); } }
+          if(Math.random()<u.knightP){ u.shield+=Math.round(u.maxhp*u.knightSh); vfxAt(u,'ring shield',800); sfx('shield'); dmgPopup(null,u,'🛡盾','cast'); } }
       }
       if(u.shieldTick){                               // 不朽圣盾：每 3 秒稳定获得 8% 生命护盾（禁盾期间不生效）
         if(u.itemShieldCd>0) u.itemShieldCd-=TICK;
@@ -2571,6 +2620,7 @@ function startBattle(){
           else hitFx(u,tgt,d.dtype);
           // 闪避（刀塔精灵式）：仅对普攻生效，命中判定失败则本次普攻落空
           if(tgt.dodge>0 && Math.random()<tgt.dodge){
+            sfx('dodgeleaf'); vfxAt(tgt,'leaves',550);
             dmgPopup(null,tgt,'闪避','cast');
             u.cd = 1150/aspd*(1+slow);
             continue;
@@ -2581,7 +2631,7 @@ function startBattle(){
           if(d.form==='me' && tgt.hp>0 && tgt.petrifyProc>0 && u.hexT<=0 && Math.random()<tgt.petrifyProc){
             u.petrifyT=Math.max(u.petrifyT,1500);
             dmgPopup(null,u,'🗿石化','cast');
-            crackFx(u);
+            crackFx(u); sfx('rockcrack');
           }
           // 刀塔人类（P-SP）：攻击概率沉默目标 3 秒
           if(dealt>0 && u.silProc>0 && tgt.hp>0 && tgt.silenceT<=0 && Math.random()<u.silProc){
@@ -2595,6 +2645,7 @@ function startBattle(){
               .sort((a,b)=>unitDist(a,tgt)-unitDist(b,tgt))[0];
             if(near){
               dealDamage(u,near,Math.max(1,Math.round(dmg*0.5)),units,d.dtype);
+              sfx('bounce');
               dmgPopup(u,near,'⚡弹射','cast');
             }
           }
@@ -2612,6 +2663,13 @@ function startBattle(){
       }
     }
     renderBattle(units);
+    // 冰封禁地：区域每秒结算一次（施法者阵亡后区域失效）
+    battleZones=battleZones.filter(z=>(z.dur-=TICK)>0 && z.u.hp>0);
+    battleZones.forEach(z=>{ z.acc=(z.acc||0)+TICK;
+      if(z.acc>=1000){ z.acc-=1000;
+        units.filter(o=>o.hp>0&&o.side!==z.side&&cellsOf(o).some(([cx,cy])=>Math.abs(cx-z.x)<=z.r&&Math.abs(cy-z.y)<=z.r))
+          .forEach(o=>{ dealDamage(z.u,o,z.dmg,units,'magic'); dmgPopup(null,o,'❄禁地','cast'); }); }
+    });
     const alive0=units.filter(u=>u.hp>0&&u.side===0).length;
     const alive1=units.filter(u=>u.hp>0&&u.side===1).length;
     if(alive0===0||alive1===0||t>60000){
@@ -2670,7 +2728,7 @@ function dealDamage(src,tgt,dmg,units,dtype){
     const lo=Math.min(dmg/5,15), hi=Math.min(dmg/2.5,30);
     tgt.mana=Math.min(tgt.maxmana, tgt.mana+(hi>lo? lo+Math.random()*(hi-lo): lo)*(tgt.manaRegenMul||1));
   }
-  if(src && src.vamp && src.hexT<=0 && src.hp<src.maxhp && dmg>0){ src.hp=Math.min(src.maxhp, src.hp+Math.round(dmg*src.vamp)); threadFx(src,tgt); }   // 吸血：普攻与技能伤害均生效（保持既有语义）
+  if(src && src.vamp && src.hexT<=0 && src.hp<src.maxhp && dmg>0){ src.hp=Math.min(src.maxhp, src.hp+Math.round(dmg*src.vamp)); threadFx(src,tgt); sfx('vampbite'); }   // 吸血：普攻与技能伤害均生效（保持既有语义）
   if(src && src.skillVamp && src._casting===true && src.hexT<=0 && src.hp<src.maxhp && dmg>0){
     const sv2=Math.round(dmg*src.skillVamp); const real=Math.min(src.maxhp,src.hp+sv2)-src.hp; src.hp+=real; bsHeal(src,real); threadFx(src,tgt);
   }
@@ -3036,9 +3094,11 @@ function applyFx(u,f,sv,units,allies,foes,power,dmg){
       case 'atkup': u.atk=Math.round(u.atk*(1+a)); break;
       case 'allatkup': allies.forEach(t=>{ t.atk=Math.round(t.atk*(1+a)); }); break;
       case 'splash': { if(!hit) break;
-        const f2=foes.filter(v=>v!==f&&v.hp>0)
-          .sort((x,y)=>unitDist(x,u)-unitDist(y,u))[0];
-        if(f2){ dealDamage(u,f2,Math.round(power*a),units); dmgPopup(u,f2,'✦溅射','cast'); } break; }
+        const R=(b||1), maxN=(fx[3]||1);
+        const f2=foes.filter(v=>v!==f&&v.hp>0&&unitDist(v,f)<=R)
+          .sort((x,y)=>unitDist(x,u)-unitDist(y,u)).slice(0,maxN);
+        f2.forEach(v=>{ dealDamage(u,v,Math.round(power*a),units); dmgPopup(u,v,'✦溅射','cast'); vfxAt(v,'splashfx',500); });
+        if(f2.length) sfx('splash'); break; }
       case 'foehealdown': aoeFoes(u,foes,AOE_RADIUS.foehealdown).forEach(t=>{ if(t.hp>0){ t.healDownA=Math.max(t.healDownA||0,a); t.healDownT=(b||3)*1000; } }); break;
       case 'exec': if(hit && f.hp>0 && f.hp/f.maxhp<0.35){   // 斩杀：残血目标追加伤害
         dealDamage(u,f,Math.round(power*a),units); dmgPopup(u,f,'⚔斩杀','cast'); } break;
@@ -3142,7 +3202,8 @@ function castSkill(u,tgt,units,skMul){
       fxShards(f,'ice',4);                                          // 浅蓝冰晶碎裂
       const dd=dealDamage(u,f,Math.round(power*1.5),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
-      if(f.hp>0)f.frozen=Math.max(f.frozen,1500); break; }
+      if(f.hp>0)f.frozen=Math.max(f.frozen,1500);
+      if(sv.zone) spawnZone(u,f.x,f.y,sv.zone); break; }
     case 'break': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
       beam(u,f,'#ffb14a');
@@ -3325,6 +3386,11 @@ function dmgPopup(src,tgt,text,cls){
   el.style.left=(p.x-24)+'px'; el.style.top=(p.y-30)+'px';
   b.appendChild(el); setTimeout(()=>el.remove(),800/SPEED);
 }
+let battleZones=[];
+function spawnZone(u,x,y,z){   // 冰封禁地：以目标格为中心的持续区域（视觉走 vfxAoe，机制在此记账）
+  battleZones.push({x,y,r:z.r,dur:z.dur,dmg:Math.max(1,Math.round(u.atk*z.dps)),side:u.side,acc:0,u});
+  vfxAoe(u,z.r,'frost',z.dur); sfx('zone');
+}
 function renderBattle(units){
   let layer=document.getElementById('unitLayer');
   if(!layer){ layer=document.createElement('div'); layer.id='unitLayer'; $('board').appendChild(layer); }
@@ -3386,6 +3452,8 @@ function showResultBanner(won,cb){
   $('board').appendChild(el);
   setTimeout(()=>{ el.remove(); cb(); }, 1000/SPEED);   // 结算横幅停留（随倍速），动画放慢后多留一会
 }
+/* 羁绊启动音映射（表现层） */
+const BOND_ST={深海:'stShenhai',星际:'stXingji',毛茸乐园:'stMaorong',音律:'stYinlv',四禧丸子:'stSixi',学园:'stXueyuan',夜幕:'stYemu',花语:'stHuayu',魔道:'stModao',森之国:'stSenzhi',工造:'stGongzao','P-SP':'stPSP',刀客:'stDaoke',守护:'stShouhu',歌势:'stGeshi',游侠:'stYouxia',法师:'stFashi',咒术:'stZhoushu',刺客:'stCike',狂战:'stKuangzhan',医者:'stYizhe',偶像:'stOuxiang'};
 /* ================= 章节系统：每 25 回合守关魔王 → 结算动画 + 3 选 1 全局增强 ================= */
 const AUGS=[
   {id:'atk',  n:'⚡ 强攻令',   d:v=>`全体我方棋子攻击 +${v}%`,            s:25,  w:12},
