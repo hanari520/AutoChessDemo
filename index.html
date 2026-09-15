@@ -83,6 +83,14 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.45)); }
 .unit .nm { position:absolute; left:2px; right:2px; bottom:3px; z-index:1; font-weight:bold; padding:1px 0;
   background:rgba(10,12,24,.6); border-radius:4px; text-shadow:0 1px 2px #000; }
+/* 羁绊徽章：备战态在名字下方一行（名字自动上移让位）；战斗态在名字上方（避开血条/蓝条） */
+.unit .syn { position:absolute; bottom:1px; left:0; right:0; display:flex; justify-content:center; gap:2px; z-index:1; pointer-events:none; }
+.unit .syn .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:center;
+  background-repeat:no-repeat; background-size:contain; image-rendering:pixelated; pointer-events:auto;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
+.unit:has(.syn) .nm { bottom:calc(var(--cell)*.23); }
+.unit:has(.hpbar) .syn { bottom:26px; }
+.unit.big .syn .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
 .unit:has(.hpbar) .nm { bottom:12px; }
 .unit .st { position:absolute; top:2px; left:3px; z-index:1; font-size:calc(var(--cell)*.15);
   text-shadow:0 1px 2px #000; }
@@ -1309,7 +1317,7 @@ function unitInner(u){
   const inBattle = u.side===0||u.side===1;
   const mp = inBattle ? (isPassive(u) ? '<span class="sk">被动</span>'
       : `<div class="mpbar"><div class="mpfill" style="width:${m}%"></div></div>`) : '';
-  return `<i class="pt" style="background-image:url(assets/units/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${sideTag}
+  return `<i class="pt" style="background-image:url(assets/units/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${sideTag}${synIconsHTML(d)}
     <span class="st">${'★'.repeat(u.star)}<span style="opacity:.8">${d.form==='me'?'⚔':'🏹'}</span></span>
     <span class="nm">${d.name}</span>
     ${mp}
@@ -1463,6 +1471,10 @@ function renderTop(){
 }
 const FAC_ICON={'深海':'🌊','星际':'🚀','毛茸乐园':'🐾','音律':'🎵','四禧丸子':'🍡','学园':'🎓','夜幕':'🌙','花语':'🌸','魔道':'🔮','森之国':'🌲','工造':'⚙️','P-SP':'🎬'};
 const JOB_ICON={'刀客':'🗡️','守护':'🛡️','歌势':'🎤','游侠':'🏹','法师':'☄️','咒术':'☠️','刺客':'🥷','狂战':'🪓','医者':'💊','偶像':'✨'};
+/* 棋子羁绊徽章（assets/syn/ 像素图标，tools/gen_syn_icons.py 生成） */
+const SYN_IMG={'深海':'shenhai','星际':'xingji','毛茸乐园':'maorong','音律':'yinlv','四禧丸子':'sixi','学园':'xueyuan','夜幕':'yemu','花语':'huayu','魔道':'modao','森之国':'senzhiguo','工造':'gongzao','P-SP':'psp','刀客':'daoke','守护':'shouhu','游侠':'youxia','刺客':'cike','法师':'fashi','咒术':'zhoushu','医者':'yizhe','歌势':'geshi','偶像':'ouxiang','狂战':'kuangzhan'};
+const synIconsHTML = d => { const ks=[...facsOf(d),...jobsOf(d)];
+  return ks.length?`<span class="syn">${ks.map(k=>SYN_IMG[k]?`<i class="sy" title="${k}" style="background-image:url(assets/syn/${SYN_IMG[k]}.png)"></i>`:'').join('')}</span>`:''; };
 /* 多多式羁绊徽章：图标+名称+档位进度；已触发的排前面（档位深者优先），未触发的按「距下一档缺口」升序（差1的排在差2的前面）；
    已触发档位的效果直接显示在徽章下方（不再只显示 2/4 / MAX） */
 function synBadges(cnt,cfg,icons){
