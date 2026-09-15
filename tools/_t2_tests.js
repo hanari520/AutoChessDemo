@@ -111,12 +111,21 @@ module.exports.run = function (A, driveBattle) {
   console.log('[d] 完整一局冒烟（结算/统计/总结贯通）');
   {
     globalThis.newGame(); globalThis.renderAll();
+    let settled = false;
     for (let k = 0; k < 40 && A.S.phase !== 'over'; k++) {
+      if (A.S.phase === 'chapter') {   // 章节结算：验证 3 选 1 与增强入账，然后收兵结束
+        settled = true;
+        ok(Array.isArray(A.S.settleOffer) && A.S.settleOffer.length === 3, '章节结算提供 3 选 1 全局增强');
+        if (typeof globalThis.pickAug === 'function') globalThis.pickAug(0);
+        ok((A.S.augs || []).length === 1, '选择后增强已入账（augs=' + (A.S.augs || []).length + '）');
+        globalThis.chapterStop();
+        break;
+      }
       globalThis.botPrep();
       globalThis.startBattle();
       driveBattle(700);
     }
-    ok(A.S.phase === 'over' || A.S.round > 25, '一局结束（round=' + A.S.round + ' phase=' + A.S.phase + '）');
+    ok(settled || A.S.phase === 'over' || A.S.round > 25, '一局结束（round=' + A.S.round + ' phase=' + A.S.phase + '）');
     const ov = String(global.document.getElementById('ovText').innerHTML);
     ok(ov.includes('经济构成') && ov.includes('全场之最'), '结算 overlay 面板完整');
     const hpTotal = (A.S.stats.hpLog || []).reduce((s, x) => s + x.d, 0);

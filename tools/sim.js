@@ -2,7 +2,7 @@
    由"普通玩家"机器人代打，统计 25 回合通关率（含野怪回合掉装备胜率）。用法：node tools/sim.js [局数] */
 const fs = require('fs'), path = require('path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const code = html.match(/<script>([\s\S]*)<\/script>/)[1] + `
+const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 
 ;globalThis.API = { get S(){return S}, setS:v=>{S=v},
   get currentTick(){return currentTick},
