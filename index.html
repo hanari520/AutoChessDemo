@@ -89,6 +89,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   background-repeat:no-repeat; background-size:contain; image-rendering:pixelated; pointer-events:auto;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
 .unit:has(.hpbar) .fz { top:15px; left:3px; right:auto; }
+.btn.auto-on { border-color:#8dff9a; color:#8dff9a; box-shadow:0 0 8px #8dff9a55; }
 .unit.big .syn .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
 .unit:has(.hpbar) .nm { bottom:12px; }
 .unit .st { position:absolute; top:2px; left:3px; z-index:1; font-size:calc(var(--cell)*.15);
@@ -511,6 +512,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <div class="fight-btn-row">
     <button class="btn" id="histBtn">📜 战绩</button>
     <button class="btn" id="bookBtn">📖 图鉴</button>
+    <button class="btn" id="autoBtn">🤖 托管</button>
     <button class="btn" id="helpBtn">❓ 玩法</button>
     <button class="btn" id="resetBtn" title="放弃当前进度，重新开一局">🔄 重开</button>
     <button class="btn" id="endBtn" style="display:none;background:#5b1e1e;color:#ffb0b0" title="结束无限模式，直接查看本局结算">🏁 结束挑战</button>
@@ -1022,6 +1024,8 @@ function newGame(){
   S.pool={}; initPool();
   prepEnemy();
   rollShop();   // 开局发牌（含第 1 回合保底 1 费）
+  S.auto = autoStoreGet(); setAutoUI();   // 托管开关跨局保留
+  if(S.auto) autoPilot(900);
 }
 function initPool(){ UNITS.forEach(u=>{ S.pool[u.id]=POOL_COPIES[u.cost]; }); }   // 初始化限量卡池（含开局保底 1 费）
 
@@ -3411,6 +3415,7 @@ function endBattle(alive0,alive1){
   renderAll();
   $('fightBtn').disabled=false;
   log(`— 第 ${S.round} 回合备战阶段 —${S.endless?'（♾ 无限模式）':''}`);
+  autoPilot();   // 托管开启时：自动运营后开战
   if(S.round%5===0){   // 野怪回合提醒
     log(`🐾 本回合是【野怪回合 · ${CREEP[S.round]||'野怪'}】：胜利掉 2 件装备，失败也保底掉 1 件（不扣血、不动连胜）`);
   }
@@ -3472,6 +3477,7 @@ function enterEndless(){
   $('fightBtn').disabled=false;
   rollShop(); renderAll();
   log('♾ 进入无限模式：从第 26 回合开始，敌方将无限变强！');
+  autoPilot();
 }
 function gameOver(win){
   S.phase='over'; ovMode='start'; hideOvClose();
@@ -3604,6 +3610,8 @@ function loadGame(){
     if(!o||typeof o.round!=='number'||!Array.isArray(o.board)||!Array.isArray(o.bench)) return false;
     if(!S) S={}; // 直接从存档启动时 S 尚未初始化
     Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
+    S.auto = autoStoreGet(); setAutoUI();
+    if(S.auto) autoPilot(900);
     prepEnemy();   // 读档后立即生成可观察的敌方阵容
     return true;
   }catch(e){ return false; }
@@ -3655,6 +3663,32 @@ $('resumeNo').onclick=()=>{ localStorage.removeItem(SAVE_KEY);
   $('resumeOv').classList.add('hidden'); newGame(); renderAll(); $('fightBtn').disabled=false; };
 /* PWA：Service Worker 注册（离线可玩，安卓可添加到主屏幕） */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+
+/* ================= 托管：复用 tools/bot_strategy.js 的 botPrep（与模拟校准同一策略，目标即通关率） ================= */
+function autoStoreGet(){ try{ return localStorage.getItem('vc_auto')==='1' }catch(e){ return false } }
+function autoStoreSet(v){ try{ localStorage.setItem('vc_auto', v?'1':'0') }catch(e){} }
+let autoBusy=false;
+function autoPilot(delay=600){
+  if(!S || !S.auto || S.phase!=='prep' || autoBusy) return;
+  autoBusy=true;
+  setTimeout(()=>{ autoBusy=false;
+    if(!S.auto || S.phase!=='prep' || S.hp<=0) return;
+    try{
+      botPrep();   // 买牌/卖闲子/穿装备/合成/升级/择优编队（bot_strategy.js）
+      if(S.phase==='prep' && !S.board.some(Boolean)){ rollShop(); botPrep(); }   // 极端空场兜底：补一轮刷新+购买
+      if(S.phase==='prep'){
+        if(S.board.some(Boolean)) startBattle();
+        else log('⚠️ 托管：无法上阵（金币/卡牌不足），请手动处理');
+      }
+    }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} }
+  }, delay);
+}
+function setAutoUI(){ try{ const b=$('autoBtn'); if(b) b.classList.toggle('auto-on', !!S.auto); }catch(e){} }
+$('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
+  log(S.auto?'🤖 托管开启：自动买牌/上阵/穿装/开战':'🤖 托管关闭');
+  if(S.auto && S.phase==='prep') autoPilot(300);
+};
 </script>
+<script src="tools/bot_strategy.js"></script>
 </body>
 </html>
