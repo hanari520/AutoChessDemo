@@ -236,6 +236,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .btn.on { background:#5b4a1e; border-color:#ffd24a; }
 /* 刷新/锁定：纵向并排一列，紧贴商店右侧 */
 #shopctlCol { display:flex; flex-direction:column; gap:5px; justify-content:center; align-self:stretch; flex-shrink:0; }
+#goldChip { align-self:stretch; text-align:center; padding:5px 10px; background:#241e3e; border:1px solid #ffd24a66; border-radius:8px; color:#ffd24a; font-size:15px; font-weight:bold; white-space:nowrap; }
+#goldChip .gi { font-size:10px; color:#8dff9a; font-weight:normal; }
 #shopctlCol .btn { align-self:stretch; padding:6px 10px; font-size:13px; line-height:1.2; min-width:92px; text-align:center; white-space:nowrap; }
 #shop { display:flex; gap:8px; flex:1; align-items:stretch; min-width:0; }
 .card { flex:1; min-width:0; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px 8px 22px;
@@ -571,6 +573,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   </div>
   <div id="shop"></div>
   <div id="shopctlCol">
+    <div id="goldChip" title="当前金币（利息：每10金+1，上限5）">💰 <b id="goldChipN">0</b><span id="goldChipI"></span></div>
     <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄 刷新 (D) -2💰</button>
     <button class="btn shopctl" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）">🔓 锁定 (L)</button>
   </div>
@@ -1443,6 +1446,8 @@ function renderTop(){
   $('roundMax').textContent = S.endless ? '' : '/25';
   $('hp').textContent=S.hp; $('gold').textContent=S.gold;
   $('interest').textContent = S.phase==='prep' && S.lvl<11 ? `+${Math.min(5,Math.floor(S.gold/10))}` : '';
+  { const gcn=$('goldChipN'); if(gcn) gcn.textContent=S.gold;
+    const gci=$('goldChipI'); if(gci) gci.textContent = S.phase==='prep' ? ` +${Math.min(5,Math.floor(S.gold/10))}息` : ''; }
   const pop=S.board.filter(Boolean).length;
   $('pop').textContent=pop; $('popMax').textContent=S.lvl;
   // 人口未上满提醒：备战阶段若场上人数 < 人口上限，高亮人口标签 + 一键上阵按钮脉冲
@@ -2086,7 +2091,8 @@ function genEnemy(){
   // 可证——野怪不吃羁绊，只能是被稀释的卡池拖慢玩家成长期）。此系数是结构性变更的
   // 一次性补偿量（非定期旋钮），调定后不要再动；日常微调用 r25 bossMult。
   const POOL_DILUTION_COMP = 0.85;
-  const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * dyn * POOL_DILUTION_COMP;
+  const DIFF_TUNE = 0.71;   // 难度总旋钮：目标整体守关通过率 ~90%（2026-09-15 用户设定）
+  const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * dyn * POOL_DILUTION_COMP * DIFF_TUNE;
   const used=new Set();
   const list=[];
   if(r%5===0){   // 野怪回合（每 5 回合），波次固定按进度强化
@@ -2094,7 +2100,7 @@ function genEnemy(){
        → 远古凶兽(4费2★) → 最终魔王(5费1★·吃 bossMult)；头目吃 bossMult，杂兵吃基础 mul */
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
-    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.20 : 1.72;
+    let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.15 : 1.08;
     if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
