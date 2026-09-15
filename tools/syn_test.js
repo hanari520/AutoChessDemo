@@ -5,7 +5,7 @@
         不给羁绊名 = 测全部 22 个；局数默认 30 */
 const fs = require('fs'), path = require('path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const code = html.match(/<script>([\s\S]*)<\/script>/)[1] + `
+const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 
 ;globalThis.API = { get S(){return S}, setS:v=>{S=v},
   get currentTick(){return currentTick},
@@ -197,9 +197,9 @@ function botPrep() {
       sellAt('bench', bi2);
     }
   }
-  // 4) 升级人口节奏（与普通机器人一致）
-  const lvlPlan = { 2:2, 3:3, 5:4, 8:5, 12:6, 16:7, 20:8, 23:9, 25:10 };
-  const target = lvlPlan[S.round] || S.lvl;
+  // 4) 升级人口节奏（与普通机器人一致的成长计划）
+  const lvlPlan = { 2:3, 3:4, 5:5, 8:6, 11:7, 15:8, 19:9, 23:10 };
+  const target = Math.max(lvlPlan[S.round] || S.lvl, S.lvl);
   for (let k = 0; k < 8 && S.lvl < target; k++) {
     if (S.gold >= 5 + (S.hp >= 12 ? 4 : 2)) { S.gold -= 5; S.xp += 4; checkLevel(); } else break;
   }
@@ -277,7 +277,13 @@ const targets = argv.length > 1
 /* ---------- 主循环 ---------- */
 const t0 = Date.now();
 const report = [];
+const CAT = { '输出': ['法师','刺客','游侠','狂战','咒术','夜幕','毛茸乐园','魔道'],
+              '普通': ['刀客','守护','深海','音律','四禧丸子','星际','工造','P-SP','森之国'],
+              '辅助': ['医者','歌势','偶像','花语','学园'] };
+const TGT = { '输出': 90, '普通': 90, '辅助': 90 };   // 2026-09-15 用户设定：所有羁绊统一 90%（±5pp）
+const catOf = s => Object.keys(CAT).find(c => CAT[c].includes(s)) || '??';
 for (const syn of targets) {
+  console.log(`—— ${syn}（${catOf(syn)}，目标${TGT[catOf(syn)]}%，已用时 ${((Date.now()-t0)/1000).toFixed(0)}s）——`);
   const lockIds = new Set(A_.UNITS.filter(u => u.fac === syn || u.job === syn).map(u => u.id));
   globalThis.LOCK_SYN = lockIds;
   let wins = 0; const lossRounds = [];
@@ -286,6 +292,10 @@ for (const syn of targets) {
     let outcome = null;
     for (let guard = 0; guard < 40; guard++) {
       const curRound = A.S.round;   // 战斗结算会推进回合数，r 编号须在开战前取
+      if (A.S.phase === 'chapter') {   // 章节结算：守关魔王战胜负即本局胜负
+        outcome = { win: !!A.S.settleWon, round: curRound };
+        break;
+      }
       botPrep();
       (0, eval)('startBattle')();
       const snap = globalThis.__bu || [];
@@ -331,3 +341,12 @@ const min = report[report.length - 1];
 console.log(`\n汇总：最高 ${rates[0].toFixed(1)}%  最低 ${min.syn} ${min.rate.toFixed(1)}%  中位 ${rates[Math.floor(rates.length / 2)].toFixed(1)}%  耗时 ${((Date.now() - t0) / 1000).toFixed(0)}s`);
 const weak = report.filter(r => r.rate < 20);
 if (weak.length) console.log(`⚠ 低于 20%（系统性歧视线）：${weak.map(r => `${r.syn} ${r.rate.toFixed(1)}%`).join('、')}`);
+console.log('\n=== 分档目标对照（目标 ±5pp） ===');
+let badTotal = 0;
+for (const c of Object.keys(CAT)) {
+  const rs = report.filter(r => catOf(r.syn) === c);
+  const bad = rs.filter(r => Math.abs(r.rate - TGT[c]) > 5);
+  badTotal += bad.length;
+  console.log(`【${c} 目标${TGT[c]}±5】 ` + rs.map(r => `${r.syn} ${(r.rate).toFixed(0)}%${Math.abs(r.rate-TGT[c])>5?' ⚠':''}`).join('、') + (bad.length ? `   ← 超差 ${bad.length} 项` : '   ✓ 全达标'));
+}
+console.log(badTotal ? `共 ${badTotal} 项超差，需调整` : '全部达标');

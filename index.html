@@ -760,15 +760,15 @@ Object.values(skGroups).forEach(members=>{
 const FACTIONS = {
   '深海':    {need:[2,4], desc:['全队魔法抗性 +20%','全队魔法抗性 +40%']},
   '星际':    {need:[2,3], desc:['星际棋子开局蓝量拉满','星际棋子开局蓝量拉满，技能伤害 +12%']},
-  '毛茸乐园': {need:[2,4,6], desc:['全队攻击 +10%','全队攻击 +20%','全队攻击 +30%']},
+  '毛茸乐园': {need:[2,4,6], desc:['全队攻击 +7%','全队攻击 +14%','全队攻击 +21%']},
   '音律':    {need:[2,4], desc:['音律棋子攻速 +22%','音律棋子攻速 +36%']},
   '四禧丸子': {need:[2,4], desc:['四禧丸子棋子生命 +18%','四禧丸子棋子生命 +36%']},
   '学园':    {need:[2], desc:['学园棋子射程 +1']},
   '夜幕':    {need:[2,4], desc:['敌方全体护甲 -4','敌方全体护甲 -8']},
-  '花语':    {need:[2], desc:['花语棋子生命 +10%']},
+  '花语':    {need:[2], desc:['花语棋子生命 +7%']},
   '魔道':    {need:[2,4], desc:['魔道棋子被近战攻击时 40% 概率石化攻击者 1.5 秒','概率提升至 64%']},
   '森之国':  {need:[3,6], desc:['森之国棋子闪避普通攻击 20%','闪避提升至 40%']},
-  '工造':    {need:[2,4], desc:['随机一名友军获得 10 护甲并每秒回复 4 生命','随机两名友军获得 16 护甲并每秒回复 7 生命']},
+  '工造':    {need:[2,4], desc:['随机一名友军获得 8 护甲并每秒回复 3 生命','随机两名友军获得 12 护甲并每秒回复 5 生命']},
   'P-SP':    {need:[2,4], desc:['P-SP 棋子攻击 10% 概率沉默目标 3 秒','概率提升至 24%']},
 };
 /* ===== 10 职业羁绊（刀塔自走棋职业移植：刀客=战士 / 守护=骑士 / 游侠=猎人 / 刺客=刺客 /
@@ -776,15 +776,15 @@ const FACTIONS = {
    ——恶魔猎手因恶魔种族未搬而无克制对象，德鲁伊免费升星按要求不搬运。猎人 3/6 按成员数适配为 3/4） ===== */
 const CLASSES = {
   '刀客': {need:[2,4,6], desc:['刀客护甲 +7','刀客护甲 +11','刀客护甲 +14']},
-  '守护': {need:[2,4,6], desc:['守护棋子每 3 秒以 40% 概率获得 12% 生命护盾','概率提升至 60%、护盾提升至 15% 生命','概率提升至 80%、护盾提升至 18% 生命']},
-  '歌势': {need:[2,4], desc:['全队每秒回复 2 生命；歌势施放技能时放出音波，冲击最近的敌人造成 100% 技能强度魔法伤害（场上每有一名歌势棋子含重复再 +55%）','全队每秒回复 4 生命；音波提升至 200% 技能强度（场上每有一名歌势棋子含重复再 +55%）']},
-  '游侠': {need:[3,4], desc:['游侠攻击 25% 概率弹射至最近的另一名敌人，造成 70% 攻击伤害','弹射概率提升至 40%']},
+  '守护': {need:[2,4,6], desc:['守护棋子每 3 秒以 24% 概率获得 8% 生命护盾','概率提升至 36%、护盾提升至 10% 生命','概率提升至 48%、护盾提升至 13% 生命']},
+  '歌势': {need:[2,4], desc:['全队每秒回复 1.5 生命；歌势施放技能时放出音波，冲击最近的敌人造成 80% 技能强度魔法伤害（场上每有一名歌势棋子含重复再 +40%）','全队每秒回复 3 生命；音波提升至 160% 技能强度（场上每有一名歌势棋子含重复再 +40%）']},
+  '游侠': {need:[3,4], desc:['游侠攻击 15% 概率弹射至最近的另一名敌人，造成 50% 攻击伤害','弹射概率提升至 25%']},
   '法师': {need:[3,6], desc:['敌方全体魔法抗性 -28%','敌方全体魔法抗性 -72%']},
-  '咒术': {need:[2], desc:['战斗开始时，将一名随机敌人变形 4 秒（无法行动且禁用技能含被动）']},
+  '咒术': {need:[2], desc:['战斗开始时，将一名随机敌人变形 2.5 秒（无法行动且禁用技能含被动）']},
   '刺客': {need:[3,6], desc:['刺客攻击 18% 概率造成 3.5 倍暴击','暴击伤害提升至 4.5 倍']},
   '狂战': {need:[2,4], desc:['狂战吸血 26%','狂战吸血 42%']},
   '医者': {need:[2,4], desc:['全队每秒回复 1 生命','全队每秒回复 2 生命']},
-  '偶像': {need:[2,3], desc:['全队攻击 +1%','全队攻击 +2%']},
+  '偶像': {need:[2,3], desc:['全队攻击 +0.5%','全队攻击 +1%']},
 };
 /* 技能效果按费用分级增强：1费×0.92 → 3费×1.12 → 5费×1.32 */
 const skillCoef=c=>0.82+0.10*c;
@@ -2091,7 +2091,7 @@ function genEnemy(){
   // 可证——野怪不吃羁绊，只能是被稀释的卡池拖慢玩家成长期）。此系数是结构性变更的
   // 一次性补偿量（非定期旋钮），调定后不要再动；日常微调用 r25 bossMult。
   const POOL_DILUTION_COMP = 0.85;
-  const DIFF_TUNE = 0.71;   // 难度总旋钮：目标整体守关通过率 ~90%（2026-09-15 用户设定）
+  const DIFF_TUNE = 0.74;   // 难度总旋钮：目标整体守关通过率 ~90%（2026-09-15 用户设定）
   const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * dyn * POOL_DILUTION_COMP * DIFF_TUNE;
   const used=new Set();
   const list=[];
@@ -2342,7 +2342,7 @@ function startBattle(){
     t=tierOf(facCnt,FACTIONS,'星际');          // 龙：开局满蓝，T3 追加技能伤害
     const starFull=t>=1, starSk=t>=2 ? 1.12 : 1;
     t=tierOf(facCnt,FACTIONS,'毛茸乐园');       // 野兽：全队攻击 +10%/档
-    atkMul += 0.10*Math.max(t,0);
+    atkMul += 0.07*Math.max(t,0);
     t=tierOf(facCnt,FACTIONS,'音律');          // 巨魔：音律棋子攻速
     const muSpd = t>=2 ? 0.36 : t>=1 ? 0.22 : 0;
     t=tierOf(facCnt,FACTIONS,'四禧丸子');       // 兽人：己方生命
@@ -2352,25 +2352,25 @@ function startBattle(){
     t=tierOf(facCnt,FACTIONS,'夜幕');          // 亡灵：敌方减甲
     const udAr = t>=2 ? 8 : t>=1 ? 4 : 0;
     t=tierOf(facCnt,FACTIONS,'花语');          // 食人魔：己方生命
-    const flHp = t>=1 ? 0.10 : 0;
+    const flHp = t>=1 ? 0.07 : 0;
     t=tierOf(facCnt,FACTIONS,'魔道');          // 元素：被近战攻击时石化攻击者
     const mgPetrify = t>=2 ? 0.64 : t>=1 ? 0.40 : 0;
     t=tierOf(facCnt,FACTIONS,'森之国');         // 精灵：己方闪避普攻
     const elDodge = t>=2 ? 0.40 : t>=1 ? 0.20 : 0;
     t=tierOf(facCnt,FACTIONS,'工造');          // 地精：随机友军护甲+回血
-    const gkN = t>=2 ? 2 : t>=1 ? 1 : 0, gkAr = t>=2 ? 16 : 10, gkRegen = t>=2 ? 7 : 4;
+    const gkN = t>=2 ? 2 : t>=1 ? 1 : 0, gkAr = t>=2 ? 12 : 8, gkRegen = t>=2 ? 5 : 3;
     t=tierOf(facCnt,FACTIONS,'P-SP');          // 人类：己方攻击概率沉默
     const huSil = t>=2 ? 0.24 : t>=1 ? 0.10 : 0;
     // —— 职业档位（刀塔职业效果移植） ——
     const waT=tierOf(clsCnt,CLASSES,'刀客');   // 战士：护甲
     const knT=tierOf(clsCnt,CLASSES,'守护');   // 骑士：周期概率护盾
-    const knP = knT>=3 ? 0.80 : knT>=2 ? 0.60 : knT>=1 ? 0.40 : 0;
-    const knSh = knT>=3 ? 0.18 : knT>=2 ? 0.15 : 0.12;
+    const knP = knT>=3 ? 0.48 : knT>=2 ? 0.36 : knT>=1 ? 0.24 : 0;
+    const knSh = knT>=3 ? 0.13 : knT>=2 ? 0.10 : 0.08;
     const gT=tierOf(clsCnt,CLASSES,'歌势');    // demo 原设计：音波共鸣（浓度成长含重复副本）
     const gCnt=mine.filter(u=>hasJob(byId(u.id),'歌势')).length;
-    if(gT>=1) regen+=2; if(gT>=2) regen+=2;
+    if(gT>=1) regen+=1.5; if(gT>=2) regen+=1.5;
     const hgT=tierOf(clsCnt,CLASSES,'游侠');   // 猎人：弹射
-    const hgBounce = hgT>=2 ? 0.40 : hgT>=1 ? 0.25 : 0;
+    const hgBounce = hgT>=2 ? 0.25 : hgT>=1 ? 0.15 : 0;
     const fT=tierOf(clsCnt,CLASSES,'法师');    // 法师：敌方减魔抗
     const mgMr = fT>=2 ? 0.72 : fT>=1 ? 0.28 : 0;
     const cuT=tierOf(clsCnt,CLASSES,'咒术');   // 萨满：开战变形一名敌人
@@ -2381,7 +2381,7 @@ function startBattle(){
     t=tierOf(clsCnt,CLASSES,'医者');           // 工匠：全队回血
     if(t>=1) regen+=1; if(t>=2) regen+=1;
     t=tierOf(clsCnt,CLASSES,'偶像');           // demo 原设计：全队攻击
-    if(t>=1) atkMul+=0.01; if(t>=2) atkMul+=0.01;
+    if(t>=1) atkMul+=0.005; if(t>=2) atkMul+=0.005;
     // —— 应用到每个棋子 ——
     mine.forEach(u=>{
       const d=byId(u.id);
@@ -2407,7 +2407,7 @@ function startBattle(){
       if(hasJob(d,'刺客')) u.moveMul=0.8;                        // 刺客职业特性：移动力 +25%（跳后排后步频更快、不易被围死）
       if(hasJob(d,'狂战') && wkVamp>0) u.vamp=Math.max(u.vamp,wkVamp);       // 术士式吸血
       u.skMul=(u.skMul||1)+facSkMul-1; u.healMul=1; u.regen=regen;   // 装备技伤加成与星际技伤叠加保留
-      u.sonic = (hasJob(d,'歌势') && gT>=1) ? (gT>=2?2.0:1.0)+0.55*gCnt : 0; // 歌势音波（demo 原设计）
+      u.sonic = (hasJob(d,'歌势') && gT>=1) ? (gT>=2?1.6:0.8)+0.4*gCnt : 0; // 歌势音波（demo 原设计）
     });
     // 亡灵·夜幕：敌方全体减甲（护甲可被压至负数，物理伤害加深）
     if(udAr>0) units.filter(o=>o.side!==side).forEach(o=>{ o.ar-=udAr; });
@@ -2417,7 +2417,7 @@ function startBattle(){
     if(cuT>=1){
       const foes=units.filter(o=>o.side!==side&&o.hp>0);
       if(foes.length){ const v=foes[Math.floor(Math.random()*foes.length)];
-        v.hexT=Math.max(v.hexT||0,4000);
+        v.hexT=Math.max(v.hexT||0,2500);
         hexFx(v);
         log(`🐑 ${side===0?'我方':'敌方'}咒术师将 ${byId(v.id).name} 变形了！`); }
     }
@@ -2594,7 +2594,7 @@ function startBattle(){
             const near=units.filter(o=>o!==tgt&&o.side!==u.side&&o.hp>0&&unitDist(o,tgt)<=2)
               .sort((a,b)=>unitDist(a,tgt)-unitDist(b,tgt))[0];
             if(near){
-              dealDamage(u,near,Math.max(1,Math.round(dmg*0.7)),units,d.dtype);
+              dealDamage(u,near,Math.max(1,Math.round(dmg*0.5)),units,d.dtype);
               dmgPopup(u,near,'⚡弹射','cast');
             }
           }
