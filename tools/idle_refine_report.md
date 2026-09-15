@@ -127,3 +127,5 @@ Phase 1 后整体 N=200=56.5%（带内，较基线 -6pp：敌方近战同步前�
 - tools/vfx_gallery.py（27 项）/tools/vfx_shots.py 原样复用；tools/idle_balance_log.md（过程全录）
 - 截图：out/p1_forma_1~4.png（阵型轮换）、out/p1_sell_shop.png（拖拽出售）、out/p2_g1_r3_log.png（结算块）、out/p2_g1/g2_report.png（总结面板）、out/p3_combine_row.png、out/p3_equip_panel.png（合成 UI）、out/vfx/*（画廊与连拍）
 - 数据表：虚拟棋战_棋子与羁绊_20260914.xlsx（export_units + build_overview_xlsx 重新生成，50/12/10）；units.json
+
+push 状态：经系统代理 127.0.0.1:54754 直连失败后重试成功（48ae7fa..8ce140e main -> main，2026-09-15）。
