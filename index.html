@@ -99,6 +99,32 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .unit .arcs.a3::after{ border-color:#ffd24acc; box-shadow:0 0 6px #ffd24a44; }
 .vfx.splashfx{ border-radius:50%; border:2px solid #9fe8ff; background:radial-gradient(circle,#9fe8ff44 0%,transparent 70%); }
 .vfx.aoe.frost{ background:rgba(159,232,255,.16); border:2px solid rgba(159,232,255,.6); box-shadow:inset 0 0 22px rgba(159,232,255,.4); border-radius:12px; }
+/* 常驻羁绊光环：阵营激活后的可感知反馈（radial glow，纯 CSS 零节点） */
+.unit::before{ content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none; background:var(--bvg,none); z-index:0; }
+.unit.bv-shenhai{ --bvg:radial-gradient(circle at 50% 68%, rgba(95,215,221,.30), transparent 74%); }
+.unit.bv-xingji{ --bvg:radial-gradient(circle at 50% 30%, rgba(176,138,224,.30), transparent 72%); }
+.unit.bv-maorong{ --bvg:radial-gradient(circle at 50% 68%, rgba(240,160,90,.30), transparent 72%); }
+.unit.bv-yinlv{ --bvg:radial-gradient(circle at 50% 68%, rgba(242,134,187,.26), transparent 72%); }
+.unit.bv-sixi{ --bvg:radial-gradient(circle at 50% 68%, rgba(232,106,106,.28), transparent 72%); }
+.unit.bv-xueyuan{ --bvg:radial-gradient(circle at 50% 68%, rgba(125,184,232,.26), transparent 72%); }
+.unit.bv-huayu{ --bvg:radial-gradient(circle at 50% 68%, rgba(242,160,192,.28), transparent 72%); }
+.unit.bv-modao{ --bvg:radial-gradient(circle at 50% 68%, rgba(181,138,232,.28), transparent 72%); }
+.unit.bv-senzhiguo{ --bvg:radial-gradient(circle at 50% 68%, rgba(127,206,143,.28), transparent 72%); }
+.unit.bv-gongzao{ --bvg:radial-gradient(circle at 50% 68%, rgba(232,180,90,.28), transparent 72%); }
+.unit.bv-psp{ --bvg:radial-gradient(circle at 50% 68%, rgba(106,159,232,.28), transparent 72%); }
+.unit.bv-yemu-fog{ box-shadow:inset 0 0 16px rgba(58,63,102,.9); }
+.unit.bv-yemu-fog::before{ background:rgba(58,63,102,.38); animation:fogpulse 2.2s ease-in-out infinite; }
+.unit.bv-fashi-rune::after{ content:'🔮'; position:absolute; top:0; right:2px; font-size:calc(var(--cell)*.2); opacity:.85; pointer-events:none; }
+.unit.hexed::after{ content:'🐑'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:calc(var(--cell)*.5); opacity:.88; pointer-events:none; animation:hexbob 1s ease-in-out infinite alternate; }
+.unit.hasregen .hpfill{ box-shadow:0 0 6px #8dff9a; }
+.unit.shredded .st{ text-decoration:line-through; }
+.fashi-rune{ position:absolute; top:0; right:2px; font-size:calc(var(--cell)*.2); opacity:.85; pointer-events:none; z-index:2; }
+.vfx.star::after{ content:'✨'; position:absolute; inset:0; display:flex; align-items:flex-start; justify-content:center; font-size:calc(var(--cell)*.35); animation:starfall .7s both; }
+@keyframes starfall{ from{ transform:translateY(-60%); opacity:0 } 40%{ opacity:1 } to{ transform:translateY(30%); opacity:0 } }
+@keyframes fogpulse{ 0%,100%{ opacity:.5 } 50%{ opacity:.95 } }
+@keyframes hexbob{ from{ transform:translateY(-4%) } to{ transform:translateY(6%) } }
+.vfx.ripple{ border:2px solid #f2a7c3; border-radius:50%; animation:ripplez .6s both; }
+@keyframes ripplez{ from{ transform:scale(.3); opacity:.9 } to{ transform:scale(1.5); opacity:0 } }
 /* 章节结算：结算动画 + 3 选 1 全局增强卡片 */
 .settle-hero{ text-align:center; font-size:17px; font-weight:bold; margin:6px 0; animation:augIn .5s both; }
 .settle-hero.win{ color:#8dff9a; } .settle-hero.lose{ color:#ff9a9a; }
@@ -1373,7 +1399,7 @@ function unitInner(u){
   const inBattle = u.side===0||u.side===1;
   const mp = inBattle ? (isPassive(u) ? '<span class="sk">被动</span>'
       : `<div class="mpbar"><div class="mpfill" style="width:${m}%"></div></div>`) : '';
-  return `<i class="pt" style="background-image:url(assets/units/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d)}
+  return `<i class="pt" style="background-image:url(assets/units/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d,u.side)}
     <span class="st">${'★'.repeat(u.star)}<span style="opacity:.8">${d.form==='me'?'⚔':'🏹'}</span></span>
     <span class="nm">${d.name}</span>
     ${u.arcs?`<span class="arcs a${Math.min(3,u.arcs)}"></span>`:''}
@@ -2436,6 +2462,7 @@ function startBattle(){
       const d=byId(u.id);
       let facHp=0, facSpd=0, facSkMul=1;
       facsOf(d).forEach(f=>{
+        if(BV[side][f] && !u.bvis) u.bvis='bv-'+SYN_IMG[f];   // 常驻阵营光环（表现层）
         if(f==='四禧丸子') facHp+=szHp;
         if(f==='花语') facHp+=flHp;
         if(f==='音律') facSpd+=muSpd;
@@ -2443,7 +2470,7 @@ function startBattle(){
         if(f==='魔道' && mgPetrify>0) u.petrifyProc=mgPetrify;    // 刀塔元素式：被近战攻击石化攻击者
         if(f==='P-SP' && huSil>0) u.silProc=huSil;                // 刀塔人类式：攻击概率沉默
       });
-      if(starFull && hasFac(d,'星际')){ u.mana=u.maxmana; facSkMul=starSk; }  // 刀塔龙式：开局满蓝
+      if(starFull && hasFac(d,'星际')){ u.mana=u.maxmana; facSkMul=starSk; u.starfallFx=true; }  // 刀塔龙式：开局满蓝（星降特效在首次渲染时播放）
       if(dwRng>0 && hasFac(d,'学园')) u.rng+=dwRng;               // 刀塔矮人式：射程 +1
       if(facHp>0){ u.maxhp=Math.round(u.maxhp*(1+facHp)); u.hp=u.maxhp; }
       u.atk=Math.round(u.atk*atkMul);
@@ -2459,9 +2486,9 @@ function startBattle(){
       u.sonic = (hasJob(d,'歌势') && gT>=1) ? (gT>=2?1.6:0.8)+0.4*gCnt : 0; // 歌势音波（demo 原设计）
     });
     // 亡灵·夜幕：敌方全体减甲（护甲可被压至负数，物理伤害加深）
-    if(udAr>0) units.filter(o=>o.side!==side).forEach(o=>{ o.ar-=udAr; });
+    if(udAr>0) units.filter(o=>o.side!==side).forEach(o=>{ o.ar-=udAr; o.bvis=(o.bvis?o.bvis+' ':'')+'bv-yemu-fog'; });   // 凋亡雾（表现层）
     // 法师：敌方全体减魔抗（负魔抗伤害增幅极强）
-    if(mgMr>0) units.filter(o=>o.side!==side).forEach(o=>{ o.mr-=mgMr; });
+    if(mgMr>0) units.filter(o=>o.side!==side).forEach(o=>{ o.mr-=mgMr; o.mrMrk=true; });
     // 萨满·咒术：开战将一名随机敌人变形 4 秒
     if(cuT>=1){
       const foes=units.filter(o=>o.side!==side&&o.hp>0);
@@ -3372,7 +3399,7 @@ function castSkill(u,tgt,units,skMul){
     const alive=foes.filter(v=>v.hp>0);
     if(alive.length){
       const f2=alive.sort((a,b)=>dist(a)-dist(b))[0];
-      vfxAt(u,'ring',700);
+      vfxAt(u,'ripple',700);
       dealDamage(u,f2,Math.round(power*u.sonic),units,'magic');
       dmgPopup(u,f2,'🎵音波','cast');
     }
@@ -3422,6 +3449,18 @@ function renderBattle(units){
     el.classList.toggle('stunned',u.stun>0);
     el.classList.toggle('weakened',u.atkDownT>0);
     el.classList.toggle('slowed',u.slowT>0);
+    if(el.dataset.bv!==(u.bvis||'')){
+      (el.dataset.bv||'').split(' ').filter(Boolean).forEach(c=>el.classList.remove(c));
+      (u.bvis||'').split(' ').filter(Boolean).forEach(c=>el.classList.add(c));
+      el.dataset.bv=u.bvis||'';
+    }
+    el.classList.toggle('hexed',u.hexT>0);
+    el.classList.toggle('shredded',u.mrDownT>0);
+    el.classList.toggle('hasregen',(u.regen||0)>0);
+    if(u.starfallFx){ u.starfallFx=false; vfxAt(u,'star',800); }
+    let fr=el.querySelector('.fashi-rune');
+    if(u.mrMrk){ if(!fr){ fr=document.createElement('span'); fr.className='fashi-rune'; fr.textContent='🔮'; el.appendChild(fr); } }
+    else if(fr) fr.remove();
     let fz=el.querySelector('.fz');
     const stTxt=(u.frozen>0?'❄':'')+(u.stun>0?'💫':'')+(u.atkDownT>0?'🔻':'')+(u.slowT>0?'🐌':'')
       +(u.noShieldT>0?'🔨':'')+(u.healDownT>0?'💉':'')+(u.silenceT>0?'🔇':'')+(u.tauntT>0?'🎯':'');
