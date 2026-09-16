@@ -127,6 +127,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 @keyframes ripplez{ from{ transform:scale(.3); opacity:.9 } to{ transform:scale(1.5); opacity:0 } }
 #aliveBar{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:4px;
   background:rgba(10,12,24,.6); border:1px solid #4a3d6e; border-radius:8px; padding:1px 12px; font-size:13px; font-weight:bold; white-space:nowrap; }
+#side #aliveBar { margin:0 0 10px; padding:8px 12px; }   /* 桌面右栏：装备与战报面板之间的存活计数条 */
 #aliveBar .ab-me{ color:#4aa8ff; } #aliveBar .ab-foe{ color:#ff7a7a; }
 /* 章节结算：结算动画 + 3 选 1 全局增强卡片 */
 .settle-hero{ text-align:center; font-size:17px; font-weight:bold; margin:6px 0; animation:augIn .5s both; }
@@ -2670,9 +2671,12 @@ function startBattle(){
   $('board').querySelectorAll('.cell .unit').forEach(e=>e.remove());
   const layer=document.createElement('div'); layer.id='unitLayer';
   $('board').appendChild(layer);
-  const ab=document.createElement('div'); ab.id='aliveBar';   // 双方存活计数（战斗中实时，并入敌方信息栏内不遮挡）
+  const ab=document.createElement('div'); ab.id='aliveBar';   // 双方存活计数（战斗中实时）
   ab.innerHTML='<span class="ab-me">🔵 我 <b>0</b></span><span class="ab-sep">:</span><span class="ab-foe"><b>0</b> 🔴 敌</span>';
-  $('oppBar').appendChild(ab);
+  if(IS_TOUCH){ $('oppBar').appendChild(ab); }   // 触屏：并入敌方信息栏（不遮挡）
+  else { const lp=$('log').closest && $('log').closest('.panel');   // 桌面：插在右栏「装备」与「战报」之间
+         if(lp && lp.parentNode) lp.parentNode.insertBefore(ab, lp);
+         else $('oppBar').appendChild(ab); }
   const units=[];
   window.__bu=units;   // 调试：战斗单位快照
   window.__atkN=0; window.__critN=0;   // 调试：普攻/暴击计数（专属暴击触发率实测用）
