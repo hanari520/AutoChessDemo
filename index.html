@@ -2433,17 +2433,18 @@ function genEnemy(){
   // 连胜加压改小幅施压：4 连胜起每多 1 胜 +1%，封顶 +4%（4=×1.01 / 5=×1.02 / 6=×1.03 / 7+=×1.04）
   const dyn = (S.lossStreak>=2 ? Math.max(0.55, 1-0.12*S.lossStreak)
               : (S.streak>=4 ? Math.min(1.04, 1+0.01*(S.streak-3)) : 1)) * (S.hp<=12?0.88:1);
-  // 无限模式（r>25）成长不封顶：敌方随回合持续变强；普通模式 24 回合封顶
-  const capR = S.endless ? 999 : 24;
-  // 全程渐进难度曲线：前期就有压力、中后期持续加压（指数 0.85 = 前段斜率更大），不再是"前松后紧"
-  const prog = Math.min(r-1, capR) / 24;
+  // 全程渐进难度曲线：前期就有压力、中后期持续加压（指数 1.22），基础曲线 24 回合封顶。
+  // 第二章节（r26+）不再延续旧指数陡坡（r50 时 +90% 太陡、玩家第二章成长跟不上 → 即败）：
+  // 改为在 r25 强度上按 +2%/回合 缓坡线性上涨（用户反馈 2026-09-16）。
+  const prog = Math.min(r-1, 24) / 24;
+  const ch2Ramp = (S.endless && r>25) ? 1 + 0.02*(r-25) : 1;
   // 全局难度系数 POOL_DILUTION_COMP：46→50 名棋子后各费用段人数增加（1费 8→10），
   // 特定棋子的抽取概率降为 1/N，玩家升星变慢、整体强度下降（实测 r5 野怪胜率 99%→62%
   // 可证——野怪不吃羁绊，只能是被稀释的卡池拖慢玩家成长期）。此系数是结构性变更的
   // 一次性补偿量（非定期旋钮），调定后不要再动；日常微调用 r25 bossMult。
   const POOL_DILUTION_COMP = 0.85;
   const DIFF_TUNE = 0.74;   // 难度总旋钮：目标整体守关通过率 ~90%（2026-09-15 用户设定）
-  const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * dyn * POOL_DILUTION_COMP * DIFF_TUNE;
+  const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * ch2Ramp * dyn * POOL_DILUTION_COMP * DIFF_TUNE;
   const used=new Set();
   const list=[];
   if(r%5===0){   // 野怪回合（每 5 回合），波次固定按进度强化
@@ -2452,7 +2453,7 @@ function genEnemy(){
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
     let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.15 : 1.08;
-    if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.04, 1.7);   // 无限模式头目持续变强
+    if(S.endless && r>25) bossMult = Math.min(1.15 + (r-25)*0.015, 1.35);   // 第二章节头目缓涨（+1.5%/回合，封顶 1.35；旧 +4%/回合封顶 1.7 太陡）
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
       if(!heads.length) heads = UNITS.filter(u=>u.cost>=headCost);
