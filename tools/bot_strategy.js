@@ -93,7 +93,11 @@ function botPrepSteps() {
   //    存满 50 后溢出全部优先冲人口（11 级封顶）
   steps.push({ n:'升级', fn(){
     if (S.lossStreak >= 2) return;   // 连败：先搜牌稳战力
-    if (S.gold < 50) return;         // 攒钱期：吃利息
+    if (S.gold < 50) {              // 攒钱期：顺路升级——金币 ≥35 才买经验（买完不低于 30，等级不掉队）
+      let k = 0;
+      while (S.lvl < 11 && S.gold >= 35 && k++ < 10) { S.gold -= 5; S.xp += 4; checkLevel(); }
+      return;
+    }
     // 方案A：每回合至多买 1 次经验（≥55 时），剩余溢出交给刷新步边刷边搜花到 50-51
     if (S.lvl < 11 && S.gold >= 55) { S.gold -= 5; S.xp += 4; checkLevel(); }
   }});
@@ -136,7 +140,7 @@ function botPrepSteps() {
   steps.push({ n:'刷新', fn(done){
     const losing = S.lossStreak >= 2;
     const bnk = S.gold >= 50;
-    if (!bnk && !losing) return;   // 攒钱期：靠自然刷新与对子购买
+    if (!bnk && !losing) { if (typeof done==='function') done(); return; }   // 攒钱期：靠自然刷新与对子购买（done 必须回调，否则托管管线停摆）
     const myCosts = [...S.board, ...S.bench].filter(Boolean).map(u => byId(u.id).cost).sort((a,b)=>a-b);
     const medCost = myCosts.length ? myCosts[Math.floor(myCosts.length/2)] : 2;
     const deepRun = medCost <= 2;
