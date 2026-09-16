@@ -4297,10 +4297,14 @@ function autoPilot(delay=900){
     let i=0;
     const runNext=()=>{
       if(!S.auto || S.phase!=='prep') return;   // 中途关闭托管或手动开战即停
-      try{ steps[i].fn(); renderAll(); }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} }
-      i++;
-      if(i<steps.length) setTimeout(runNext, 550+Math.round(Math.random()*350));
-      else setTimeout(finish, 500);
+      const advance=()=>{ renderAll(); i++;
+        if(i<steps.length) setTimeout(runNext, 550+Math.round(Math.random()*350));
+        else setTimeout(finish, 500); };
+      try{
+        const st=steps[i];
+        if(st.fn.length>=1){ st.fn(advance); return; }   // 异步步（如带停顿的刷新）：完成回调里推进
+        st.fn(); advance();
+      }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} advance(); }
     };
     runNext();
   }, delay);
