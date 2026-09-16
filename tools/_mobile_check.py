@@ -91,8 +91,8 @@ with sync_playwright() as p:
       return {ok:inBoard, hl, hint, drawerAuto, drawerAfter};
     })()""")
     check(moved.get("ok"), f"点选移动：备战席→棋盘上阵成功（高亮格数={moved.get('hl')}, 提示条={moved.get('hint')}）", results)
-    check(moved.get("drawerAuto")=="open" and moved.get("drawerAfter")=="closed",
-          f"点选时详情抽屉自动弹出、移动后自动收起（{moved.get('drawerAuto')}→{moved.get('drawerAfter')}）", results)
+    check(moved.get("drawerAuto")=="closed" and moved.get("drawerAfter")=="closed",
+          f"详情直开默认关：点选移动全程抽屉不开（{moved.get('drawerAuto')}→{moved.get('drawerAfter')}）", results)
     page.screenshot(path=f"{OUT}/mobile_390_moved.png")
 
     # ===== 抽屉化：底栏按钮 + 商店抽屉 + 详情抽屉 =====
@@ -100,13 +100,16 @@ with sync_playwright() as p:
       const g=id=>{ const el=document.getElementById(id); const r=el.getBoundingClientRect();
         return {x:+r.x.toFixed(0), y:+r.y.toFixed(0), vis:r.width>0&&r.height>0, inBar:!!el.closest('#shopbar')};
       };
-      return { shopBtn:g('mShopBtn'), sideBtn:g('mSideBtn'), fight:g('fightBtn'),
-               shopInFlow:document.getElementById('shop').closest('#mDrawer')?'drawer':'flow' };
+      return { shopBtn:g('mShopBtn'), equipBtn:g('mEquipBtn'), sideBtn:g('mSideBtn'), fight:g('fightBtn'),
+               shopInFlow:document.getElementById('shop').closest('#mDrawer')?'drawer':'flow',
+               equipInFlow:document.getElementById('equipPanel').closest('#mDrawer')?'drawer':'flow' };
     })()""")
-    check(bar["shopBtn"]["vis"] and bar["shopBtn"]["inBar"] and bar["sideBtn"]["vis"] and bar["sideBtn"]["inBar"],
-          "底栏出现 [商店][详情] 抽屉按钮", results)
-    check(abs(bar["shopBtn"]["y"]-bar["fight"]["y"])<20, "商店/详情/开战同在底栏第一行", results)
-    check(bar["shopInFlow"]=="drawer", "商店节点已搬入抽屉容器", results)
+    check(bar["shopBtn"]["vis"] and bar["shopBtn"]["inBar"] and bar["sideBtn"]["vis"] and bar["sideBtn"]["inBar"]
+          and bar["equipBtn"]["vis"] and bar["equipBtn"]["inBar"],
+          "底栏出现 [商店][装备][详情] 抽屉按钮", results)
+    check(abs(bar["shopBtn"]["y"]-bar["fight"]["y"])<20 and abs(bar["equipBtn"]["y"]-bar["fight"]["y"])<20,
+          "商店/装备/详情/开战同在底栏第一行", results)
+    check(bar["shopInFlow"]=="drawer" and bar["equipInFlow"]=="drawer", "商店与装备面板均已搬入抽屉容器", results)
 
     # 商店抽屉：打开 → 买牌 → 刷新
     shop_dr = page.evaluate("""(() => {
@@ -124,34 +127,111 @@ with sync_playwright() as p:
     check(shop_dr["open"] and shop_dr["bought"] and shop_dr["drawerStillOpen"],
           f"商店抽屉：打开/买牌/抽屉保持（金币 {shop_dr['gold']}）", results)
 
-    # 详情抽屉 + 装备全链路：点棋子→弹详情→点装备芯片→抽屉收起→点棋子→穿上→抽屉再弹→卸下
-    equip_flow = page.evaluate("""(() => {
-      const out={};
-      document.getElementById('mDrawerClose').click();          // 关商店抽屉
+    # ===== 装备系统全链路（装备独立抽屉版）=====
+    # ① 详情直开默认关：点棋子只进移动模式，抽屉不开
+    tog = page.evaluate("""(() => {
+      document.getElementById('mDrawerClose').click();
       const unit=document.querySelector('#bench .bslot .unit');
       if(!unit) return {ok:false, why:'bench empty'};
-      unit.click();                                             // 点棋子 → 详情抽屉自动弹
-      out.autoOpen=!document.getElementById('mDrawer').classList.contains('hidden');
-      out.inspectName=(document.querySelector('#inspect .in-hd b')||{}).textContent||'';
-      if(!window.__S.items.length){ window.__S.items.push('sword'); renderEquip(); }   // 测试注入：开局背包通常为空
-      const chip=document.querySelector('#mSideSec .item-chip');
-      if(!chip) return {...out, ok:false, why:'无装备可穿（需先有掉落）'};
+      if(!window.__S.items.length){ window.__S.items.push('sword'); renderEquip(); }
+      unit.click();
+      return {ok:true, drawerClosed:document.getElementById('mDrawer').classList.contains('hidden'),
+              label:document.getElementById('mAutoInspectBtn').textContent.trim()};
+    })()""")
+    check(tog.get("ok") and tog.get("drawerClosed") and tog.get("label")=="详情直开：关",
+          f"详情直开默认关：点棋子不开抽屉（按钮={tog.get('label')}）", results)
+
+    # ② 装备抽屉：打开 + 点芯片选装（抽屉收起）→ 点棋子穿上（详情抽屉回弹）
+    equip_flow = page.evaluate("""(() => {
+      const out={};
+      document.getElementById('mEquipBtn').click();
+      out.equipOpen=!document.getElementById('mEquipSec').classList.contains('hidden');
+      out.panelInDrawer=!!document.querySelector('#mEquipSec #equip');
+      const chip=document.querySelector('#mEquipSec .item-chip');
+      if(!chip) return {...out, ok:false, why:'无装备芯片'};
       out.bagN=window.__S.items.length;
-      chip.click();                                             // 点装备 → 抽屉自动收起
+      chip.click();                                          // 点选装备 → 抽屉自动收起
       out.closedOnSelect=document.getElementById('mDrawer').classList.contains('hidden');
-      unit.click();                                             // 点棋子 → 穿上
-      const pos=window.__S.items.length;
-      out.worn=(out.bagN-pos)===1;
+      const unit=document.querySelector('#bench .bslot .unit');
+      unit.click();                                          // 点棋子 → 穿上
+      out.worn=(out.bagN-window.__S.items.length)===1;
       out.reOpen=!document.getElementById('mDrawer').classList.contains('hidden');
-      const ub=document.querySelector('#inspect .in-unequip');
-      out.unequipBtn=!!ub;
-      if(ub) ub.click();                                        // 卸下全部装备
-      out.backToBag=window.__S.items.length===out.bagN;
-      out.ok=out.autoOpen&&out.closedOnSelect&&out.worn&&out.reOpen&&out.unequipBtn&&out.backToBag;
+      out.ok=out.equipOpen&&out.panelInDrawer&&out.closedOnSelect&&out.worn&&out.reOpen;
       return out;
     })()""")
-    check(equip_flow.get("ok"), 
-          f"装备全链路：详情弹窗{equip_flow.get('autoOpen')} 选装收起{equip_flow.get('closedOnSelect')} 穿上{equip_flow.get('worn')} 再弹{equip_flow.get('reOpen')} 卸下按钮{equip_flow.get('unequipBtn')} 回包{equip_flow.get('backToBag')}", results)
+    check(equip_flow.get("ok") and equip_flow.get("equipOpen") and equip_flow.get("panelInDrawer")
+          and equip_flow.get("closedOnSelect") and equip_flow.get("worn") and equip_flow.get("reOpen"),
+          f"装备抽屉：打开{equip_flow.get('equipOpen')} 选装收起{equip_flow.get('closedOnSelect')} 穿上{equip_flow.get('worn')} 详情回弹{equip_flow.get('reOpen')}", results)
+
+    # ③ 身上装备条：装备抽屉顶部出现当前查看棋子的已穿芯片 → 点按=卸下单件（派发真实 pointer 事件）
+    worn_tap = page.evaluate("""(() => {
+      document.getElementById('mDrawerClose').click();
+      document.getElementById('mEquipBtn').click();
+      const worn=document.querySelector('#mEquipSec .worn-strip .in-item-chip.worn');
+      if(!worn) return {ok:false, why:'无身上装备条'};
+      const bagN=window.__S.items.length;
+      const r=worn.getBoundingClientRect();
+      worn.dispatchEvent(new PointerEvent('pointerdown',{button:0,clientX:r.x+2,clientY:r.y+2,bubbles:true}));
+      worn.dispatchEvent(new PointerEvent('pointerup',{button:0,clientX:r.x+2,clientY:r.y+2,bubbles:true}));
+      return {ok:window.__S.items.length===bagN+1, bagN};
+    })()""")
+    check(worn_tap.get("ok"), f"身上装备条点按=卸下单件（背包 {worn_tap.get('bagN')}→+1）", results)
+
+    # ④ 拖拽穿戴：装备抽屉开着，把背包芯片拖到棋盘棋子身上
+    drag_equip = page.evaluate("""(() => {
+      if(!window.__S.items.length){ window.__S.items.push('staff'); renderEquip(); }   // 补种子装备
+      const chip=document.querySelector('#mEquipSec .item-chip');
+      const unit=document.querySelector('#board .cell:not(.enemy-preview-cell) .unit, #bench .bslot .unit');
+      if(!chip||!unit) return {ok:false, why:'missing chip='+!!chip+' unit='+!!unit};
+      const cr=chip.getBoundingClientRect(), ur=unit.getBoundingClientRect();
+      return {ok:true, cx:cr.x+cr.width/2, cy:cr.y+cr.height/2, ux:ur.x+ur.width/2, uy:ur.y+ur.height/2, bagN:window.__S.items.length};
+    })()""")
+    if drag_equip.get("ok"):
+        pg_x, pg_y = drag_equip["cx"], drag_equip["cy"]
+        page.mouse.move(pg_x, pg_y); page.mouse.down()
+        for i in range(1, 9):
+            page.mouse.move(pg_x+(drag_equip["ux"]-pg_x)*i/8, pg_y+(drag_equip["uy"]-pg_y)*i/8)
+            page.wait_for_timeout(20)
+        page.mouse.up(); page.wait_for_timeout(250)
+        drag_res = page.evaluate("window.__S.items.length")
+        check(drag_res == drag_equip["bagN"]-1, f"拖拽穿戴：背包芯片拖到棋子身上（背包 {drag_equip['bagN']}→{drag_res}）", results)
+    else:
+        check(False, f"拖拽穿戴：{drag_equip.get('why')}", results)
+
+    # ⑤ 拖拽卸下：身上装备条芯片拖到装备背包栏
+    drag_uneq = page.evaluate("""(() => {
+      if((window.drawerMode&&window.drawerMode())!=='equip') document.getElementById('mEquipBtn').click();
+      const worn=document.querySelector('#mEquipSec .worn-strip .in-item-chip.worn');
+      const bag=document.getElementById('equip');
+      if(!worn||!bag) return {ok:false, why:'missing worn/bag'};
+      const wr=worn.getBoundingClientRect(), br=bag.getBoundingClientRect();
+      return {ok:true, wx:wr.x+wr.width/2, wy:wr.y+wr.height/2, bx:br.x+br.width/2, by:br.y+br.height/2, bagN:window.__S.items.length};
+    })()""")
+    if drag_uneq.get("ok"):
+        page.mouse.move(drag_uneq["wx"], drag_uneq["wy"]); page.mouse.down()
+        for i in range(1, 9):
+            page.mouse.move(drag_uneq["wx"]+(drag_uneq["bx"]-drag_uneq["wx"])*i/8, drag_uneq["wy"]+(drag_uneq["by"]-drag_uneq["wy"])*i/8)
+            page.wait_for_timeout(20)
+        page.mouse.up(); page.wait_for_timeout(250)
+        drag_res2 = page.evaluate("window.__S.items.length")
+        check(drag_res2 == drag_uneq["bagN"]+1, f"拖拽卸下：身上装备拖回背包栏（背包 {drag_uneq['bagN']}→{drag_res2}）", results)
+    else:
+        check(False, f"拖拽卸下：{drag_uneq.get('why')}", results)
+
+    # ⑥ 详情直开开关：打开抽屉点开关 → 关闭 → 点棋子抽屉自动弹
+    tog2 = page.evaluate("""(() => {
+      if(document.getElementById('mDrawer').classList.contains('hidden')) document.getElementById('mSideBtn').click();
+      document.getElementById('mAutoInspectBtn').click();
+      const label=document.getElementById('mAutoInspectBtn').textContent.trim();
+      document.getElementById('mDrawerClose').click();
+      const unit=document.querySelector('#bench .bslot .unit, #board .cell:not(.enemy-preview-cell) .unit');
+      if(!unit) return {ok:false};
+      unit.click();
+      return {ok:true, label, autoOpen:!document.getElementById('mDrawer').classList.contains('hidden'),
+              mode:document.getElementById('mSideSec').classList.contains('hidden')?'other':'side'};
+    })()""")
+    check(tog2.get("ok") and tog2.get("label")=="详情直开：开" and tog2.get("autoOpen") and tog2.get("mode")=="side",
+          f"详情直开开：点棋子自动弹详情抽屉（{tog2.get('label')}）", results)
 
     # 点选换位 + 取消流：点棋盘棋子再点它自己 = 取消
     cancel = page.evaluate("""(() => {
