@@ -1411,7 +1411,8 @@ function checkSynRewards(){ // 首次达成任一羁绊档位：+1 金币（每�
   boardTierKeys().forEach(key=>{
     if(S.synDone.includes(key)) return;
     S.synDone.push(key);
-    const [,side,name,tier]=key.split(':');
+    const parts=key.split(':');   // key 形如 'F:深海:1' / 'J:游侠:2'（boardTierKeys 拼接格式）
+    const name=parts[1], tier=parts[2];
     S.gold+=1; S.stats.goldEarned+=1;
     S.stats.goldBy=(S.stats.goldBy||{}); S.stats.goldBy.syn=(S.stats.goldBy.syn||0)+1;   // 经济分类：羁绊奖励
     log(`🎉 首次达成羁绊【${name}】T${tier}：+1 金币（凑羁绊奖励）`);
@@ -2974,7 +2975,13 @@ function startBattle(){
       } else if(u.moveCd<=0){
         u.moveCd=(u.moveMul||1)*450*(u.slowT>0?(1+u.slowA):1);   // 刺客移动力加成（moveMul 0.8 = 步频更快）
         // BFS 寻路：绕开友方/敌方占位，走到能打到目标的最近空格（修复近战/远程被友军卡住）
-        const step=stepToward(u,tgt,d.rng,units);
+        let step=stepToward(u,tgt,d.rng,units);
+        if(!step && !taunters.length){
+          // 主目标被友军/敌军完全堵死：按距离遍历其余敌人，换第一个「存在可达攻击位」的目标绕行
+          // （否则近战会永远站桩等堵路单位让位——互堵时全场僵住的根因；嘲讽目标不适用绕行）
+          const alts=foes.filter(f=>f!==tgt&&f.hp>0).sort((a,b)=>unitDist(a,u)-unitDist(b,u));
+          for(const f of alts){ const s2=stepToward(u,f,d.rng,units); if(s2){ tgt=f; step=s2; break; } }
+        }
         if(step && freeCell(units,step[0],step[1])){ u.x=step[0]; u.y=step[1]; }
       }
     }

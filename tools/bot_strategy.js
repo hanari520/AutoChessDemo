@@ -11,7 +11,9 @@ function botPrepSteps() {
   const mainTags = new Set([...top(facCnt), ...top(jobCnt)]);
   const myTags = new Set(mainTags);
   S.board.filter(Boolean).forEach(u => { const d = byId(u.id); myTags.add(d.fac); myTags.add(d.job); });
-  const keepGold = S.round <= 1 ? 0 : (S.hp >= 12 ? 8 : 2);
+  // 经济红线：50 金=最高利息线（每 10 金 +1，封顶 5）。存满 50 后溢出全部用于升级/找牌（用户设定：优先升级人口）
+  const banked = S.gold >= 50;
+  const keepGold = S.round <= 1 ? 0 : (banked ? 50 : (S.hp >= 12 ? 8 : 2));
   const freeBench = () => S.bench.filter(x=>!x).length;
   // 卖闲子（备战席满时）：卖到有空位为止，返回是否成功腾位
   const sellIdle = () => {
@@ -84,28 +86,32 @@ function botPrepSteps() {
       if (bi >= 0) { const b2 = S.bench[bi], bd = byId(b2.id); S.gold += bd.cost; S.pool[b2.id] += 1; S.bench[bi] = null; buy(i); }
     }
   }});
-  // ③ 升级人口：按回合成长计划买经验（5 金 4 经验），优先把人口顶上去
+  // ③ 升级人口：按回合成长计划买经验（5 金 4 经验）；50 金存满后溢出全部优先冲人口（11 级封顶）
   steps.push({ n:'升级', fn(){
     const lvlPlan = { 2:3, 3:4, 5:5, 8:6, 11:7, 15:8, 19:9, 23:10 };
-    const target = Math.max(lvlPlan[S.round] || S.lvl, S.lvl);
-    for (let k = 0; k < 12 && S.lvl < target; k++) {
-      if (S.gold >= 5 + (S.hp >= 12 ? 3 : 1)) { S.gold -= 5; S.xp += 4; checkLevel(); } else break;
+    const bnk = S.gold >= 50;
+    const plan = Math.max(lvlPlan[S.round] || S.lvl, S.lvl);
+    const target = bnk ? 11 : plan;
+    for (let k = 0; k < 14 && S.lvl < target; k++) {
+      const need = 5 + (bnk ? 50 : (S.hp >= 12 ? 3 : 1));
+      if (S.gold >= need) { S.gold -= 5; S.xp += 4; checkLevel(); } else break;
     }
   }});
-  // ④ 刷新追牌：富余金币滚动刷新，抓对子/主力/3 费以上；钱多继续补经验
+  // ④ 刷新追牌：富余金币滚动刷新，抓对子/主力/3 费以上；存满 50 后用溢出金币追三与凑羁绊
   steps.push({ n:'刷新', fn(){
     const myCosts = [...S.board, ...S.bench].filter(Boolean).map(u => byId(u.id).cost).sort((a,b)=>a-b);
     const medCost = myCosts.length ? myCosts[Math.floor(myCosts.length/2)] : 2;
     const deepRun = medCost <= 2;
+    const bnk = S.gold >= 50;
     let rolls = 0;
-    while (S.gold >= keepGold + 2 && rolls++ < (deepRun ? 50 : 35)) {
+    while (S.gold >= keepGold + 2 && rolls++ < (bnk ? 60 : deepRun ? 50 : 35)) {
       if (!sellIdle() && freeBench() === 0) break;
       S.gold -= 2; rollShop();
       for (let i = 0; i < S.shop.length; i++) {
         const u = S.shop[i]; if (!u || u.cost > S.gold - keepGold) continue;
         const rev = mainTags.has(u.fac)||mainTags.has(u.job)||myTags.has(u.fac)||myTags.has(u.job);
         if (pairCount(u.id) >= 2) buy(i);
-        else if (freeBench() > 0 && (deepRun || rev || u.cost >= 3)) buy(i);
+        else if (freeBench() > 0 && (deepRun || bnk || rev || u.cost >= 3)) buy(i);
       }
       if (S.gold >= 20 && S.lvl < 10 && S.gold - 5 >= keepGold) { S.gold -= 5; S.xp += 4; checkLevel(); }
     }
