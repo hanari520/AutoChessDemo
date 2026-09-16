@@ -111,6 +111,25 @@ with sync_playwright() as p:
           "商店/装备/详情/开战同在底栏第一行", results)
     check(bar["shopInFlow"]=="drawer" and bar["equipInFlow"]=="drawer", "商店与装备面板均已搬入抽屉容器", results)
 
+    # ===== 羁绊抽屉：底栏第五入口，羁绊栏不再挤占棋盘 =====
+    bond = page.evaluate("""(() => {
+      const btn=document.getElementById('mBondBtn'), col=document.getElementById('synCol');
+      const r=btn.getBoundingClientRect();
+      const inBar=!!btn.closest('#shopbar') && r.width>0;
+      const inFlow=!!document.getElementById('main').contains(col);
+      document.getElementById('mBondBtn').click();
+      const open=!document.getElementById('mDrawer').classList.contains('hidden')
+        && !document.getElementById('mBondSec').classList.contains('hidden');
+      const heads=document.querySelectorAll('#mBondSec .syn-head').length;
+      const badges=document.querySelectorAll('#mBondSec .syn-badge').length;
+      document.getElementById('mDrawerClose').click();
+      return {inBar, inFlow, open, heads, badges};
+    })()""")
+    check(bond["inBar"] and not bond["inFlow"],
+          "羁绊按钮入底栏、羁绊栏不再占据棋盘滚动流", results)
+    check(bond["open"] and bond["badges"]>0,
+          f"羁绊抽屉：打开正常（分组头 {bond['heads']}，徽章 {bond['badges']}）", results)
+
     # 商店抽屉：打开 → 买牌 → 刷新
     shop_dr = page.evaluate("""(() => {
       document.getElementById('mShopBtn').click();
