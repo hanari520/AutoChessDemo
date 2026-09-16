@@ -19,12 +19,10 @@ def start(page):
         page.wait_for_timeout(400)
 
 def prep_screenshot(page, path, buys=2):
-    # 买几枚棋子备战席，让画面里有内容
+    # 买几枚棋子备战席（触屏下商店在抽屉里，用 JS click 不受可见性限制）
     for _ in range(buys):
-        cards = page.locator("#shop .card:not(.sold)")
-        if cards.count():
-            cards.first.click()
-            page.wait_for_timeout(150)
+        page.evaluate("(() => { const c=document.querySelector('#shop .card:not(.sold)'); if(c) c.click(); })()")
+        page.wait_for_timeout(150)
     page.screenshot(path=path, full_page=False)
 
 def check(cond, msg, results):
@@ -83,15 +81,77 @@ with sync_playwright() as p:
       slot.querySelector('.unit').click();
       const hl=document.querySelectorAll('.mv-hl').length;
       const hint=document.getElementById('moveHint').style.display;
+      const drawerAuto=document.getElementById('mDrawer').classList.contains('hidden')?'closed':'open';
       // 选一个我方半区空格（y=4 行 x=3 → idx=4*8+3=35）
       const cells=document.getElementById('board').children;
       const dst=[...cells].find((c,i)=>i>=32&&!c.querySelector('.unit'));
       dst.click();
       const inBoard=window.__S.board.some(u=>u&&String(u.uid)===String(uid));
-      return {ok:inBoard, hl, hint, inBoard};
+      const drawerAfter=document.getElementById('mDrawer').classList.contains('hidden')?'closed':'open';
+      return {ok:inBoard, hl, hint, drawerAuto, drawerAfter};
     })()""")
     check(moved.get("ok"), f"点选移动：备战席→棋盘上阵成功（高亮格数={moved.get('hl')}, 提示条={moved.get('hint')}）", results)
+    check(moved.get("drawerAuto")=="open" and moved.get("drawerAfter")=="closed",
+          f"点选时详情抽屉自动弹出、移动后自动收起（{moved.get('drawerAuto')}→{moved.get('drawerAfter')}）", results)
     page.screenshot(path=f"{OUT}/mobile_390_moved.png")
+
+    # ===== 抽屉化：底栏按钮 + 商店抽屉 + 详情抽屉 =====
+    bar = page.evaluate("""(() => {
+      const g=id=>{ const el=document.getElementById(id); const r=el.getBoundingClientRect();
+        return {x:+r.x.toFixed(0), y:+r.y.toFixed(0), vis:r.width>0&&r.height>0, inBar:!!el.closest('#shopbar')};
+      };
+      return { shopBtn:g('mShopBtn'), sideBtn:g('mSideBtn'), fight:g('fightBtn'),
+               shopInFlow:document.getElementById('shop').closest('#mDrawer')?'drawer':'flow' };
+    })()""")
+    check(bar["shopBtn"]["vis"] and bar["shopBtn"]["inBar"] and bar["sideBtn"]["vis"] and bar["sideBtn"]["inBar"],
+          "底栏出现 [商店][详情] 抽屉按钮", results)
+    check(abs(bar["shopBtn"]["y"]-bar["fight"]["y"])<20, "商店/详情/开战同在底栏第一行", results)
+    check(bar["shopInFlow"]=="drawer", "商店节点已搬入抽屉容器", results)
+
+    # 商店抽屉：打开 → 买牌 → 刷新
+    shop_dr = page.evaluate("""(() => {
+      document.getElementById('mShopBtn').click();
+      const d=document.getElementById('mDrawer');
+      const open=!d.classList.contains('hidden') && !document.getElementById('mShopSec').classList.contains('hidden');
+      const cards=[...document.querySelectorAll('#mShopSec .card:not(.sold)')];
+      const before=window.__S.bench.filter(Boolean).length;
+      if(cards.length) cards[0].click();
+      const after=window.__S.bench.filter(Boolean).length;
+      const gold=window.__S.gold;
+      document.getElementById('refreshBtn').click();
+      return {open, bought:after>before, gold, drawerStillOpen:!d.classList.contains('hidden')};
+    })()""")
+    check(shop_dr["open"] and shop_dr["bought"] and shop_dr["drawerStillOpen"],
+          f"商店抽屉：打开/买牌/抽屉保持（金币 {shop_dr['gold']}）", results)
+
+    # 详情抽屉 + 装备全链路：点棋子→弹详情→点装备芯片→抽屉收起→点棋子→穿上→抽屉再弹→卸下
+    equip_flow = page.evaluate("""(() => {
+      const out={};
+      document.getElementById('mDrawerClose').click();          // 关商店抽屉
+      const unit=document.querySelector('#bench .bslot .unit');
+      if(!unit) return {ok:false, why:'bench empty'};
+      unit.click();                                             // 点棋子 → 详情抽屉自动弹
+      out.autoOpen=!document.getElementById('mDrawer').classList.contains('hidden');
+      out.inspectName=(document.querySelector('#inspect .in-hd b')||{}).textContent||'';
+      if(!window.__S.items.length){ window.__S.items.push('sword'); renderEquip(); }   // 测试注入：开局背包通常为空
+      const chip=document.querySelector('#mSideSec .item-chip');
+      if(!chip) return {...out, ok:false, why:'无装备可穿（需先有掉落）'};
+      out.bagN=window.__S.items.length;
+      chip.click();                                             // 点装备 → 抽屉自动收起
+      out.closedOnSelect=document.getElementById('mDrawer').classList.contains('hidden');
+      unit.click();                                             // 点棋子 → 穿上
+      const pos=window.__S.items.length;
+      out.worn=(out.bagN-pos)===1;
+      out.reOpen=!document.getElementById('mDrawer').classList.contains('hidden');
+      const ub=document.querySelector('#inspect .in-unequip');
+      out.unequipBtn=!!ub;
+      if(ub) ub.click();                                        // 卸下全部装备
+      out.backToBag=window.__S.items.length===out.bagN;
+      out.ok=out.autoOpen&&out.closedOnSelect&&out.worn&&out.reOpen&&out.unequipBtn&&out.backToBag;
+      return out;
+    })()""")
+    check(equip_flow.get("ok"), 
+          f"装备全链路：详情弹窗{equip_flow.get('autoOpen')} 选装收起{equip_flow.get('closedOnSelect')} 穿上{equip_flow.get('worn')} 再弹{equip_flow.get('reOpen')} 卸下按钮{equip_flow.get('unequipBtn')} 回包{equip_flow.get('backToBag')}", results)
 
     # 点选换位 + 取消流：点棋盘棋子再点它自己 = 取消
     cancel = page.evaluate("""(() => {

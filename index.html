@@ -359,12 +359,32 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   background:#1e2c22; color:#8dff9a; border:1px solid #8dff9a; border-radius:18px;
   padding:5px 14px; font-size:12px; font-weight:bold; white-space:nowrap; pointer-events:none;
   box-shadow:0 4px 14px #000a; }
+/* ===== 手机抽屉（触屏专用：商店/详情+装备+战报收进底部抽屉，桌面不存在这些元素的使用）===== */
+.m-only { display:none; }   /* 触屏按钮默认隐藏，桌面永远不可见 */
+body.touch .m-only { display:inline-block; }
+#mDrawer { position:fixed; left:0; right:0; top:0; bottom:0; z-index:38; display:flex;
+  align-items:flex-end; justify-content:center; pointer-events:none; }   /* 无遮罩：抽屉外可继续点棋盘 */
+#mDrawer.hidden { display:none; }
+#mDrawerBox { width:100%; max-height:76vh; max-height:76dvh; background:#161226; border:2px solid #35294f; border-bottom:none;
+  border-radius:16px 16px 0 0; display:flex; flex-direction:column; pointer-events:auto;
+  box-shadow:0 -10px 34px #000d; animation:mDrawerIn .18s ease-out; }
+@keyframes mDrawerIn { from{ transform:translateY(36px); opacity:.4; } to{ transform:none; opacity:1; } }
+#mDrawerHead { display:flex; align-items:center; justify-content:space-between; padding:8px 12px 6px;
+  border-bottom:1px solid #2a2344; flex-shrink:0; }
+#mDrawerTitle { color:#ffd24a; font-size:15px; }
+#mDrawerClose { padding:4px 12px; font-size:13px; }
+#mDrawerBody { overflow-y:auto; padding:8px 10px calc(10px + env(safe-area-inset-bottom)); min-height:0; }
+.m-sec.hidden { display:none; }
+.m-sec #side { width:100%; }
+/* 触屏详情抽屉里的卸装备按钮（手机无右键卸装路径，补齐） */
+#inspect .in-unequip { margin-top:6px; text-align:center; background:#1e2c44; color:#9dd3e8; border:1px solid #4ac8ff;
+  border-radius:7px; padding:5px; cursor:pointer; font-weight:bold; }
 @media (max-width:880px){
   /* 格子随屏幕宽高自适应（宽：8 列 + 间隙/内边距 ≈40px；高：顶栏+敌方条+板凳+底部动作条 ≈420px），
      dvh 行在支持的浏览器覆盖 vh 行（手机地址栏收展时 100vh 不准） */
   body { --cell:56px;
-    --cell:min(56px, calc((100vw - 44px)/8), calc((100vh - 445px)/8));
-    --cell:min(56px, calc((100vw - 44px)/8), calc((100dvh - 445px)/8)); }
+    --cell:min(56px, calc((100vw - 44px)/8), calc((100vh - 355px)/8));
+    --cell:min(56px, calc((100vw - 44px)/8), calc((100dvh - 355px)/8)); }
   #main { flex-direction:column; align-items:center; overflow-y:auto; padding:6px; padding-bottom:16px; gap:8px; }
   /* 竖屏阅读顺序：棋盘最优先，羁绊徽章与详情/装备/战报面板垫在下方 */
   #boardwrap { order:0; }
@@ -394,6 +414,13 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   #lvlBox .xpbar { flex:1; height:5px; min-width:40px; }
   #pbtns { grid-template-columns:repeat(4,1fr); gap:5px; }
   #pbtns .btn { font-size:12px; padding:8px 2px; }
+  /* 触屏（body.touch）：商店/详情/装备/战报全部收进抽屉，底栏只剩 [🏪商店][📋详情][⚔开战] + 等级行 + 操作行 */
+  body.touch #mShopBtn { order:1; flex:1; padding:10px 4px; }
+  body.touch #mSideBtn { order:2; flex:1; padding:10px 4px; }
+  body.touch #fightBox { order:3; margin-left:auto; }
+  body.touch #playerBox { order:4; }
+  body.touch #mDrawerBox #shopctlCol { flex-direction:row; }
+  body.touch #mDrawerBox #shopctlCol .btn { flex:1; padding:10px 6px; font-size:13px; }
   #log { max-height:140px; }
   /* 图鉴/战绩：底部抽屉（全宽上滑面板）；#bookPanel/#bookGrid 因基线定义靠后，另在样式表末尾覆盖 */
   #bookModal, #histModal { align-items:flex-end; }
@@ -433,6 +460,12 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   #shopctlCol .btn { flex:0 0 auto; min-width:84px; padding:3px 6px; font-size:10px; }
   #fightBox .btn { padding:6px 10px; font-size:13px; }
   #log { max-height:110px; }
+  /* 触屏横屏：商店/详情进抽屉后，底栏单行 [🏪商店][📋详情][等级操作压缩][⚔开战] */
+  body.touch #mShopBtn { order:1; padding:6px 10px; }
+  body.touch #mSideBtn { order:2; padding:6px 10px; }
+  body.touch #playerBox { order:3; flex:1 1 auto; flex-basis:auto; min-width:0; }
+  body.touch #fightBox { order:4; margin-left:auto; }
+  body.touch #lvlBox { display:none; }
 }
 #bookPanel { width:min(920px,94vw); max-height:90vh; background:#161226; border:2px solid #35294f; border-radius:14px;
   display:flex; flex-direction:column; padding:14px 16px; }
@@ -673,10 +706,21 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   <div id="fightBox">
     <button class="btn" id="fightBtn" style="background:#1e5b2a;color:#8dff9a;border-color:#8dff9a;">⚔ 开战<br>(空格)</button>
   </div>
+  <button id="mShopBtn" class="btn m-only">🏪 商店</button>
+  <button id="mSideBtn" class="btn m-only">📋 详情</button>
 </div>
 <div id="dragGhost"></div>
 <div id="sellBanner"></div>
 <div id="moveHint"></div>
+<div id="mDrawer" class="hidden">
+  <div id="mDrawerBox">
+    <div id="mDrawerHead"><b id="mDrawerTitle">面板</b><button id="mDrawerClose" class="btn">✕ 收起</button></div>
+    <div id="mDrawerBody">
+      <div id="mShopSec" class="m-sec hidden"></div>
+      <div id="mSideSec" class="m-sec hidden"></div>
+    </div>
+  </div>
+</div>
 <div id="histModal" class="hidden">
   <div id="histPanel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -1671,7 +1715,8 @@ function renderEquip(){
     c.className='item-chip'+(S.selItem===i?' sel':'')+(it.crafted?' crafted':'');
     c.title=it.desc+'（拖到棋子上穿戴，或点选后再点棋子）';
     c.innerHTML=`${it.e} ${it.n}`;
-    c.onclick=()=>{ S.selItem = S.selItem===i?null:i; renderEquip(); };
+    c.onclick=()=>{ S.selItem = S.selItem===i?null:i; renderEquip();
+      if(IS_TOUCH && S.selItem!=null){ closeDrawer(); log(`🎒 已选 ${it.n}：点要穿戴的棋子（再点该装备取消）`); } };
     // 拖拽穿戴：按住装备芯片拖到棋子身上松手即可
     c.addEventListener('pointerdown', ev=>{
       if(ev.button!==0 || S.phase!=='prep') return;
@@ -1692,6 +1737,7 @@ function enemyCellClick(i){
   if(!eu) { S.selUid=null; S.moveSel=null; hideInspect(); clearRangeFocus(); renderBoard(); return; }
   S.selUid=null; S.moveSel=null; clearRangeFocus();
   showEnemyInspect(eu);
+  if(IS_TOUCH) openDrawer('side');
   renderBoard(); renderBench(); renderTop();
 }
 function getAt(t,i){ return t==='board'?S.board[i]:S.bench[i]; }
@@ -1753,14 +1799,15 @@ function clearRangeFocus(){ rangeFocus=null; }
 function clickUnit(t,i){
   if(S.phase!=='prep') return;
   const u=getAt(t,i);
-  if(S.selItem!=null){   // 装备穿戴模式：点棋子即穿上
-    if(!u){ log('⚠ 请点击要穿戴装备的棋子'); return; }
+  if(S.selItem!=null){   // 装备穿戴模式：点棋子即穿上（触屏穿完自动弹详情抽屉看结果）
+    if(!u){ log('⚠ 请点击要穿戴装备的棋子'); if(IS_TOUCH) openDrawer('side'); return; }
     equipTo(u, S.selItem);
     if(S.inspectUid===u.uid) showInspectFor(t,i);   // 详情面板跟随刷新装备栏
+    if(IS_TOUCH) openDrawer('side');
     return;
   }
-  // 触屏点选移动（拖拽之外的第二种移动方式）：第一次点 = 选中并进入移动模式；
-  // 再点目标格/目标棋子 = 移动或换位；点自己 = 取消。桌面端走原有拖拽/单击查看流程。
+  // 触屏点选移动（拖拽之外的第二种移动方式）：第一次点 = 选中并进入移动模式（自动弹详情抽屉）；
+  // 再点目标格/目标棋子 = 移动或换位（自动收抽屉）；点自己 = 取消。桌面端走原有拖拽/单击查看流程。
   if(IS_TOUCH){
     if(S.moveSel){
       const src=findUnit(S.moveSel.uid);
@@ -1769,11 +1816,12 @@ function clickUnit(t,i){
       }
       if(src){                                  // 点其他格 = 移动/换位（合法性校验在 moveOrSwap 内）
         moveOrSwap(src[0],src[1],t,i);
-        S.moveSel=null; S.selUid=null; hideInspect(); clearRangeFocus(); renderAll(); return;
+        S.moveSel=null; S.selUid=null; hideInspect(); clearRangeFocus(); closeDrawer(); renderAll(); return;
       }
       S.moveSel=null;
     }
-    if(u){ S.selUid=u.uid; S.moveSel={uid:u.uid}; showInspectFor(t,i); setRangeFocus(t==='board'?i:null, t==='board'?byId(u.id).rng:null); }
+    if(S.selItem!=null){ equipTo(u, S.selItem); return; }   // （公共穿戴分支已处理，此处不可达，保险保留）
+    if(u){ S.selUid=u.uid; S.moveSel={uid:u.uid}; showInspectFor(t,i); setRangeFocus(t==='board'?i:null, t==='board'?byId(u.id).rng:null); openDrawer('side'); }
     else { S.selUid=null; hideInspect(); clearRangeFocus(); }
     renderBoard(); renderBench(); renderTop(); paintMoveSel();
     return;
@@ -1823,6 +1871,7 @@ function showInspect(u){
     <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
     <div class="in-desc">${skillDesc(u)}</div>
     <div class="in-item">🎒 装备：${items}</div>
+    ${(IS_TOUCH&&u.items&&u.items.length)?`<div class="in-unequip" onclick="unequipInspect()">🧥 卸下全部装备</div>`:''}
     ${(u.items&&u.items.length>=2&&comboOf(u.items[0],u.items[1]))?`<div class="in-combo" onclick="combineWornByUid(${u.uid})">⛓ 就地合成 → ${(()=>{const pr=comboOf(u.items[0],u.items[1]);return ITEMS[pr].e+ITEMS[pr].n;})()}（${ITEMS[comboOf(u.items[0],u.items[1])].desc}）</div>`:''}
     <div class="in-sell" onclick="sellInspect()">💸 出售（+${sellRefund(u)}💰）</div>`;
   S.inspectUid=u.uid;
@@ -1853,6 +1902,19 @@ function sellInspect(){  // 详情面板一键出售
   if(S.phase!=='prep'||S.inspectUid==null) return;
   S.selUid=S.inspectUid;
   sellSelected();
+}
+function unequipInspect(){  // 触屏详情面板一键卸装（手机无右键路径）
+  if(S.phase!=='prep'||S.inspectUid==null) return;
+  const pos=findUnit(S.inspectUid); if(!pos) return;
+  const u=getAt(pos[0],pos[1]);
+  if(!u.items||!u.items.length) return;
+  const names=u.items.map(k=>ITEMS[k].n);
+  u.items.forEach(k=>S.items.push(k));
+  u.items=[];
+  sfx('equip');
+  log(`🧥 ${byId(u.id).name} 卸下装备回装备栏：${names.join('、')}`);
+  renderAll();
+  showInspectFor(pos[0],pos[1]);
 }
 
 /* ================= 交互：拖拽 ================= */
@@ -2470,6 +2532,7 @@ function fillBoardBeforeBattle(){
 }
 function startBattle(){
   if(S.phase!=='prep') return;
+  closeDrawer();   // 抽屉（商店/详情）开着时开战：先收起，不挡战斗画面
   stopTickLoop(); // 关闭任何残余的战斗时钟
   fillBoardBeforeBattle();   // 人口不满先自动补位（只上场、不动阵型、不合成）；全空则维持原拦截
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
@@ -3989,9 +4052,26 @@ $('resetBtn').onclick=()=>{ if(!confirm('放弃当前进度，重新开一局？
   localStorage.removeItem(SAVE_KEY); stopTickLoop(); newGame(); renderAll();
   $('fightBtn').disabled=false; $('overlay').classList.add('hidden'); log('🔄 已重新开局'); };
 /* ================= 移动端触屏适配 =================
-   主输入为粗指针（手机/平板）时启用：body.touch 样式钩子 + 点选移动模式 + 按钮去键位提示。
-   桌面（含带触屏的笔记本，主指针仍是鼠标）完全不受影响；Node 模拟器无 matchMedia 时安全回退桌面分支 */
+   主输入为粗指针（手机/平板）时启用：body.touch 样式钩子 + 点选移动模式 + 按钮去键位提示 +
+   商店/详情抽屉化。桌面（含带触屏的笔记本，主指针仍是鼠标）完全不受影响；
+   Node 模拟器无 matchMedia 时安全回退桌面分支 */
 const IS_TOUCH = (typeof matchMedia==='function' && matchMedia('(pointer:coarse)').matches) || false;
+/* 手机抽屉：mShopSec(商店+刷新锁定) / mSideSec(详情+装备+战报) 二选一展示。
+   节点整体 appendChild 搬迁，所有渲染函数按 ID 定位，搬迁不影响任何逻辑；
+   抽屉无遮罩（pointer-events 仅面板本身），底栏与棋盘高亮格在抽屉外仍可点。 */
+function openDrawer(mode){
+  const d=$('mDrawer'); if(!d||!d.classList) return;
+  $('mShopSec').classList.toggle('hidden', mode!=='shop');
+  $('mSideSec').classList.toggle('hidden', mode!=='side');
+  $('mDrawerTitle').textContent = mode==='shop' ? '🏪 商店（买牌 / 刷新 / 锁定）' : '📋 棋子详情 · 装备 · 战报';
+  try{ $('mDrawerBox').style.marginBottom = (($('shopbar')&&$('shopbar').offsetHeight)||0)+'px'; }catch(e){}
+  d.classList.remove('hidden');
+}
+function closeDrawer(){ const d=$('mDrawer'); if(d&&d.classList) d.classList.add('hidden'); }
+function drawerMode(){ const d=$('mDrawer');
+  if(!d||d.classList.contains('hidden')) return null;
+  return ($('mShopSec')&&!$('mShopSec').classList.contains('hidden')) ? 'shop' : 'side';
+}
 if(IS_TOUCH && typeof document!=='undefined' && document.body){
   document.body.classList.add('touch');
   const rel=(id,txt)=>{ const b=document.getElementById(id); if(b) b.textContent=txt; };
@@ -3999,6 +4079,12 @@ if(IS_TOUCH && typeof document!=='undefined' && document.body){
   rel('tidyBtn','🧹 整理备战席');
   rel('refreshBtn','🔄 刷新 -2💰');
   rel('fightBtn','⚔ 开战');
+  document.getElementById('mShopSec').appendChild(document.getElementById('shop'));
+  document.getElementById('mShopSec').appendChild(document.getElementById('shopctlCol'));
+  document.getElementById('mSideSec').appendChild(document.getElementById('side'));
+  document.getElementById('mShopBtn').onclick=()=>{ drawerMode()==='shop' ? closeDrawer() : openDrawer('shop'); };
+  document.getElementById('mSideBtn').onclick=()=>{ drawerMode()==='side' ? closeDrawer() : openDrawer('side'); };
+  document.getElementById('mDrawerClose').onclick=closeDrawer;
 }
 /* 手机端棋盘缩放（横竖屏双约束适配，棋盘+板凳整体缩放）。
    仅小屏启用：桌面端 --cell 已随 vh/vw 自适应，若再叠加 transform 缩放，
