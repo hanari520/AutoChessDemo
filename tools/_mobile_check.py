@@ -160,7 +160,7 @@ with sync_playwright() as p:
     check(tog.get("ok") and tog.get("drawerClosed") and tog.get("label")=="详情直开：关",
           f"详情直开默认关：点棋子不开抽屉（按钮={tog.get('label')}）", results)
 
-    # ② 装备抽屉：打开 + 点芯片选装（抽屉收起）→ 点棋子穿上（详情抽屉回弹）
+    # ② 装备抽屉：打开 + 点芯片选装（抽屉收起）→ 点棋子穿上（穿装不弹详情抽屉）
     equip_flow = page.evaluate("""(() => {
       const out={};
       document.getElementById('mEquipBtn').click();
@@ -174,13 +174,13 @@ with sync_playwright() as p:
       const unit=document.querySelector('#bench .bslot .unit');
       unit.click();                                          // 点棋子 → 穿上
       out.worn=(out.bagN-window.__S.items.length)===1;
-      out.reOpen=!document.getElementById('mDrawer').classList.contains('hidden');
-      out.ok=out.equipOpen&&out.panelInDrawer&&out.closedOnSelect&&out.worn&&out.reOpen;
+      out.stillClosed=document.getElementById('mDrawer').classList.contains('hidden');
+      out.ok=out.equipOpen&&out.panelInDrawer&&out.closedOnSelect&&out.worn&&out.stillClosed;
       return out;
     })()""")
     check(equip_flow.get("ok") and equip_flow.get("equipOpen") and equip_flow.get("panelInDrawer")
-          and equip_flow.get("closedOnSelect") and equip_flow.get("worn") and equip_flow.get("reOpen"),
-          f"装备抽屉：打开{equip_flow.get('equipOpen')} 选装收起{equip_flow.get('closedOnSelect')} 穿上{equip_flow.get('worn')} 详情回弹{equip_flow.get('reOpen')}", results)
+          and equip_flow.get("closedOnSelect") and equip_flow.get("worn") and equip_flow.get("stillClosed"),
+          f"装备抽屉：打开{equip_flow.get('equipOpen')} 选装收起{equip_flow.get('closedOnSelect')} 穿上{equip_flow.get('worn')} 穿装不弹详情{equip_flow.get('stillClosed')}", results)
 
     # ③ 身上装备条：装备抽屉顶部出现当前查看棋子的已穿芯片 → 点按=卸下单件（派发真实 pointer 事件）
     worn_tap = page.evaluate("""(() => {
@@ -286,11 +286,22 @@ with sync_playwright() as p:
           f"图鉴为全宽底部抽屉（left={book['left']}, w={book['width']}, bottom={book['bottom']}）", results)
     page.locator("#bookClose").click(); page.wait_for_timeout(200)
 
-    # 开战 → 战斗正常推进 → 回合推进（核心逻辑回归）
+    # 开战后阶段正常推进
     page.locator("#fightBtn").click()
     page.wait_for_timeout(2500)
     phase = page.evaluate("window.__S.phase")
     check(phase in ("battle","prep","result","settle"), f"开战后阶段正常推进（phase={phase}）", results)
+
+    # ⑦ 战斗中抽屉按钮只收不开（装备是备战操作，抽屉不得挡棋盘）
+    battle_guard = page.evaluate("""(() => {
+      const p=window.__S.phase;
+      if(p==='prep') return {skipped:true};
+      document.getElementById('mEquipBtn').click();
+      document.getElementById('mShopBtn').click();
+      return {skipped:false, hidden:document.getElementById('mDrawer').classList.contains('hidden')};
+    })()""")
+    check(battle_guard.get("skipped") or battle_guard.get("hidden"),
+          f"战斗中抽屉按钮只收不开（{'战斗已结束跳过' if battle_guard.get('skipped') else '保持收起'}）", results)
     check(not errs, f"手机 console 无报错（{errs[:2]}）", results)
 
     # 横屏 740×360

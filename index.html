@@ -1842,11 +1842,10 @@ function clearRangeFocus(){ rangeFocus=null; }
 function clickUnit(t,i){
   if(S.phase!=='prep') return;
   const u=getAt(t,i);
-  if(S.selItem!=null){   // 装备穿戴模式：点棋子即穿上（触屏穿完自动弹详情抽屉看结果）
-    if(!u){ log('⚠ 请点击要穿戴装备的棋子'); if(IS_TOUCH) openDrawer('side'); return; }
+  if(S.selItem!=null){   // 装备穿戴模式：点棋子即穿上（不弹抽屉——托管与手动穿装都不打扰，结果在装备抽屉/身上可见）
+    if(!u){ log('⚠ 请点击要穿戴装备的棋子'); return; }
     equipTo(u, S.selItem);
     if(S.inspectUid===u.uid) showInspectFor(t,i);   // 详情面板跟随刷新装备栏
-    if(IS_TOUCH) openDrawer('side');
     return;
   }
   // 触屏点选移动（拖拽之外的第二种移动方式）：第一次点 = 选中并进入移动模式（自动弹详情抽屉）；
@@ -4224,10 +4223,10 @@ if(IS_TOUCH && typeof document!=='undefined' && document.body){
   document.getElementById('mBondSec').appendChild(document.getElementById('synCol'));
   document.getElementById('mEquipSec').appendChild(document.getElementById('equipPanel'));
   document.getElementById('mSideSec').appendChild(document.getElementById('side'));
-  document.getElementById('mShopBtn').onclick=()=>{ drawerMode()==='shop' ? closeDrawer() : openDrawer('shop'); };
-  document.getElementById('mBondBtn').onclick=()=>{ drawerMode()==='bond' ? closeDrawer() : openDrawer('bond'); };
-  document.getElementById('mEquipBtn').onclick=()=>{ drawerMode()==='equip' ? closeDrawer() : openDrawer('equip'); };
-  document.getElementById('mSideBtn').onclick=()=>{ drawerMode()==='side' ? closeDrawer() : openDrawer('side'); };
+  const mdraw=(id,mode)=>{ document.getElementById(id).onclick=()=>{ 
+    if(S.phase!=='prep'){ closeDrawer(); return; }   // 战斗/结算中：商店装备等都是备战操作，抽屉只收不开、不挡棋盘
+    drawerMode()===mode ? closeDrawer() : openDrawer(mode); }; };
+  mdraw('mShopBtn','shop'); mdraw('mBondBtn','bond'); mdraw('mEquipBtn','equip'); mdraw('mSideBtn','side');
   document.getElementById('mDrawerClose').onclick=closeDrawer;
   const aib=document.getElementById('mAutoInspectBtn');
   if(aib){ aib.onclick=()=>{ autoInspect=!autoInspect;
