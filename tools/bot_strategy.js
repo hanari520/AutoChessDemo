@@ -107,13 +107,15 @@ function botPrepSteps() {
     const floor = keepGold + (losing ? 10 : 2);   // 连败适度搜：地板抬高，留更多余钱
     let rolls = 0;
     while (S.gold >= floor + 2 && rolls++ < (losing ? 20 : bnk ? 60 : deepRun ? 50 : 35)) {
-      if (!sellIdle() && freeBench() === 0) break;
+      sellIdle();                                  // 能腾位先腾
+      const jammed = freeBench() === 0;            // 席满（都是对子材料腾不动）：不停刷，只收能立即合成升星的对子
       S.gold -= 2; rollShop();
       for (let i = 0; i < S.shop.length; i++) {
         const u = S.shop[i]; if (!u || u.cost > S.gold - keepGold) continue;
+        if (jammed && pairCount(u.id) < 2) continue;
         const rev = mainTags.has(u.fac)||mainTags.has(u.job)||myTags.has(u.fac)||myTags.has(u.job);
         if (pairCount(u.id) >= 2) buy(i);
-        else if (freeBench() > 0 && (deepRun || bnk || losing || rev || u.cost >= 3)) buy(i);
+        else if (!jammed && freeBench() > 0 && (deepRun || bnk || losing || rev || u.cost >= 3)) buy(i);
       }
       if (!losing && S.gold >= 20 && S.lvl < 10 && S.gold - 5 >= keepGold) { S.gold -= 5; S.xp += 4; checkLevel(); }
     }
