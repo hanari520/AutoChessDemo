@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1c1830">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
@@ -11,7 +11,7 @@
 <title>虚拟棋战 VirtuaReal Auto Chess</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
-body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; --spd:1;
+body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-serif; height:100vh; height:100dvh; overscroll-behavior:none; display:flex; flex-direction:column; overflow:hidden; --spd:1;
   /* 棋盘格自适应：9 行（棋盘8+板凳1，含棋盘内边距与板凳标签行）+ 顶栏/信息栏/商店实测约 390px，宽受羁绊栏+侧栏约束 */
   --cell:min(85px, calc((100vh - 390px)/9), calc((100vw - 580px)/8)); --gap:2px; --pad:7px; }
 .spd-b { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:5px; padding:2px 7px; cursor:pointer; font-size:13px; }
@@ -347,42 +347,91 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #histPanel h2 { color:#ffd24a; font-size:17px; }
 .hrow { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:13px;
   padding:8px 4px; border-bottom:1px solid #2a2344; color:#cdd6f4; }
+/* ===== 触屏适配基础（仅 body.touch 时生效，桌面零影响）=====
+   touch-action:none：手指按住棋子/装备拖动时禁止浏览器接管手势滚动（否则触发 pointercancel，拖拽断掉） */
+.touch .unit, .touch .item-chip { touch-action:none; -webkit-touch-callout:none; }
+.btn, .card, .spd-b, .btab { touch-action:manipulation; }
+/* 触屏点选移动：选中源棋子描绿光；可放目标格（我方半区+备战席）亮绿框 */
+.unit.mvsrc { border-color:#8dff9a !important; box-shadow:0 0 8px #8dff9a99 !important; z-index:4; }
+#board .cell.mv-hl, #bench .bslot.mv-hl { box-shadow:inset 0 0 0 2px #8dff9a66; filter:brightness(1.22); }
+/* 点选移动提示条（触屏专用，底部动作条上方居中） */
+#moveHint { position:fixed; left:50%; transform:translateX(-50%); z-index:65; display:none;
+  background:#1e2c22; color:#8dff9a; border:1px solid #8dff9a; border-radius:18px;
+  padding:5px 14px; font-size:12px; font-weight:bold; white-space:nowrap; pointer-events:none;
+  box-shadow:0 4px 14px #000a; }
 @media (max-width:880px){
-  body { --cell:56px; }
-  #main { flex-direction:column; align-items:center; overflow-y:auto; padding:6px; padding-bottom:150px; gap:8px; }
-  #side { width:min(96vw,520px); }
-  #synCol { width:min(96vw,520px); flex-direction:row; flex-wrap:wrap; gap:2px; }
+  /* 格子随屏幕宽高自适应（宽：8 列 + 间隙/内边距 ≈40px；高：顶栏+敌方条+板凳+底部动作条 ≈420px），
+     dvh 行在支持的浏览器覆盖 vh 行（手机地址栏收展时 100vh 不准） */
+  body { --cell:56px;
+    --cell:min(56px, calc((100vw - 44px)/8), calc((100vh - 445px)/8));
+    --cell:min(56px, calc((100vw - 44px)/8), calc((100dvh - 445px)/8)); }
+  #main { flex-direction:column; align-items:center; overflow-y:auto; padding:6px; padding-bottom:16px; gap:8px; }
+  /* 竖屏阅读顺序：棋盘最优先，羁绊徽章与详情/装备/战报面板垫在下方 */
+  #boardwrap { order:0; }
+  #synCol { order:1; width:min(96vw,520px); flex-direction:row; flex-wrap:wrap; gap:2px; }
   #synCol .syn-head { display:none; }
   #synCol .syn-badge { margin:1px; }
-  #playerBox { width:100%; }
-  #pbtns { grid-template-columns:repeat(3,1fr); }
-  #topbar { gap:8px; padding:6px 8px; font-size:13px; }
+  #side { order:2; width:min(96vw,520px); }
+  #topbar { gap:6px; padding:5px 8px; padding-top:calc(5px + env(safe-area-inset-top)); font-size:13px; }
+  #topbar .tag { padding:2px 7px; }
+  #topbar .btn { padding:5px 8px; font-size:12px; }
   .fight-btn-row { display:flex; flex-wrap:wrap; gap:6px; }
   #overlay h1 { font-size:26px; }
-  #shop .card { padding:6px 4px; }
-  #shop .card .cd { display:none; }
+  /* 底部动作条（三行）：商店横滑 → 刷新/锁定/开战 → 等级条 + 操作按钮 */
+  #shopbar { flex-wrap:wrap; gap:6px; padding:6px 8px calc(6px + env(safe-area-inset-bottom)); }
+  #shop { order:1; flex-basis:100%; overflow-x:auto; padding-bottom:2px; }
+  #shop .card { flex:0 0 auto; min-width:106px; max-width:132px; padding:6px 4px 18px; }
+  #shop .card .cd, #shop .card .cs, #shop .card .ct { display:none; }
+  #shop .card .cn { font-size:13px; }
+  #shopctlCol { order:2; flex-direction:row; flex:1; align-items:center; min-width:0; }
+  #shopctlCol .btn { min-width:0; flex:1; padding:8px 6px; font-size:12px; }
+  #fightBox { order:2; }
+  #fightBox .btn { padding:10px 16px; font-size:15px; }
+  #goldChip { display:none; }   /* 金币顶栏/等级条已有，省一行 */
+  #playerBox { order:3; flex-basis:100%; width:auto; gap:4px; }
+  #lvlBox { display:flex; align-items:center; gap:8px; padding:3px 8px; }
+  #lvlBox .lvl-row { margin:0; white-space:nowrap; font-size:11px; }
+  #lvlBox .xpbar { flex:1; height:5px; min-width:40px; }
+  #pbtns { grid-template-columns:repeat(4,1fr); gap:5px; }
+  #pbtns .btn { font-size:12px; padding:8px 2px; }
+  #log { max-height:140px; }
+  /* 图鉴/战绩：底部抽屉（全宽上滑面板）；#bookPanel/#bookGrid 因基线定义靠后，另在样式表末尾覆盖 */
+  #bookModal, #histModal { align-items:flex-end; }
+  #histPanel { width:100vw; max-height:80vh; max-height:80dvh; border-radius:16px 16px 0 0; padding:12px 14px; }
 }
-/* 手机横屏：左侧棋盘 + 右侧信息栏，顶栏与商店压缩，板凳席移到棋盘右侧竖排 */
+/* 手机横屏：左侧棋盘 + 右侧信息栏，顶栏与商店压缩，板凳席移到棋盘右侧竖排。
+   羁绊徽章栏与敌方横幅隐藏（敌方阵容棋盘上半区直接可见，羁绊可开图鉴查），商店条恢复单行 */
 @media (orientation:landscape) and (max-height:540px){
-  body { --cell:44px; }
+  body { --cell:44px;
+    --cell:min(44px, calc((100vw - 330px)/9), calc((100vh - 150px)/9));
+    --cell:min(44px, calc((100vw - 330px)/9), calc((100dvh - 150px)/9)); }
   #main { flex-direction:row; justify-content:center; padding:4px; gap:8px; overflow:hidden; }
   #boardwrap { flex-direction:row; align-items:flex-start; gap:6px; }
+  #oppBar { display:none; }
   #bench { grid-template-columns:var(--cell); grid-template-rows:repeat(8,var(--cell)); border-top:none; border-left:1px solid #2a2344; padding:4px; }
+  #synCol { display:none; }
   #side { width:262px; flex-shrink:0; overflow-y:auto; }
-  #synCol { width:96px; }
-  .syn-badge { font-size:10px; padding:3px 4px; gap:3px; }
-  .syn-badge .ico { font-size:12px; }
-  #playerBox { width:190px; }
   #side .panel { padding:6px 8px; }
   #topbar { gap:6px; padding:4px 8px; font-size:12px; flex-wrap:nowrap; }
-  #topbar .tag { white-space:nowrap; }
+  #topbar .tag { white-space:nowrap; padding:2px 6px; }
+  #topbar .btn { padding:4px 7px; font-size:11px; }
   .btn { padding:5px 8px; font-size:12px; }
   .fight-btn-row { display:flex; flex-wrap:wrap; gap:4px; }
-  #shopbar { padding:4px 8px; gap:4px; }
-  #shopbar .btn { padding:4px 8px; font-size:12px; }
-  #shop .card { padding:4px 2px; max-width:130px; }
-  #shop .card .cd, #shop .card .cfj { display:none; }
+  /* 商店条恢复单行：等级/操作 | 商店横滑 | 刷新/锁定 | 开战 */
+  #shopbar { flex-wrap:nowrap; padding:4px 6px calc(4px + env(safe-area-inset-bottom)); gap:5px; }
+  #playerBox { order:0; flex:0 0 200px; width:auto; }
+  #lvlBox { display:block; padding:3px 6px; }
+  #lvlBox .lvl-row { font-size:10px; margin:0 0 2px; white-space:nowrap; }
+  #lvlBox .xpbar { height:5px; }
+  #pbtns { grid-template-columns:repeat(2,1fr); gap:3px; }
+  #pbtns .btn { font-size:10px; padding:4px 2px; }
+  #shop { order:0; flex:1; flex-basis:0; min-width:0; overflow-x:auto; }
+  #shop .card { flex:1 1 0; min-width:0; max-width:110px; padding:4px 2px; }
+  #shop .card .cd, #shop .card .cfj, #shop .card .ct, #shop .card .cs { display:none; }
   #shop .card .cn { font-size:11px; }
+  #shopctlCol { order:0; flex:0 0 auto; flex-direction:column; }
+  #shopctlCol .btn { flex:0 0 auto; min-width:84px; padding:3px 6px; font-size:10px; }
+  #fightBox .btn { padding:6px 10px; font-size:13px; }
   #log { max-height:110px; }
 }
 #bookPanel { width:min(920px,94vw); max-height:90vh; background:#161226; border:2px solid #35294f; border-radius:14px;
@@ -553,6 +602,12 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .cell.shake .unit { animation:cellShake .35s; }
 @keyframes cellShake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-3px,1px)}
   50%{transform:translate(3px,-1px)} 75%{transform:translate(-2px,0)} }
+/* ===== 手机覆盖（置于样式表末尾：#bookPanel/#bookGrid 基线规则定义在 880 断点之后，须在此再压一层）===== */
+@media (max-width:880px){
+  #bookPanel { width:100vw; max-height:88vh; max-height:88dvh; border-radius:16px 16px 0 0; padding:12px; }
+  #bookGrid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); }
+  #bookSyn { grid-template-columns:1fr; }
+}
 </style>
 </head>
 <body>
@@ -621,6 +676,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 </div>
 <div id="dragGhost"></div>
 <div id="sellBanner"></div>
+<div id="moveHint"></div>
 <div id="histModal" class="hidden">
   <div id="histPanel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -1443,6 +1499,7 @@ function renderBoard(){
   }
   // 攻击范围提示（选中 / 拖动时）：源格描金，可攻击格浅蓝
   paintRange();
+  paintMoveSel();
 }
 /* 只切换已有格子的高亮 class，不重建 DOM（否则会打断浏览器 click 事件，导致点棋子失效） */
 function paintRange(){
@@ -1479,6 +1536,7 @@ function renderBench(){
     s.onclick=()=>benchClick(i);
     b.appendChild(s);
   }
+  paintMoveSel();
 }
 function renderShop(){
   const s=$('shop'); s.innerHTML='';
@@ -1531,21 +1589,21 @@ function renderTop(){
   $('lvlNum').textContent=S.lvl;
   $('xpText').textContent = S.lvl>=11 ? '人口已满' : `经验 ${S.xp}/${need}`;
   $('xpFill').style.width = S.lvl>=11 ? '100%' : Math.min(100,S.xp/need*100)+'%';
-  $('lvlBtn').textContent = S.lvl>=11 ? '人口已满' : (S.round===1 ? '首回合不可买经验' : '买经验 (F) +4经验 -5💰');
+  $('lvlBtn').textContent = S.lvl>=11 ? '人口已满' : (S.round===1 ? '首回合不可买经验' : (IS_TOUCH?'⬆️ 买经验 -5💰':'买经验 (F) +4经验 -5💰'));
   $('lvlBtn').disabled = S.lvl>=11 || S.gold<4 || S.round===1;
   $('refreshBtn').disabled = S.gold<2;
   // 出售按钮：选中棋子后解锁，并预览回购价（多多式：1★原价、合成折价）
   const sel = S.selUid!=null ? findUnit(S.selUid) : null;
   if(sel){
     const u=getAt(sel[0],sel[1]);
-    $('sellBtn').textContent=`💸 出售 +${sellRefund(u)}💰 (E)`;
+    $('sellBtn').textContent=IS_TOUCH?`💸 出售 +${sellRefund(u)}💰`:`💸 出售 +${sellRefund(u)}💰 (E)`;
     $('sellBtn').disabled=false;
   } else {
-    $('sellBtn').textContent='💸 出售 (E)';
+    $('sellBtn').textContent=IS_TOUCH?'💸 出售':'💸 出售 (E)';
     $('sellBtn').disabled=true;
   }
   const c = compForRound(S.round);
-  $('lockBtn').textContent=S.lock?'🔒 已锁定 (L)':'🔓 锁定 (L)';
+  $('lockBtn').textContent=S.lock?(IS_TOUCH?'🔒 已锁定':'🔒 已锁定 (L)'):(IS_TOUCH?'🔓 锁定':'🔓 锁定 (L)');
   $('lockBtn').classList.toggle('on',!!S.lock);
   $('endBtn').style.display = (S.endless && S.phase==='prep') ? 'inline-block' : 'none';
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
@@ -1631,8 +1689,8 @@ function cellClick(i){ clickUnit('board', i); }
 /* 备战期点击敌方预览棋子：显示其详情（按图鉴 1★ 基础数据 + 星级） */
 function enemyCellClick(i){
   const eu=S.enemyBoard && S.enemyBoard[i];
-  if(!eu) { S.selUid=null; hideInspect(); clearRangeFocus(); renderBoard(); return; }
-  S.selUid=null; clearRangeFocus();
+  if(!eu) { S.selUid=null; S.moveSel=null; hideInspect(); clearRangeFocus(); renderBoard(); return; }
+  S.selUid=null; S.moveSel=null; clearRangeFocus();
   showEnemyInspect(eu);
   renderBoard(); renderBench(); renderTop();
 }
@@ -1701,10 +1759,50 @@ function clickUnit(t,i){
     if(S.inspectUid===u.uid) showInspectFor(t,i);   // 详情面板跟随刷新装备栏
     return;
   }
+  // 触屏点选移动（拖拽之外的第二种移动方式）：第一次点 = 选中并进入移动模式；
+  // 再点目标格/目标棋子 = 移动或换位；点自己 = 取消。桌面端走原有拖拽/单击查看流程。
+  if(IS_TOUCH){
+    if(S.moveSel){
+      const src=findUnit(S.moveSel.uid);
+      if(src && u && u.uid===S.moveSel.uid){   // 点自己 = 取消移动模式
+        S.moveSel=null; S.selUid=null; hideInspect(); clearRangeFocus(); renderAll(); return;
+      }
+      if(src){                                  // 点其他格 = 移动/换位（合法性校验在 moveOrSwap 内）
+        moveOrSwap(src[0],src[1],t,i);
+        S.moveSel=null; S.selUid=null; hideInspect(); clearRangeFocus(); renderAll(); return;
+      }
+      S.moveSel=null;
+    }
+    if(u){ S.selUid=u.uid; S.moveSel={uid:u.uid}; showInspectFor(t,i); setRangeFocus(t==='board'?i:null, t==='board'?byId(u.id).rng:null); }
+    else { S.selUid=null; hideInspect(); clearRangeFocus(); }
+    renderBoard(); renderBench(); renderTop(); paintMoveSel();
+    return;
+  }
   // 单击 = 查看详情（棋子换位请用拖动），并显示该棋子的攻击范围
   if(u){ S.selUid=u.uid; showInspectFor(t,i); setRangeFocus(t==='board'?i:null, t==='board'?byId(u.id).rng:null); }
   else { S.selUid=null; hideInspect(); clearRangeFocus(); }
   renderBoard(); renderBench(); renderTop();
+}
+/* 触屏点选移动的高亮：源棋子描绿光，可放目标格（我方半区+备战席）亮框，底部动作条上方出提示 */
+function paintMoveSel(){
+  document.querySelectorAll('.mvsrc').forEach(x=>x.classList.remove('mvsrc'));
+  document.querySelectorAll('.mv-hl').forEach(x=>x.classList.remove('mv-hl'));
+  const hint=$('moveHint');
+  const active = IS_TOUCH && S && S.phase==='prep' && S.moveSel && findUnit(S.moveSel.uid);
+  if(!active){
+    if(hint) hint.style.display='none';
+    if(S && S.moveSel && (!IS_TOUCH || (S.phase && S.phase!=='prep'))) S.moveSel=null;
+    return;
+  }
+  const srcEl=document.querySelector(`.unit[data-uid="${S.moveSel.uid}"]`);
+  if(srcEl) srcEl.classList.add('mvsrc');
+  {   // 可放目标 = 我方半区全部格 + 全部备战席格（棋盘⇆备战席、棋盘内换位、备战席内排序都合法）
+    const cells=$('board').children;
+    for(let i=BOARD_W*BOARD_H/2;i<BOARD_W*BOARD_H;i++) if(cells[i]) cells[i].classList.add('mv-hl');
+  }
+  document.querySelectorAll('#bench .bslot').forEach(s=>s.classList.add('mv-hl'));
+  if(hint){ hint.textContent='📌 已选中，点目标格移动/换位（点原棋子取消）'; hint.style.display='block';
+    try{ hint.style.bottom=(($('shopbar')&&$('shopbar').offsetHeight||90)+10)+'px'; }catch(e){} }
 }
 /* ===== 棋子详情面板 ===== */
 const INSPECT_EMPTY='<div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div>';
@@ -1897,6 +1995,7 @@ document.addEventListener('pointerup', e=>{
 
 /* ================= 卸装备：右键点击棋子 = 全部装备回装备栏 ================= */
 document.addEventListener('contextmenu', e=>{
+  if(IS_TOUCH){ e.preventDefault(); return; }   // 触屏长按 ≠ 卸装备（会误触发），屏蔽系统菜单
   if(S.phase!=='prep') return;
   const el=e.target.closest && e.target.closest('.unit');
   if(!el) return;
@@ -1961,7 +2060,7 @@ $('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<2)return; if(S.lock){ 
 /* 商店锁定：下回合自动刷新时保留当前货架 */
 $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
   log(S.lock?'🔒 商店已锁定（仅保留到下回合，之后自动解锁）':'🔓 商店已解锁');
-  $('lockBtn').textContent=S.lock?'🔒 已锁定 (L)':'🔓 锁定 (L)';
+  $('lockBtn').textContent=S.lock?(IS_TOUCH?'🔒 已锁定':'🔒 已锁定 (L)'):(IS_TOUCH?'🔓 锁定':'🔓 锁定 (L)');
   $('lockBtn').classList.toggle('on',S.lock); renderTop(); };
 /* 一键上阵：按战力选主力，坦克前排居中、远程后排，快速完成布阵 */
 /* 队伍羁绊评分：已达成档位大分 + 朝下一档的进度小分（同名棋子按 1 个计，与战斗结算一致） */
@@ -3889,6 +3988,18 @@ $('histClose').onclick=()=>$('histModal').classList.add('hidden');
 $('resetBtn').onclick=()=>{ if(!confirm('放弃当前进度，重新开一局？')) return;
   localStorage.removeItem(SAVE_KEY); stopTickLoop(); newGame(); renderAll();
   $('fightBtn').disabled=false; $('overlay').classList.add('hidden'); log('🔄 已重新开局'); };
+/* ================= 移动端触屏适配 =================
+   主输入为粗指针（手机/平板）时启用：body.touch 样式钩子 + 点选移动模式 + 按钮去键位提示。
+   桌面（含带触屏的笔记本，主指针仍是鼠标）完全不受影响；Node 模拟器无 matchMedia 时安全回退桌面分支 */
+const IS_TOUCH = (typeof matchMedia==='function' && matchMedia('(pointer:coarse)').matches) || false;
+if(IS_TOUCH && typeof document!=='undefined' && document.body){
+  document.body.classList.add('touch');
+  const rel=(id,txt)=>{ const b=document.getElementById(id); if(b) b.textContent=txt; };
+  rel('deployBtn','⚡ 一键上阵');
+  rel('tidyBtn','🧹 整理备战席');
+  rel('refreshBtn','🔄 刷新 -2💰');
+  rel('fightBtn','⚔ 开战');
+}
 /* 手机端棋盘缩放（横竖屏双约束适配，棋盘+板凳整体缩放）。
    仅小屏启用：桌面端 --cell 已随 vh/vw 自适应，若再叠加 transform 缩放，
    浏览器缩放（Ctrl+滚轮）时两次缩放互相叠加会导致布局错乱 */
@@ -3898,7 +4009,7 @@ function fitBoard(){
   if(innerWidth>880){ st.transform=''; st.marginBottom=''; return; }   // 桌面端：只清除，不二次缩放
   const landscape = innerWidth>innerHeight;
   const reserved = ($('shopbar').offsetHeight||0) + (landscape?16:24);
-  const availW = landscape ? innerWidth-440 : innerWidth-14;
+  const availW = landscape ? innerWidth-440 : innerWidth-8;   // --cell 公式已保证 12px 内边距内放得下，此处只兜底
   const availH = innerHeight - reserved - (landscape?0:6);
   const s = Math.max(0.35, Math.min(1, availW/w.offsetWidth, availH/w.offsetHeight));
   st.transformOrigin='top center';
