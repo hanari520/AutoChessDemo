@@ -103,6 +103,17 @@ function botPrepSteps() {
   };
 
   const steps = [];
+  // ⓪ 升星券：有券且有 3★ 就直接用（守关胜利奖励；普通玩家拿到就花在战力最高的三星上）
+  steps.push({ n:'升星', fn(){
+    if((S.tickets||0) <= 0 || S.phase !== 'prep') return;
+    let best=null, bv=-1;
+    [...S.board, ...S.bench].forEach(u=>{
+      if(!u || u.star !== 3) return;
+      const d=byId(u.id); const v=Math.pow(u.star,2)*d.cost;
+      if(v>bv){ bv=v; best=u; }
+    });
+    if(best && typeof applyTicket==='function') applyTicket(best.uid);
+  }});
   // ① 买牌（白嫖先拿）：普通玩家进备战先看商店——能升星的、计划内的、追三进度的先买下，
   //    这是"不花钱刷新也照常变强"的部分。席满先卖闲子腾位。
   //    人口未满时低费过渡也给买（开局/掉人后先凑战力，等不了"计划"成型）。
@@ -164,18 +175,18 @@ function botPrepSteps() {
       const it=S.items[0];
       const dmgItem=(typeof isDmgItem==='function')?isDmgItem(it):['sword','staff','bow','vamp'].includes(it);
       let ti=-1, best=-1;
-      if(dmgItem && carry && (carry.items||[]).length<2 && carryIdx()>=0){
+      if(dmgItem && carry && (carry.items||[]).length < (typeof maxEquip==='function'?maxEquip():2) && carryIdx()>=0){
         ti=carryIdx();                                    // 输出装优先主C
       } else {
         S.board.forEach((u,i)=>{
           if(!u) return; if(!u.items) u.items=[];
-          if(u.items.length>=2) return;
+          if(u.items.length >= (typeof maxEquip==='function'?maxEquip():2)) return;
           const d=byId(u.id);
           if(dmgItem && d.job!=='守护' && u.atk>best){ best=u.atk; ti=i; }
           if(!dmgItem && JOB_FRONT.has(d.job) && u.maxhp>best){ best=u.maxhp; ti=i; }
         });
       }
-      if(ti<0) S.board.forEach((u,i)=>{ if(u&&(!u.items||u.items.length<2)&&ti<0) ti=i; });
+      if(ti<0) S.board.forEach((u,i)=>{ if(u&&(!u.items||u.items.length < (typeof maxEquip==='function'?maxEquip():2))&&ti<0) ti=i; });
       if(ti<0) break;
       S.selItem=0; clickUnit('board', ti);
     }
@@ -216,6 +227,9 @@ function botPrepSteps() {
   // ⑤ 搜牌（触发式，不再习惯性 roll-down）：普通玩家只在有理由时才 D——
   //    危机 all-in / 连败适度搜 / 多面听小搜 / 满级卡 50 追三；攒钱期与健康白嫖期都不刷。
   steps.push({ n:'搜牌', fn(done){
+    // 顶配停刷：场上全员 3★+ 时商店已无提升空间——停止无意义刷新，金币只吃利息
+    const onB=S.board.filter(Boolean);
+    if(onB.length>0 && onB.every(u=>(u.star||1)>=3)){ if(typeof done==='function') done(); return; }
     const mode=botEconMode();
     let floor, max, keep=50;
     if(mode==='crisis'){ floor=2; max=40; keep=0; }
@@ -260,6 +274,8 @@ function botPrepSteps() {
   }});
   // ⑥ 锁定：货架上有现在买不起、但下回合想要的好牌（对子或 4 费核心）时锁住商店
   steps.push({ n:'锁定', fn(){
+    const onB=S.board.filter(Boolean);
+    if(onB.length>0 && onB.every(u=>(u.star||1)>=3)) return;   // 顶配：无可追，不锁
     let worthy=false;
     for(const u of S.shop){
       if(!u) continue;

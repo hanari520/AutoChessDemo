@@ -140,6 +140,22 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .aug-card.picked{ border-color:#8dff9a; box-shadow:0 0 10px #8dff9a66; }
 .aug-card.dim{ opacity:.4; pointer-events:none; }
 .aug-card .ad{ font-size:12px; color:#c8bfe8; margin:5px 0; min-height:36px; }
+.aug-card.r2{ border-color:#4aa8ff88; }
+.aug-card.r3{ border-color:#ffd24aaa; box-shadow:0 0 10px #ffd24a22; }
+.aug-card .ar-tag{ font-size:10px; border:1px solid; border-radius:8px; padding:0 6px; margin-left:4px; vertical-align:2px; }
+.in-ticket{ margin:6px 0 2px; padding:6px 8px; text-align:center; border:1px solid #ffd24a; border-radius:8px; color:#ffd24a; font-size:12px; cursor:pointer; background:#2a2440; }
+.in-ticket:hover{ background:#3a3055; }
+.unit.star4 .st{ color:#ffd24a; opacity:1; text-shadow:0 0 5px #ffd24a; }
+#tempBuffBox{ display:flex; flex-direction:column; gap:4px; align-self:stretch; }
+#tempBuffBox .btn.tb{ align-self:stretch; padding:4px 8px; font-size:11px; min-width:0; white-space:nowrap; }
+#tempBuffBox .btn.tb.on{ border-color:#8dff9a; color:#8dff9a; }
+.arti-box{ display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:6px; }
+.arti-box .arti-hd{ grid-column:1/-1; font-size:12px; color:#ffd24a; }
+.arti-card{ background:#241e3e; border:1px solid #ffd24a55; border-radius:8px; padding:5px 6px; font-size:11px; color:#dcd6f2; }
+.arti-card b{ color:#ffd24a; font-size:12px; }
+.arti-card .ad2{ font-size:10px; color:#a99ed0; margin:3px 0; line-height:1.5; }
+.arti-card .btn[disabled]{ opacity:.4; cursor:default; }
+.item-chip.arti{ border-color:#ffd24a; box-shadow:0 0 6px #ffd24a44; }
 .aug-card .at{ font-size:10px; color:#8a93c4; }
 @keyframes augIn{ from{ transform:translateY(14px) scale(.92); opacity:0; } to{ transform:none; opacity:1; } }
 .unit.big .syn .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
@@ -436,6 +452,8 @@ body.touch .m-only { display:inline-block; }
   body.touch #playerBox { order:6; }
   body.touch #mDrawerBox #shopctlCol { flex-direction:row; }
   body.touch #mDrawerBox #shopctlCol .btn { flex:1; padding:10px 6px; font-size:13px; }
+  body.touch #tempBuffBox { flex-direction:row; flex:2; }
+  body.touch #tempBuffBox .btn.tb { flex:1; padding:8px 2px; font-size:10px; }
   body.touch #mEquipSec .panel { width:100%; }
   /* 羁绊抽屉：恢复竖排完整列表（阵营/职业分组头 + 效果文本），替代页面里的横排压缩条 */
   body.touch #mBondSec #synCol { flex-direction:column; width:100%; overflow:visible; }
@@ -722,6 +740,7 @@ body.touch .m-only { display:inline-block; }
   <div id="shop"></div>
   <div id="shopctlCol">
     <div id="goldChip" title="当前金币（利息：每10金+1，上限5）">💰 <b id="goldChipN">0</b><span id="goldChipI"></span></div>
+    <div id="tempBuffBox"></div>
     <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄 刷新 (D) -2💰</button>
     <button class="btn shopctl" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）">🔓 锁定 (L)</button>
   </div>
@@ -802,7 +821,8 @@ body.touch .m-only { display:inline-block; }
     &nbsp;&nbsp;<b style="color:#cdd6f4">商店卡片三层信息（互不遮挡）：</b>① 费用看左侧<b style="color:#9dd3e8">色条</b>+右下角 <b>💰N费</b>；② <span style="color:#ffd24a">金边 = 对子（买到即升星）</span>；③ 徽章并列显示：<span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗买下即触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span><br>
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；头目<b style="color:#ffd24a">真实占据 2×2 格</b>（其他棋子需让位绕行，近战可从任意相邻格攻击它）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
-    ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；把棋子<b style="color:#8dff9a">拖到左下出售按钮或商店卡片区</b>松手即出售（1★原价、合成折价，装备自动卸回）；<b style="color:#8dff9a">一键上阵 (R/A)</b>按羁绊梯队布阵（每次在多种列阵型间轮换）、<b style="color:#8dff9a">整理备战席 (T)</b>把棋子按星级/同名聚拢；开战时人口不满会按羁绊优先自动补位（不动你的已有站位）。<b style="color:#ffd24a">快捷键：R/A 一键上阵 · T 整理备战席 · D 刷新 · F 买经验 · L 锁定 · E/X/Delete 出售 · 空格 开战</b>；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；<b style="color:#ffd24a">每 25 回合挑战守关魔王</b>：胜利得强效 3 选 1 全局增强，失败也有削弱版，结算后可继续推进下一章或收兵离场
+    ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；把棋子<b style="color:#8dff9a">拖到左下出售按钮或商店卡片区</b>松手即出售（1★原价、合成折价，装备自动卸回）；<b style="color:#8dff9a">一键上阵 (R/A)</b>按羁绊梯队布阵（每次在多种列阵型间轮换）、<b style="color:#8dff9a">整理备战席 (T)</b>把棋子按星级/同名聚拢；开战时人口不满会按羁绊优先自动补位（不动你的已有站位）。<b style="color:#ffd24a">快捷键：R/A 一键上阵 · T 整理备战席 · D 刷新 · F 买经验 · L 锁定 · E/X/Delete 出售 · 空格 开战</b>；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；<b style="color:#ffd24a">每 25 回合挑战守关魔王</b>：胜利得强效 3 选 1 全局增强 + 1 张升星券，失败也有削弱版增强，结算后可继续推进下一章或收兵离场<br>
+    ⑥ <b style="color:#ffd24a">后期成长（顶配之后玩什么）：</b>增强分 <span style="color:#c8bfe8">白</span>/<span style="color:#4ac8ff">蓝</span>/<span style="color:#ffd24a">金</span> 三档稀有度，机制型包括「🧤装备大师（装备槽 +1）」「🔗羁绊共鸣（每档位全队增益）」「💀灵魂虹吸（击杀回蓝）」「🔰先祖庇护（开战护盾）」「⏱️技能急速」等，金色一局至多持有 2 个；<b style="color:#ffd24a">🎫 升星券</b>（守关胜利奖励）可把一名 3★ 升为 4★（点击 3★ 棋子，详情面板使用）；备战期右侧可花金币买<b style="color:#8dff9a">临时增益</b>（攻/血 +15%、开场齐射，仅本场生效、每回合限 1 个）；背包内<b style="color:#8dff9a">任意 3 件成品可熔铸 1 件神器</b>（⚔弑神之刃 / 🛡不灭圣铠 / 🏹苍穹之弓 / 🔮湮灭宝珠，占 1 格强于 2 件普通装）
   </p>
   <div id="ovBtns">
     <button id="ovBtn">开始游戏</button>
@@ -1086,13 +1106,26 @@ const ITEMS = {
   swiftecho: {n:'迅影回响',   e:'💠', crafted:1, from:['bow','mana'],    desc:'+35% 攻速 · 每秒回 3 蓝'},
   bloodcore: {n:'血魔之心',   e:'❤', crafted:1, from:['vamp','vamp'],   desc:'吸血 35% · 技能伤害 15% 吸血'},
   twinshell: {n:'双生海螺',   e:'🐚', crafted:1, from:['mana','mana'],   desc:'攻击/受击回蓝效率 +200%'},
+  /* —— 神器（3 件成品升阶熔铸，仅 forgeArtifact 获得；占 1 个装备格）—— */
+  godblade: {n:'弑神之刃', e:'⚔', arti:1, desc:'+120% 攻击 · 技能伤害 +25% · 吸血 20% · 15% 暴击'},
+  godarmor: {n:'不灭圣铠', e:'🛡', arti:1, desc:'+90% 生命 · 护甲 +18 · 每 3 秒 10% 生命盾 · 荆棘 6%'},
+  godbow:   {n:'苍穹之弓', e:'🏹', arti:1, desc:'+100% 攻速 · 普攻 40% 弹射 · 闪避 15%'},
+  godorb:   {n:'湮灭宝珠', e:'🔮', arti:1, desc:'开局 +30 蓝 · 回蓝效率 +200% · 技能伤害 +30% · 技能冷却 -25%'},
 };
+/* 神器清单（升阶 UI 与判定用） */
+const ARTIFACTS=['godblade','godarmor','godbow','godorb'];
+/* 临时增益（备战期金币购买，仅本场战斗生效，每回合限购 1 个；endBattle 清空） */
+const TEMP_BUFFS=[
+  {id:'atk',  e:'⚔', n:'战意激扬', short:'攻+15%', cost:15, desc:'本场战斗我方全体攻击 +15%'},
+  {id:'hp',   e:'🛡', n:'壁垒术式', short:'血+15%', cost:15, desc:'本场战斗我方全体生命 +15%'},
+  {id:'nuke', e:'☄', n:'开场齐射', short:'齐射',   cost:25, desc:'开战时对全体敌人造成 12% 最大生命的魔法伤害'},
+];
 /* 合成配方表：'a|b'（字典序）→ 成品 key。未列出的组合（如 bow+vamp）不开放合成，按原效果独立佩戴 */
 const COMBOS={};
 Object.keys(ITEMS).forEach(k=>{ const f=ITEMS[k].from; if(f) COMBOS[[...f].sort().join('|')]=k; });
 function comboKey(a,b){ return [a,b].sort().join('|'); }
 /* 输出/防御装备分类（bot 穿戴决策用；成品按其攻向归类） */
-function isDmgItem(k){ return ['sword','staff','bow','vamp','flamejudge','galehunt','soulblade','sagestaff','hexdrinker','tidejewel','twinbows','swiftecho','bloodcore'].includes(k); }
+function isDmgItem(k){ return ['sword','staff','bow','vamp','flamejudge','galehunt','soulblade','sagestaff','hexdrinker','tidejewel','twinbows','swiftecho','bloodcore','godblade','godbow','godorb'].includes(k); }
 function comboOf(a,b){ return COMBOS[comboKey(a,b)]||null; }
 /* 背包内合成一对基础装（i/j 为 S.items 下标）；返回成品 key 或 null */
 function combineBagPair(i,j){
@@ -1107,6 +1140,20 @@ function combineBagPair(i,j){
   log(`⛓ 装备合成：${ITEMS[a].e}${ITEMS[a].n} + ${ITEMS[b].e}${ITEMS[b].n} → ${ITEMS[prod].e}${ITEMS[prod].n}（${ITEMS[prod].desc}）`);
   renderAll();
   return prod;
+}
+/* ⚒ 神器升阶：背包内任意 3 件成品熔铸为 1 件指定神器（占 1 个装备格，强于 2 件普通装） */
+function forgeArtifact(key){
+  if(S.phase!=='prep') return;
+  if(!ARTIFACTS.includes(key)) return;
+  const idxs=[]; S.items.forEach((k,i)=>{ if(ITEMS[k].crafted && idxs.length<3) idxs.push(i); });
+  if(idxs.length<3){ log('⚠ 神器升阶需要背包内有 3 件合成成品'); return; }
+  const burned=idxs.map(i=>ITEMS[S.items[i]].n);
+  [2,1,0].forEach(n=>S.items.splice(idxs[n],1));   // 从大到小删，避免下标位移
+  S.items.push(key);
+  const it=ITEMS[key];
+  sfx('merge3');
+  log(`⚒ 神器升阶：${burned.join('、')} 熔铸 → ${it.e} ${it.n}（${it.desc}）`);
+  renderAll();
 }
 /* 棋子已佩戴的两件就地合成（腾出的格子保留空位） */
 function combineWorn(u){
@@ -1188,6 +1235,8 @@ function rollEnemySquad(r){
 const CREEP = {5:'🐺 野狼群', 10:'🗿 岩石巨像', 15:'🐉 黑龙幼崽', 20:'🦣 远古凶兽', 25:'👑 最终魔王'};
 /* 野怪回合：失败不扣血、不动连胜；掉落装备——胜利 2 件、失败保底 1 件（见 endBattle） */
 const SHOP_SIZE=5, MAX_ROUNDS=25, BENCH=8, MAX_EQUIP=2;
+/* 装备槽：基础 2 件，全局增强「🧤 装备大师」后 3 件（唯一出口，穿戴/合成/托管统一走这里） */
+function maxEquip(){ return MAX_EQUIP + ((typeof S!=='undefined' && S && (S.augs||[]).some(a=>a.id==='eqslot')) ? 1 : 0); }
 const BOARD_W=8, BOARD_H=8;                 // 8×8 四边形棋盘（每方 32 格，下半 4 行为我方布阵区）
 const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节奏更线性）；蓝量全棋子统一 100、开局清零
 /* 升级人口经验表（多多式）：每回合自然 +2 经验，5 金币固定买 4 经验；2 级起步、11 级封顶；第 1 回合仅禁购买经验（自然积累照常升级） */
@@ -1199,7 +1248,7 @@ function checkLevel(){ let need=xpNeed(S.lvl);
 /* ================= 状态 ================= */
 let S;
 function newGame(){
-  S = { round:1, hp:40, gold:10, lvl:2, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[], augs:[],
+  S = { round:1, hp:40, gold:10, lvl:2, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[], augs:[], tickets:0, tempBuff:null,
     bench:Array(BENCH).fill(null), board:Array(BOARD_H*BOARD_W).fill(null),
     shop:[], enemyBoard:[], uid:1, log:[], items:[], selItem:null, selUid:null, pool:{},
     stats:{wins:0,losses:0,maxStreak:0,maxLossStreak:0,kills:0,dmgTaken:0,goldEarned:0,goldSpent:0,bought:0,
@@ -1496,7 +1545,10 @@ function rollShop(){
   renderShop();
 }
 /* 多多自走棋式卖价：1★原价回购；合成棋子折价（2★=3×费用−1，3★=9×费用−2） */
-function sellRefund(u){ const d=byId(u.id); return u.star===1 ? d.cost : Math.pow(3,u.star-1)*d.cost-(u.star-1); }
+function sellRefund(u){ const d=byId(u.id);
+  const base = u.star===1 ? d.cost : Math.pow(3,u.star-1)*d.cost-(u.star-1);
+  const up = (typeof S!=='undefined' && S && S.augs) ? augTotal('sellup') : 0;   // 🪙 奸商契约：出售所得 +N%
+  return Math.round(base*(1+up/100)); }
 function sellSelected(){
   if(S.phase!=='prep' || S.selUid==null) return;
   const pos=findUnit(S.selUid);
@@ -1544,7 +1596,7 @@ function unitInner(u){
 function unitHTML(u,sel){
   const d=byId(u.id);
   const sideCls = u.side===1?'enemy':u.side===0?'ally':'';
-  const stCls = (u.stun>0?'stunned ':'')+(u.atkDownT>0?'weakened ':'')+(u.slowT>0?'slowed':'');
+  const stCls = (u.star>=4?'star4 ':'')+(u.stun>0?'stunned ':'')+(u.atkDownT>0?'weakened ':'')+(u.slowT>0?'slowed':'');
   let pairCls='';
   if(u.star===1){ const n=pairCount(u.id); pairCls = n>=2?'pair':(n===1?'solo':''); }
   const tip = `${d.name} · ${u.star?'★'.repeat(u.star)+' ':''}${facLabel(d)}·${jobLabel(d)}\n攻击方式：${d.form==='me'?'近战':'远程'} · ${d.dtype==='phys'?'物理':'法术'}伤害\n${d.sk[0]}（${isPassive(u)?'被动':'主动'}）\n${skillText(u)}`
@@ -1650,6 +1702,7 @@ function renderTop(){
   $('interest').textContent = S.phase==='prep' && S.lvl<11 ? `+${Math.min(5,Math.floor(S.gold/10))}` : '';
   { const gcn=$('goldChipN'); if(gcn) gcn.textContent=S.gold;
     const gci=$('goldChipI'); if(gci) gci.textContent = S.phase==='prep' ? ` +${Math.min(5,Math.floor(S.gold/10))}息` : ''; }
+  renderTempBuffs();
   const pop=S.board.filter(Boolean).length;
   $('pop').textContent=pop; $('popMax').textContent=S.lvl;
   // 人口未上满提醒：备战阶段若场上人数 < 人口上限，高亮人口标签 + 一键上阵按钮脉冲
@@ -1729,6 +1782,26 @@ function renderSynergy(){
   // 玩家盒里的人口镜像（多多式：人口紧贴等级显示）
   $('pop2').textContent=S.board.filter(Boolean).length; $('popMax2').textContent=S.lvl;
 }
+/* ===== 临时增益（金币出口）：备战期购买，仅本场战斗生效，每回合限购 1 个 ===== */
+function buyTempBuff(id){
+  if(S.phase!=='prep') return;
+  const b=TEMP_BUFFS.find(x=>x.id===id); if(!b) return;
+  if(S.tempBuff){ log('⚠ 本回合已购买临时增益（每回合限 1 个）'); return; }
+  if(S.gold<b.cost){ log(`⚠ 金币不足（需要 ${b.cost}💰）`); return; }
+  S.gold-=b.cost; S.stats.goldSpent+=b.cost; S.tempBuff=id;
+  sfx('equip');
+  log(`🧪 购买临时增益：${b.e} ${b.n}（-${b.cost}💰，本场战斗生效：${b.desc}）`);
+  renderAll();
+}
+function renderTempBuffs(){
+  const box=$('tempBuffBox'); if(!box) return;
+  const prep=S.phase==='prep';
+  box.innerHTML=TEMP_BUFFS.map(b=>{
+    const owned=S.tempBuff===b.id;
+    const dis=!prep || (S.tempBuff&&!owned) || S.gold<b.cost;
+    return `<button class="btn tb${owned?' on':''}" ${dis?'disabled':''} title="${b.desc}（每回合限购 1 个）" onclick="buyTempBuff('${b.id}')">${b.e}${b.short} ${b.cost}💰${owned?'✓':''}</button>`;
+  }).join('');
+}
 function renderEquip(){
   const e=$('equip');
   // 身上装备条：当前查看的棋子（抽屉化后详情/背包不同屏，装备抽屉里也保留拖卸/点卸入口）
@@ -1748,14 +1821,19 @@ function renderEquip(){
     const prod=comboOf(S.items[i],S.items[j]);
     if(prod) pairs.push({i,j,prod,a:S.items[i],b:S.items[j]});
   }
-  e.innerHTML=wornHtml+pairs.slice(0,3).map(p=>
+  // 神器升阶：任意 3 件成品 → 1 件神器（选样式；从背包成品中熔铸）
+  const craftN=S.items.filter(k=>ITEMS[k].crafted).length;
+  const artiHtml=`<div class="arti-box"><div class="arti-hd">⚒ 神器升阶 <span style="color:#6b6288;font-size:10px">（背包成品 ${craftN}/3 · 任意 3 件熔铸 1 件）</span></div>`+
+    ARTIFACTS.map(k=>{ const it=ITEMS[k]; const dis=S.phase!=='prep'||craftN<3;
+      return `<div class="arti-card" title="${it.desc}"><b>${it.e} ${it.n}</b><div class="ad2">${it.desc}</div><button class="btn" style="padding:1px 8px;font-size:11px" ${dis?'disabled':''} onclick="forgeArtifact('${k}')">⚒ 升阶</button></div>`; }).join('')+`</div>`;
+  e.innerHTML=wornHtml+artiHtml+pairs.slice(0,3).map(p=>
     `<div class="combo-row" title="合成预览：${ITEMS[p.a].n} + ${ITEMS[p.b].n} → ${ITEMS[p.prod].n}（${ITEMS[p.prod].desc}）">⛓ ${ITEMS[p.a].e}+${ITEMS[p.b].e}→${ITEMS[p.prod].e}${ITEMS[p.prod].n}
       <button class="btn" style="padding:1px 8px;font-size:11px;margin-left:4px" onclick="combineBagPair(${p.i},${p.j})">合成</button></div>`).join('');
   bindWornChips();
   S.items.forEach((k,i)=>{
     const it=ITEMS[k];
     const c=document.createElement('div');
-    c.className='item-chip'+(S.selItem===i?' sel':'')+(it.crafted?' crafted':'');
+    c.className='item-chip'+(S.selItem===i?' sel':'')+(it.crafted?' crafted':'')+(it.arti?' arti':'');
     c.title=it.desc+'（拖到棋子上穿戴，或点选后再点棋子）';
     c.innerHTML=`${it.e} ${it.n}`;
     c.onclick=()=>{ if(Date.now()<chipClickSuppressedUntil) return;
@@ -1918,6 +1996,7 @@ function showInspect(u){
     <div class="in-item">🎒 装备：<span id="inItemChips">${itemChips}</span></div>
     ${(IS_TOUCH&&u.items&&u.items.length)?`<div class="in-unequip" onclick="unequipInspect()">🧥 卸下全部装备</div>`:''}
     ${(u.items&&u.items.length>=2&&comboOf(u.items[0],u.items[1]))?`<div class="in-combo" onclick="combineWornByUid(${u.uid})">⛓ 就地合成 → ${(()=>{const pr=comboOf(u.items[0],u.items[1]);return ITEMS[pr].e+ITEMS[pr].n;})()}（${ITEMS[comboOf(u.items[0],u.items[1])].desc}）</div>`:''}
+    ${(u.star===3&&(S.tickets||0)>0)?`<div class="in-ticket" onclick="applyTicket(${u.uid})">🎫 使用升星券 → 4★（剩 ${S.tickets} 张）</div>`:''}
     <div class="in-sell" onclick="sellInspect()">💸 出售（+${sellRefund(u)}💰）</div>`;
   S.inspectUid=u.uid;
   // 已穿装备芯片：按住拖到「装备」背包栏松手=卸下；原地点按=卸下单件（拖动距离 >6px 才算拖）
@@ -1958,6 +2037,24 @@ function sellInspect(){  // 详情面板一键出售
   if(S.phase!=='prep'||S.inspectUid==null) return;
   S.selUid=S.inspectUid;
   sellSelected();
+}
+/* 🎫 升星券：3★ → 4★（守关胜利奖励；按升星倍率再乘一档，数值显著但不改技能结构） */
+function applyTicket(uid){
+  if(S.phase!=='prep') return;
+  if(!(S.tickets>0)){ log('⚠ 没有升星券（击败守关魔王后获得）'); return; }
+  const pos=findUnit(uid); if(!pos) return;
+  const u=getAt(pos[0],pos[1]);
+  if(!u||u.star!==3){ log('⚠ 升星券只能对 3★ 棋子使用'); return; }
+  const d=byId(u.id);
+  const m=Math.pow(STAR_M[d.cost]||1.8, 3)*HP_SCALE;
+  u.star=4; u.sks=Math.pow(SKILL_STAR_M[d.cost]||1.1, 3);
+  u.hp=Math.round(d.hp*m); u.maxhp=Math.round(d.hp*m);
+  u.atk=Math.round(d.atk*Math.pow(STAR_M[d.cost]||1.8, 3));
+  S.tickets--;
+  sfx('merge3');
+  log(`🎫 ${d.name} 升至 4★！（剩升星券 ×${S.tickets}）`);
+  renderAll();
+  showInspectFor(pos[0],pos[1]);
 }
 function unequipInspect(){  // 触屏详情面板一键卸装（手机无右键路径）
   if(S.phase!=='prep'||S.inspectUid==null) return;
@@ -2002,7 +2099,7 @@ let chipClickSuppressedUntil=0;   // 拖拽穿装结束后的短暂窗口内忽�
 function equipTo(u, bagIdx){
   if(!u || bagIdx==null || bagIdx<0 || bagIdx>=S.items.length) return false;
   u.items = u.items||[];
-  if(u.items.length>=MAX_EQUIP){ log(`⚠ ${byId(u.id).name} 装备已满（${MAX_EQUIP} 件）`); return false; }
+  if(u.items.length>=maxEquip()){ log(`⚠ ${byId(u.id).name} 装备已满（${maxEquip()} 件）`); return false; }
   const k=S.items[bagIdx];
   u.items.push(k);
   S.items.splice(bagIdx,1); S.selItem=null; S.moveSel=null;   // 穿装后清点选移动残留（否则下次点该棋子=取消）
@@ -2221,10 +2318,10 @@ function tryMerge(){
         const group = spots.slice(0,3);   // 只取 3 个合成，其余同名棋子保留（否则 4 个以上会被误清空）
         const keep = group.find(s=>s[0]==='board') || group[0];
         const allItems = group.map(s=>getAt(s[0],s[1]).items||[]).flat();
-        const items = allItems.slice(0,MAX_EQUIP);          // 新星最多带 2 件
-        if(allItems.length>MAX_EQUIP){
-          allItems.slice(MAX_EQUIP).forEach(k=>S.items.push(k)); // 多余装备回到装备栏
-          log(`🎒 合成后多余装备回到装备栏（${allItems.length-MAX_EQUIP} 件）`);
+        const items = allItems.slice(0,maxEquip());          // 新星最多带 maxEquip() 件
+        if(allItems.length>items.length){
+          allItems.slice(items.length).forEach(k=>S.items.push(k)); // 多余装备回到装备栏
+          log(`🎒 合成后多余装备回到装备栏（${allItems.length-items.length} 件）`);
         }
         const m = Math.pow(STAR_M[d.cost]||1.8, star) * HP_SCALE; // 升星倍率（低费收益更高）
         const sks = Math.pow(SKILL_STAR_M[d.cost]||1.1, star);    // 技能倍率随星级增强（低费收益更高）
@@ -2566,6 +2663,11 @@ const ITEM_FX={
   swiftecho: b=>{b.spdMul*=1.35; b.manaPerSec=(b.manaPerSec||0)+3;},
   bloodcore: b=>{b.vamp=Math.max(b.vamp,0.35); b.skillVamp=0.15;},
   twinshell: b=>{b.manaRegenMul=Math.max(b.manaRegenMul||1,3);},
+  /* —— 神器 —— */
+  godblade: b=>{b.atkMul*=2.2; b.skMul=(b.skMul||1)+0.25; b.vamp=Math.max(b.vamp,0.2); b.critPct=(b.critPct||0)+0.15; b.critItemM=Math.max(b.critItemM||0,2);},
+  godarmor: b=>{b.hpMul*=1.9; b.ar+=18; b.shieldTick=Math.max(b.shieldTick||0,0.10); b.itemShieldCd=3000; b.thorns=Math.max(b.thorns||0,0.06);},
+  godbow:   b=>{b.spdMul*=2.0; b.bounceP=Math.max(b.bounceP||0,0.4); b.dodge=Math.max(b.dodge||0,0.15);},
+  godorb:   b=>{b.manaStart=(b.manaStart||0)+30; b.manaRegenMul=Math.max(b.manaRegenMul||1,3); b.skMul=(b.skMul||1)+0.30; b.skillHaste=Math.max(b.skillHaste||0,0.25);},
 };
 function makeBattleUnit(u, side, x, y){
   const d=byId(u.id);
@@ -2804,6 +2906,28 @@ function startBattle(){
       if(tt>0) parts.push(`${k}${tt>=2?'·T'+tt:''}×${n}`); });
     if(parts.length) log(`${side===0?'🔥 我方':'⚔ 敌方'}羁绊：${parts.join('、')}`);
   }
+  // —— 开战一次性结算（双方羁绊落位之后，仅我方）：先祖庇护/羁绊共鸣（全局增强）+ 临时增益 ——
+  {
+    const mine0=units.filter(u=>u.side===0 && u.hp>0);
+    const sh=augTotal('startshield');
+    if(sh) mine0.forEach(u=>{ u.shield+=Math.round(u.maxhp*sh/100); });
+    const nt=Object.values(BV[0]||{}).reduce((a,b)=>a+b,0);
+    const sp=augTotal('synres');
+    if(sp && nt){
+      mine0.forEach(u=>{ u.atk=Math.round(u.atk*(1+nt*sp/100));
+        const add=Math.round(u.maxhp*(nt*sp/100)); u.maxhp+=add; u.hp+=add; });
+      log(`🌟 羁绊共鸣：${nt} 个激活档位 → 全队攻击/生命 +${nt*sp}%`);
+    }
+    const tb=S.tempBuff ? TEMP_BUFFS.find(b=>b.id===S.tempBuff) : null;
+    if(tb){
+      if(tb.id==='atk') mine0.forEach(u=>{ u.atk=Math.round(u.atk*1.15); });
+      if(tb.id==='hp') mine0.forEach(u=>{ const add=Math.round(u.maxhp*0.15); u.maxhp+=add; u.hp+=add; });
+      if(tb.id==='nuke'){ const foes=units.filter(u=>u.side===1&&u.hp>0);
+        foes.forEach(f=>dealDamage(null,f,Math.round(f.maxhp*0.12),units,'magic'));
+        log(`☄ 开场齐射：对 ${foes.length} 名敌人造成 12% 最大生命魔法伤害`); }
+      log(`🧪 临时增益生效：${tb.e} ${tb.n}（${tb.desc}）`);
+    }
+  }
   let t=0, delayLeft=BATTLE_DELAY, released=false; const TICK=100;
   currentTick=()=>{
     if(S.phase!=='battle') return;  // 非战斗阶段，任何残余时钟都是空操作
@@ -2914,7 +3038,10 @@ function startBattle(){
       const d=byId(u.id);
       const aspd = d.spd*(u.spdMul||1);
       if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana && u.skillCd<=0){
-        u.mana=0; u.skillCd=SKILL_CD; castSkill(u,tgt,units,u.skMul);
+        u.mana=0;
+        const haste = Math.min(0.6, (u.side===0?augTotal('skillhaste')/100:0) + (u.skillHaste||0));   // ⏱️ 技能急速 + 湮灭宝珠
+        u.skillCd = SKILL_CD*(1-haste);
+        castSkill(u,tgt,units,u.skMul);
       }
       if(unitDist(tgt,u)<=d.rng){   // 距离按占据格集合算：贴 2×2 头目任意一格即在射程内
         if(u.cd<=0){
@@ -2973,7 +3100,8 @@ function startBattle(){
           // 攻击回蓝（多多公式×2 配合快节奏）：按最终实际伤害 ÷1.25，法师/咒术/医者单次上限 30、其余 15
           if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && dealt>0){
             const cap30 = d.job==='法师'||d.job==='咒术'||d.job==='医者';
-            u.mana=Math.min(u.maxmana, u.mana+Math.min(dealt/1.25, cap30?30:15)*(u.manaRegenMul||1));
+            const amUp = u.side===0 ? (1+augTotal('atkmana')/100) : 1;   // 🎼 回蓝协奏（仅我方）
+            u.mana=Math.min(u.maxmana, u.mana+Math.min(dealt/1.25, cap30?30:15)*(u.manaRegenMul||1)*amUp);
           }
         }
       } else if(u.moveCd<=0){
@@ -3070,6 +3198,8 @@ function dealDamage(src,tgt,dmg,units,dtype){
   if(tgt.hp<=0){
     if(src && src.side===0) S.stats.kills++;
     if(src){ const rk=bsRec(src); if(rk) rk.kills++; }
+    if(src && src.side===0){ const km=augTotal('killmana');   // 💀 灵魂虹吸：击杀回蓝
+      if(km) src.mana=Math.min(src.maxmana, src.mana+km); }
     sfx('die');
     log(`💀 ${src&&src.side===0?'我方':'敌方'}${src?byId(src.id).name:'?'} 击败 ${byId(tgt.id).name}`);
     if(src && src.killHeal && src.hp>0 && src.hp<src.maxhp){   // 饮魂战刃：击杀回复自身生命
@@ -3798,21 +3928,43 @@ function showResultBanner(won,cb){
 /* 羁绊启动音映射（表现层） */
 const BOND_ST={深海:'stShenhai',星际:'stXingji',毛茸乐园:'stMaorong',音律:'stYinlv',四禧丸子:'stSixi',学园:'stXueyuan',夜幕:'stYemu',花语:'stHuayu',魔道:'stModao',森之国:'stSenzhi',工造:'stGongzao','P-SP':'stPSP',刀客:'stDaoke',守护:'stShouhu',歌势:'stGeshi',游侠:'stYouxia',法师:'stFashi',咒术:'stZhoushu',刺客:'stCike',狂战:'stKuangzhan',医者:'stYizhe',偶像:'stOuxiang'};
 /* ================= 章节系统：每 25 回合守关魔王 → 结算动画 + 3 选 1 全局增强 ================= */
+/* 全局增强：r=稀有度（1 白 / 2 蓝 / 3 金）。数值型直接走 augTotal；
+   机制型的生效点分散在 equipTo·tryMerge·dealDamage·castSkill·startBattle·endBattle·sellRefund。 */
 const AUGS=[
-  {id:'atk',  n:'⚡ 强攻令',   d:v=>`全体我方棋子攻击 +${v}%`,            s:25,  w:12},
-  {id:'hp',   n:'❤️ 生命图腾', d:v=>`全体我方棋子生命 +${v}%`,            s:30,  w:15},
-  {id:'asp',  n:'🌪️ 疾风号角', d:v=>`全体我方棋子攻速 +${v}%`,            s:20,  w:10},
-  {id:'mana', n:'🔵 蓝能核心', d:v=>`我方棋子开局蓝量 +${v} 点`,          s:25,  w:12},
-  {id:'ar',   n:'🛡️ 荆棘重甲', d:v=>`全体我方棋子护甲 +${v}`,             s:8,   w:4},
-  {id:'mr',   n:'✨ 秘法屏障', d:v=>`全体我方棋子魔抗 +${v}%`,            s:25,  w:12},
-  {id:'regen',n:'🌿 再生之泉', d:v=>`我方棋子每秒回复 ${v}% 最大生命`,    s:2.5, w:1.2},
-  {id:'gold', n:'💰 生财经纬', d:v=>`每回合额外收入 +${v} 金`,            s:3,   w:1},
+  {id:'atk',  n:'⚡ 强攻令',   d:v=>`全体我方棋子攻击 +${v}%`,            s:25,  w:12, r:1},
+  {id:'hp',   n:'❤️ 生命图腾', d:v=>`全体我方棋子生命 +${v}%`,            s:30,  w:15, r:1},
+  {id:'asp',  n:'🌪️ 疾风号角', d:v=>`全体我方棋子攻速 +${v}%`,            s:20,  w:10, r:1},
+  {id:'mana', n:'🔵 蓝能核心', d:v=>`我方棋子开局蓝量 +${v} 点`,          s:25,  w:12, r:1},
+  {id:'ar',   n:'🛡️ 荆棘重甲', d:v=>`全体我方棋子护甲 +${v}`,             s:8,   w:4,  r:1},
+  {id:'mr',   n:'✨ 秘法屏障', d:v=>`全体我方棋子魔抗 +${v}%`,            s:25,  w:12, r:1},
+  {id:'regen',n:'🌿 再生之泉', d:v=>`我方棋子每秒回复 ${v}% 最大生命`,    s:2.5, w:1.2,r:1},
+  {id:'gold', n:'💰 生财经纬', d:v=>`每回合额外收入 +${v} 金`,            s:3,   w:1,  r:1},
+  {id:'atkmana',  n:'🎼 回蓝协奏', d:v=>`我方棋子攻击回蓝效率 +${v}%`,     s:30,  w:15, r:1},
+  {id:'dropplus', n:'🐾 野怪宝库', d:v=>`野怪回合掉落装备 +${v} 件`,       s:1,   w:1,  r:1},
+  {id:'sellup',   n:'🪙 奸商契约', d:v=>`出售棋子所得 +${v}%`,             s:40,  w:20, r:1},
+  {id:'killmana', n:'💀 灵魂虹吸', d:v=>`我方棋子击杀敌人回复 ${v} 点蓝量`, s:20,  w:10, r:2},
+  {id:'startshield',n:'🔰 先祖庇护', d:v=>`开战时全体我方获得 ${v}% 最大生命护盾`, s:18, w:10, r:2},
+  {id:'skillhaste', n:'⏱️ 技能急速', d:v=>`我方棋子技能冷却 -${v}%`,        s:30,  w:18, r:2},
+  {id:'eqslot',   n:'🧤 装备大师', d:v=>`全体我方棋子装备槽 +${v}（可带 3 件）`, s:1, w:1, r:3},
+  {id:'synres',   n:'🔗 羁绊共鸣', d:v=>`每个已激活羁绊档位为全队提供 +${v}% 攻击与生命（开战结算）`, s:4, w:2, r:3},
 ];
 function augTotal(id){ let v=0; (S.augs||[]).forEach(a=>{ if(a.id!==id) return; const def=AUGS.find(x=>x.id===id); v += a.weak?def.w:def.s; }); return v; }
+function augHas(id){ return (S.augs||[]).some(a=>a.id===id); }   // 机制型旗标增强判断
+function augRarity(id){ const d=AUGS.find(x=>x.id===id); return (d&&d.r)||1; }
+const AUG_RNAME={1:'白',2:'蓝',3:'金'};
 function chapterSettle(won){
   S.phase='chapter'; S.settleWon=won;
-  const pool=[...AUGS].sort(()=>Math.random()-0.5).slice(0,3);
-  S.settleOffer=pool.map(a=>({id:a.id, weak:!won}));
+  if(won){ S.tickets=(S.tickets||0)+1; }   // 守关胜利奖励：升星券（备战期点 3★ 棋子 → 4★）
+  // 稀有度加权 3 选 1（不重复）：白 100 / 蓝 40 / 金 15；金色全局至多持有 2 个
+  const goldOwned=(S.augs||[]).filter(a=>augRarity(a.id)===3).length;
+  let pool=AUGS.filter(a=>a.r!==3||goldOwned<2);
+  const aw=a=>a.r===3?15:a.r===2?40:100, picked=[];
+  while(picked.length<3 && pool.length){
+    const tot=pool.reduce((s,a)=>s+aw(a),0); let r=Math.random()*tot, idx=pool.length-1;
+    for(let i=0;i<pool.length;i++){ r-=aw(pool[i]); if(r<=0){ idx=i; break; } }
+    picked.push(pool.splice(idx,1)[0]);
+  }
+  S.settleOffer=picked.map(a=>({id:a.id, weak:!won}));
   S.settlePick=null;
   sfx(won?'finalWin':'settle');
   const ch=Math.ceil(S.round/25);
@@ -3827,19 +3979,25 @@ function chapterSettle(won){
 }
 function renderSettle(){
   const w=S.settleWon;
+  const AR_COLOR={1:'#c8bfe8',2:'#4aa8ff',3:'#ffd24a'};
   const cards=S.settleOffer.map((a,i)=>{
     const def=AUGS.find(x=>x.id===a.id); const v=w?def.s:def.w;
     const st = S.settlePick==null?'':(S.settlePick===i?' picked':' dim');
-    return `<div class="aug-card${st}" style="animation-delay:${i*0.15}s" onclick="pickAug(${i})"><b>${def.n}</b><div class="ad">${def.d(v)}</div><span class="at">${w?'★ 强效':'☆ 削弱版'}</span></div>`;
+    const rc=AR_COLOR[def.r||1];
+    return `<div class="aug-card r${def.r||1}${st}" style="animation-delay:${i*0.15}s" onclick="pickAug(${i})"><b style="color:${rc}">${def.n}</b><span class="ar-tag" style="color:${rc};border-color:${rc}66">${AUG_RNAME[def.r||1]}</span><div class="ad">${def.d(v)}</div><span class="at">${w?'★ 强效':'☆ 削弱版'}</span></div>`;
   }).join('');
   const owned=(S.augs||[]).map(a=>{const def=AUGS.find(x=>x.id===a.id);return def?def.n+(a.weak?'(削)':''):'';}).filter(Boolean).join('、')||'无';
   $('ovText').innerHTML=`
     <div class="settle-hero ${w?'win':'lose'}">${w?'🎉 击败守关魔王，章节推进！':'💚 惜败守关魔王，旅路仍在继续'}</div>
     <div class="settle-row">第 ${Math.ceil(S.round/25)} 章 · 第 ${S.round} 回合 · 生命 ${S.hp} · 战绩 ${S.stats.wins} 胜 ${S.stats.losses} 负</div>
+    ${w?`<div class="settle-row" style="color:#ffd24a">🎫 守关奖励：升星券 ×1（共 ${S.tickets||0} 张）— 备战期点击 3★ 棋子，在详情面板升为 4★</div>`:''}
     <div class="settle-ask">👇 选择一项全局${w?'强效':'削弱'}增强（3 选 1）</div>
     <div class="aug-row">${cards}</div>
-    <div class="settle-row" style="color:#8a93c4;font-size:11px;margin-top:8px">已有增强：${owned}</div>`;
+    <div class="settle-row" style="color:#8a93c4;font-size:11px;margin-top:8px">已有增强：${owned}${goldOwnedNote()}</div>`;
 }
+function goldOwnedNote(){
+  const n=(S.augs||[]).filter(a=>augRarity(a.id)===3).length;
+  return n?`（金色 ${n}/2）`:''; }
 function pickAug(i){
   if(S.phase!=='chapter'||S.settlePick!=null||!S.settleOffer||!S.settleOffer[i]) return;
   S.settlePick=i;
@@ -3886,6 +4044,7 @@ function endBattle(alive0,alive1){
   const won = alive0>0 && alive0>=alive1;
   const survivors = alive1>0 ? alive1 : 0;
   const isCreep = S.round%5===0;   // 野怪回合（每 5 回合）
+  S.tempBuff=null;   // 临时增益仅生效一场战斗（开战时消费，结算即清）
   // —— 本场战斗统计消费（只读）：全场之最累计 + 本场之最行 ——（消费后释放容器）
   let bestLine='';
   if(battleStats){
@@ -3912,24 +4071,24 @@ function endBattle(alive0,alive1){
     /* 野怪回合：失败不扣血、不影响连胜；掉落装备——胜利 2 件、失败也有 1 件（保底）
        每 25 回合为章节守关战：胜/负都进入章节结算（3 选 1 全局增强），不再直接终局 */
     const chapterBoss = S.round%25===0;
-    const dropGear = n=>{ const keys=Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted);   // 成品不进掉落池
+    const dropGear = n=>{ const keys=Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted && !ITEMS[k].arti);   // 成品/神器不进掉落池
       for(let i=0;i<n;i++){ const k=keys[Math.floor(Math.random()*keys.length)];
         S.items.push(k); blk.push(`　🎁 掉落：${ITEMS[k].e} ${ITEMS[k].n}（${ITEMS[k].desc}）`); } };
     if(won){
       S.stats.wins++;
-      dropGear(2);
+      dropGear(2+augTotal('dropplus'));
       blk.push(`　🏆 击败【${CREEP[S.round]||(chapterBoss?'👑 守关魔王':'野怪')}】，连胜 ${S.streak} 保持不变`);
       settleIncome();
       if(chapterBoss){ if(bestLine)blk.push(bestLine); flush(); chapterSettle(true); return; }   // 守关魔王被击败 → 章节结算（强效 3 选 1）
     } else {
       S.stats.losses++;
       if(chapterBoss){   // 守关失败：同样进结算，拿削弱版增强后可继续
-        dropGear(1);
+        dropGear(1+augTotal('dropplus'));
         blk.push('　💤 守关魔王战失败：不扣血、不影响连胜/连败（保底 1 件装备已入包）');
         settleIncome();
         if(bestLine)blk.push(bestLine); flush(); chapterSettle(false); return;
       }
-      dropGear(1);
+      dropGear(1+augTotal('dropplus'));
       blk.push('　💤 野怪回合失败：不扣血、不影响连胜/连败（保底 1 件装备已入包）');
       settleIncome();
     }
@@ -4154,7 +4313,7 @@ const SAVE_KEY='vc_save3', HIST_KEY='vc_history';
 function saveGame(){ // 仅备战阶段保存（战斗中刷新不损失进度：回到该回合开打前）
   if(S.phase!=='prep') return;
   try{ localStorage.setItem(SAVE_KEY,JSON.stringify({round:S.round,hp:S.hp,gold:S.gold,lvl:S.lvl,xp:S.xp,
-    streak:S.streak,lossStreak:S.lossStreak,endless:S.endless,lock:!!S.lock,synDone:S.synDone||[],augs:S.augs||[],bench:S.bench,board:S.board,shop:S.shop,
+    streak:S.streak,lossStreak:S.lossStreak,endless:S.endless,lock:!!S.lock,synDone:S.synDone||[],augs:S.augs||[],tickets:S.tickets||0,tempBuff:S.tempBuff||null,bench:S.bench,board:S.board,shop:S.shop,
     uid:S.uid,log:S.log,items:S.items,pool:S.pool,stats:S.stats,ts:Date.now()})); }catch(e){}
 }
 function loadGame(){
@@ -4163,6 +4322,7 @@ function loadGame(){
     if(!o||typeof o.round!=='number'||!Array.isArray(o.board)||!Array.isArray(o.bench)) return false;
     if(!S) S={}; // 直接从存档启动时 S 尚未初始化
     Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
+    S.tickets=S.tickets||0; S.tempBuff=S.tempBuff||null;   // 旧存档兼容
     S.auto = autoStoreGet(); setAutoUI();
     if(S.auto) autoPilot(900);
     prepEnemy();   // 读档后立即生成可观察的敌方阵容
