@@ -4536,8 +4536,8 @@ $('bookClose').onclick=()=>$('bookModal').classList.add('hidden');
 
 /* ================= 存档 / 继续上一局 / 历史战绩 ================= */
 const SAVE_KEY='vc_save3', HIST_KEY='vc_history', DAILY_KEY='vc_daily3';
-/* 🌍 全球排行 API（Cloudflare Worker + KV；可用 localStorage.vc_lbapi 覆盖用于测试） */
-let LB_API='https://autochess-lb.1113132076.workers.dev';
+/* 🌍 全球排行 API（Cloudflare Worker + KV，自定义域名大陆可直连；可用 localStorage.vc_lbapi 覆盖用于测试） */
+let LB_API='https://autochesslb.hanari520.cn';
 try{ LB_API = localStorage.getItem('vc_lbapi') || LB_API; }catch(e){}
 function saveKey(){ return (S && S.daily) ? DAILY_KEY : SAVE_KEY; }   // 每日挑战独立存档（不覆盖普通进度）
 function saveGame(){ // 仅备战阶段保存（战斗中刷新不损失进度：回到该回合开打前）
