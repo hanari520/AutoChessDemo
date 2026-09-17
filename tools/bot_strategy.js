@@ -4,7 +4,9 @@
    botPrepSteps(): 一回合运营拆成有序步骤，浏览器托管逐步执行并停顿（肉眼可读）；
    botPrep():      同步跑完全部步骤（模拟器/测试用，行为完全一致）。
    sim.js 依赖：S/byId/pairCount/buy/clickUnit/rollShop/checkLevel/autoDeployBest 会被符号改写，
-   其余只允许调用 function 声明（挂 globalThis），不得直接引用顶层 const（如 XP_NEED/FACTIONS）。 */
+   其余只允许调用 function 声明（挂 globalThis），不得直接引用顶层 const（如 XP_NEED/FACTIONS）。
+   BOT_VER 会在托管开启时打进战报，用于确认浏览器加载的不是缓存的旧策略文件。 */
+const BOT_VER='策略 v2.1（普通玩家模型：看牌定型/触发式搜牌/五段经济/节点拉级/危机all-in + 升星券/顶配停刷/诅咒适配）';
 
 /* ---------- 阵容计划：看牌定型 + 粘性 ---------- */
 function botTagCount(){   // 牌面（场上+备战席）独特棋子的阵营/职业计数

@@ -4759,10 +4759,10 @@ function autoPilot(delay=900){
 function setAutoUI(){ try{ const b=$('autoBtn'); if(b) b.classList.toggle('auto-on', !!S.auto); }catch(e){} }
 $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
   if(S.auto && S.autoFight){ setAutoFight(false); }   // 与自动开战互斥
-  log(S.auto?'🤖 托管开启：自动买牌/上阵/穿装/开战':'🤖 托管关闭');
+  log(S.auto?`🤖 托管开启：${(typeof BOT_VER!=='undefined')?BOT_VER+' —— ':''}自动买牌/上阵/穿装/开战`:'🤖 托管关闭');
   if(S.auto && S.phase==='prep') autoPilot(300);
 };
 </script>
-<script src="tools/bot_strategy.js"></script>
+<script src="tools/bot_strategy.js?v=2"></script>
 </body>
 </html>
