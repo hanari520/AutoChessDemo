@@ -291,10 +291,10 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #shopbar .btn { align-self:center; white-space:nowrap; flex-shrink:0; }
 .btn.on { background:#5b4a1e; border-color:#ffd24a; }
 /* 刷新/锁定：纵向并排一列，紧贴商店右侧 */
-#shopctlCol { display:flex; flex-direction:column; gap:5px; justify-content:center; align-self:stretch; flex-shrink:0; }
+#shopctlCol, #auxCol { display:flex; flex-direction:column; gap:5px; justify-content:center; align-self:stretch; flex-shrink:0; }
 #goldChip { align-self:stretch; text-align:center; padding:5px 10px; background:#241e3e; border:1px solid #ffd24a66; border-radius:8px; color:#ffd24a; font-size:15px; font-weight:bold; white-space:nowrap; }
 #goldChip .gi { font-size:10px; color:#8dff9a; font-weight:normal; }
-#shopctlCol .btn { align-self:stretch; padding:6px 10px; font-size:13px; line-height:1.2; min-width:92px; text-align:center; white-space:nowrap; }
+#shopctlCol .btn, #auxCol .btn { align-self:stretch; padding:6px 10px; font-size:13px; line-height:1.2; min-width:92px; text-align:center; white-space:nowrap; }
 #shop { display:flex; gap:8px; flex:1; align-items:stretch; min-width:0; }
 .card { flex:1; min-width:0; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px 8px 22px;
   cursor:pointer; text-align:center; transition:transform .1s; position:relative; }
@@ -434,6 +434,8 @@ body.touch .m-only { display:inline-block; }
   #shop .card .cn { font-size:13px; }
   #shopctlCol { order:2; flex-direction:row; flex:1; align-items:center; min-width:0; }
   #shopctlCol .btn { min-width:0; flex:1; padding:8px 6px; font-size:12px; }
+  #auxCol { order:2; flex-direction:row; flex:1; align-items:center; min-width:0; }
+  #auxCol .btn { min-width:0; flex:1; padding:8px 6px; font-size:12px; }
   #fightBox { order:2; }
   #fightBox .btn { padding:10px 16px; font-size:15px; }
   #goldChip { display:none; }   /* 金币顶栏/等级条已有，省一行 */
@@ -453,6 +455,8 @@ body.touch .m-only { display:inline-block; }
   body.touch #playerBox { order:6; }
   body.touch #mDrawerBox #shopctlCol { flex-direction:row; }
   body.touch #mDrawerBox #shopctlCol .btn { flex:1; padding:10px 6px; font-size:13px; }
+  body.touch #mDrawerBox #auxCol { flex-direction:row; }
+  body.touch #mDrawerBox #auxCol .btn { flex:1; padding:10px 6px; font-size:13px; }
   body.touch #tempBuffBox { flex-direction:row; flex:2; }
   body.touch #tempBuffBox .btn.tb { flex:1; padding:8px 2px; font-size:10px; }
   body.touch #mEquipSec .panel { width:100%; }
@@ -497,6 +501,8 @@ body.touch .m-only { display:inline-block; }
   #shop .card .cn { font-size:11px; }
   #shopctlCol { order:0; flex:0 0 auto; flex-direction:column; }
   #shopctlCol .btn { flex:0 0 auto; min-width:84px; padding:3px 6px; font-size:10px; }
+  #auxCol { order:0; flex:0 0 auto; flex-direction:column; }
+  #auxCol .btn { flex:0 0 auto; min-width:84px; padding:3px 6px; font-size:10px; }
   #fightBox .btn { padding:6px 10px; font-size:13px; }
   #log { max-height:110px; }
   /* 触屏横屏：商店/羁绊/装备/详情进抽屉后，底栏单行 [五入口压缩][开战] */
@@ -741,10 +747,12 @@ body.touch .m-only { display:inline-block; }
   <div id="shop"></div>
   <div id="shopctlCol">
     <div id="goldChip" title="当前金币（利息：每10金+1，上限5）">💰 <b id="goldChipN">0</b><span id="goldChipI"></span></div>
-    <div id="tempBuffBox"></div>
-    <button class="btn shopctl" id="autoFightBtn" title="自动开战：保持当前阵容连续战斗（每场间隔约 2.5 秒；与托管互斥）。章节结算仍需手动选增强">▶ 自动开战</button>
     <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄 刷新 (D) -2💰</button>
     <button class="btn shopctl" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）">🔓 锁定 (L)</button>
+  </div>
+  <div id="auxCol">
+    <div id="tempBuffBox"></div>
+    <button class="btn shopctl" id="autoFightBtn" title="自动开战：保持当前阵容连续战斗（每场间隔约 2.5 秒；与托管互斥）。章节结算仍需手动选增强">▶ 自动开战</button>
   </div>
   <div id="fightBox">
     <button class="btn" id="fightBtn" style="background:#1e5b2a;color:#8dff9a;border-color:#8dff9a;">⚔ 开战<br>(空格)</button>
@@ -4395,6 +4403,7 @@ if(IS_TOUCH && typeof document!=='undefined' && document.body){
   rel('refreshBtn','🔄 刷新 -2💰');
   rel('fightBtn','⚔ 开战');
   document.getElementById('mShopSec').appendChild(document.getElementById('shop'));
+  document.getElementById('mShopSec').appendChild(document.getElementById('auxCol'));   // 强化+自动开战随商店抽屉
   document.getElementById('mShopSec').appendChild(document.getElementById('shopctlCol'));
   document.getElementById('mBondSec').appendChild(document.getElementById('synCol'));
   document.getElementById('mEquipSec').appendChild(document.getElementById('equipPanel'));
