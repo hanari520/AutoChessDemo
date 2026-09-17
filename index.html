@@ -27,6 +27,13 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 @keyframes deployPulse { 0%,100%{ box-shadow:0 0 0 0 #ffd24a00; } 50%{ box-shadow:0 0 0 2px #ffd24a, 0 0 14px #ffd24a88; } }
 #main { flex:1; display:flex; justify-content:center; padding:10px; padding-bottom:128px; gap:20px; overflow:hidden; }
 #boardwrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
+/* 首局欢迎指引（覆盖在空棋盘上，放上第一个棋子后消失） */
+#boardGuide{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:5;
+  background:#161228f2; border:1px solid #4a3d6e; border-radius:14px; padding:16px 20px; text-align:center; max-width:400px; width:max-content; }
+#boardGuide.hidden{ display:none; }
+#boardGuide h3{ color:#ffd24a; font-size:16px; margin-bottom:8px; }
+#boardGuide p{ font-size:13px; color:#c8bfe8; line-height:1.9; margin-bottom:10px; text-align:left; }
+#boardGuide .bdg-btns{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
 /* 多多式：棋盘上方对手信息横幅 */
 #oppBar { width:calc(8*var(--cell) + 7*var(--gap) + 2*var(--pad) + 4px); max-width:96vw; background:#1c1830; border:1px solid #35294f; border-radius:10px;
   padding:5px 12px; text-align:center; flex-shrink:0; }
@@ -753,7 +760,10 @@ body.touch .m-only { display:inline-block; }
   </div>
   <div id="boardwrap">
     <div id="oppBar"><div id="enemyInfo"></div></div>
-    <div id="board"></div>
+    <div style="position:relative">
+      <div id="board"></div>
+      <div id="boardGuide" class="hidden"></div>
+    </div>
     <div id="bench"></div>
   </div>
   <div id="side">
@@ -1787,6 +1797,25 @@ function unitHTML(u,sel){
     + ((u.items&&u.items.length)?`\n装备：${u.items.map(k=>ITEMS[k].n+'（'+ITEMS[k].desc+'）').join('、')}`:'');
   return `<div class="unit cost${d.cost} ${sideCls} ${stCls} ${pairCls} ${sel?'sel':''} ${u.shield>0?'shielded':''} ${u.frozen>0?'frozen':''}" data-uid="${u.uid}" title="${tip}">${unitInner(u)}</div>`;
 }
+/* 首局欢迎指引：第 1 回合备战且棋盘为空时显示（放上棋子/开战即消失） */
+function renderBoardGuide(){
+  const g=$('boardGuide'); if(!g) return;
+  const show = S.phase==='prep' && S.round===1 && !S.board.some(Boolean);
+  g.classList.toggle('hidden', !show);
+  if(!show) return;
+  if(!g.dataset.filled){
+    g.dataset.filled='1';
+    g.innerHTML=`<h3>👋 欢迎来到虚拟棋战</h3>
+      <p>① 点<b style="color:#8dff9a">下方商店</b>买喜欢的棋子（同名 3 个自动升星）<br>
+         ② 点<b style="color:#8dff9a">【⚡ 一键上阵】</b>自动布阵，或拖棋子上棋盘<br>
+         ③ 点<b style="color:#8dff9a">【⚔ 开战】</b>自动战斗，赢了拿金币和装备</p>
+      <div class="bdg-btns">
+        <button class="btn" onclick="document.getElementById('resetBtn').click()">🔄 选择游戏模式</button>
+        <button class="btn" onclick="document.getElementById('deployBtn').click()">⚡ 一键上阵</button>
+      </div>
+      <div style="font-size:11px;color:#6b6288;margin-top:8px">提示：顶栏【🤖 托管】可让 AI 代打 · 详细规则见【❓ 玩法】</div>`;
+  }
+}
 function renderBoard(){
   const b=$('board'); b.innerHTML='';
   for(let y=0;y<BOARD_H;y++) for(let x=0;x<BOARD_W;x++){
@@ -1812,6 +1841,7 @@ function renderBoard(){
   // 攻击范围提示（选中 / 拖动时）：源格描金，可攻击格浅蓝
   paintRange();
   paintMoveSel();
+  renderBoardGuide();   // 首局空棋盘欢迎指引
 }
 /* 只切换已有格子的高亮 class，不重建 DOM（否则会打断浏览器 click 事件，导致点棋子失效） */
 function paintRange(){
