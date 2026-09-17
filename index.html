@@ -719,6 +719,7 @@ body.touch .m-only { display:inline-block; }
   <span class="tag" title="利息：每10金+1，上限5。下回合利息预览见绿色数字">💰 <b id="gold">10</b><span id="interest" style="font-size:11px;color:#8dff9a;margin-left:3px"></span></span>
   <span class="tag">人口 <b id="pop">0</b>/<b id="popMax">11</b></span>
   <span class="tag" title="连胜/连败 3→+1金、5→+2金、7+→+3金">🔥 连胜 <b id="streak">0</b></span>
+  <span class="tag" id="curseTag" style="display:none;color:#ff9a9a;border-color:#ff9a9a66;cursor:help"></span>
   <div class="fight-btn-row">
     <button class="btn" id="histBtn">📜 战绩</button>
     <button class="btn" id="bookBtn">📖 图鉴</button>
@@ -1389,7 +1390,10 @@ function newGame(opts){ opts=opts||{};
   if(hasCurse('bloodpact')) S.hp=25;
   S.gold = 10 + (hasCurse('nobond')?10:0) + (hasCurse('solo')?20:0) + (hasCurse('glass')?5:0);
   if(hasCurse('shortch')) S.tickets=1;
-  if(S.curses.length) log('⚠ 挑战规则生效：'+S.curses.map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、'));
+  if(S.curses.length){
+    log(`⚠ 挑战规则生效（共 ${S.curses.length} 条，整局可见于顶栏红色标签）：`);
+    S.curses.forEach(id=>{ const c=CURSES.find(x=>x.id===id); if(c) log(`　${c.n}：${c.d} → 补偿：${c.r}`); });
+  }
   prepEnemy();
   rollShop();   // 开局发牌（含第 1 回合保底 1 费）
   S.auto = autoStoreGet(); setAutoUI();   // 托管开关跨局保留
@@ -1844,6 +1848,20 @@ function renderTop(){
     const gci=$('goldChipI'); if(gci) gci.textContent = S.phase==='prep' ? ` +${Math.min(interestCap(),Math.floor(S.gold/10))}息` : ''; }
   renderTempBuffs();
   renderAutoFightBtn();
+  { // 顶栏常驻诅咒标签：悬停看每条的说明与补偿
+    const ct=$('curseTag');
+    if(ct){
+      const list=S.curses||[];
+      if(!list.length){ ct.style.display='none'; }
+      else{
+        ct.style.display='';
+        ct.textContent='⚠ '+list.map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join(' · ')
+          +(S.daily?' ｜ 📅 每日':'');
+        ct.title='挑战规则生效中：\n'+list.map(id=>{const c=CURSES.find(x=>x.id===id);
+          return c?`${c.n}：${c.d}\n　→ 补偿：${c.r}`:id;}).join('\n————————\n');
+      }
+    }
+  }
   const pop=S.board.filter(Boolean).length;
   $('pop').textContent=pop; $('popMax').textContent=S.lvl;
   // 人口未上满提醒：备战阶段若场上人数 < 人口上限，高亮人口标签 + 一键上阵按钮脉冲
@@ -4140,6 +4158,7 @@ function renderSettle(){
   $('ovText').innerHTML=`
     <div class="settle-hero ${w?'win':'lose'}">${w?'🎉 击败守关魔王，章节推进！':'💚 惜败守关魔王，旅路仍在继续'}</div>
     <div class="settle-row">第 ${Math.ceil(S.round/chLen())} 章 · 第 ${S.round} 回合 · 生命 ${S.hp} · 战绩 ${S.stats.wins} 胜 ${S.stats.losses} 负</div>
+    ${(S.curses&&S.curses.length)?`<div class="settle-row" style="color:#ff9a9a">⚠ 挑战规则：${S.curses.map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、')}</div>`:''}
     ${w?`<div class="settle-row" style="color:#ffd24a">🎫 守关奖励：升星券 ×1（共 ${S.tickets||0} 张）— 备战期点击 3★ 棋子，在详情面板升为 4★</div>`:''}
     <div class="settle-ask">👇 选择一项全局${w?'强效':'削弱'}增强（3 选 1）</div>
     <div class="aug-row">${cards}</div>
