@@ -1,206 +1,273 @@
-/* 页内机器人策略（与 tools/sim.js 同一套"普通玩家"逻辑，直接调用游戏全局函数）。
-   botPrepSteps(): 把一回合运营拆成有序步骤——浏览器托管逐步执行并停顿（肉眼可读、像真人操作节奏）；
-   botPrep():      同步跑完全部步骤（模拟器/测试用，行为完全一致）。改策略只改本文件。 */
+/* 页内机器人策略 v2 ——「普通玩家」模型（与 tools/sim.js 同一套逻辑，直接调用游戏全局函数）。
+   设计原则：不以"每回合最优"为目标，而是复刻普通玩家的决策习惯——
+   看牌定型、白嫖攒钱、节点拉级、触发式搜牌、危机 all-in。改策略只改本文件。
+   botPrepSteps(): 一回合运营拆成有序步骤，浏览器托管逐步执行并停顿（肉眼可读）；
+   botPrep():      同步跑完全部步骤（模拟器/测试用，行为完全一致）。
+   sim.js 依赖：S/byId/pairCount/buy/clickUnit/rollShop/checkLevel/autoDeployBest 会被符号改写，
+   其余只允许调用 function 声明（挂 globalThis），不得直接引用顶层 const（如 XP_NEED/FACTIONS）。 */
+
+/* ---------- 阵容计划：看牌定型 + 粘性 ---------- */
+function botTagCount(){   // 牌面（场上+备战席）独特棋子的阵营/职业计数
+  const seen=new Set(), fc={}, jc={};
+  [...S.board, ...S.bench].filter(Boolean).forEach(u=>{
+    if(seen.has(u.id)) return; seen.add(u.id);
+    const d=byId(u.id);
+    [d.fac, d.fac2].filter(Boolean).forEach(t=>{ fc[t]=(fc[t]||0)+1; });
+    [d.job, d.job2].filter(Boolean).forEach(t=>{ jc[t]=(jc[t]||0)+1; });
+  });
+  return {fc, jc};
+}
+function botMakePlan(){   // 定型：取牌面最多的 2 阵营 + 2 职业（同分按名字排，避免来回抖动）
+  const {fc, jc}=botTagCount();
+  const top=cnt=>Object.entries(cnt).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,2).map(e=>e[0]);
+  return { facs:top(fc), jobs:top(jc) };
+}
+function botPlan(){       // 粘性：计划羁绊在牌面还有 ≥2 个独特棋子就沿用；没拿到货才重新定型
+  const p=S.botPlan;
+  if(p && p.facs && p.jobs){
+    const {fc, jc}=botTagCount();
+    const alive=[...p.facs,...p.jobs].some(t=>(fc[t]||jc[t]||0)>=2);
+    if(alive) return p;
+  }
+  S.botPlan=botMakePlan();
+  return S.botPlan;
+}
+function botInPlan(u, plan){   // 该棋子是否在计划内
+  const d=byId(u.id);
+  return plan.facs.includes(d.fac)||plan.facs.includes(d.fac2)
+      || plan.jobs.includes(d.job)||plan.jobs.includes(d.job2);
+}
+
+/* ---------- 战力/进度工具 ---------- */
+function botProg3(id){    // 三星进度（3★=9 份：1★=1 份、2★=3 份）
+  return [...S.board, ...S.bench].reduce((n,u)=>n+(u&&u.id===id?(u.star===2?3:(u.star||1)):0), 0);
+}
+function botMainCarry(){  // 主C：场上非守护中「星²×费用」最高者（装备优先给他）
+  let best=null, bv=-1;
+  S.board.forEach(u=>{ if(!u) return; const d=byId(u.id); if(d.job==='守护') return;
+    const v=Math.pow(u.star||1, 2)*d.cost; if(v>bv){ bv=v; best=u; } });
+  return best;
+}
+function botEconMode(){   // 经济模式（普通玩家的局势判断，优先级从高到低）
+  if(S.hp<=15 || (S.lossStreak>=3 && S.hp<=25)) return 'crisis';   // 血线告急：all-in
+  if(S.lossStreak>=2) return 'urgent';                             // 连败被血入：适度搜牌稳战力
+  if(S.lvl>=10 || (S.lvl>=8 && S.gold>=60)) return 'chase';        // 高等级富余：卡 50 追三
+  if(S.gold>=50) return 'healthy';                                 // 吃满利息线：有目标才小搜
+  return 'save';                                                   // 攒钱期：白嫖不搜
+}
+
+/* ---------- 商店评分：普通玩家的"心动程度" ---------- */
+function botScoreShop(u, plan){
+  const pc=pairCount(u.id);
+  if(pc>=2) return 100+u.cost;           // 能立即合成升星——最心动
+  if(has2star(u.id)) return 80+u.cost;   // 已有 2★ 同名：买它就是追三
+  const p3=botProg3(u.id);
+  if(p3>=5 && !has3star(u.id)) return 88+u.cost;   // 三星在望（差 ≤4 张）
+  if(botInPlan(u, plan)) return 60+u.cost;         // 计划内的牌
+  if(u.cost<=2) return 15+u.cost;                  // 廉价过渡垫场
+  return 0;                                        // 无关的高费散牌：不买
+}
+
 function botPrepSteps() {
   if (S.phase !== 'prep') return [];
   const JOB_FRONT = new Set(['守护', '刀客', '狂战']);
-  // 羁绊主力标签
-  const facCnt = {}, jobCnt = {};
-  [...S.board, ...S.bench].filter(Boolean).forEach(u => { const d = byId(u.id); facCnt[d.fac] = (facCnt[d.fac]||0)+1; jobCnt[d.job] = (jobCnt[d.job]||0)+1; });
-  const top = cnt => Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,2).map(e=>e[0]);
-  const mainTags = new Set([...top(facCnt), ...top(jobCnt)]);
-  const myTags = new Set(mainTags);
-  S.board.filter(Boolean).forEach(u => { const d = byId(u.id); myTags.add(d.fac); myTags.add(d.job); });
-  // 经济红线：50 金=最高利息线（每 10 金 +1，封顶 5）。
-  // 三段策略（用户设定）：①前期(<50金)攒钱——不刷新、不买经验，商店自然刷出的好牌照买；
-  // ②连败(≥2)不买经验、适度搜牌稳战力（不全花光）；③存满 50 后溢出全部用于升级人口（优先，冲 11 级）与刷新追三/凑羁绊。
-  const banked = S.gold >= 50;
-  const keepGold = S.round <= 1 ? 0 : (banked ? 50 : (S.hp >= 12 ? 8 : 2));
+  const plan = botPlan();
   const freeBench = () => S.bench.filter(x=>!x).length;
-  // 卖闲子（备战席满时）：卖到有空位为止，返回是否成功腾位
+
+  // 卖闲子（备战席满时腾位）：只卖 1★、非对子材料、与计划最无关的低费棋子
   const sellIdle = () => {
     if (freeBench() > 0) return true;
-    let bi = -1, bv = 1e9;
+    let bi=-1, bv=1e9;
     S.bench.forEach((u, i) => {
       if (!u || u.star !== 1 || pairCount(u.id) >= 2) return;
       const d = byId(u.id);
-      const v = (myTags.has(d.fac)||myTags.has(d.job) ? 100 : 0) + d.cost;
-      if (v < bv) { bv = v; bi = i; }
+      const v = (botInPlan(u, plan) ? 100 : 0) + d.cost;
+      if (v < bv) { bv=v; bi=i; }
     });
-    if (bi < 0 || bv >= 103) return false;
+    if (bi < 0 || bv >= 100) return false;   // 全是计划内的对子材料：不腾
     const u = S.bench[bi], d = byId(u.id);
-    S.gold += d.cost; S.pool[u.id] += 1; S.bench[bi] = null; return true;
+    S.gold += d.cost; S.pool[u.id] += 1; S.bench[bi] = null;
+    return true;
+  };
+  // 腾位追三星：卖掉「距三星最远」的 1★ 席位子——只有当新牌更接近三星才腾
+  const makeRoom = (newId) => {
+    let wi=-1, wp=1e9;
+    S.bench.forEach((u,i)=>{ if(!u||u.star!==1) return;
+      const pp=botProg3(u.id); if(pp<wp && pairCount(u.id)<2){ wp=pp; wi=i; } });
+    if (wi<0) return false;
+    if (botProg3(newId) <= wp) return false;
+    const u=S.bench[wi], d=byId(u.id);
+    (u.items||[]).forEach(k=>S.items.push(k));
+    S.gold += d.cost; S.pool[u.id]+=1; S.bench[wi]=null;
+    return true;
   };
 
   const steps = [];
-  // ① 装备：背包/已佩戴可合成的先合成成品，再按「输出装给高攻主C、防御装给前排」穿戴
+  // ① 买牌（白嫖先拿）：普通玩家进备战先看商店——能升星的、计划内的、追三进度的先买下，
+  //    这是"不花钱刷新也照常变强"的部分。席满先卖闲子腾位。
+  //    人口未满时低费过渡也给买（开局/掉人后先凑战力，等不了"计划"成型）。
+  steps.push({ n:'购买', fn(){
+    let bought=true, iter=0;
+    const underpop = S.board.filter(Boolean).length < S.lvl;
+    while(bought && iter++<40){
+      bought=false;
+      if(freeBench()===0 && !sellIdle()) break;
+      let bestI=-1, bestSc=underpop?10:24;   // 满员 ≥25 分才买；缺人 ≥10 分（低费过渡）也买
+      for(let i=0;i<S.shop.length;i++){
+        const u=S.shop[i]; if(!u) continue;
+        if(u.cost>S.gold) continue;
+        const sc=botScoreShop(u, plan);
+        if(sc>bestSc){ bestSc=sc; bestI=i; }
+      }
+      if(bestI>=0){ const n0=freeBench(); buy(bestI); if(freeBench()!==n0) bought=true; }
+    }
+    // 4 费强卡：即使计划外也值得腾位买（后期战力天花板）
+    for(let i=0;i<S.shop.length;i++){
+      const u=S.shop[i]; if(!u||u.cost!==4||u.cost>S.gold) continue;
+      if(pairCount(u.id)>=2) continue;
+      if(freeBench()>0){ buy(i); continue; }
+      let bi=-1, bv=-1;
+      S.bench.forEach((b2,j)=>{
+        if(!b2||b2.star!==1||pairCount(b2.id)>=2) return;
+        const bd=byId(b2.id); if(bd.cost>=4) return;
+        const v=(botInPlan(b2,plan)?50:0)+bd.cost;
+        if(v>bv){ bv=v; bi=j; }
+      });
+      if(bi>=0){ const b2=S.bench[bi], bd=byId(b2.id); S.gold+=bd.cost; S.pool[b2.id]+=1; S.bench[bi]=null; buy(i); }
+    }
+  }});
+  // ② 升级（节点化拉级）：普通玩家的经验永远"买完就升级"不浪费——
+  //    存满 50 后连买到升一级就停（节点冲刺，剩余存着攒下一节点）；
+  //    攒钱期只在「一步到位」时买，金币能真正爬到 50 吃满利息。
+  steps.push({ n:'升级', fn(){
+    const mode=botEconMode();
+    if(mode==='crisis'||mode==='urgent') return;   // 有命才有钱：先稳战力不买经验
+    if(S.round===1) return;                        // 首回合禁购经验
+    if(S.lvl>=11) return;
+    if(S.gold>=50){
+      let g=0;
+      while(S.lvl<11 && S.gold>=55 && g++<12){
+        const b=S.lvl; S.gold-=5; S.xp+=4; checkLevel();
+        if(S.lvl>b) break;                         // 升一级就停——像人一样一次拉一个节点
+      }
+    } else if(S.gold>=30 && S.xp+4>=xpNeed(S.lvl)){
+      S.gold-=5; S.xp+=4; checkLevel();
+    }
+  }});
+  // ③ 装备：先合成（对子出成品），输出装给主C、防御装给前排——普通玩家的默认分配
   steps.push({ n:'装备', fn(){
     if (typeof botCombineItems === 'function') botCombineItems();
-    let guard = 0;
-    while (S.items.length > 0 && guard++ < 10) {
-      const it = S.items[0];
-      const dmgItem = (typeof isDmgItem === 'function') ? isDmgItem(it) : ['sword','staff','bow','vamp'].includes(it);
-      let ti = -1, best = -1;
-      S.board.forEach((u, i) => {
-        if (!u) return; if (!u.items) u.items = [];
-        if (u.items.length >= 2) return;
-        const d = byId(u.id);
-        if (dmgItem && d.job !== '守护' && u.atk > best) { best = u.atk; ti = i; }
-        if (!dmgItem && JOB_FRONT.has(d.job) && u.maxhp > best) { best = u.maxhp; ti = i; }
-      });
-      if (ti < 0) S.board.forEach((u, i) => { if (u && (!u.items || u.items.length < 2) && ti < 0) ti = i; });
-      if (ti < 0) break;
-      S.selItem = 0; clickUnit('board', ti);
-    }
-  }});
-  // ② 购买：对子 > 主力标签 > 副标签 > 低费填缝；备战席满先卖闲子。
-  //    攒钱期照买不误——攒钱省的是「刷新」和「买经验」两大开销，商店里自然刷出的好牌不该放过
-  steps.push({ n:'购买', fn(){
-    let bought = true, iterGuard = 0;
-    while (bought && iterGuard++ < 40) {
-      bought = false;
-      if (freeBench() === 0 && !sellIdle()) break;
-      let bestI = -1, bestSc = -1;
-      for (let i = 0; i < S.shop.length; i++) {
-        const u = S.shop[i]; if (!u || u.cost > S.gold - keepGold) continue;
-        const pc = pairCount(u.id);
-        let sc = 0;
-        if (pc >= 2) sc = 100 + u.cost;
-        else if (mainTags.has(u.fac)||mainTags.has(u.job)) sc = 60 + u.cost;
-        else if (myTags.has(u.fac)||myTags.has(u.job)) sc = 30 + u.cost;
-        else if (u.cost <= 2) sc = 10 + u.cost;
-        if (sc > bestSc) { bestSc = sc; bestI = i; }
+    const carry=botMainCarry();
+    const carryIdx=()=>S.board.indexOf(carry);
+    let guard=0;
+    while(S.items.length>0 && guard++<10){
+      const it=S.items[0];
+      const dmgItem=(typeof isDmgItem==='function')?isDmgItem(it):['sword','staff','bow','vamp'].includes(it);
+      let ti=-1, best=-1;
+      if(dmgItem && carry && (carry.items||[]).length<2 && carryIdx()>=0){
+        ti=carryIdx();                                    // 输出装优先主C
+      } else {
+        S.board.forEach((u,i)=>{
+          if(!u) return; if(!u.items) u.items=[];
+          if(u.items.length>=2) return;
+          const d=byId(u.id);
+          if(dmgItem && d.job!=='守护' && u.atk>best){ best=u.atk; ti=i; }
+          if(!dmgItem && JOB_FRONT.has(d.job) && u.maxhp>best){ best=u.maxhp; ti=i; }
+        });
       }
-      if (bestI >= 0 && bestSc > 0) { const n0 = freeBench(); buy(bestI);
-        if (freeBench() !== n0) bought = true; }   // buy 无效（席满）则终止
-    }
-    // 4 费强卡：腾位也要买
-    for (let i = 0; i < S.shop.length; i++) {
-      const u = S.shop[i]; if (!u || u.cost !== 4 || u.cost > S.gold - keepGold) continue;
-      if (pairCount(u.id) >= 2) continue;
-      if (freeBench() > 0) { buy(i); continue; }
-      let bi = -1, bv = -1;
-      S.bench.forEach((b2, j) => {
-        if (!b2 || b2.star !== 1 || pairCount(b2.id) >= 2) return;
-        const bd = byId(b2.id); if (bd.cost >= 4) return;
-        const v = (myTags.has(bd.fac)||myTags.has(bd.job) ? 50 : 0) + bd.cost;
-        if (v > bv) { bv = v; bi = j; }
-      });
-      if (bi >= 0) { const b2 = S.bench[bi], bd = byId(b2.id); S.gold += bd.cost; S.pool[b2.id] += 1; S.bench[bi] = null; buy(i); }
+      if(ti<0) S.board.forEach((u,i)=>{ if(u&&(!u.items||u.items.length<2)&&ti<0) ti=i; });
+      if(ti<0) break;
+      S.selItem=0; clickUnit('board', ti);
     }
   }});
-  // ③ 升级人口：前期(<50金)攒钱不买经验（吃利息滚钱，等级靠自然经验）；连败先搜牌不买经验；
-  //    存满 50 后溢出全部优先冲人口（11 级封顶）
-  steps.push({ n:'升级', fn(){
-    // 连败只在「没存到 50」时冻结经验（搜牌稳战力）；存满 50 后照常走方案A，
-    // 否则连败不止时经验永久冻结、94 金也眼睁睁掉血（用户实测 2026-09-17）
-    if (S.lossStreak >= 2 && S.gold < 50) return;   // 连败且没钱：先搜牌稳战力
-    if (S.gold < 50) {              // 攒钱期：顺路升级——金币 ≥35 才买经验（买完不低于 30，等级不掉队）
-      let k = 0;
-      while (S.lvl < 11 && S.gold >= 35 && k++ < 10) { S.gold -= 5; S.xp += 4; checkLevel(); }
-      return;
-    }
-    // 方案A：每回合至多买 1 次经验（≥55 时），剩余溢出交给刷新步边刷边搜花到 50-51
-    if (S.lvl < 11 && S.gold >= 55) { S.gold -= 5; S.xp += 4; checkLevel(); }
-  }});
-  // ③½ 换血：棋盘与备战席上明显战力跟不上的 1★ 出售换钱——收入由下一步「刷新」边刷边搜花到 50-51。
-  //    判定：战力低于头部均值 45%；2★/3★ 保留（升星成本沉没）；对子材料保留（升星本钱）
+  // ④ 换血：满员时把明显跟不上的 1★ 卖掉换钱/腾位——普通玩家的"汰旧换新"，≤3 人/回合防拆队
   steps.push({ n:'换血', fn(){
     const members=S.board.filter(Boolean);
-    if(members.length < 3) return;   // 人太少没有"头部均值"
+    if(members.length<3) return;
     const pw=u=>Math.pow(u.star||1,2)*u.maxhp+u.atk*(u.star||1)*4;
     const sorted=members.map(pw).sort((a,b)=>b-a);
     const topN=Math.max(1,Math.floor(sorted.length*0.6));
     const topAvg=sorted.slice(0,topN).reduce((a,b)=>a+b,0)/topN;
-    const weak=u=>(u.star||1)===1 && pw(u) < topAvg*0.45;
-    // 备战席弱子：直接卖（腾位+换钱）；对子材料保留，非连败时主力标签留着凑羁绊
+    const weak=u=>(u.star||1)===1 && pw(u)<topAvg*0.45;
     S.bench.forEach((u,i)=>{
       if(!u||!weak(u)||pairCount(u.id)>=2) return;
-      const d=byId(u.id);
-      if(S.lossStreak<2 && (mainTags.has(d.fac)||mainTags.has(d.job))) return;
-      S.selUid=u.uid; sellSelected();   // 统一出口：金币/卡池回收
+      if(botInPlan(u,plan)) return;                       // 计划内的留着凑羁绊
+      S.selUid=u.uid; sellSelected();
     });
-    // 棋盘弱子：满员时卖，且商店里得有买得起的补位牌（绝不空人口）；单回合最多换 3 人防拆队
     if(members.length>=S.lvl){
       let sold=0;
       for(const u of members.filter(weak)){
         if(sold>=3) break;
         const pos=findUnit(u.uid); if(!pos||pos[0]!=='board') continue;
         const refund=sellRefund(u);
-        let pick=-1,best=-1;
-        for(let i=0;i<S.shop.length;i++){ const su=S.shop[i]; if(!su) continue;
-          if(su.cost > S.gold + refund) continue;
-          const sc=(mainTags.has(su.fac)||mainTags.has(su.job)?2:0)+(pairCount(su.id)>=2?3:su.cost>=3?1:0);
-          if(sc>best){best=sc;pick=i;} }
-        if(pick<0 || !S.shop[pick]) continue;   // 商店没有换得起的牌：不卖，保持满员
+        let pick=-1, best=-1;
+        for(let i=0;i<S.shop.length;i++){
+          const su=S.shop[i]; if(!su) continue;
+          if(su.cost>S.gold+refund) continue;
+          const sc=(botInPlan(su,plan)?2:0)+(pairCount(su.id)>=2?3:su.cost>=3?1:0);
+          if(sc>best){ best=sc; pick=i; }
+        }
+        if(pick<0||!S.shop[pick]) continue;               // 商店没有换得起的牌：不卖，保持满员
         S.selUid=u.uid; sellSelected(); sold++;
         if(S.shop[pick]) buy(pick);
       }
     }
   }});
-  // ④ 刷新追牌：连败时适度搜牌（地板抬高 10 金、≤20 次，提升战力但不花光）；存满 50 后溢出滚动追三/凑羁绊；攒钱期不刷新
-  steps.push({ n:'刷新', fn(done){
-    const losing = S.lossStreak >= 2;
-    const bnk = S.gold >= 50;
-    if (!bnk && !losing) { if (typeof done==='function') done(); return; }   // 攒钱期：靠自然刷新与对子购买（done 必须回调，否则托管管线停摆）
-    const myCosts = [...S.board, ...S.bench].filter(Boolean).map(u => byId(u.id).cost).sort((a,b)=>a-b);
-    const medCost = myCosts.length ? myCosts[Math.floor(myCosts.length/2)] : 2;
-    const deepRun = medCost <= 2;
-    const floor = keepGold + (losing ? 10 : 0);   // 连败适度搜：地板抬高；存满后刷到刚好剩 50-51 吃满利息
-    let rolls = 0;
-    // 三星进度（3★=9 份：1★=1 份、2★=3 份）：差 ≤4 张(≥5份)的牌值得腾位去追
-    const prog3 = id => [...S.board, ...S.bench].reduce((n,u)=> n + (u&&u.id===id ? (u.star===2?3:(u.star||1)) : 0), 0);
-    const makeRoom = (newId) => {   // 席满腾位：卖掉「距三星最远」的 1★ 席位子——只有当新牌比它更接近三星才腾
-      let wi=-1, wp=1e9;
-      S.bench.forEach((u,i)=>{ if(!u||u.star!==1) return;
-        const pp=prog3(u.id); if(pp<wp && pairCount(u.id)<2){ wp=pp; wi=i; } });
-      if (wi<0) return false;
-      if (prog3(newId) <= wp) return false;   // 新牌并不更接近三星：不腾
-      const u=S.bench[wi], d=byId(u.id);
-      (u.items||[]).forEach(k=>S.items.push(k));
-      S.gold += d.cost; S.pool[u.id]+=1; S.bench[wi]=null;
-      return true;
-    };
-    const oneRoll = () => {   // 执行一次「刷新+拾取」，返回是否还应继续刷
-      if (S.gold < floor + 2 || rolls++ >= (losing ? 20 : bnk ? 60 : deepRun ? 50 : 35)) return false;
-      sellIdle();                                  // 能腾位先腾
-      const jammed = freeBench() === 0;            // 席满（都是对子材料腾不动）：不停刷，按三星进度取舍
-      S.gold -= 2; rollShop();
-      for (let i = 0; i < S.shop.length; i++) {
-        const u = S.shop[i]; if (!u || u.cost > S.gold - keepGold) continue;
-        const rev = mainTags.has(u.fac)||mainTags.has(u.job)||myTags.has(u.fac)||myTags.has(u.job);
-        if (jammed) {                              // 席满：对子立即超编合成；差≤4张到三星的腾位追
-          if (pairCount(u.id) >= 2) buy(i);
-          else if (prog3(u.id) >= 5 && makeRoom(u.id)) buy(i);
+  // ⑤ 搜牌（触发式，不再习惯性 roll-down）：普通玩家只在有理由时才 D——
+  //    危机 all-in / 连败适度搜 / 多面听小搜 / 满级卡 50 追三；攒钱期与健康白嫖期都不刷。
+  steps.push({ n:'搜牌', fn(done){
+    const mode=botEconMode();
+    let floor, max, keep=50;
+    if(mode==='crisis'){ floor=2; max=40; keep=0; }
+    else if(mode==='urgent'){ floor=15; max=20; }
+    else if(mode==='chase'){ floor=50; max=30; }
+    else if(mode==='healthy'){
+      // 有目标才小搜：存在"三星在望"目标，或本金囤太多（≥65）时花一点——普通玩家不守财奴
+      const ids=new Set([...S.board,...S.bench].filter(Boolean).map(u=>u.id));
+      let listens=0; ids.forEach(id=>{ if(botProg3(id)>=5&&!has3star(id)) listens++; });
+      if(listens<1 && S.gold<65){ if(typeof done==='function') done(); return; }
+      floor=52; max=10;
+    }
+    else { if(typeof done==='function') done(); return; }   // 攒钱期：靠白嫖
+    let rolls=0;
+    const oneRoll=()=>{
+      if(S.gold<floor+2 || rolls++>=max) return false;
+      sellIdle();
+      const jammed=freeBench()===0;      // 席满（都是对子材料）：不停刷，只收能立即合成的/腾位追三星
+      S.gold-=2; rollShop();
+      for(let i=0;i<S.shop.length;i++){
+        const u=S.shop[i]; if(!u) continue;
+        if(u.cost>S.gold-keep) continue;
+        if(jammed){
+          if(pairCount(u.id)>=2) buy(i);
+          else if(botProg3(u.id)>=5 && makeRoom(u.id)) buy(i);
           continue;
         }
-        if (pairCount(u.id) >= 2) buy(i);
-        else if (!jammed && freeBench() > 0 && (deepRun || bnk || losing || rev || u.cost >= 3)) buy(i);
+        if(botScoreShop(u,plan)>=25 && freeBench()>0) buy(i);
       }
-      if (!losing && S.gold >= 20 && S.lvl < 10 && S.gold - 5 >= keepGold) { S.gold -= 5; S.xp += 4; checkLevel(); }
       return true;
     };
-    if (typeof done === 'function') {              // 浏览器托管：一刷一停（320-580ms），肉眼可读
+    if(typeof done==='function'){              // 浏览器托管：一刷一停（320-580ms），肉眼可读
       (function pace(){
         try{
-          if(!S.auto || S.phase!=='prep'){ done(); return; }   // 中途关托管/手动开战：立即收尾
+          if(!S.auto || S.phase!=='prep'){ done(); return; }
           if(!oneRoll()){ renderAll(); done(); return; }
           renderAll();
           setTimeout(pace, 320+Math.random()*260);
         }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} done(); }
       })();
-    } else { while(oneRoll()); }                   // 模拟器：同步跑完
+    } else { while(oneRoll()); }               // 模拟器：同步跑完
   }});
-  // ⑤ 锁定：货架上有下回合想要、但现钱买不起的牌（能升星的对子或 4-5 费核心）时锁住商店
+  // ⑥ 锁定：货架上有现在买不起、但下回合想要的好牌（对子或 4 费核心）时锁住商店
   steps.push({ n:'锁定', fn(){
-    let lockWorthy = false;
-    for (const u of S.shop) {
-      if (!u) continue;
-      if (u.cost > S.gold - Math.min(keepGold, 5) && (pairCount(u.id) >= 2 || u.cost >= 4)) { lockWorthy = true; break; }
+    let worthy=false;
+    for(const u of S.shop){
+      if(!u) continue;
+      if(u.cost>S.gold-Math.min(5,S.gold>50?5:2) && (pairCount(u.id)>=2||u.cost>=4)){ worthy=true; break; }
     }
-    if (lockWorthy && !S.lock) S.lock = true;
+    if(worthy && !S.lock) S.lock=true;
   }});
-  // ⑥ 择优编队：像真人一样主动换人，选出当前最强阵容
+  // ⑦ 择优编队：按羁绊收益+战力选最强阵容布阵
   steps.push({ n:'编队', fn(){ autoDeployBest(); renderAll(); }});
   return steps;
 }
