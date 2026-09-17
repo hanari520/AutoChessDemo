@@ -149,6 +149,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #tempBuffBox{ display:flex; flex-direction:column; gap:4px; align-self:stretch; }
 #tempBuffBox .btn.tb{ align-self:stretch; padding:4px 8px; font-size:11px; min-width:0; white-space:nowrap; }
 #tempBuffBox .btn.tb.on{ border-color:#8dff9a; color:#8dff9a; }
+#autoFightBtn.af-on{ background:#1e5b2a; color:#8dff9a; border-color:#8dff9a; box-shadow:0 0 8px #8dff9a44; }
 .arti-box{ display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:6px; }
 .arti-box .arti-hd{ grid-column:1/-1; font-size:12px; color:#ffd24a; }
 .arti-card{ background:#241e3e; border:1px solid #ffd24a55; border-radius:8px; padding:5px 6px; font-size:11px; color:#dcd6f2; }
@@ -741,6 +742,7 @@ body.touch .m-only { display:inline-block; }
   <div id="shopctlCol">
     <div id="goldChip" title="当前金币（利息：每10金+1，上限5）">💰 <b id="goldChipN">0</b><span id="goldChipI"></span></div>
     <div id="tempBuffBox"></div>
+    <button class="btn shopctl" id="autoFightBtn" title="自动开战：保持当前阵容连续战斗（每场间隔约 2.5 秒；与托管互斥）。章节结算仍需手动选增强">▶ 自动开战</button>
     <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄 刷新 (D) -2💰</button>
     <button class="btn shopctl" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）">🔓 锁定 (L)</button>
   </div>
@@ -1259,6 +1261,8 @@ function newGame(){
   prepEnemy();
   rollShop();   // 开局发牌（含第 1 回合保底 1 费）
   S.auto = autoStoreGet(); setAutoUI();   // 托管开关跨局保留
+  S.autoFight = afStoreGet();   // 自动开战跨局保留（与托管互斥：开着它就不托管）
+  if(S.autoFight){ S.auto=false; autoStoreSet(false); setAutoUI(); renderAutoFightBtn(); scheduleAutoFight(); }
   if(S.auto) autoPilot(900);
 }
 function initPool(){ UNITS.forEach(u=>{ S.pool[u.id]=POOL_COPIES[u.cost]; }); }   // 初始化限量卡池（含开局保底 1 费）
@@ -1703,6 +1707,7 @@ function renderTop(){
   { const gcn=$('goldChipN'); if(gcn) gcn.textContent=S.gold;
     const gci=$('goldChipI'); if(gci) gci.textContent = S.phase==='prep' ? ` +${Math.min(5,Math.floor(S.gold/10))}息` : ''; }
   renderTempBuffs();
+  renderAutoFightBtn();
   const pop=S.board.filter(Boolean).length;
   $('pop').textContent=pop; $('popMax').textContent=S.lvl;
   // 人口未上满提醒：备战阶段若场上人数 < 人口上限，高亮人口标签 + 一键上阵按钮脉冲
@@ -4018,6 +4023,7 @@ function chapterContinue(){
   renderAll(); $('fightBtn').disabled=false;
   log(`— 第 ${S.round} 回合备战阶段（第 ${Math.ceil(S.round/25)} 章）—`);
   autoPilot();
+  scheduleAutoFight();   // 玩家选完增强后，自动开战继续循环
 }
 function chapterStop(){
   if(S.phase!=='chapter') return;
@@ -4132,6 +4138,7 @@ function endBattle(alive0,alive1){
   $('fightBtn').disabled=false;
   log(`— 第 ${S.round} 回合备战阶段 —${S.endless?'（♾ 无限模式）':''}`);
   autoPilot();   // 托管开启时：自动运营后开战
+  scheduleAutoFight();   // 自动开战：停顿后用当前阵容再开一场
   if(S.round%5===0){   // 野怪回合提醒
     log(`🐾 本回合是【野怪回合 · ${CREEP[S.round]||'野怪'}】：胜利掉 2 件装备，失败也保底掉 1 件（不扣血、不动连胜）`);
   }
@@ -4185,8 +4192,9 @@ function enterEndless(){
   log('♾ 进入无限模式：从第 26 回合开始，敌方将无限变强！');
   autoPilot();
 }
-function endRunCleanup(){   // 终局统一收尾：托管关闭（下一局默认手动），UI 同步
+function endRunCleanup(){   // 终局统一收尾：托管/自动开战关闭（下一局默认手动），UI 同步
   S.auto=false; autoStoreSet(false); setAutoUI();
+  cancelAutoFight(); S.autoFight=false; afStoreSet(false); renderAutoFightBtn();
 }
 function restartGame(){ $('overlay').classList.add('hidden'); newGame(); }
 function gameOver(win){
@@ -4324,7 +4332,10 @@ function loadGame(){
     Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
     S.tickets=S.tickets||0; S.tempBuff=S.tempBuff||null;   // 旧存档兼容
     S.auto = autoStoreGet(); setAutoUI();
+    S.autoFight = afStoreGet();   // 自动开战恢复（与托管互斥）
+    if(S.autoFight){ S.auto=false; autoStoreSet(false); setAutoUI(); renderAutoFightBtn(); }
     if(S.auto) autoPilot(900);
+    else if(S.autoFight) scheduleAutoFight();
     prepEnemy();   // 读档后立即生成可观察的敌方阵容
     return true;
   }catch(e){ return false; }
@@ -4437,6 +4448,37 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
 /* ================= 托管：复用 tools/bot_strategy.js 的 botPrep（与模拟校准同一策略，目标即通关率） ================= */
 function autoStoreGet(){ try{ return localStorage.getItem('vc_auto')==='1' }catch(e){ return false } }
 function autoStoreSet(v){ try{ localStorage.setItem('vc_auto', v?'1':'0') }catch(e){} }
+/* ===== 自动开战：保持当前阵容连续战斗（与托管互斥；章节结算/终局仍由玩家操作） ===== */
+function afStoreGet(){ try{ return localStorage.getItem('vc_autofight')==='1' }catch(e){ return false } }
+function afStoreSet(v){ try{ localStorage.setItem('vc_autofight', v?'1':'0') }catch(e){} }
+const AUTO_FIGHT_DELAY=2500;   // 每场战斗结束后的停顿（肉眼可读结算，再进下一场）
+let afTimer=null, afGen=0;
+function setAutoFight(v){
+  S.autoFight=!!v; afStoreSet(S.autoFight);
+  if(S.autoFight && S.auto){ S.auto=false; autoStoreSet(false); setAutoUI(); log('🤖 托管已关闭（与自动开战互斥）'); }
+  cancelAutoFight(); renderAutoFightBtn();
+  if(S.autoFight && S.phase==='prep') scheduleAutoFight();
+}
+function scheduleAutoFight(){
+  cancelAutoFight();
+  if(!S.autoFight || S.phase!=='prep') return;
+  const gen=++afGen, end=Date.now()+AUTO_FIGHT_DELAY;
+  afTimer=setInterval(()=>{
+    if(gen!==afGen) return;
+    if(!S.autoFight || S.phase!=='prep'){ cancelAutoFight(); return; }   // 手动开战/进章节结算即停
+    const left=end-Date.now();
+    if(left<=0){ cancelAutoFight(); startBattle(); return; }
+    const b=$('autoFightBtn'); if(b) b.textContent=`⏳ 自动开战 ${Math.ceil(left/1000)}s`;
+  }, 200);
+}
+function cancelAutoFight(){ afGen++; if(afTimer){ clearInterval(afTimer); afTimer=null; } }
+function renderAutoFightBtn(){
+  const b=$('autoFightBtn'); if(!b) return;
+  b.textContent = S.autoFight ? '⏸ 停止自动' : '▶ 自动开战';
+  b.classList.toggle('af-on', !!S.autoFight);
+}
+$('autoFightBtn').onclick=()=>{ if(!S||S.phase==='over') return; setAutoFight(!S.autoFight);
+  log(S.autoFight?'▶ 自动开战开启：保持当前阵容连续战斗':'⏸ 自动开战关闭'); };
 let autoBusy=false;
 function autoPilot(delay=900){
   if(!S || !S.auto || S.phase!=='prep' || autoBusy) return;
@@ -4471,6 +4513,7 @@ function autoPilot(delay=900){
 }
 function setAutoUI(){ try{ const b=$('autoBtn'); if(b) b.classList.toggle('auto-on', !!S.auto); }catch(e){} }
 $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
+  if(S.auto && S.autoFight){ setAutoFight(false); }   // 与自动开战互斥
   log(S.auto?'🤖 托管开启：自动买牌/上阵/穿装/开战':'🤖 托管关闭');
   if(S.auto && S.phase==='prep') autoPilot(300);
 };
