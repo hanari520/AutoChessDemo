@@ -157,6 +157,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #tempBuffBox .btn.tb{ align-self:stretch; padding:4px 8px; font-size:11px; min-width:0; white-space:nowrap; }
 #tempBuffBox .btn.tb.on{ border-color:#8dff9a; color:#8dff9a; }
 #autoFightBtn.af-on{ background:#1e5b2a; color:#8dff9a; border-color:#8dff9a; box-shadow:0 0 8px #8dff9a44; }
+#endBtn.arm-flash{ animation:endflash .45s infinite alternate; }
+@keyframes endflash{ from{ box-shadow:0 0 0 #ff9a9a00; } to{ box-shadow:0 0 12px #ff9a9abb; } }
 .arti-box{ display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:6px; }
 .arti-box .arti-hd{ grid-column:1/-1; font-size:12px; color:#ffd24a; }
 .arti-card{ background:#241e3e; border:1px solid #ffd24a55; border-radius:8px; padding:5px 6px; font-size:11px; color:#dcd6f2; }
@@ -4469,7 +4471,18 @@ function endRunEarly(){  // 🏁 主动收兵：任意模式备战期均可（�
   $('ovBtn2').style.display='none';
   $('overlay').classList.remove('hidden');
 }
-$('endBtn').onclick=endRunEarly;
+let endArmTimer=null;
+$('endBtn').onclick=()=>{   // 二次确认：第一击武装（3 秒内再点才真正结束），防误触
+  if(!S || S.phase!=='prep') return;
+  const btn=$('endBtn');
+  if(btn.dataset.armed==='1'){
+    clearTimeout(endArmTimer); btn.dataset.armed='0'; btn.classList.remove('arm-flash'); btn.textContent='🏁 结束挑战';
+    endRunEarly(); return;
+  }
+  btn.dataset.armed='1'; btn.textContent='⚠ 再点一次确认结束'; btn.classList.add('arm-flash');
+  log('⚠ 即将结束本局（3 秒内再点一次确认；不点自动取消）');
+  endArmTimer=setTimeout(()=>{ btn.dataset.armed='0'; btn.classList.remove('arm-flash'); btn.textContent='🏁 结束挑战'; },3000);
+};
 /* 玩法介绍弹窗：start=开局 / resume=游戏中查看（按钮变"继续游戏"，不重开） */
 let ovMode='start';
 let resumeAvail=null;   // {label,key}：存在存档时开局弹窗提供「继续上一局」
