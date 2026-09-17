@@ -734,7 +734,7 @@ body.touch .m-only { display:inline-block; }
     <button class="btn" id="autoBtn">🤖 托管</button>
     <button class="btn" id="helpBtn">❓ 玩法</button>
     <button class="btn" id="resetBtn" title="放弃当前进度，重新开一局">🔄 重开</button>
-    <button class="btn" id="endBtn" style="display:none;background:#5b1e1e;color:#ffb0b0" title="结束无限模式，直接查看本局结算">🏁 结束挑战</button>
+    <button class="btn" id="endBtn" style="display:none;background:#5b1e1e;color:#ffb0b0" title="主动结束本局：记入战绩并查看结算（再来一局保持当前模式）">🏁 结束挑战</button>
     <button class="btn" id="sfxBtn" title="音效开关">🔊</button>
     <span class="tag" style="display:flex;gap:4px;align-items:center;padding:3px 8px">⏩
       <button class="spd-b on" data-s="1">1×</button>
@@ -1931,7 +1931,7 @@ function renderTop(){
   const c = compForRound(S.round);
   $('lockBtn').textContent=S.lock?(IS_TOUCH?'🔒 已锁定':'🔒 已锁定 (L)'):(IS_TOUCH?'🔓 锁定':'🔓 锁定 (L)');
   $('lockBtn').classList.toggle('on',!!S.lock);
-  $('endBtn').style.display = (S.endless && S.phase==='prep') ? 'inline-block' : 'none';
+  $('endBtn').style.display = (S.phase==='prep') ? 'inline-block' : 'none';   // 所有模式备战期都可主动收兵
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
     : S.streak>=4 ? `难度 ⬆（连胜 ${S.streak}，敌方增强 +${Math.min(4, S.streak-3)}%）` : '难度 ➖ 标准';
   $('enemyInfo').innerHTML = c.boss
@@ -4412,12 +4412,12 @@ function gameOver(win){
   $('ovBtn2').style.display='none';
   $('overlay').classList.remove('hidden');
 }
-function endEndless(){  // 无限模式主动结束：直接进入结算画面
-  if(!S.endless||S.phase!=='prep') return;
+function endRunEarly(){  // 🏁 主动收兵：任意模式备战期均可（无限模式记胜，普通/每日/自定义记弃局）
+  if(S.phase!=='prep') return;
   S.phase='over'; endRunCleanup();
-  writeRunHistory(true); checkAchievements();   // 记入历史（能进无限模式=已通关，记为胜局）
+  writeRunHistory(!!S.endless); checkAchievements();   // 记入历史 + 终局成就判定
   try{ localStorage.removeItem(saveKey()); }catch(e){}
-  $('ovTitle').textContent='♾ 无限模式结算';
+  $('ovTitle').textContent=(S.daily?'📅 ':'')+(S.endless?'♾ 无限模式结算':'🏁 提前收兵');
   $('ovText').innerHTML=`主动结束挑战，安然退场。<br>`+reportHTML('endless')+(S.daily?dailyCodeHTML():'')+globRowHTML();
   $('ovBtn').textContent='再来一局';
   $('ovBtn').onclick=restartGame;   // 显式重绑（同 gameOver，防 onclick 残留）
@@ -4425,7 +4425,7 @@ function endEndless(){  // 无限模式主动结束：直接进入结算画面
   $('ovBtn2').style.display='none';
   $('overlay').classList.remove('hidden');
 }
-$('endBtn').onclick=endEndless;
+$('endBtn').onclick=endRunEarly;
 /* 玩法介绍弹窗：start=开局 / resume=游戏中查看（按钮变"继续游戏"，不重开） */
 let ovMode='start';
 let resumeAvail=null;   // {label,key}：存在存档时开局弹窗提供「继续上一局」
