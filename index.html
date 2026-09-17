@@ -371,7 +371,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #bookModal { position:fixed; inset:0; background:#0b0912e6; z-index:40; display:flex; align-items:center; justify-content:center; }
 #bookModal.hidden { display:none; }
 /* 图鉴·羁绊说明（全部阵营/职业羁绊的档位与效果） */
-#bookSyn { display:grid; grid-template-columns:1fr 1fr; gap:5px 14px; margin:8px 0 12px; }
+#bookSyn, #bookItems { display:grid; grid-template-columns:1fr 1fr; gap:5px 14px; margin:8px 0 12px; }
 .bsy-title { grid-column:1/-1; font-size:14px; color:#a99cd0; border-bottom:1px solid #2a2344; padding:2px 0 5px; }
 .bsy-item { background:#161228; border:1px solid #2a2344; border-radius:8px; padding:6px 9px; font-size:12.5px; color:#cdd6f4; }
 .bsy-item b { color:#ffd24a; margin-right:6px; }
@@ -552,9 +552,9 @@ body.touch .m-only { display:inline-block; }
 #bookTabs { display:flex; gap:6px; margin-left:auto; margin-right:12px; }
 .btab { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:14px; padding:4px 14px; cursor:pointer; font-size:13px; }
 .btab.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
-#bookUnits.hidden, #bookSyn.hidden { display:none; }
+#bookUnits.hidden, #bookSyn.hidden, #bookItems.hidden { display:none; }
 #bookUnits { display:flex; flex-direction:column; min-height:0; flex:1; }
-#bookSyn { overflow-y:auto; min-height:0; flex:1; }
+#bookSyn, #bookItems { overflow-y:auto; min-height:0; flex:1; }
 #bookFilters { border-bottom:1px solid #2a2344; padding-bottom:8px; margin-bottom:10px; }
 .bf-row { display:flex; align-items:flex-start; gap:8px; margin:4px 0; }
 .bf-label { font-size:12px; color:#a99cd0; width:32px; flex-shrink:0; padding-top:5px; }
@@ -716,7 +716,7 @@ body.touch .m-only { display:inline-block; }
 @media (max-width:880px){
   #bookPanel { width:100vw; max-height:88vh; max-height:88dvh; border-radius:16px 16px 0 0; padding:12px; }
   #bookGrid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); }
-  #bookSyn { grid-template-columns:1fr; }
+  #bookSyn, #bookItems { grid-template-columns:1fr; }
 }
 </style>
 </head>
@@ -834,6 +834,7 @@ body.touch .m-only { display:inline-block; }
       <div id="bookTabs">
         <button class="btab on" data-tab="units">👥 棋子</button>
         <button class="btab" data-tab="syn">🔗 羁绊</button>
+        <button class="btab" data-tab="items">📦 装备</button>
       </div>
       <button class="btn" id="bookClose">✕ 关闭</button>
     </div>
@@ -846,6 +847,7 @@ body.touch .m-only { display:inline-block; }
       <div id="bookGrid"></div>
     </div>
     <div id="bookSyn" class="hidden"></div>
+    <div id="bookItems" class="hidden"></div>
   </div>
 </div>
 <div id="resumeOv" class="hidden">
@@ -4488,6 +4490,19 @@ function renderBook(){
         `<div class="bsy-mem">现有成员 ${members} 名</div></div>`;
     }).join('');
   $('bookSyn').innerHTML = synRow(FACTIONS,FAC_ICON,'🔗 阵营羁绊（12）') + synRow(CLASSES,JOB_ICON,'⚔ 职业羁绊（10）');
+  // 装备介绍：基础装（掉落）/ 合成成品（配方）/ 神器（升阶）
+  const itemRow=(keys,title,tagOf)=>`<div class="bsy-title">${title}</div>`+
+    keys.map(k=>{
+      const it=ITEMS[k];
+      const from=it.from?it.from.map(x=>`${ITEMS[x].e}${ITEMS[x].n}`).join(' + '):'';
+      return `<div class="bsy-item"><span class="bsy-ico">${it.e}</span><b>${it.n}</b><span class="bsy-need">${tagOf(k)}</span>`+
+        `<div class="bsy-desc">${it.desc}</div>`+
+        (from?`<div class="bsy-mem">配方：${from}</div>`:'')+`</div>`;
+    }).join('');
+  $('bookItems').innerHTML =
+    itemRow(Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted&&!ITEMS[k].arti),'🌿 基础装备（野怪回合掉落）',()=>'基础装')+
+    itemRow(Object.keys(ITEMS).filter(k=>ITEMS[k].crafted),'⚓ 合成成品（两件基础装合成）',k=>'成品')+
+    itemRow(ARTIFACTS,'⚒ 神器（任意 3 件成品熔铸，占 1 个装备格）',()=>'神器');
   const dims=[
     ['cost','费用',[1,2,3,4,5], v=>v+'费'],
     ['fac','阵营', Object.keys(FACTIONS), v=>v],
@@ -4531,6 +4546,7 @@ document.querySelectorAll('#bookTabs .btab').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#bookTabs .btab').forEach(x=>x.classList.toggle('on',x===b));
   $('bookUnits').classList.toggle('hidden', b.dataset.tab!=='units');
   $('bookSyn').classList.toggle('hidden', b.dataset.tab!=='syn');
+  $('bookItems').classList.toggle('hidden', b.dataset.tab!=='items');
 });
 $('bookClose').onclick=()=>$('bookModal').classList.add('hidden');
 
