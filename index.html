@@ -159,6 +159,14 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .item-chip.arti{ border-color:#ffd24a; box-shadow:0 0 6px #ffd24a44; }
 /* 挑战规则勾选区（开局弹窗） */
 #cursePick{ max-width:560px; margin:8px auto 0; text-align:left; }
+/* 三模式选择卡片 */
+#modePick{ max-width:560px; margin:8px auto 2px; display:flex; gap:8px; }
+.mode-card{ flex:1; background:#1c1830; border:1px solid #35294f; border-radius:10px; padding:8px 8px; text-align:center; cursor:pointer; font-size:11px; color:#a99ed0; line-height:1.55; }
+.mode-card b{ display:block; font-size:13px; color:#dcd6f2; margin-bottom:3px; }
+.mode-card:hover{ border-color:#6a5a9e; transform:translateY(-1px); }
+.mode-card.on{ border-color:#ffd24a; background:#241e3e; box-shadow:0 0 10px #ffd24a2e; color:#dcd6f2; }
+.mode-card.on b{ color:#ffd24a; }
+#ovResume{ background:#1a2f5b; color:#9dd3e8; border-color:#4aa8ff; }
 #cursePick .cp-hd{ font-size:12px; color:#ff9a9a; margin-bottom:4px; }
 .cp-item{ display:flex; gap:6px; align-items:baseline; padding:3px 6px; border-radius:6px; cursor:pointer; font-size:12px; color:#c8bfe8; }
 .cp-item:hover{ background:#241e3e; }
@@ -862,11 +870,13 @@ body.touch .m-only { display:inline-block; }
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
     ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；把棋子<b style="color:#8dff9a">拖到左下出售按钮或商店卡片区</b>松手即出售（1★原价、合成折价，装备自动卸回）；<b style="color:#8dff9a">一键上阵 (R/A)</b>按羁绊梯队布阵（每次在多种列阵型间轮换）、<b style="color:#8dff9a">整理备战席 (T)</b>把棋子按星级/同名聚拢；开战时人口不满会按羁绊优先自动补位（不动你的已有站位）。<b style="color:#ffd24a">快捷键：R/A 一键上阵 · T 整理备战席 · D 刷新 · F 买经验 · L 锁定 · E/X/Delete 出售 · 空格 开战</b>；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；<b style="color:#ffd24a">每 25 回合挑战守关魔王</b>：胜利得强效 3 选 1 全局增强 + 1 张升星券，失败也有削弱版增强，结算后可继续推进下一章或收兵离场<br>
     ⑥ <b style="color:#ffd24a">后期成长（顶配之后玩什么）：</b>增强分 <span style="color:#c8bfe8">白</span>/<span style="color:#4ac8ff">蓝</span>/<span style="color:#ffd24a">金</span> 三档稀有度，机制型包括「🧤装备大师（装备槽 +1）」「🔗羁绊共鸣（每档位全队增益）」「💀灵魂虹吸（击杀回蓝）」「🔰先祖庇护（开战护盾）」「⏱️技能急速」等，金色一局至多持有 2 个；<b style="color:#ffd24a">🎫 升星券</b>（守关胜利奖励）可把一名 3★ 升为 4★（点击 3★ 棋子，详情面板使用）；备战期右侧可花金币买<b style="color:#8dff9a">临时增益</b>（攻/血 +15%、开场齐射，仅本场生效、每回合限 1 个）；背包内<b style="color:#8dff9a">任意 3 件成品可熔铸 1 件神器</b>（⚔弑神之刃 / 🛡不灭圣铠 / 🏹苍穹之弓 / 🔮湮灭宝珠，占 1 格强于 2 件普通装）<br>
-    ⑦ <b style="color:#ffd24a">开局可勾选「⚠ 挑战规则」</b>（下方）：接受诅咒换取补偿，如人口上限5、存款无利息、战争迷雾、守关提前等 9 种，用诅咒数计入排行；战绩弹窗新增 <b style="color:#8dff9a">🏅成就（19 项）</b> 与 <b style="color:#8dff9a">🏆排行</b> 页签；<b style="color:#9dd3e8">「📅 每日挑战」</b>= 全体玩家同一随机序列的每日模式（当日预置 1 条挑战规则，独立存档、失败同种子重试，结算给挑战码）
+    ⑦ <b style="color:#ffd24a">开局三选一：</b>🎲普通模式（标准规则）/ 📅每日挑战（全体玩家同一随机序列 + 当日预置诅咒，独立存档、同种子重试、结算给挑战码）/ ⚠自定义诅咒挑战（下方勾选诅咒换取补偿，可叠加，如人口上限5、存款无利息、战争迷雾等 9 种）；「重开」也会询问模式；战绩弹窗有 <b style="color:#8dff9a">🏅成就（19 项）</b> 与 <b style="color:#8dff9a">🏆排行</b>（含每日今日最佳）页签
   </p>
+  <div id="modePick" style="display:none"></div>
   <div id="cursePick" style="display:none"></div>
   <div id="dailyInfo" style="display:none;max-width:560px;margin:8px auto 0;text-align:left;font-size:12px;line-height:1.7;color:#c8bfe8;background:#1c1830;border:1px solid #4aa8ff44;border-radius:8px;padding:6px 10px"></div>
   <div id="ovBtns">
+    <button id="ovResume" style="display:none">▶ 继续上一局</button>
     <button id="ovBtn">开始游戏</button>
     <button id="ovBtn2" style="display:none;background:#1e5b2a;color:#8dff9a;">♾ 进入无限模式</button>
     <button id="ovBtn3" style="display:none;background:#1a2f5b;color:#9dd3e8;border-color:#4aa8ff;">📅 每日挑战</button>
@@ -1175,7 +1185,7 @@ const CURSES=[
   {id:'hardland', n:'⛰ 硬着陆',   d:'敌方全体强度 +15%', r:'每回合收入 +2 金'},
   {id:'allin',    n:'🎲 孤注一掷', d:'存款不产生利息', r:'基础收入 +3 金/回合'},
 ];
-let curseSel=[];   // 开局弹窗的勾选状态（会话内保留，重开不丢）
+let curseSel=[];   // 自定义诅咒挑战的勾选状态（会话内保留，重开不丢）
 function hasCurse(id){ return !!(S && S.curses && S.curses.includes(id)); }
 function chLen(){ return hasCurse('shortch') ? 15 : 25; }        // 章节周期
 function refreshCost(){ return hasCurse('inflation') ? 3 : 2; }  // 刷新价格
@@ -1186,8 +1196,33 @@ function baseIncome(){ return Math.min(S.round+1,5) + (hasCurse('allin')?3:0) + 
 function toggleCurse(id){ const i=curseSel.indexOf(id); if(i>=0) curseSel.splice(i,1); else curseSel.push(id); renderCursePick(); }
 function renderCursePick(){
   const box=$('cursePick'); if(!box) return;
-  box.innerHTML=`<div class="cp-hd">⚠ 挑战规则（可选：勾选诅咒换取补偿，结算时计入用诅咒数）</div>`+
+  box.innerHTML=`<div class="cp-hd">⚠ 挑战规则（勾选诅咒换取补偿，可叠加；结算与排行会计入用诅咒数）</div>`+
     CURSES.map(c=>`<label class="cp-item${curseSel.includes(c.id)?' on':''}"><input type="checkbox" ${curseSel.includes(c.id)?'checked':''} onchange="toggleCurse('${c.id}')"><b>${c.n}</b><span class="cp-d">${c.d}</span><span class="cp-r">${c.r}</span></label>`).join('');
+}
+/* ===== 三模式选择：普通 / 每日 / 自定义诅咒（开局与重开时询问） ===== */
+let selMode='normal';
+function pickMode(m){ selMode=m; renderModePick(); }
+function renderModePick(){
+  const box=$('modePick'); if(!box) return;
+  const dcid=dailyCursesFor(todaySeed())[0];
+  const dc=CURSES.find(x=>x.id===dcid);
+  const cards=[
+    {m:'normal', t:'🎲 普通模式', d:'标准规则开局'},
+    {m:'daily',  t:'📅 每日挑战', d:'种子 '+todaySeed()+' · 全体玩家同序列<br>今日诅咒：'+(dc?dc.n:'无')},
+    {m:'custom', t:'⚠ 自定义诅咒', d:'自选诅咒换取补偿<br>可叠加多条'},
+  ];
+  box.innerHTML=cards.map(c=>`<div class="mode-card${selMode===c.m?' on':''}" onclick="pickMode('${c.m}')"><b>${c.t}</b><div>${c.d}</div></div>`).join('');
+  const cp=$('cursePick'), di=$('dailyInfo');
+  if(cp) cp.style.display = selMode==='custom' ? 'block' : 'none';
+  if(cp && selMode==='custom') renderCursePick();
+  if(di){ di.style.display = selMode==='daily' ? 'block' : 'none'; if(selMode==='daily') di.innerHTML=dailyInfoHTML(); }
+}
+function startSelected(){
+  if(selMode==='daily'){ startDaily(); return; }
+  const custom=selMode==='custom';
+  $('overlay').classList.add('hidden'); ovMode='start';
+  newGame(custom?{custom:true}:{}); renderAll(); $('fightBtn').disabled=false;
+  log(custom?('⚠ 自定义诅咒挑战开始：'+((S.curses||[]).map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、')||'未选诅咒，等同普通模式')):'🎲 普通模式开始！');
 }
 /* ===== 成就系统：跨局解锁（localStorage vc_achv）；局内里程碑记入 S.ms，endBattle 统一判定 ===== */
 const ACHV=[
@@ -1381,8 +1416,8 @@ function newGame(opts){ opts=opts||{};
   S.daily=!!opts.daily;
   if(S.daily){ S.dseed=todaySeed(); }
   applyRNG();
-  // 挑战规则（开局弹窗勾选 → 本局生效；禁锢羁绊在此随机定死禁哪两个）
-  S.curses = S.daily ? dailyCursesFor(S.dseed) : [...(curseSel||[])];
+  // 挑战规则：每日=当日预置；自定义诅咒挑战=开局勾选；普通=无
+  S.curses = S.daily ? dailyCursesFor(S.dseed) : (opts.custom ? [...(curseSel||[])] : []);
   if(hasCurse('nobond')){
     const bp=Object.keys(FACTIONS).concat(Object.keys(CLASSES)).sort(()=>rand()-0.5);
     S.cursesData.nobond=bp.slice(0,2);
@@ -4390,15 +4425,18 @@ function endEndless(){  // 无限模式主动结束：直接进入结算画面
 $('endBtn').onclick=endEndless;
 /* 玩法介绍弹窗：start=开局 / resume=游戏中查看（按钮变"继续游戏"，不重开） */
 let ovMode='start';
+let resumeAvail=null;   // {label,key}：存在存档时开局弹窗提供「继续上一局」
 function showIntro(resume){
   ovMode = resume ? 'resume' : 'start';
   $('ovBtn').textContent = resume ? '▶ 继续游戏' : '开始游戏';
   $('ovBtn2').style.display='none';
-  { const b3=$('ovBtn3'); if(b3){ b3.style.display='inline-block';
-    b3.textContent = resume ? (S&&S.daily?'▶ 开普通新局':'📅 每日挑战') : '📅 每日挑战'; } }   // 模式切换入口
-  { const di=$('dailyInfo'); if(di){ if(resume){ di.style.display='none'; } else { di.style.display='block'; di.innerHTML=dailyInfoHTML(); } } }
+  { const b3=$('ovBtn3'); if(b3){ b3.style.display = resume ? 'inline-block' : 'none';
+    b3.textContent = (S&&S.daily) ? '▶ 开普通新局' : '📅 每日挑战'; } }   // 对局中=模式切换入口
+  { const mp=$('modePick'); if(mp){ mp.style.display = resume ? 'none' : 'block'; if(!resume) renderModePick(); } }
+  { const cp=$('cursePick'); if(cp){ const show=!resume&&selMode==='custom'; cp.style.display=show?'block':'none'; if(show) renderCursePick(); } }
+  { const di=$('dailyInfo'); if(di){ const show=!resume&&selMode==='daily'; di.style.display=show?'block':'none'; if(show) di.innerHTML=dailyInfoHTML(); } }
+  { const rv=$('ovResume'); if(rv){ const show=!resume&&!!resumeAvail; rv.style.display=show?'inline-block':'none'; if(show) rv.textContent=resumeAvail.label; } }
   if($('ovClose')) $('ovClose').style.display='block';   // 介绍弹窗可关闭
-  { const cp=$('cursePick'); if(cp){ const show=!resume; cp.style.display=show?'block':'none'; if(show) renderCursePick(); } }
   $('overlay').classList.remove('hidden');
 }
 /* 📅 每日挑战：当日种子 + 当日预置诅咒，独立存档 */
@@ -4415,19 +4453,26 @@ $('ovBtn3').onclick=()=>{
     log(toDaily?`📅 已切换到每日挑战（种子 ${S.dseed}）`:'🎲 已切换到普通模式（手动勾选的挑战规则生效）');
   } else startDaily();
 };
-/* 结算/通关画面：隐藏 ✕（那时"关闭"语义是再来一局，由按钮承担）；诅咒勾选/每日入口一并隐藏 */
-function hideOvClose(){ if($('ovClose')) $('ovClose').style.display='none'; { const cp=$('cursePick'); if(cp) cp.style.display='none'; } { const b3=$('ovBtn3'); if(b3) b3.style.display='none'; } { const di=$('dailyInfo'); if(di) di.style.display='none'; } }
-/* 关闭弹窗：对局中(resume)只是收起；开局前(start)等同于"开始游戏"，避免关掉后无界面 */
+/* 结算/通关画面：隐藏 ✕（那时"关闭"语义是再来一局，由按钮承担）；模式选择/诅咒/每日入口一并隐藏 */
+function hideOvClose(){ if($('ovClose')) $('ovClose').style.display='none';
+  { const cp=$('cursePick'); if(cp) cp.style.display='none'; }
+  { const b3=$('ovBtn3'); if(b3) b3.style.display='none'; }
+  { const di=$('dailyInfo'); if(di) di.style.display='none'; }
+  { const mp=$('modePick'); if(mp) mp.style.display='none'; }
+  { const rv=$('ovResume'); if(rv) rv.style.display='none'; } }
+/* 关闭弹窗：对局中(resume)只是收起；开局前(start)=按所选模式开始 */
+let resetPickOpen=false;   // 重开流程中打开的模式选择器：此时 ✕/Esc=取消（回到当前对局），只有点「开始游戏」才真开新局
 function closeIntro(){
   if(ovMode==='resume'){ $('overlay').classList.add('hidden'); return; }
-  ovMode='start';
-  newGame(); renderAll(); $('fightBtn').disabled=false;
-  $('overlay').classList.add('hidden'); log('新的一局开始！');
+  if(resetPickOpen){ resetPickOpen=false; $('overlay').classList.add('hidden'); ovMode='start'; log('已取消重开，留在当前对局'); return; }
+  resumeAvail=null;   // 已开新局，旧存档将被覆盖
+  startSelected();
+  log('新的一局开始！');
 }
 $('helpBtn').onclick=()=>showIntro(S && S.phase!=='over' ? true : false);
 $('ovClose').onclick=closeIntro;                                  // 右上角 ✕
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('overlay').classList.contains('hidden')) closeIntro(); });
-$('ovBtn').onclick=closeIntro;   // 开局=开始游戏 / 对局中查看=继续游戏（同一逻辑，见 closeIntro）
+$('ovBtn').onclick=()=>{ resetPickOpen=false; closeIntro(); };   // 「开始游戏」= 真正按所选模式开局（清除重开取消标志）
 $('ovBtn2').onclick=enterEndless;
 /* ================= 棋子图鉴（费用/阵营/职业筛选） ================= */
 const BOOK = { cost:new Set(), fac:new Set(), job:new Set() };
@@ -4576,11 +4621,11 @@ function renderHistTab(){
 $('histBtn').onclick=()=>{ renderHistTab(); $('histModal').classList.remove('hidden'); };
 $('histClose').onclick=()=>$('histModal').classList.add('hidden');
 document.querySelectorAll('#histTabs .tab').forEach(b=>b.onclick=()=>{ histTab=b.dataset.t; renderHistTab(); });
-$('resetBtn').onclick=()=>{ const daily=!!(S&&S.daily);
-  if(daily){ if(!confirm('放弃当前每日挑战进度，重开今日每日（同种子同起点）？\n想切回普通模式：打开「❓ 玩法」→「▶ 开普通新局」')) return; }
-  else if(!confirm('放弃当前进度，重新开一局？')) return;
-  localStorage.removeItem(saveKey()); stopTickLoop(); newGame({daily}); renderAll();
-  $('fightBtn').disabled=false; $('overlay').classList.add('hidden'); log(daily?'🔄 每日挑战已重开（同种子）':'🔄 已重新开局'); };
+$('resetBtn').onclick=()=>{ if(S && S.phase==='battle'){ if(!confirm('战斗进行中，重开将放弃本局。确定？')) return; }
+  resumeAvail=null;
+  selMode=(S&&S.daily)?'daily':((S&&S.curses&&S.curses.length)?'custom':'normal');   // 默认选中当前模式
+  showIntro(false); resetPickOpen=true;
+  log('🔄 重开：请选择模式（右上角 ✕ / Esc = 取消，留在当前对局）'); };
 /* ================= 移动端触屏适配 =================
    主输入为粗指针（手机/平板）时启用：body.touch 样式钩子 + 点选移动模式 + 按钮去键位提示 +
    商店/详情抽屉化。桌面（含带触屏的笔记本，主指针仍是鼠标）完全不受影响；
@@ -4656,32 +4701,25 @@ function fitBoard(){
   st.marginBottom = s<1 ? (-w.offsetHeight*(1-s))+'px' : '';
 }
 addEventListener('resize',fitBoard); fitBoard();
-/* 启动：优先恢复今日的每日挑战存档 → 有普通存档则询问 → 全新开局 */
+/* 启动：开局即询问模式（三选一）；有存档时提供「继续上一局」按钮（优先今日每日） */
 (function initApp(){
   try{
     const d=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');
     if(d && d.dseed!==todaySeed()) localStorage.removeItem(DAILY_KEY);   // 昨天的每日存档作废
   }catch(e){}
-  let hasDaily=false;
-  try{ hasDaily=!!JSON.parse(localStorage.getItem(DAILY_KEY)||'null'); }catch(e){}
-  if(hasDaily && loadGame(DAILY_KEY)){
-    renderAll(); $('fightBtn').disabled=false;
-    log('📂 已恢复今日每日挑战进度（种子 '+S.dseed+'）');
-    return;
-  }
-  const saved=localStorage.getItem(SAVE_KEY);
-  if(saved){
-    try{ const o=JSON.parse(saved);
-      $('resumeInfo').textContent=`检测到上一局进度：第 ${o.round} 回合 · ${o.hp}❤ · ${o.gold}💰 · 人口 ${o.lvl}`;
-    }catch(e){}
-    $('resumeOv').classList.remove('hidden');
-  } else {
-    newGame(); renderAll();
-    renderCursePick(); { const cp=$('cursePick'); if(cp) cp.style.display='block'; }   // 首屏介绍弹窗（静态显示）：渲染挑战规则勾选区
-    { const di=$('dailyInfo'); if(di){ di.style.display='block'; di.innerHTML=dailyInfoHTML(); } }
-    { const b3=$('ovBtn3'); if(b3) b3.style.display='inline-block'; }
-  }
+  try{
+    const d=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');
+    const n=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    if(d && typeof d.round==='number') resumeAvail={label:`▶ 继续每日挑战（第 ${d.round} 回合）`, key:DAILY_KEY};
+    else if(n && typeof n.round==='number') resumeAvail={label:`▶ 继续上一局（第 ${n.round} 回合）`, key:SAVE_KEY};
+  }catch(e){}
+  newGame(); renderAll();   // 背景先渲染一局（选择模式后真正开新局覆盖）
+  showIntro(false);
 })();
+$('ovResume').onclick=()=>{ if(!resumeAvail) return;
+  $('overlay').classList.add('hidden'); ovMode='start';
+  loadGame(resumeAvail.key); renderAll(); $('fightBtn').disabled=false; resumeAvail=null;
+  log('📂 已恢复上一局进度'); };
 $('resumeYes').onclick=()=>{ if(!loadGame()) newGame();
   $('resumeOv').classList.add('hidden'); renderAll(); $('fightBtn').disabled=false; log('📂 已恢复上一局进度'); };
 $('resumeNo').onclick=()=>{ localStorage.removeItem(SAVE_KEY);
