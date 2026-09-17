@@ -154,10 +154,11 @@ function botPrepSteps() {
     const mode=botEconMode();
     if(mode==='crisis'||mode==='urgent') return;   // 有命才有钱：先稳战力不买经验
     if(S.round===1) return;                        // 首回合禁购经验
-    if(S.lvl>=11) return;
+    const cap=(typeof lvlCap==='function')?lvlCap():11;   // 🪑 独木桥诅咒：上限 5
+    if(S.lvl>=cap) return;
     if(S.gold>=50){
       let g=0;
-      while(S.lvl<11 && S.gold>=55 && g++<12){
+      while(S.lvl<cap && S.gold>=55 && g++<12){
         const b=S.lvl; S.gold-=5; S.xp+=4; checkLevel();
         if(S.lvl>b) break;                         // 升一级就停——像人一样一次拉一个节点
       }
@@ -244,11 +245,12 @@ function botPrepSteps() {
     }
     else { if(typeof done==='function') done(); return; }   // 攒钱期：靠白嫖
     let rolls=0;
+    const rc=(typeof refreshCost==='function')?refreshCost():2;   // 📈 通胀诅咒：刷新 3 金
     const oneRoll=()=>{
-      if(S.gold<floor+2 || rolls++>=max) return false;
+      if(S.gold<floor+rc || rolls++>=max) return false;
       sellIdle();
       const jammed=freeBench()===0;      // 席满（都是对子材料）：不停刷，只收能立即合成的/腾位追三星
-      S.gold-=2; rollShop();
+      S.gold-=rc; rollShop();
       for(let i=0;i<S.shop.length;i++){
         const u=S.shop[i]; if(!u) continue;
         if(u.cost>S.gold-keep) continue;

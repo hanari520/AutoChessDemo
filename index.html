@@ -157,6 +157,28 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .arti-card .ad2{ font-size:10px; color:#a99ed0; margin:3px 0; line-height:1.5; }
 .arti-card .btn[disabled]{ opacity:.4; cursor:default; }
 .item-chip.arti{ border-color:#ffd24a; box-shadow:0 0 6px #ffd24a44; }
+/* 挑战规则勾选区（开局弹窗） */
+#cursePick{ max-width:560px; margin:8px auto 0; text-align:left; }
+#cursePick .cp-hd{ font-size:12px; color:#ff9a9a; margin-bottom:4px; }
+.cp-item{ display:flex; gap:6px; align-items:baseline; padding:3px 6px; border-radius:6px; cursor:pointer; font-size:12px; color:#c8bfe8; }
+.cp-item:hover{ background:#241e3e; }
+.cp-item.on{ background:#2a2440; outline:1px solid #ff9a9a55; }
+.cp-item input{ accent-color:#ff9a9a; }
+.cp-item b{ color:#ffd24a; white-space:nowrap; }
+.cp-item .cp-d{ flex:1; }
+.cp-item .cp-r{ color:#8dff9a; white-space:nowrap; font-size:11px; }
+/* 战绩弹窗页签 / 成就 / 排行 */
+#histTabs{ display:flex; gap:6px; margin-bottom:8px; }
+#histTabs .tab.on{ border-color:#ffd24a; color:#ffd24a; }
+.achv-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; }
+.achv{ background:#1c1830; border:1px solid #35294f; border-radius:8px; padding:6px 8px; font-size:11px; color:#6b6288; }
+.achv.got{ border-color:#ffd24a88; color:#dcd6f2; }
+.achv b{ font-size:12px; color:inherit; }
+.achv.got b{ color:#ffd24a; }
+.achv .ad2{ margin-top:3px; line-height:1.5; }
+.hrow.lb .lb-rk{ min-width:26px; text-align:center; color:#ffd24a; }
+.lb-pt{ width:20px; height:20px; image-rendering:pixelated; vertical-align:middle; border-radius:4px; background:#241e3e; margin-right:2px; }
+.lb-team{ min-width:0; }
 .aug-card .at{ font-size:10px; color:#8a93c4; }
 @keyframes augIn{ from{ transform:translateY(14px) scale(.92); opacity:0; } to{ transform:none; opacity:1; } }
 .unit.big .syn .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
@@ -784,8 +806,13 @@ body.touch .m-only { display:inline-block; }
 <div id="histModal" class="hidden">
   <div id="histPanel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <h2>📜 历史战绩（最近 20 局）</h2>
+      <h2>📜 历史战绩（最近 50 局）</h2>
       <button class="btn" id="histClose">✕ 关闭</button>
+    </div>
+    <div id="histTabs">
+      <button class="btn tab on" data-t="log">📜 战绩</button>
+      <button class="btn tab" data-t="achv">🏅 成就</button>
+      <button class="btn tab" data-t="lb">🏆 排行</button>
     </div>
     <div id="histList"></div>
   </div>
@@ -832,8 +859,10 @@ body.touch .m-only { display:inline-block; }
     ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；头目<b style="color:#ffd24a">真实占据 2×2 格</b>（其他棋子需让位绕行，近战可从任意相邻格攻击它）；普通回合胜利只给金币<br>
     ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
     ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；把棋子<b style="color:#8dff9a">拖到左下出售按钮或商店卡片区</b>松手即出售（1★原价、合成折价，装备自动卸回）；<b style="color:#8dff9a">一键上阵 (R/A)</b>按羁绊梯队布阵（每次在多种列阵型间轮换）、<b style="color:#8dff9a">整理备战席 (T)</b>把棋子按星级/同名聚拢；开战时人口不满会按羁绊优先自动补位（不动你的已有站位）。<b style="color:#ffd24a">快捷键：R/A 一键上阵 · T 整理备战席 · D 刷新 · F 买经验 · L 锁定 · E/X/Delete 出售 · 空格 开战</b>；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；<b style="color:#ffd24a">每 25 回合挑战守关魔王</b>：胜利得强效 3 选 1 全局增强 + 1 张升星券，失败也有削弱版增强，结算后可继续推进下一章或收兵离场<br>
-    ⑥ <b style="color:#ffd24a">后期成长（顶配之后玩什么）：</b>增强分 <span style="color:#c8bfe8">白</span>/<span style="color:#4ac8ff">蓝</span>/<span style="color:#ffd24a">金</span> 三档稀有度，机制型包括「🧤装备大师（装备槽 +1）」「🔗羁绊共鸣（每档位全队增益）」「💀灵魂虹吸（击杀回蓝）」「🔰先祖庇护（开战护盾）」「⏱️技能急速」等，金色一局至多持有 2 个；<b style="color:#ffd24a">🎫 升星券</b>（守关胜利奖励）可把一名 3★ 升为 4★（点击 3★ 棋子，详情面板使用）；备战期右侧可花金币买<b style="color:#8dff9a">临时增益</b>（攻/血 +15%、开场齐射，仅本场生效、每回合限 1 个）；背包内<b style="color:#8dff9a">任意 3 件成品可熔铸 1 件神器</b>（⚔弑神之刃 / 🛡不灭圣铠 / 🏹苍穹之弓 / 🔮湮灭宝珠，占 1 格强于 2 件普通装）
+    ⑥ <b style="color:#ffd24a">后期成长（顶配之后玩什么）：</b>增强分 <span style="color:#c8bfe8">白</span>/<span style="color:#4ac8ff">蓝</span>/<span style="color:#ffd24a">金</span> 三档稀有度，机制型包括「🧤装备大师（装备槽 +1）」「🔗羁绊共鸣（每档位全队增益）」「💀灵魂虹吸（击杀回蓝）」「🔰先祖庇护（开战护盾）」「⏱️技能急速」等，金色一局至多持有 2 个；<b style="color:#ffd24a">🎫 升星券</b>（守关胜利奖励）可把一名 3★ 升为 4★（点击 3★ 棋子，详情面板使用）；备战期右侧可花金币买<b style="color:#8dff9a">临时增益</b>（攻/血 +15%、开场齐射，仅本场生效、每回合限 1 个）；背包内<b style="color:#8dff9a">任意 3 件成品可熔铸 1 件神器</b>（⚔弑神之刃 / 🛡不灭圣铠 / 🏹苍穹之弓 / 🔮湮灭宝珠，占 1 格强于 2 件普通装）<br>
+    ⑦ <b style="color:#ffd24a">开局可勾选「⚠ 挑战规则」</b>（下方）：接受诅咒换取补偿，如人口上限5、存款无利息、战争迷雾、守关提前等 9 种，用诅咒数计入排行；战绩弹窗新增 <b style="color:#8dff9a">🏅成就（19 项）</b> 与 <b style="color:#8dff9a">🏆排行</b> 页签
   </p>
+  <div id="cursePick" style="display:none"></div>
   <div id="ovBtns">
     <button id="ovBtn">开始游戏</button>
     <button id="ovBtn2" style="display:none;background:#1e5b2a;color:#8dff9a;">♾ 进入无限模式</button>
@@ -1130,6 +1159,67 @@ const TEMP_BUFFS=[
   {id:'hp',   e:'🛡', n:'壁垒术式', short:'血+15%', cost:15, desc:'本场战斗我方全体生命 +15%'},
   {id:'nuke', e:'☄', n:'开场齐射', short:'齐射',   cost:25, desc:'开战时对全体敌人造成 12% 最大生命的魔法伤害'},
 ];
+/* ===== 挑战规则（诅咒/变体）：开局弹窗勾选，S.curses 存档；每条 = 限制 + 补偿 ===== */
+const CURSES=[
+  {id:'nobond',   n:'⛓ 禁锢羁绊', d:'随机 2 个羁绊整体失效（我方拿不到其羁绊效果）', r:'开局 +10 金'},
+  {id:'shortch',  n:'⏱ 短章急行', d:'守关魔王每 15 回合来袭（周期 25→15）', r:'起始 +1 张升星券'},
+  {id:'bloodpact',n:'🩸 血之契约', d:'生命上限 40 → 25', r:'守关胜利升星券 +2 张'},
+  {id:'inflation',n:'📈 通货膨胀', d:'刷新 3 金、利息上限 3', r:'胜利奖金 +2 金'},
+  {id:'fog',      n:'🌫 战争迷雾', d:'备战期看不到敌方阵容预览', r:'临时增益半价'},
+  {id:'solo',     n:'🪑 独木桥',   d:'人口上限 5（我方与敌方同步受限）', r:'开局 +20 金'},
+  {id:'glass',    n:'🔮 玻璃大炮', d:'我方全体生命 -30%、攻击 +30%', r:'开局 +5 金'},
+  {id:'hardland', n:'⛰ 硬着陆',   d:'敌方全体强度 +15%', r:'每回合收入 +2 金'},
+  {id:'allin',    n:'🎲 孤注一掷', d:'存款不产生利息', r:'基础收入 +3 金/回合'},
+];
+let curseSel=[];   // 开局弹窗的勾选状态（会话内保留，重开不丢）
+function hasCurse(id){ return !!(S && S.curses && S.curses.includes(id)); }
+function chLen(){ return hasCurse('shortch') ? 15 : 25; }        // 章节周期
+function refreshCost(){ return hasCurse('inflation') ? 3 : 2; }  // 刷新价格
+function interestCap(){ return hasCurse('inflation') ? 3 : 5; }  // 利息上限
+function lvlCap(){ return hasCurse('solo') ? 5 : 11; }           // 人口上限
+function tempBuffCost(b){ return hasCurse('fog') ? Math.ceil(b.cost/2) : b.cost; }
+function baseIncome(){ return Math.min(S.round+1,5) + (hasCurse('allin')?3:0) + (hasCurse('hardland')?2:0); }
+function toggleCurse(id){ const i=curseSel.indexOf(id); if(i>=0) curseSel.splice(i,1); else curseSel.push(id); renderCursePick(); }
+function renderCursePick(){
+  const box=$('cursePick'); if(!box) return;
+  box.innerHTML=`<div class="cp-hd">⚠ 挑战规则（可选：勾选诅咒换取补偿，结算时计入用诅咒数）</div>`+
+    CURSES.map(c=>`<label class="cp-item${curseSel.includes(c.id)?' on':''}"><input type="checkbox" ${curseSel.includes(c.id)?'checked':''} onchange="toggleCurse('${c.id}')"><b>${c.n}</b><span class="cp-d">${c.d}</span><span class="cp-r">${c.r}</span></label>`).join('');
+}
+/* ===== 成就系统：跨局解锁（localStorage vc_achv）；局内里程碑记入 S.ms，endBattle 统一判定 ===== */
+const ACHV=[
+  {id:'merge2',  n:'初窥门径',   d:'首次合成 2★ 棋子',            c:()=>S.ms&&S.ms.merged2},
+  {id:'merge3',  n:'三星志士',   d:'首次合成 3★ 棋子',            c:()=>S.ms&&S.ms.merged3},
+  {id:'five3',   n:'梦之队',     d:'单局同时拥有 5 名 3★ 棋子',   c:()=>S.ms&&S.ms.five3},
+  {id:'star4',   n:'超凡入圣',   d:'首次用升星券升出 4★',         c:()=>S.ms&&S.ms.star4},
+  {id:'arti3',   n:'神装大师',   d:'单局熔铸 3 件神器',           c:()=>S.ms&&S.ms.arti>=3},
+  {id:'eqslot',  n:'三持之际',   d:'获得「装备大师」金色增强',    c:()=>(S.augs||[]).some(a=>a.id==='eqslot')},
+  {id:'kill50',  n:'百人斩·序',  d:'单局击杀 50 名敌人',          c:()=>S.stats.kills>=50,  p:()=>Math.min(S.stats.kills,50)+'/50'},
+  {id:'kill150', n:'百人斩·极',  d:'单局击杀 150 名敌人',         c:()=>S.stats.kills>=150, p:()=>Math.min(S.stats.kills,150)+'/150'},
+  {id:'mvp5k',   n:'一骑当千',   d:'单场战斗输出突破 5000',       c:()=>S.ms&&S.ms.mvp5k},
+  {id:'streak10',n:'十连威名',   d:'达成 10 连胜',                c:()=>S.stats.maxStreak>=10, p:()=>Math.min(S.stats.maxStreak||0,10)+'/10 连胜'},
+  {id:'flaw15',  n:'不动如山',   d:'无败绩撑到第 15 回合',        c:()=>S.round>=15&&S.stats.losses===0},
+  {id:'boss1',   n:'弑魔王',     d:'击败一次守关魔王',            c:()=>S.ms&&S.ms.chapterWin},
+  {id:'ch2',     n:'再启新程',   d:'进入第 2 章',                 c:()=>S.round>chLen()},
+  {id:'ch5',     n:'五章行者',   d:'推进到第 5 章',               c:()=>S.round>chLen()*4},
+  {id:'round100',n:'百年战争',   d:'单局打到第 100 回合',         c:()=>S.round>=100, p:()=>'第 '+Math.min(S.round,100)+'/100 回合'},
+  {id:'gold3',   n:'镀金收藏家', d:'同时持有 3 个金色增强',       c:()=>(S.augs||[]).filter(a=>augRarity(a.id)===3).length>=3},
+  {id:'earn500', n:'富甲一方',   d:'单局累计收入 500 金',         c:()=>S.stats.goldEarned>=500, p:()=>Math.min(S.stats.goldEarned,500)+'/500'},
+  {id:'sold3',   n:'忍痛割爱',   d:'卖掉一名 3★ 棋子',            c:()=>S.ms&&S.ms.sold3},
+  {id:'autoch',  n:'放手指挥',   d:'托管状态下击败守关魔王',      c:()=>S.ms&&S.ms.autoWin},
+];
+function achvGet(){ try{ return JSON.parse(localStorage.getItem('vc_achv')||'{}'); }catch(e){ return {}; } }
+function checkAchievements(){
+  const got=achvGet(); const fresh=[];
+  ACHV.forEach(a=>{ if(got[a.id]) return;
+    let ok=false; try{ ok=!!a.c(); }catch(e){}
+    if(ok){ got[a.id]=Date.now(); fresh.push(a); } });
+  if(fresh.length){
+    try{ localStorage.setItem('vc_achv',JSON.stringify(got)); }catch(e){}
+    fresh.forEach(a=>log(`🏅 成就解锁：${a.n} — ${a.d}`));
+    sfx('pop');
+  }
+  return fresh.length;
+}
 /* 合成配方表：'a|b'（字典序）→ 成品 key。未列出的组合（如 bow+vamp）不开放合成，按原效果独立佩戴 */
 const COMBOS={};
 Object.keys(ITEMS).forEach(k=>{ const f=ITEMS[k].from; if(f) COMBOS[[...f].sort().join('|')]=k; });
@@ -1161,6 +1251,7 @@ function forgeArtifact(key){
   [2,1,0].forEach(n=>S.items.splice(idxs[n],1));   // 从大到小删，避免下标位移
   S.items.push(key);
   const it=ITEMS[key];
+  (S.ms=S.ms||{}).arti=(S.ms.arti||0)+1;   // 成就里程碑
   sfx('merge3');
   log(`⚒ 神器升阶：${burned.join('、')} 熔铸 → ${it.e} ${it.n}（${it.desc}）`);
   renderAll();
@@ -1212,7 +1303,7 @@ const ENEMY_ARCHETYPES=[
    否则从流派原型中加权抽取；返回 {name, list(图鉴数据数组)} */
 function rollEnemySquad(r){
   const cap=r<4?1:r<7?2:r<11?3:r<16?4:5;
-  const total=Math.min(1+Math.floor(r/2), S.endless?9:7);
+  const total=Math.min(1+Math.floor(r/2), hasCurse('solo')?5:(S.endless?9:7));
   const used=new Set(), list=[];
   const addJob=j=>list.push(pickFor(j,cap,used));
   if(Math.random()<0.30){   // 同门军团：抽一个在该费用段成员足够的阵营
@@ -1253,12 +1344,13 @@ const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节
 const XP_NEED = {1:1, 2:2, 3:3, 4:5, 5:8, 6:12, 7:16, 8:20, 9:28, 10:36};
 function xpNeed(lvl){ return XP_NEED[lvl]||Infinity; }
 function checkLevel(){ let need=xpNeed(S.lvl);
-  while(S.lvl<11 && S.xp>=need){ S.lvl++; S.xp-=need; sfx('pop'); log('⬆ 人口升级至 '+S.lvl+'（回合经验积累）'); need=xpNeed(S.lvl); } }
+  while(S.lvl<lvlCap() && S.xp>=need){ S.lvl++; S.xp-=need; sfx('pop'); log('⬆ 人口升级至 '+S.lvl+'（回合经验积累）'); need=xpNeed(S.lvl); } }
 
 /* ================= 状态 ================= */
 let S;
 function newGame(){
   S = { round:1, hp:40, gold:10, lvl:2, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[], augs:[], tickets:0, tempBuff:null,
+    ms:{}, curses:[], cursesData:{},
     bench:Array(BENCH).fill(null), board:Array(BOARD_H*BOARD_W).fill(null),
     shop:[], enemyBoard:[], uid:1, log:[], items:[], selItem:null, selUid:null, pool:{},
     stats:{wins:0,losses:0,maxStreak:0,maxLossStreak:0,kills:0,dmgTaken:0,goldEarned:0,goldSpent:0,bought:0,
@@ -1266,6 +1358,16 @@ function newGame(){
       hpLog:[],      // 每回合扣血记录 {r,d}（阶段扣血曲线用）
       mvp:{} } };    // 全场累计之最（按棋子名聚合：deal/take/heal/kills）
   S.pool={}; initPool();
+  // 挑战规则（开局弹窗勾选 → 本局生效；禁锢羁绊在此随机定死禁哪两个）
+  S.curses=[...(curseSel||[])];
+  if(hasCurse('nobond')){
+    const bp=Object.keys(FACTIONS).concat(Object.keys(CLASSES)).sort(()=>Math.random()-0.5);
+    S.cursesData.nobond=bp.slice(0,2);
+  }
+  if(hasCurse('bloodpact')) S.hp=25;
+  S.gold = 10 + (hasCurse('nobond')?10:0) + (hasCurse('solo')?20:0) + (hasCurse('glass')?5:0);
+  if(hasCurse('shortch')) S.tickets=1;
+  if(S.curses.length) log('⚠ 挑战规则生效：'+S.curses.map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、'));
   prepEnemy();
   rollShop();   // 开局发牌（含第 1 回合保底 1 费）
   S.auto = autoStoreGet(); setAutoUI();   // 托管开关跨局保留
@@ -1437,10 +1539,11 @@ function ownedTags(){ // 场上棋子的阵营/职业集合（去重按棋子）
 }
 function synTriggers(u){ // 购买该棋子后【新触发】的羁绊档位（如 '毛茸乐园 T1'）
   const out=[]; const tags=ownedTags();
+  const nb=(hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 被禁羁绊不高亮
   for(const key of tagKeys(u)){
     const ids=tags[key]; if(!ids) continue;
     const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
-    if(!tbl[name]) continue;
+    if(!tbl[name] || (nb && nb.includes(name))) continue;
     const distinct=new Set(ids).size+1;   // 买入后 +1
     tbl[name].need.forEach((nd,i)=>{ if(distinct===nd) out.push(name+' T'+(i+1)); });
   }
@@ -1448,10 +1551,11 @@ function synTriggers(u){ // 购买该棋子后【新触发】的羁绊档位（�
 }
 function synTags(u){ // 可补全（已有成员但尚未满档）的羁绊名
   const out=[]; const tags=ownedTags();
+  const nb=(hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 被禁羁绊不高亮
   for(const key of tagKeys(u)){
     const ids=tags[key]; if(!ids) continue;
     const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
-    if(!tbl[name]) continue;
+    if(!tbl[name] || (nb && nb.includes(name))) continue;
     const distinct=new Set(ids).size;
     if(distinct>0 && distinct < tbl[name].need[tbl[name].need.length-1]) out.push(name);
   }
@@ -1460,9 +1564,10 @@ function synTags(u){ // 可补全（已有成员但尚未满档）的羁绊名
 function boardTierKeys(){ // 当前场上已达成的全部羁绊档位（去重按棋子），如 ['F:深海:1','J:游侠:2']
   const out=[];
   const tags=ownedTags();
+  const nb=(hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 被禁羁绊不算档（竖栏/奖励同步失效）
   for(const [key,ids] of Object.entries(tags)){
     const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
-    if(!tbl[name]) continue;
+    if(!tbl[name] || (nb && nb.includes(name))) continue;
     const distinct=new Set(ids).size;
     tbl[name].need.forEach((need,i)=>{ if(distinct>=need) out.push(key+':'+(i+1)); });
   }
@@ -1574,6 +1679,7 @@ function sellSelected(){
   (u.items||[]).forEach(k=>S.items.push(k)); // 装备卸下回装备栏
   setAt(pos[0],pos[1],null);
   S.selUid=null; hideInspect();
+  if(u.star>=3) (S.ms=S.ms||{}).sold3=1;   // 成就里程碑：卖掉 3★
   sfx('sell');
   log(`💸 出售 ${d.name}${u.star>1?'（'+u.star+'★折价）':''}：+${refund} 金币，${copies} 张返还卡池`);
   if(u.items&&u.items.length) log(`　　装备卸下回装备栏：${u.items.map(k=>ITEMS[k].e+ITEMS[k].n).join('、')}`);
@@ -1625,8 +1731,8 @@ function renderBoard(){
     const u=S.board[i];
     let isEnemyPreview=false;
     if(u) cell.innerHTML=unitHTML(u, S.selUid===u.uid);
-    else if(y<BOARD_H/2 && S.phase==='prep' && S.enemyBoard && S.enemyBoard[i]){
-      // 备战期显示敌方阵容预览：可单击查看详情（数据取自图鉴），但不可拖动
+    else if(y<BOARD_H/2 && S.phase==='prep' && S.enemyBoard && S.enemyBoard[i] && !hasCurse('fog')){
+      // 备战期显示敌方阵容预览：可单击查看详情（数据取自图鉴），但不可拖动（🌫 战争迷雾下隐藏）
       cell.innerHTML=unitHTML(S.enemyBoard[i], false).replace('<div class="unit ','<div class="unit preview ');
       if(S.enemyBoard[i].big){   // 2×2 头目预览：从锚点格铺满 4 格（其余格为空，点击仅取消选中）
         const pe=cell.querySelector('.unit'); if(pe) pe.classList.add('big');
@@ -1711,9 +1817,9 @@ function renderTop(){
   $('round').textContent=S.endless ? S.round+' ♾' : S.round;
   $('roundMax').textContent = S.endless ? '' : '/25';
   $('hp').textContent=S.hp; $('gold').textContent=S.gold;
-  $('interest').textContent = S.phase==='prep' && S.lvl<11 ? `+${Math.min(5,Math.floor(S.gold/10))}` : '';
+  $('interest').textContent = S.phase==='prep' && S.lvl<lvlCap() ? `+${Math.min(interestCap(),Math.floor(S.gold/10))}` : '';
   { const gcn=$('goldChipN'); if(gcn) gcn.textContent=S.gold;
-    const gci=$('goldChipI'); if(gci) gci.textContent = S.phase==='prep' ? ` +${Math.min(5,Math.floor(S.gold/10))}息` : ''; }
+    const gci=$('goldChipI'); if(gci) gci.textContent = S.phase==='prep' ? ` +${Math.min(interestCap(),Math.floor(S.gold/10))}息` : ''; }
   renderTempBuffs();
   renderAutoFightBtn();
   const pop=S.board.filter(Boolean).length;
@@ -1729,10 +1835,10 @@ function renderTop(){
   $('streak').textContent=S.streak;
   const need=xpNeed(S.lvl);
   $('lvlNum').textContent=S.lvl;
-  $('xpText').textContent = S.lvl>=11 ? '人口已满' : `经验 ${S.xp}/${need}`;
-  $('xpFill').style.width = S.lvl>=11 ? '100%' : Math.min(100,S.xp/need*100)+'%';
-  $('lvlBtn').textContent = S.lvl>=11 ? '人口已满' : (S.round===1 ? '首回合不可买经验' : (IS_TOUCH?'⬆️ 买经验 -5💰':'买经验 (F) +4经验 -5💰'));
-  $('lvlBtn').disabled = S.lvl>=11 || S.gold<4 || S.round===1;
+  $('xpText').textContent = S.lvl>=lvlCap() ? '人口已满' : `经验 ${S.xp}/${need}`;
+  $('xpFill').style.width = S.lvl>=lvlCap() ? '100%' : Math.min(100,S.xp/need*100)+'%';
+  $('lvlBtn').textContent = S.lvl>=lvlCap() ? '人口已满' : (S.round===1 ? '首回合不可买经验' : (IS_TOUCH?'⬆️ 买经验 -5💰':'买经验 (F) +4经验 -5💰'));
+  $('lvlBtn').disabled = S.lvl>=lvlCap() || S.gold<4 || S.round===1;
   $('refreshBtn').disabled = S.gold<2;
   // 出售按钮：选中棋子后解锁，并预览回购价（多多式：1★原价、合成折价）
   const sel = S.selUid!=null ? findUnit(S.selUid) : null;
@@ -1800,10 +1906,11 @@ function buyTempBuff(id){
   if(S.phase!=='prep') return;
   const b=TEMP_BUFFS.find(x=>x.id===id); if(!b) return;
   if(S.tempBuff){ log('⚠ 本回合已购买临时增益（每回合限 1 个）'); return; }
-  if(S.gold<b.cost){ log(`⚠ 金币不足（需要 ${b.cost}💰）`); return; }
-  S.gold-=b.cost; S.stats.goldSpent+=b.cost; S.tempBuff=id;
+  const cost=tempBuffCost(b);
+  if(S.gold<cost){ log(`⚠ 金币不足（需要 ${cost}💰）`); return; }
+  S.gold-=cost; S.stats.goldSpent+=cost; S.tempBuff=id;
   sfx('equip');
-  log(`🧪 购买临时增益：${b.e} ${b.n}（-${b.cost}💰，本场战斗生效：${b.desc}）`);
+  log(`🧪 购买临时增益：${b.e} ${b.n}（-${cost}💰${cost<b.cost?'，迷雾半价':''}，本场战斗生效：${b.desc}）`);
   renderAll();
 }
 function renderTempBuffs(){
@@ -1811,8 +1918,9 @@ function renderTempBuffs(){
   const prep=S.phase==='prep';
   box.innerHTML=TEMP_BUFFS.map(b=>{
     const owned=S.tempBuff===b.id;
-    const dis=!prep || (S.tempBuff&&!owned) || S.gold<b.cost;
-    return `<button class="btn tb${owned?' on':''}" ${dis?'disabled':''} title="${b.desc}（每回合限购 1 个）" onclick="buyTempBuff('${b.id}')">${b.e}${b.short} ${b.cost}💰${owned?'✓':''}</button>`;
+    const cost=tempBuffCost(b);
+    const dis=!prep || (S.tempBuff&&!owned) || S.gold<cost;
+    return `<button class="btn tb${owned?' on':''}" ${dis?'disabled':''} title="${b.desc}（每回合限购 1 个）" onclick="buyTempBuff('${b.id}')">${b.e}${b.short} ${cost}💰${owned?'✓':''}</button>`;
   }).join('');
 }
 function renderEquip(){
@@ -2064,6 +2172,7 @@ function applyTicket(uid){
   u.hp=Math.round(d.hp*m); u.maxhp=Math.round(d.hp*m);
   u.atk=Math.round(d.atk*Math.pow(STAR_M[d.cost]||1.8, 3));
   S.tickets--;
+  (S.ms=S.ms||{}).star4=1;   // 成就里程碑
   sfx('merge3');
   log(`🎫 ${d.name} 升至 4★！（剩升星券 ×${S.tickets}）`);
   renderAll();
@@ -2344,13 +2453,14 @@ function tryMerge(){
         group.forEach(s=>setAt(s[0],s[1],null));
         setAt(keep[0],keep[1],upgraded);
         sfx(star+1>=3?'merge3':'merge2');
+        (S.ms=S.ms||{})[star+1>=3?'merged3':'merged2']=1;   // 成就里程碑
         log(`✨ ${d.name} 升至 ${star+1} 星！`);
         tryMerge(); return;
       }
     }
   }
 }
-$('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<2)return; if(S.lock){ log('🔒 商店已锁定，不消耗金币刷新'); renderTop(); return; } S.gold-=2; S.stats.goldSpent+=2; sfx('roll'); rollShop(); renderTop(); };
+$('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<refreshCost())return; if(S.lock){ log('🔒 商店已锁定，不消耗金币刷新'); renderTop(); return; } { const rc=refreshCost(); S.gold-=rc; S.stats.goldSpent+=rc; } sfx('roll'); rollShop(); renderTop(); };
 /* 商店锁定：下回合自动刷新时保留当前货架 */
 $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
   log(S.lock?'🔒 商店已锁定（仅保留到下回合，之后自动解锁）':'🔓 商店已解锁');
@@ -2360,9 +2470,10 @@ $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
 /* 队伍羁绊评分：已达成档位大分 + 朝下一档的进度小分（同名棋子按 1 个计，与战斗结算一致） */
 function teamSynScore(team){
   const cnt={}; const seen=new Set();
+  const nb=(hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 被禁羁绊不计分（编队不再优先凑它）
   team.forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id); const dd=byId(u.id);
-    facsOf(dd).forEach(f=>cnt['F:'+f]=(cnt['F:'+f]||0)+1);
-    jobsOf(dd).forEach(j=>cnt['J:'+j]=(cnt['J:'+j]||0)+1); });
+    facsOf(dd).forEach(f=>{ if(nb && nb.includes(f)) return; cnt['F:'+f]=(cnt['F:'+f]||0)+1; });
+    jobsOf(dd).forEach(j=>{ if(nb && nb.includes(j)) return; cnt['J:'+j]=(cnt['J:'+j]||0)+1; }); });
   let s=0;
   for(const key in cnt){
     const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
@@ -2502,7 +2613,7 @@ function tidyBench(){
   renderAll();
 }
 $('tidyBtn').onclick=tidyBench;
-$('lvlBtn').onclick=()=>{ if(S.phase!=='prep'||S.lvl>=11)return;   // 5 金币买 4 经验（更快升人口凑羁绊）
+$('lvlBtn').onclick=()=>{ if(S.phase!=='prep'||S.lvl>=lvlCap())return;   // 5 金币买 4 经验（更快升人口凑羁绊）
   if(S.round===1){ log('⚠ 第 1 回合不可购买经验（第 2 回合起可购买，自然经验不受影响）'); return; }
   if(S.gold<5){ log('⚠ 金币不足，无法购买升级经验'); return; }
   S.gold-=5; S.stats.goldSpent+=5; S.xp+=4;
@@ -2555,7 +2666,8 @@ function genEnemy(){
   // 一次性补偿量（非定期旋钮），调定后不要再动；日常微调用 r25 bossMult。
   const POOL_DILUTION_COMP = 0.85;
   const DIFF_TUNE = 0.74;   // 难度总旋钮：目标整体守关通过率 ~90%（2026-09-15 用户设定）
-  const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * ch2Ramp * dyn * POOL_DILUTION_COMP * DIFF_TUNE;
+  const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * ch2Ramp * dyn * POOL_DILUTION_COMP * DIFF_TUNE
+    * (hasCurse('hardland') ? 1.15 : 1);   // ⛰ 硬着陆：敌方全体强度 +15%
   const used=new Set();
   const list=[];
   if(r%5===0){   // 野怪回合（每 5 回合），波次固定按进度强化
@@ -2585,7 +2697,7 @@ function genEnemy(){
     squad.list.forEach(u=>list.push({d:u, star:1}));
     S.enemyComp = {round:r, name:squad.name, mix:squad.list.reduce((m,u)=>{ jobsOf(u).forEach(j=>m[j]=(m[j]||0)+1); return m; }, {})};
     // 敌方总数跟随「棋手等级=人口」节奏：1级1人、2级2人…缓增至 7 人（无限模式 9 人），与玩家成长曲线对齐
-    const total = Math.min(1 + Math.floor(r/2), S.endless ? 9 : 7);
+    const total = Math.min(1 + Math.floor(r/2), hasCurse('solo') ? 5 : (S.endless ? 9 : 7));
     // 前期（r≤3）敌方人数与玩家人口节奏同步：1级1人、2级2人、3级3人以内
     // 避免 1 金/1 级开局被多打少，也避免敌方白凑 T2 羁绊压制玩家
     if(r<=3){
@@ -2714,6 +2826,7 @@ function makeBattleUnit(u, side, x, y){
     b.mr=Math.min(0.75,(b.mr||0)+augTotal('mr')/100);
     b.mana=Math.max(b.mana, Math.min(b.maxmana, augTotal('mana')));
     b.augRegen=augTotal('regen');   // 每秒回复 %maxhp（currentTick 消费）
+    if(hasCurse('glass')){ b.atk=Math.round(b.atk*1.3); b.maxhp=Math.round(b.maxhp*0.7); }   // 🔮 玻璃大炮
   }
   b.hp=b.maxhp;
   // 多多官方：蓝量开局清零，仅靠攻击/受击回蓝攒满 100 施放大招（蓝玉潮涌：开局 +20 蓝）
@@ -2806,10 +2919,11 @@ function startBattle(){
     const mine = units.filter(u=>u.side===side);
     const facCnt={}, clsCnt={};
     const seen=new Set(); // 羁绊按不同棋子计数：同名重复副本只算 1 个
+    const nb=(side===0 && hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 禁锢羁绊：我方被禁的羁绊不计档
     mine.forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id);
       const d=byId(u.id);
-      facsOf(d).forEach(f=>facCnt[f]=(facCnt[f]||0)+1);
-      jobsOf(d).forEach(j=>clsCnt[j]=(clsCnt[j]||0)+1); });
+      facsOf(d).forEach(f=>{ if(nb && nb.includes(f)) return; facCnt[f]=(facCnt[f]||0)+1; });
+      jobsOf(d).forEach(j=>{ if(nb && nb.includes(j)) return; clsCnt[j]=(clsCnt[j]||0)+1; }); });
     Object.keys(facCnt).forEach(k=>{ const t=tierOf(facCnt,FACTIONS,k); if(t>0) BV[side][k]=t; });
     Object.keys(clsCnt).forEach(k=>{ const t=tierOf(clsCnt,CLASSES,k); if(t>0) BV[side][k]=t; });
     // 数值聚合（刀塔式：数值光环 + 机制触发）
@@ -3967,7 +4081,8 @@ function augRarity(id){ const d=AUGS.find(x=>x.id===id); return (d&&d.r)||1; }
 const AUG_RNAME={1:'白',2:'蓝',3:'金'};
 function chapterSettle(won){
   S.phase='chapter'; S.settleWon=won;
-  if(won){ S.tickets=(S.tickets||0)+1; }   // 守关胜利奖励：升星券（备战期点 3★ 棋子 → 4★）
+  if(won){ S.tickets=(S.tickets||0)+(hasCurse('bloodpact')?2:1);   // 守关胜利奖励：升星券（血之契约 +2）
+    (S.ms=S.ms||{}).chapterWin=1; if(S.auto) S.ms.autoWin=1; }
   // 稀有度加权 3 选 1（不重复）：白 100 / 蓝 40 / 金 15；金色全局至多持有 2 个
   const goldOwned=(S.augs||[]).filter(a=>augRarity(a.id)===3).length;
   let pool=AUGS.filter(a=>a.r!==3||goldOwned<2);
@@ -3980,7 +4095,7 @@ function chapterSettle(won){
   S.settleOffer=picked.map(a=>({id:a.id, weak:!won}));
   S.settlePick=null;
   sfx(won?'finalWin':'settle');
-  const ch=Math.ceil(S.round/25);
+  const ch=Math.ceil(S.round/chLen());
   $('ovTitle').textContent = won? `🏆 第 ${ch} 章结算 · 守关魔王已败！` : `💔 第 ${ch} 章结算 · 惜败守关魔王`;
   renderSettle();
   ovMode='chapter'; hideOvClose();
@@ -4002,7 +4117,7 @@ function renderSettle(){
   const owned=(S.augs||[]).map(a=>{const def=AUGS.find(x=>x.id===a.id);return def?def.n+(a.weak?'(削)':''):'';}).filter(Boolean).join('、')||'无';
   $('ovText').innerHTML=`
     <div class="settle-hero ${w?'win':'lose'}">${w?'🎉 击败守关魔王，章节推进！':'💚 惜败守关魔王，旅路仍在继续'}</div>
-    <div class="settle-row">第 ${Math.ceil(S.round/25)} 章 · 第 ${S.round} 回合 · 生命 ${S.hp} · 战绩 ${S.stats.wins} 胜 ${S.stats.losses} 负</div>
+    <div class="settle-row">第 ${Math.ceil(S.round/chLen())} 章 · 第 ${S.round} 回合 · 生命 ${S.hp} · 战绩 ${S.stats.wins} 胜 ${S.stats.losses} 负</div>
     ${w?`<div class="settle-row" style="color:#ffd24a">🎫 守关奖励：升星券 ×1（共 ${S.tickets||0} 张）— 备战期点击 3★ 棋子，在详情面板升为 4★</div>`:''}
     <div class="settle-ask">👇 选择一项全局${w?'强效':'削弱'}增强（3 选 1）</div>
     <div class="aug-row">${cards}</div>
@@ -4024,25 +4139,22 @@ function chapterContinue(){
   if(S.phase!=='chapter'||S.settlePick==null) return;
   S.endless=true;   // 之后章节沿用无限成长曲线（敌方持续变强）
   S.phase='prep'; S.round++;
-  if(S.lvl<11){ S.xp+=2; checkLevel(); }
+  if(S.lvl<lvlCap()){ S.xp+=2; checkLevel(); }
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null); prepEnemy(); rollShop();
   if(S.lock) S.lock=false;
   $('overlay').classList.add('hidden'); ovMode='start';
   renderAll(); $('fightBtn').disabled=false;
-  log(`— 第 ${S.round} 回合备战阶段（第 ${Math.ceil(S.round/25)} 章）—`);
+  log(`— 第 ${S.round} 回合备战阶段（第 ${Math.ceil(S.round/chLen())} 章）—`);
   autoPilot();
   scheduleAutoFight();   // 玩家选完增强后，自动开战继续循环
 }
 function chapterStop(){
   if(S.phase!=='chapter') return;
   S.phase='over'; endRunCleanup();   // 收兵：托管一并关闭
-  try{ const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
-    h.unshift({ts:Date.now(),win:true,round:S.round,hp:S.hp,endless:true,wins:S.stats.wins,losses:S.stats.losses,kills:S.stats.kills,maxStreak:S.stats.maxStreak});
-    localStorage.setItem('vc_history',JSON.stringify(h.slice(0,20)));
-  }catch(e){}
+  writeRunHistory(true); checkAchievements();   // 历史战绩 + 终局成就判定
   try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
   $('ovTitle').textContent='🏁 挑战结束';
-  $('ovText').innerHTML=`在第 ${Math.ceil(S.round/25)} 章 · 第 ${S.round} 回合收兵。<br>`+reportHTML('endless');
+  $('ovText').innerHTML=`在第 ${Math.ceil(S.round/chLen())} 章 · 第 ${S.round} 回合收兵。<br>`+reportHTML('endless');
   const b1=$('ovBtn'); b1.textContent='再来一局'; b1.disabled=false; b1.style.display='inline-block';
   b1.onclick=()=>{ $('overlay').classList.add('hidden'); newGame(); };
   $('ovBtn2').style.display='none';
@@ -4068,6 +4180,7 @@ function endBattle(alive0,alive1){
       e.deal+=x.deal; e.take+=x.take; e.heal+=x.heal; e.kills+=x.kills; });
     const top=k=>mine.reduce((a,b)=>b[k]>((a&&a[k])||0)?b:a,null);
     const td=top('deal'), tt=top('take'), th=top('heal');
+    if(td && td.deal>=5000) (S.ms=S.ms||{}).mvp5k=1;   // 成就里程碑：单场输出 5000+
     if(td) bestLine=`　⚔ 本场之最：输出 ${td.name}（${td.deal}）· 承伤 ${tt?tt.name+'（'+tt.take+'）':'—'}`+
       (th&&th.heal>0?` · 治疗 ${th.name}（+${th.heal}）`:'');
     battleStats=null;
@@ -4077,14 +4190,15 @@ function endBattle(alive0,alive1){
   const flush=()=>{ for(let i=blk.length-1;i>=0;i--) log(blk[i]); };
   blk.push(`📋 第 ${S.round} 回合结算：${won?'胜利':'失败'}（我方存活 ${alive0} · 敌方存活 ${alive1}）`);
   // 基础收入阶梯：第 1 回合 1 金 → 第 5 回合起固定 5 金（回合结束发放下一回合的收入）
-  const settleIncome = ()=>{ const inc=Math.min(S.round+1,5);
-    addGold(inc,`基础收入（第 ${S.round+1} 回合 · ${inc} 金）`,blk);
-    addGold(Math.min(5,Math.floor(S.gold/10)),'存款利息（每10金+1，上限5）',blk);
+  const settleIncome = ()=>{ const inc=baseIncome();
+    addGold(inc,`基础收入（第 ${S.round+1} 回合）`,blk);
+    const ic=interestCap();
+    if(!hasCurse('allin')) addGold(Math.min(ic,Math.floor(S.gold/10)),'存款利息（每10金+1，上限'+ic+'）',blk);
     const gi=augTotal('gold'); if(gi) addGold(gi,'全局增强·生财经纬',blk); };
   if(isCreep){
     /* 野怪回合：失败不扣血、不影响连胜；掉落装备——胜利 2 件、失败也有 1 件（保底）
        每 25 回合为章节守关战：胜/负都进入章节结算（3 选 1 全局增强），不再直接终局 */
-    const chapterBoss = S.round%25===0;
+    const chapterBoss = S.round%chLen()===0;
     const dropGear = n=>{ const keys=Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted && !ITEMS[k].arti);   // 成品/神器不进掉落池
       for(let i=0;i<n;i++){ const k=keys[Math.floor(Math.random()*keys.length)];
         S.items.push(k); blk.push(`　🎁 掉落：${ITEMS[k].e} ${ITEMS[k].n}（${ITEMS[k].desc}）`); } };
@@ -4112,7 +4226,7 @@ function endBattle(alive0,alive1){
     blk.push(`　🏆 战斗胜利（当前连胜 ${S.streak}）`);
     const wb = S.streak>=7?4 : S.streak>=5?3 : S.streak>=3?2 : 0;   // 连胜奖励阶梯：3/5/7 → +2/3/4
     if(wb) addGold(wb,`连胜奖励（${S.streak} 连胜）`,blk);
-    addGold(2,'胜利奖金',blk);                                        // 赢下对局 +2 金
+    addGold(2+(hasCurse('inflation')?2:0),'胜利奖金'+(hasCurse('inflation')?'（通胀补偿）':''),blk);   // 赢下对局 +2 金
     settleIncome();
   } else {
     S.stats.losses++; S.lossStreak=(S.lossStreak||0)+1; S.streak=0;
@@ -4134,10 +4248,12 @@ function endBattle(alive0,alive1){
   flush();
   sfx('settle');   // 回合结算轻提示
   checkSynRewards();   // 羁绊凑档奖励（首次达成 +1 金，鼓励凑羁绊）
+  if([...S.board,...S.bench].filter(Boolean).filter(u=>u.star>=3).length>=5) (S.ms=S.ms||{}).five3=1;   // 成就里程碑
+  checkAchievements();   // 成就判定（新解锁写战报）
   S.round++;
   S.phase='prep';
   // 商店常驻显示，无需在战斗结束后再展开
-  if(S.lvl<11){ S.xp+=2; checkLevel(); }   // 每回合自然 +2 升级经验，照常触发升级（首回合仅禁止"购买"经验，不影响自然积累）
+  if(S.lvl<lvlCap()){ S.xp+=2; checkLevel(); }   // 每回合自然 +2 升级经验，照常触发升级（首回合仅禁止"购买"经验，不影响自然积累）
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
   prepEnemy();   // 提前生成本回合敌方阵容，备战期即可观察
   rollShop();
@@ -4179,7 +4295,7 @@ function reportHTML(kind){
   html+=sec('💰 经济构成（累计 '+st.goldEarned+' 金 · 花费 '+st.goldSpent+' 金）', econRows);
   html+=sec('🩸 阶段扣血（共失血 '+(st.hpLog||[]).reduce((s,x)=>s+x.d,0)+' 点）',
     `开局-第10回合 <b>${hpSeg(1,10)}</b> · 第11-20回合 <b>${hpSeg(11,20)}</b> · 第21-25回合 <b>${hpSeg(21,25)}</b>`);
-  html+=sec('🛡 最终阵容', lineup+((tiers.length)?`<br><span style="color:#9dd3e8">羁绊档位：${tiers.join(' · ')}</span>`:''));
+  html+=sec('🛡 最终阵容', (S.curses&&S.curses.length?`<span style="color:#ff9a9a">⚠ 挑战规则：${S.curses.map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、')}</span><br>`:'')+lineup+((tiers.length)?`<br><span style="color:#9dd3e8">羁绊档位：${tiers.join(' · ')}</span>`:''));
   html+=sec('🏆 全场之最 Top3',
     `输出：${top3('deal',v=>'（'+v+'）')}<br>承伤：${top3('take',v=>'（'+v+'）')}<br>治疗：${top3('heal',v=>'（+'+v+'）')}`);
   if(kind==='lose'){
@@ -4207,12 +4323,7 @@ function endRunCleanup(){   // 终局统一收尾：托管/自动开战关闭（
 function restartGame(){ $('overlay').classList.add('hidden'); newGame(); }
 function gameOver(win){
   S.phase='over'; ovMode='start'; hideOvClose(); endRunCleanup();
-  try{ // 写入历史战绩并清除进行中的存档
-    const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
-    h.unshift({ts:Date.now(),win,round:S.round,hp:S.hp,endless:!!S.endless,
-      wins:S.stats.wins,losses:S.stats.losses,kills:S.stats.kills,maxStreak:S.stats.maxStreak});
-    localStorage.setItem('vc_history',JSON.stringify(h.slice(0,20)));
-  }catch(e){}
+  writeRunHistory(win); checkAchievements();   // 历史战绩 + 终局成就判定
   localStorage.removeItem('vc_save');
   $('ovTitle').textContent = win ? '🏅 最终胜利！' : (S.endless?'♾ 无限模式终结':'💀 挑战失败');
   $('ovText').innerHTML = (win?'':`在第 ${S.round} 回合倒下。<br>`)+reportHTML(win?'win':'lose');
@@ -4225,12 +4336,7 @@ function gameOver(win){
 function endEndless(){  // 无限模式主动结束：直接进入结算画面
   if(!S.endless||S.phase!=='prep') return;
   S.phase='over'; endRunCleanup();
-  try{ // 记入历史（能进无限模式=已通关，记为胜局）
-    const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
-    h.unshift({ts:Date.now(),win:true,round:S.round,hp:S.hp,endless:true,
-      wins:S.stats.wins,losses:S.stats.losses,kills:S.stats.kills,maxStreak:S.stats.maxStreak});
-    localStorage.setItem('vc_history',JSON.stringify(h.slice(0,20)));
-  }catch(e){}
+  writeRunHistory(true); checkAchievements();   // 记入历史（能进无限模式=已通关，记为胜局）
   localStorage.removeItem('vc_save');
   $('ovTitle').textContent='♾ 无限模式结算';
   $('ovText').innerHTML=`主动结束挑战，安然退场。<br>`+reportHTML('endless');
@@ -4248,10 +4354,11 @@ function showIntro(resume){
   $('ovBtn').textContent = resume ? '▶ 继续游戏' : '开始游戏';
   $('ovBtn2').style.display='none';
   if($('ovClose')) $('ovClose').style.display='block';   // 介绍弹窗可关闭
+  { const cp=$('cursePick'); if(cp){ const show=!resume; cp.style.display=show?'block':'none'; if(show) renderCursePick(); } }
   $('overlay').classList.remove('hidden');
 }
-/* 结算/通关画面：隐藏 ✕（那时"关闭"语义是再来一局，由按钮承担） */
-function hideOvClose(){ if($('ovClose')) $('ovClose').style.display='none'; }
+/* 结算/通关画面：隐藏 ✕（那时"关闭"语义是再来一局，由按钮承担）；诅咒勾选区一并隐藏 */
+function hideOvClose(){ if($('ovClose')) $('ovClose').style.display='none'; { const cp=$('cursePick'); if(cp) cp.style.display='none'; } }
 /* 关闭弹窗：对局中(resume)只是收起；开局前(start)等同于"开始游戏"，避免关掉后无界面 */
 function closeIntro(){
   if(ovMode==='resume'){ $('overlay').classList.add('hidden'); return; }
@@ -4329,7 +4436,8 @@ const SAVE_KEY='vc_save3', HIST_KEY='vc_history';
 function saveGame(){ // 仅备战阶段保存（战斗中刷新不损失进度：回到该回合开打前）
   if(S.phase!=='prep') return;
   try{ localStorage.setItem(SAVE_KEY,JSON.stringify({round:S.round,hp:S.hp,gold:S.gold,lvl:S.lvl,xp:S.xp,
-    streak:S.streak,lossStreak:S.lossStreak,endless:S.endless,lock:!!S.lock,synDone:S.synDone||[],augs:S.augs||[],tickets:S.tickets||0,tempBuff:S.tempBuff||null,bench:S.bench,board:S.board,shop:S.shop,
+    streak:S.streak,lossStreak:S.lossStreak,endless:S.endless,lock:!!S.lock,synDone:S.synDone||[],augs:S.augs||[],tickets:S.tickets||0,tempBuff:S.tempBuff||null,
+    ms:S.ms||{},curses:S.curses||[],cursesData:S.cursesData||{},bench:S.bench,board:S.board,shop:S.shop,
     uid:S.uid,log:S.log,items:S.items,pool:S.pool,stats:S.stats,ts:Date.now()})); }catch(e){}
 }
 function loadGame(){
@@ -4339,6 +4447,7 @@ function loadGame(){
     if(!S) S={}; // 直接从存档启动时 S 尚未初始化
     Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
     S.tickets=S.tickets||0; S.tempBuff=S.tempBuff||null;   // 旧存档兼容
+    S.ms=S.ms||{}; S.curses=S.curses||[]; S.cursesData=S.cursesData||{};
     S.auto = autoStoreGet(); setAutoUI();
     S.autoFight = afStoreGet();   // 自动开战恢复（与托管互斥）
     if(S.autoFight){ S.auto=false; autoStoreSet(false); setAutoUI(); renderAutoFightBtn(); }
@@ -4348,17 +4457,60 @@ function loadGame(){
     return true;
   }catch(e){ return false; }
 }
+function writeRunHistory(win){   // 终局统一写入（战绩/成就/排行共用数据源）
+  try{ const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
+    h.unshift({ts:Date.now(),win,round:S.round,hp:S.hp,endless:!!S.endless,ch:Math.ceil(S.round/chLen()),
+      curses:(S.curses||[]).length,
+      lineup:S.board.filter(Boolean).slice(0,6).map(u=>u.id),
+      wins:S.stats.wins,losses:S.stats.losses,kills:S.stats.kills,maxStreak:S.stats.maxStreak});
+    localStorage.setItem('vc_history',JSON.stringify(h.slice(0,50)));
+  }catch(e){}
+}
+let histTab='log';   // 战绩弹窗页签：log=战绩 achv=成就 lb=排行
+function histH2(){ return histTab==='log'?'📜 历史战绩（最近 50 局）':histTab==='achv'?'🏅 成就':'🏆 排行榜'; }
 function renderHistory(){
   let h=[]; try{ h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){}
   $('histList').innerHTML = h.length ? h.map(x=>{
     const d=new Date(x.ts), p=n=>String(n).padStart(2,'0');
     return `<div class="hrow"><span>${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</span>
-      <span>${x.win?'🏅 胜利':'💀 失败'}${x.endless?'（无尽）':''}</span>
-      <span>第 ${x.round} 回合 · ❤${x.hp} · 最高连胜${x.maxStreak} · 击杀${x.kills}</span></div>`;
+      <span>${x.win?'🏅 胜利':'💀 失败'}${x.endless?'（无尽）':''}${x.curses?` ⚠×${x.curses}`:''}</span>
+      <span>第 ${x.round} 回合${x.ch>1?` · ${x.ch} 章`:''} · ❤${x.hp} · 最高连胜${x.maxStreak} · 击杀${x.kills}</span></div>`;
   }).join('') : '<div style="color:#6b6288;padding:14px;text-align:center">暂无历史对局</div>';
 }
-$('histBtn').onclick=()=>{ renderHistory(); $('histModal').classList.remove('hidden'); };
+function lineupIcons(ids){ return (ids||[]).map(id=>`<img class="lb-pt" src="assets/units/${id}.png" alt="" onerror="this.style.display='none'">`).join(''); }
+function renderLeaderboard(){
+  let h=[]; try{ h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){}
+  if(!h.length){ $('histList').innerHTML='<div style="color:#6b6288;padding:14px;text-align:center">暂无记录——先打完一局</div>'; return; }
+  const rows=[...h].sort((a,b)=> (b.ch||1)-(a.ch||1) || b.round-a.round || (b.kills||0)-(a.kills||0));
+  $('histList').innerHTML = rows.slice(0,20).map((x,i)=>{
+    const d=new Date(x.ts), p=n=>String(n).padStart(2,'0');
+    return `<div class="hrow lb"><span class="lb-rk">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
+      <span>${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</span>
+      <span>${x.ch||1} 章 · 第 ${x.round} 回合${x.curses?` · ⚠诅咒×${x.curses}`:''}</span>
+      <span class="lb-team">${lineupIcons(x.lineup)}</span></div>`;
+  }).join('');
+}
+function renderAchv(){
+  const got=achvGet();
+  const done=ACHV.filter(a=>got[a.id]).length;
+  $('histList').innerHTML=`<div style="color:#8a93c4;font-size:12px;margin-bottom:6px">已解锁 ${done}/${ACHV.length}（未解锁成就的进度按当前对局计算）</div>`+
+    `<div class="achv-grid">`+ACHV.map(a=>{
+      const ts=got[a.id];
+      let prog='';
+      if(!ts && a.p){ try{ prog=a.p(); }catch(e){} }
+      return `<div class="achv${ts?' got':''}"><b>${ts?'🏅':'🔒'} ${a.n}</b><div class="ad2">${a.d}</div>${ts?`<div class="ad2" style="color:#8dff9a">${new Date(ts).toLocaleDateString()}</div>`:(prog?`<div class="ad2" style="color:#ffd24a">${prog}</div>`:'')}</div>`;
+    }).join('')+`</div>`;
+}
+function renderHistTab(){
+  if(histTab==='log') renderHistory();
+  else if(histTab==='achv') renderAchv();
+  else renderLeaderboard();
+  const h2=document.querySelector('#histPanel h2'); if(h2) h2.textContent=histH2();
+  document.querySelectorAll('#histTabs .tab').forEach(b=>b.classList.toggle('on', b.dataset.t===histTab));
+}
+$('histBtn').onclick=()=>{ renderHistTab(); $('histModal').classList.remove('hidden'); };
 $('histClose').onclick=()=>$('histModal').classList.add('hidden');
+document.querySelectorAll('#histTabs .tab').forEach(b=>b.onclick=()=>{ histTab=b.dataset.t; renderHistTab(); });
 $('resetBtn').onclick=()=>{ if(!confirm('放弃当前进度，重新开一局？')) return;
   localStorage.removeItem(SAVE_KEY); stopTickLoop(); newGame(); renderAll();
   $('fightBtn').disabled=false; $('overlay').classList.add('hidden'); log('🔄 已重新开局'); };
@@ -4445,7 +4597,10 @@ addEventListener('resize',fitBoard); fitBoard();
       $('resumeInfo').textContent=`检测到上一局进度：第 ${o.round} 回合 · ${o.hp}❤ · ${o.gold}💰 · 人口 ${o.lvl}`;
     }catch(e){}
     $('resumeOv').classList.remove('hidden');
-  } else { newGame(); renderAll(); }
+  } else {
+    newGame(); renderAll();
+    renderCursePick(); { const cp=$('cursePick'); if(cp) cp.style.display='block'; }   // 首屏介绍弹窗（静态显示）：渲染挑战规则勾选区
+  }
 })();
 $('resumeYes').onclick=()=>{ if(!loadGame()) newGame();
   $('resumeOv').classList.add('hidden'); renderAll(); $('fightBtn').disabled=false; log('📂 已恢复上一局进度'); };
