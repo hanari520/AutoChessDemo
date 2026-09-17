@@ -5020,6 +5020,8 @@ $('resumeNo').onclick=()=>{ localStorage.removeItem(SAVE_KEY);
 $('resumeDaily').onclick=()=>{ $('resumeOv').classList.add('hidden'); startDaily(); };   // 从恢复弹窗直接进每日挑战
 /* PWA：Service Worker 注册（离线可玩，安卓可添加到主屏幕） */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+/* 旧版全球排行接口（Cloudflare KV 版，autochesslb.hanari520.cn）已下线并清空数据：
+   旧版页面连它时读/写均为空，等于软失效，逼玩家刷新到新数据源（service.tcloudbase.com）。 */
 
 /* ================= 托管：复用 tools/bot_strategy.js 的 botPrep（与模拟校准同一策略，目标即通关率） ================= */
 function autoStoreGet(){ try{ return localStorage.getItem('vc_auto')==='1' }catch(e){ return false } }
