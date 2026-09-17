@@ -728,6 +728,7 @@ body.touch .m-only { display:inline-block; }
   <span class="tag">人口 <b id="pop">0</b>/<b id="popMax">11</b></span>
   <span class="tag" title="连胜/连败 3→+1金、5→+2金、7+→+3金">🔥 连胜 <b id="streak">0</b></span>
   <span class="tag" id="curseTag" style="display:none;color:#ff9a9a;border-color:#ff9a9a66;cursor:help"></span>
+  <span class="tag" id="ticketTag" style="cursor:help" title="升星券：把一名 3★ 棋子升为 4★。来源：守关胜利、挑战规则补偿。用法：点击 3★ 棋子 → 详情面板金色按钮">🎫 ×0</span>
   <div class="fight-btn-row">
     <button class="btn" id="histBtn">📜 战绩</button>
     <button class="btn" id="bookBtn">📖 图鉴</button>
@@ -1432,6 +1433,7 @@ function newGame(opts){ opts=opts||{};
     log(`⚠ 挑战规则生效（共 ${S.curses.length} 条，整局可见于顶栏红色标签）：`);
     S.curses.forEach(id=>{ const c=CURSES.find(x=>x.id===id); if(c) log(`　${c.n}：${c.d} → 补偿：${c.r}`); });
   }
+  if(S.tickets>0) log(`🎫 当前持有升星券 ×${S.tickets}：点击 3★ 棋子，在详情面板升为 4★（顶栏 🎫 可查余量）`);
   prepEnemy();
   rollShop();   // 开局发牌（含第 1 回合保底 1 费）
   S.auto = autoStoreGet(); setAutoUI();   // 托管开关跨局保留
@@ -1898,6 +1900,18 @@ function renderTop(){
         ct.title='挑战规则生效中：\n'+list.map(id=>{const c=CURSES.find(x=>x.id===id);
           return c?`${c.n}：${c.d}\n　→ 补偿：${c.r}`:id;}).join('\n————————\n');
       }
+    }
+  }
+  { // 顶栏常驻升星券标签：点击提示用法
+    const tt=$('ticketTag');
+    if(tt){
+      const n=S.tickets||0;
+      tt.textContent=`🎫 ×${n}`;
+      tt.style.opacity = n>0 ? '1' : '.45';
+      tt.title = n>0
+        ? `持有升星券 ×${n}：点击任意 3★ 棋子，在详情面板点金色按钮升为 4★`
+        : '升星券 ×0：守关胜利或特定挑战规则可获得';
+      tt.onclick = ()=>{ if(S && S.phase==='prep' && n>0) log(`🎫 持有升星券 ×${n}：点击任意 3★ 棋子，在详情面板升为 4★`); };
     }
   }
   const pop=S.board.filter(Boolean).length;
