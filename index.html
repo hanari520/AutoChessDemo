@@ -166,6 +166,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .arti-card .ad2{ font-size:10px; color:#a99ed0; margin:3px 0; line-height:1.5; }
 .arti-card .btn[disabled]{ opacity:.4; cursor:default; }
 .item-chip.arti{ border-color:#ffd24a; box-shadow:0 0 6px #ffd24a44; }
+/* 玩法说明分区标题 */
+#ovText .is-h{ display:block; color:#ffd24a; font-weight:bold; font-size:14px; margin:9px 0 2px; padding-bottom:2px; border-bottom:1px solid #35294f; }
 /* 挑战规则勾选区（开局弹窗） */
 #cursePick{ max-width:560px; margin:8px auto 0; text-align:left; }
 /* 三模式选择卡片 */
@@ -878,15 +880,41 @@ body.touch .m-only { display:inline-block; }
   <span id="ovClose" title="关闭（Esc）">✕</span>
   <h1 id="ovTitle">虚拟棋战 🎲</h1>
   <p id="ovText" style="max-width:560px;line-height:1.7;color:#cdd6f4;font-size:14px;text-align:left">
-    单机自动战斗棋局（VirtuaReal + P-SP · 50 名主播 · 限量卡池 · 每 25 回合章节守关 · 无限推进）<br>
-    ① 经济：开局 10 金；基础收入 1→5 金递增（第 5 回合起固定 5）+ 胜利奖金 2 金 + 利息（每 10 金 +1，上限 5）+ 连胜/连败（3/5/7 → +2/3/4）；刷新 2 金，买经验 5 金 +4 经验（每回合自然 +2；人口 2 级开局、11 级封顶，<b style="color:#ffd24a">第 1 回合不可购买经验</b>）；卖棋 1★原价、合成折价<br>
-    ② 商店 5 卡槽独立按<b style="color:#ffd24a">概率表</b>抽取（仅与人口等级绑定，不绑定羁绊），共享卡池 50/40/30/20/10 张；高等级更易刷出高费棋子（7 级起可见 5 费）；<b style="color:#ffd24a">阵营(12) + 职业(10)</b> 双羁绊（左侧竖栏），人数达标触发 T1/T2，<b style="color:#8dff9a">首次达成每档 +1 金</b><br>
-    &nbsp;&nbsp;<b style="color:#cdd6f4">商店卡片三层信息（互不遮挡）：</b>① 费用看左侧<b style="color:#9dd3e8">色条</b>+右下角 <b>💰N费</b>；② <span style="color:#ffd24a">金边 = 对子（买到即升星）</span>；③ 徽章并列显示：<span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗买下即触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span><br>
-    ③ 每 5 回合为<b style="color:#ffd24a">野怪回合</b>（开战前战报会提醒）：胜利掉 <b>2</b> 件装备，失败也保底掉 <b>1</b> 件（失败不扣血、不动连胜）；头目<b style="color:#ffd24a">真实占据 2×2 格</b>（其他棋子需让位绕行，近战可从任意相邻格攻击它）；普通回合胜利只给金币<br>
-    ④ 战斗数值：全棋子统一 50 蓝开局清零（快节奏缩放），攻击回蓝 =伤害÷1.25（法师系单次上限 30、其他 15），受击回蓝 =伤害 20%~40%（上限 15~30）——典型棋子 5-7 秒放出首个技能；护甲边际递减减免、魔抗百分比乘算、任意伤害 5% 保底；技能带克制：烧蓝/沉默克法师、破盾克护盾、减疗克奶妈、嘲讽克刺客、净化克控制、斩杀克残血<br>
-    ⑤ 单击棋子查看详情、<b style="color:#8dff9a">拖动棋子换位/上阵</b>（场上最多 10 人）；把棋子<b style="color:#8dff9a">拖到左下出售按钮或商店卡片区</b>松手即出售（1★原价、合成折价，装备自动卸回）；<b style="color:#8dff9a">一键上阵 (R/A)</b>按羁绊梯队布阵（每次在多种列阵型间轮换）、<b style="color:#8dff9a">整理备战席 (T)</b>把棋子按星级/同名聚拢；开战时人口不满会按羁绊优先自动补位（不动你的已有站位）。<b style="color:#ffd24a">快捷键：R/A 一键上阵 · T 整理备战席 · D 刷新 · F 买经验 · L 锁定 · E/X/Delete 出售 · 空格 开战</b>；备战期棋盘上方显示敌方阵容，开战后 0.3 秒开始行动；<b style="color:#ffd24a">每 25 回合挑战守关魔王</b>：胜利得强效 3 选 1 全局增强 + 1 张升星券，失败也有削弱版增强，结算后可继续推进下一章或收兵离场<br>
-    ⑥ <b style="color:#ffd24a">后期成长（顶配之后玩什么）：</b>增强分 <span style="color:#c8bfe8">白</span>/<span style="color:#4ac8ff">蓝</span>/<span style="color:#ffd24a">金</span> 三档稀有度，机制型包括「🧤装备大师（装备槽 +1）」「🔗羁绊共鸣（每档位全队增益）」「💀灵魂虹吸（击杀回蓝）」「🔰先祖庇护（开战护盾）」「⏱️技能急速」等，金色一局至多持有 2 个；<b style="color:#ffd24a">🎫 升星券</b>（守关胜利奖励）可把一名 3★ 升为 4★（点击 3★ 棋子，详情面板使用）；备战期右侧可花金币买<b style="color:#8dff9a">临时增益</b>（攻/血 +15%、开场齐射，仅本场生效、每回合限 1 个）；背包内<b style="color:#8dff9a">任意 3 件成品可熔铸 1 件神器</b>（⚔弑神之刃 / 🛡不灭圣铠 / 🏹苍穹之弓 / 🔮湮灭宝珠，占 1 格强于 2 件普通装）<br>
-    ⑦ <b style="color:#ffd24a">开局三选一：</b>🎲普通模式（标准规则）/ 📅每日挑战（全体玩家同一随机序列 + 当日预置诅咒，独立存档、同种子重试、结算给挑战码）/ ⚠自定义诅咒挑战（下方勾选诅咒换取补偿，可叠加，如人口上限5、存款无利息、战争迷雾等 9 种）；「重开」也会询问模式；战绩弹窗有 <b style="color:#8dff9a">🏅成就（19 项）</b> 与 <b style="color:#8dff9a">🏆排行</b>（含每日今日最佳）页签
+    单机自动战斗棋局 · VirtuaReal + P-SP 50 名主播 · 限量卡池 · 每 25 回合章节守关、无限推进
+    <span class="is-h">🎯 目标</span>
+    买棋 → 上阵 → 自动战斗，一轮轮变强。每 25 回合挑战守关魔王，取胜可选全局增强并继续下一章——看你能推到多远（成绩可进全球排行）。
+    <span class="is-h">🕹 上手四步</span>
+    ① 在下方商店买棋子（同名收 3 个自动升星：1★→2★→3★）<br>
+    ② 点【⚡ 一键上阵】自动布阵，或把棋子拖到棋盘（人口 = 等级，11 级封顶）<br>
+    ③ 点【⚔ 开战】——全自动战斗，无需操作<br>
+    ④ 胜利拿金币、每 5 回合掉装备；变强后再战
+    <span class="is-h">💰 经济</span>
+    开局 10 金；每回合收入 1→5 金递增（第 5 回合起固定 5）；胜利 +2 金；利息每 10 金 +1（上限 5）；连胜/连败 3/5/7 → +2/+3/+4 金<br>
+    刷新商店 2 金；买经验 5 金 +4 经验（每回合自然 +2）；卖棋 1★ 原价、合成折价（<b style="color:#ffd24a">第 1 回合不可买经验</b>）
+    <span class="is-h">🏪 商店与卡池</span>
+    5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）；共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费<br>
+    卡片速读：左侧<b>色条</b> = 费用；<span style="color:#ffd24a">金边 = 对子</span>（买到即升星）；徽章并列 <span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span>
+    <span class="is-h">🔗 羁绊（12 阵营 + 10 职业）</span>
+    按<b>不同棋子</b>计数、达标触发 T1/T2；<b style="color:#8dff9a">首次达成每档 +1 金</b>。左侧竖栏看进度，棋子右上角显示所属羁绊图标，完整效果在<b>图鉴 → 🔗羁绊</b>。
+    <span class="is-h">⚔ 战斗规则</span>
+    蓝量 50 开局清零，靠攻击 / 受击回蓝，典型 5-7 秒放首个技能；护甲边际递减、魔抗百分比乘算、任意伤害 5% 保底<br>
+    克制关系：烧蓝/沉默克法师 · 破盾克护盾 · 减疗克奶妈 · 嘲讽克刺客 · 净化克控制
+    <span class="is-h">🎁 野怪回合（每 5 回合）</span>
+    胜利掉 2 件装备、失败也保底 1 件；不扣血、不影响连胜。头目真实占据 2×2 格（近战可从任意相邻格攻击它）。
+    <span class="is-h">👑 守关魔王（每 25 回合）</span>
+    胜负都进章节结算：<b>3 选 1 全局增强</b>（白/蓝/<span style="color:#ffd24a">金</span>三档稀有度，金色一局至多持有 2 个）；胜利额外 <b style="color:#ffd24a">+1 张 🎫 升星券</b>。之后可继续下一章或主动收兵。
+    <span class="is-h">📈 变强的手段</span>
+    🎫 <b>升星券</b>（守关奖励）：把一名 3★ 升为 4★——顶栏 🎫 看余量，点击 3★ 棋子使用<br>
+    ⚒ <b>神器</b>：背包任意 3 件成品熔铸 1 件神器（弑神之刃 / 不灭圣铠 / 苍穹之弓 / 湮灭宝珠）<br>
+    🧪 <b>临时增益</b>：备战期花金币买（攻/血 +15%、开场齐射），仅本场生效、每回合限 1 个<br>
+    ⛓ <b>装备合成</b>：两件基础装合成 1 件成品；每名棋子最多穿 2 件（装备大师增强后 3 件），全部装备与配方见 <b>图鉴 → 📦装备</b>
+    <span class="is-h">⌨️ 操作</span>
+    单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）<br>
+    快捷键：<b>R/A</b> 一键上阵 · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战；点【🏁 结束挑战】收兵结算（需二次确认）
+    <span class="is-h">🎮 模式与荣誉</span>
+    开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（自选诅咒换补偿：人口上限 5、战争迷雾、守关提前等 9 种）<br>
+    【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（19 项）· 🏆 本地排行 · 🌍 全球排行<br>
+    【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）
   </p>
   <div id="modePick" style="display:none"></div>
   <div id="cursePick" style="display:none"></div>
