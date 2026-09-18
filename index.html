@@ -4849,7 +4849,7 @@ async function renderGlobalBoard(){
       lbFetch('/api/top?board=normal')]);
     const row=(x,i,showCh)=>`<div class="hrow"><span class="lb-rk">${i+1}</span><span>${String(x.name).replace(/[<>&]/g,'')}</span><span>${showCh?(x.ch+' 章 · '):''}第 ${x.round} 回合</span><span>击杀 ${x.kills}${x.curses?` · ⚠×${x.curses}`:''}</span></div>`;
     const sec=(t,list,showCh)=>`<div style="margin-bottom:10px"><div style="color:#ffd24a;font-size:12px;margin-bottom:4px">${t}</div>`+
-      (list&&list.length? list.slice(0,15).map((x,i)=>row(x,i,showCh)).join('') : '<div style="color:#6b6288;font-size:12px">暂无记录，快来抢占第一</div>')+'</div>';
+      (list&&list.length? list.slice(0,15).map((x,i)=>row(x,i,showCh)).join('') : '<div style="color:#6b6288;font-size:12px">暂无记录，点下方「🔄 刷新排名」试试</div>')+'</div>';
     el.innerHTML= sec('📅 每日榜 · 今日（种子 '+seed+'）', dn.list, false) + sec('🏆 普通榜 · 最远章节', nj.list, true)
       +`<div style="text-align:center"><button class="btn" id="lbRefreshBtn" style="padding:4px 14px;font-size:12px;border-color:#4aa8ff66;color:#9dd3e8" onclick="renderGlobalBoard()">🔄 刷新排名</button></div>`;
     /* 数据库读写分离存在秒级同步延迟：刚提交的成绩可能还没出现在榜上，明确告知避免误解 */
