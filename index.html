@@ -378,6 +378,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   cursor:pointer; color:#8f88b0; user-select:none; }
 #statBar .stb-tab.on { color:#ffd24a; border-color:#ffd24a88; background:#ffd24a14; }
 #statBar .stb-row { display:flex; align-items:center; gap:5px; margin-bottom:2px; }
+#statBar .stb-side { width:4px; height:26px; border-radius:2px; flex-shrink:0; }
+#statBar .stb-side.ally { background:#ffd24a; }   /* 黄=我方（与战斗血条同色系） */
+#statBar .stb-side.enemy { background:#e05555; }  /* 红=敌方 */
 #statBar .stb-row img { width:22px; height:22px; object-fit:contain; flex-shrink:0;
   filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 #statBar .stb-star { width:34px; flex-shrink:0; color:#ffd24a; font-size:10px; letter-spacing:-1px; }
@@ -3185,7 +3188,7 @@ function renderStatBar(){
       const body = statMode==='deal'
         ? `<i class="m-deal" style="width:${wP}%"></i><i class="m-dealM" style="width:${wM}%"></i>`
         : `<i class="${STAT_META[statMode][1]}" style="width:${Math.max(7,Math.round(r[statMode]/mx*100))}%"></i>`;
-      return `<div class="stb-row"><img src="assets/units/${r.id}.png" alt=""><span class="stb-star">${'★'.repeat(r.star||1)}</span>`+
+      return `<div class="stb-row"><i class="stb-side ${r.side===0?'ally':'enemy'}" title="${r.side===0?'我方':'敌方'}"></i><img src="assets/units/${r.id}.png" alt=""><span class="stb-star">${'★'.repeat(r.star||1)}</span>`+
         `<div class="stb-bar">${body}</div><b>${r[statMode]}</b></div>`;
       }).join('')
       : `<div class="stb-empty">本回合暂无该类数据</div>`);
