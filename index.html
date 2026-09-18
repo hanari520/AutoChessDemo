@@ -1844,21 +1844,48 @@ function unitHTML(u,sel){
 /* 首局欢迎指引：第 1 回合备战且棋盘为空时显示（放上棋子/开战即消失） */
 function renderBoardGuide(){
   const g=$('boardGuide'); if(!g) return;
-  const show = S.phase==='prep' && S.round===1 && !S.board.some(Boolean);
+  if(S.ms && !S.ms.guideDone && S.board.some(Boolean)) S.ms.guideDone=1;   // 上过棋子后不再打扰（之后卖空也不重现）
+  const show = S.phase==='prep' && S.round===1 && !S.board.some(Boolean) && !(S.ms&&S.ms.guideDone);
   g.classList.toggle('hidden', !show);
   if(!show) return;
-  if(!g.dataset.filled){
-    g.dataset.filled='1';
+  const noPieces = !S.bench.some(Boolean) && !S.board.some(Boolean);
+  const cta = noPieces ? '🛒 买棋子并上阵' : '⚡ 一键上阵';
+  if(g.dataset.mode!==cta){   // 按钮文案随「席上有没有货」切换
+    g.dataset.mode=cta;
     g.innerHTML=`<h3>👋 欢迎来到虚拟棋战</h3>
       <p>① 点<b style="color:#8dff9a">下方商店</b>买喜欢的棋子（同名 3 个自动升星）<br>
-         ② 点<b style="color:#8dff9a">【⚡ 一键上阵】</b>自动布阵，或拖棋子上棋盘<br>
+         ② 点<b style="color:#8dff9a">【${cta}】</b>自动布阵，或拖棋子上棋盘<br>
          ③ 点<b style="color:#8dff9a">【⚔ 开战】</b>自动战斗，赢了拿金币和装备</p>
       <div class="bdg-btns">
         <button class="btn" onclick="document.getElementById('resetBtn').click()">🔄 选择游戏模式</button>
-        <button class="btn" onclick="document.getElementById('deployBtn').click()">⚡ 一键上阵</button>
+        <button class="btn" onclick="guideAutoStart()">${cta}</button>
       </div>
       <div style="font-size:11px;color:#6b6288;margin-top:8px">提示：顶栏【🤖 托管】可让 AI 代打 · 详细规则见【❓ 玩法】</div>`;
   }
+}
+/* 👋 引导卡主按钮：备战席没棋子时先自动买齐（买到人口上限），再一键上阵。
+   走常规 buy()（正常扣金币/卡池/自动合成）；只在第 1 回合空场引导时使用。 */
+function guideAutoStart(){
+  if(S.phase!=='prep') return;
+  const owned=()=>S.board.filter(Boolean).length + S.bench.filter(Boolean).length;
+  let bought=0, guard=0;
+  while(owned()<S.lvl && guard++<10){
+    let pick=-1, bestCost=-1;
+    for(let i=0;i<S.shop.length;i++){
+      const u=S.shop[i]; if(!u || u.cost>S.gold) continue;
+      if(u.cost>bestCost){ bestCost=u.cost; pick=i; }
+    }
+    if(pick<0) break;
+    const before=owned();
+    buy(pick);
+    if(owned()<=before && !S.shop[pick]) break;   // 购买未生效（席位满/合并不增员）则收手
+    bought++;
+  }
+  if(S.board.some(Boolean) || S.bench.some(Boolean)) autoDeploy();
+  renderAll();
+  if(bought) log(`👋 已自动购买 ${bought} 名棋子并上阵——也可以自己在商店挑选`);
+  else if(!S.board.some(Boolean) && !S.bench.some(Boolean)) log('⚠ 金币不足或商店买不起：下回合攒够钱再买');
+  else log('⚡ 已一键上阵');
 }
 function renderBoard(){
   const b=$('board'); b.innerHTML='';
@@ -2766,7 +2793,7 @@ function autoDeploy(){
   const all=[];
   S.board.forEach(u=>{ if(u) all.push(u); });
   S.bench.forEach(u=>{ if(u) all.push(u); });
-  if(!all.length) return;
+  if(!all.length){ log('⚠ 还没有棋子：先在下方商店购买，或点【🛒 买棋子并上阵】'); return; }
   const d=u=>byId(u.id);
   const isFront=u=>(d(u).job==='守护'||d(u).job==='狂战'||(d(u).form==='me'&&d(u).job!=='刺客'))?1:0;
   const power=u=>Math.pow(u.star||1,2)*u.maxhp+u.atk*(u.star||1)*4;
