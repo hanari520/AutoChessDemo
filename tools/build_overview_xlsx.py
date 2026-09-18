@@ -41,6 +41,7 @@ def make_sheet(wb, first, title, headers, widths, rows, wrap_cols):
             cell.alignment = left_wrap if c in wrap_cols else center
         # 行高不写死：留空让 Excel/WPS 按换行内容自适应，避免多行文本叠印裁切
     ws.freeze_panes = 'A3'
+    ws.print_title_rows = '1:2'  # 跨页打印时每页重复标题+表头
     return ws
 
 wb = Workbook()
@@ -48,6 +49,13 @@ wb.remove(wb.active)
 wb.properties.creator = 'Z.ai'
 
 # ===== Sheet1 棋子总览 =====
+def clean_desc(name, desc):
+    # 变体 txt 自带「技能名：」前缀时与 skillDesc 的主前缀重复，去掉第二次出现
+    dup = f'{name}：'
+    first = desc.find(dup)
+    second = desc.find(dup, first + 1)
+    return desc[:second] + desc[second + len(dup):] if second != -1 else desc
+
 units_sorted = sorted(units, key=lambda u: u['cost'])
 cost_cnt = {}
 for u in units_sorted:
@@ -58,7 +66,7 @@ for u in units_sorted:
     fac = u['fac'] + ('/' + u['fac2'] if u.get('fac2') else '')
     job = u['job'] + ('/' + u['job2'] if u.get('job2') else '')
     note = f"{u['form']}·{u['dtype']}·射程{u['rng']}·攻速{u['spd']}·卡池{u['pool']}张"
-    rows1.append([u['name'], u['cost'], fac, job, note, f"{u['skName']}：{u['desc']}"])
+    rows1.append([u['name'], u['cost'], fac, job, note, clean_desc(u['skName'], f"{u['skName']}：{u['desc']}")])
 make_sheet(wb, '棋子总览', f'虚拟棋战 棋子总览（共{len(units_sorted)}个棋子：{dist}）',
            ['名称', '费用', '阵营', '职业', '备注', '技能'],
            [12, 6, 14, 14, 24, 46], rows1, wrap_cols={5, 6})
@@ -109,6 +117,6 @@ for ws in wb.worksheets:
     ws.sheet_properties.pageSetUpPr.fitToPage = True
     ws.page_setup.fitToHeight = 0 if ws.title == '棋子总览' else 1  # 两个羁绊表整体缩到一页，避免末行孤页
 
-out = '../虚拟棋战_棋子与羁绊_20260914.xlsx'
+out = '../虚拟棋战_棋子与羁绊_20260919.xlsx'
 wb.save(out)
 print('saved', out, '| units', len(units_sorted), '| factions', len(FACTIONS), '| classes', len(CLASSES))

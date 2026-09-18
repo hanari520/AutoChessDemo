@@ -1055,10 +1055,11 @@ body.touch .m-only { display:inline-block; }
  </div>
 </div>
 <script>
-/* ================= 名单：46 人（VirtuaReal 38 + P-SP 8，按 2026-09-12 修改建议重编） =================
-   fac 阵营(12) / job 职业(10) / sk [技能名, 原型]——多多自走棋式：绝大多数为回蓝主动技，仅 3 个被动（破盾/格挡/吸血） */
+/* ================= 名单：50 人（VirtuaReal 42 + P-SP 8，2026-09-19 费用与名单修订） =================
+   fac 阵营(12) / job 职业(10) / sk [技能名, 原型]——多多自走棋式：绝大多数为回蓝主动技，仅 3 个被动（破盾/格挡/吸血）
+   条目不严格按费用分组，以 cost 字段为准：1费10、2费10、3费11、4费11、5费8 */
 const UNITS = [
-  // ---------- 1 费（8 人 × 50 张） ----------
+  // ---------- 1 费（10 人 × 50 张） ----------
   {id:'ein',    name:'艾因',        cost:1, fac:'魔道',    job:'守护', hp:84,  atk:6,  rng:1, spd:0.8, sk:['魔导结界','tauntshield']},
   {id:'kouichi',name:'光一',        cost:1, fac:'工造',    job:'狂战', hp:58,  atk:10, rng:1, spd:1.1, sk:['滑板切入','dash']},
   {id:'yua',    name:'悠亚',        cost:1, fac:'星际',    job:'法师', job2:'咒术', hp:44,  atk:12, rng:3, spd:0.7, sk:['记忆篡改','hex']},
@@ -1067,32 +1068,32 @@ const UNITS = [
   {id:'songlv', name:'小松绿',      cost:1, fac:'森之国',  job:'狂战', hp:58,  atk:10, rng:1, spd:1.05,sk:['盘根重锤','slam']},
   {id:'likou',  name:'莉蔻',        cost:1, fac:'学园',    job:'医者', hp:44,  atk:9,  rng:3, spd:0.9, sk:['救急手册','heal']},
   {id:'agari',  name:'东爱璃',      cost:1, fac:'P-SP',    job:'偶像', hp:50,  atk:7,  rng:3, spd:0.9, sk:['四十八人应援','aheal']},
-  {id:'hoshimi',name:'星弥',        cost:1, fac:'夜幕',    job:'刺客', hp:69,  atk:11, rng:1, spd:1.15,sk:['星屑突袭','dash']},
-  {id:'chiharu',name:'千春',        cost:1, fac:'森之国',  job:'刀客', hp:60,  atk:11, rng:1, spd:1.05,sk:['春岚斩','cleave']},
+  {id:'hoshimi',name:'希侑',        cost:1, fac:'夜幕',    job:'刺客', hp:69,  atk:11, rng:1, spd:1.15,sk:['猫爪突袭','dash']},
+  {id:'chiharu',name:'初濑',        cost:1, fac:'森之国',  job:'刀客', hp:60,  atk:11, rng:1, spd:1.05,sk:['夜岚斩','cleave']},
   // ---------- 2 费（10 人 × 40 张） ----------
-  {id:'suiji',  name:'岁己Sui',     cost:2, fac:'森之国',  job:'歌势', hp:48,  atk:10, rng:3, spd:0.9, sk:['十小时续航','manafeed']},
+  {id:'suiji',  name:'岁己',        cost:2, fac:'森之国',  job:'歌势', hp:48,  atk:10, rng:3, spd:0.9, sk:['十小时续航','manafeed']},
   {id:'kanban', name:'栞栞',        cost:2, fac:'毛茸乐园', job:'守护', hp:92,  atk:6,  rng:1, spd:0.8, sk:['海獭硬壳','shell']},
   {id:'zhouyi', name:'轴伊',        cost:2, fac:'夜幕',    job:'刀客', hp:55,  atk:11, rng:1, spd:1.1, sk:['破盾之刃','shieldbane','passive']},
   {id:'yuji',   name:'雨纪',        cost:2, fac:'深海',    job:'游侠', hp:46,  atk:10, rng:4, spd:1.2, sk:['雨幕庇护','block','passive']},
   {id:'tiandou',name:'恬豆',        cost:2, fac:'四禧丸子', job:'歌势', hp:52,  atk:10, rng:3, spd:0.9, sk:['点心投喂','heal']},
-  {id:'aza',    name:'阿萨Aza',     cost:2, fac:'音律',    job:'狂战', hp:88,  atk:6,  rng:1, spd:0.8, sk:['节拍堡垒','aheal']},
-  {id:'pako',   name:'帕可',        cost:2, fac:'学园',    job:'医者', hp:50,  atk:9,  rng:3, spd:0.9, sk:['善意收集','heal']},
+  {id:'aza',    name:'AZA',         cost:2, fac:'音律',    job:'狂战', hp:88,  atk:6,  rng:1, spd:0.8, sk:['节拍堡垒','aheal']},
+  {id:'pako',   name:'帕可',        cost:2, fac:'深海',    job:'医者', hp:50,  atk:9,  rng:3, spd:0.9, sk:['善意收集','heal']},
   {id:'zhijin', name:'枝堇',        cost:2, fac:'花语',    job:'刺客', fac2:'森之国', hp:76,  atk:12, rng:1, spd:1.2, sk:['紫藤突刺','dash']},
-  {id:'sishi',  name:'四时小路',    cost:2, fac:'音律',    job:'游侠', hp:46,  atk:11, rng:4, spd:1.2, sk:['四季轮舞','volley']},
+  {id:'sishi',  name:'四时小路',    cost:5, fac:'音律',    job:'游侠', hp:46,  atk:11, rng:4, spd:1.2, sk:['四季轮舞','volley']},
   {id:'sumi',   name:'礼墨',        cost:2, fac:'P-SP',    job:'守护', hp:90,  atk:6,  rng:1, spd:0.8, sk:['墨龙结界','teamshield']},
-  // ---------- 3 费（10 人 × 30 张） ----------
+  // ---------- 3 费（11 人 × 30 张） ----------
   {id:'yukie',  name:'桃濑雪绘',    cost:3, fac:'工造',    job:'刀客', hp:62,  atk:11, rng:1, spd:1.05,sk:['上勾拳连段','cleave']},
-  {id:'miting', name:'米汀',        cost:3, fac:'魔道',    job:'咒术', hp:46,  atk:16, rng:3, spd:0.7, sk:['侦探的看破','sunder']},
+  {id:'miting', name:'米汀',        cost:2, fac:'魔道',    job:'咒术', hp:46,  atk:16, rng:3, spd:0.7, sk:['侦探的看破','sunder']},
   {id:'xuezhu', name:'雪烛',        cost:3, fac:'夜幕',    job:'法师', hp:44,  atk:15, rng:3, spd:0.7, sk:['奇门冰封','frost']},
   {id:'zeyin',  name:'泽音',        cost:3, fac:'深海',    job:'医者', hp:52,  atk:11, rng:3, spd:0.9, sk:['泽畔歌声','aheal']},
   {id:'sanli',  name:'三理',        cost:3, fac:'音律',    job:'法师', hp:48,  atk:15, rng:3, spd:0.75,sk:['梦境三重奏','chain']},
   {id:'diansu', name:'点酥',        cost:3, fac:'魔道',    job:'刺客', hp:55,  atk:16, rng:3, spd:0.7, sk:['邪修石符','petrify']},
   {id:'lianshiye',name:'恋诗夜',    cost:3, fac:'夜幕',    job:'刀客', hp:60,  atk:11, rng:1, spd:1.05,sk:['失忆挽歌','silence']},
-  {id:'huize',  name:'灰泽满',      cost:3, fac:'深海',    job:'咒术', hp:48,  atk:16, rng:3, spd:0.7, sk:['果冻封印','curse']},
+  {id:'huize',  name:'灰泽满',      cost:3, fac:'学园',    job:'咒术', hp:48,  atk:16, rng:3, spd:0.7, sk:['果冻封印','curse']},
   {id:'shengge',name:'笙歌',        cost:3, fac:'P-SP',    job:'歌势', hp:50,  atk:12, rng:3, spd:0.9, sk:['笙歌净化','cleanse']},
   {id:'shadow', name:'李豆沙',      cost:3, fac:'P-SP',    job:'刺客', hp:78,  atk:13, rng:1, spd:1.3, sk:['熊猫跃袭','dash']},
-  {id:'nox',    name:'诺莺',        cost:4, fac:'毛茸乐园', job:'刺客', hp:76,  atk:13, rng:1, spd:1.25,sk:['夜莺回响','dash']},
-  // ---------- 4 费（10 人 × 20 张） ----------
+  {id:'nox',    name:'诺莺',        cost:3, fac:'毛茸乐园', job:'刺客', hp:76,  atk:13, rng:1, spd:1.25,sk:['夜莺回响','dash']},
+  // ---------- 4 费（11 人 × 20 张） ----------
   {id:'miyue',  name:'弥月',        cost:4, fac:'夜幕',    job:'刀客', hp:60,  atk:12, rng:1, spd:1.1, sk:['月影斩','dash']},
   {id:'huali',  name:'花礼',        cost:4, fac:'花语',    job:'偶像', hp:52,  atk:9,  rng:3, spd:0.9, sk:['小花的祝福','heal']},
   {id:'youyu',  name:'柚雨',        cost:4, fac:'深海',    job:'刀客', hp:60,  atk:13, rng:1, spd:1.1, sk:['幽魂斩','purebolt']},
@@ -1105,13 +1106,13 @@ const UNITS = [
   {id:'haruka', name:'白神遥',      cost:4, fac:'P-SP',    job:'刀客', hp:58,  atk:12, rng:1, spd:1.1, sk:['白刃拍击','cleave']},
   {id:'mahiru', name:'真绯瑠',      cost:5, fac:'毛茸乐园', job:'狂战', hp:68,  atk:13, rng:1, spd:1.10,sk:['绯红旋风','cleave']},
   // ---------- 5 费（8 人 × 10 张） ----------
-  {id:'nana7mi',name:'七海Nana7mi', cost:5, fac:'深海',    job:'刀客', hp:62,  atk:12, rng:1, spd:1.05,sk:['鲨皇旋流','cleave']},
-  {id:'liAn',   name:'梨安',        cost:5, fac:'四禧丸子', job:'法师', hp:48,  atk:17, rng:3, spd:0.7, sk:['海豚安魂曲','massfreeze']},
+  {id:'nana7mi',name:'七海',        cost:5, fac:'深海',    job:'刀客', hp:62,  atk:12, rng:1, spd:1.05,sk:['鲨皇旋流','cleave']},
+  {id:'liAn',   name:'梨安',        cost:5, fac:'四禧丸子', job:'法师', hp:48,  atk:17, rng:3, spd:0.7, sk:['晨露凝霜','massfreeze']},
   {id:'youyi',  name:'又一',        cost:4, fac:'四禧丸子', job:'刺客', job2:'刀客', hp:92,  atk:13, rng:1, spd:1.15,sk:['一心同体','drain','passive']},
   {id:'azi',    name:'阿梓',        cost:5, fac:'工造',    job:'歌势', fac2:'音律', hp:52,  atk:15, rng:3, spd:1.0, sk:['高音震魂','massstun']},
-  {id:'taodai', name:'桃代',        cost:5, fac:'花语',    job:'守护', hp:96,  atk:8,  rng:1, spd:0.8, sk:['桃香结界','bulwark']},
+  {id:'taodai', name:'桃代',        cost:4, fac:'花语',    job:'守护', hp:96,  atk:8,  rng:1, spd:0.8, sk:['桃香结界','bulwark']},
   {id:'miki',   name:'弥希',        cost:5, fac:'星际',    job:'医者', hp:48,  atk:13, rng:3, spd:0.9, sk:['星海庇护','heal']},
-  {id:'rei',    name:'病院坂灵',    cost:5, fac:'P-SP',    job:'法师', hp:47,  atk:15, rng:3, spd:0.7, sk:['灵界之门','masssilence']},
+  {id:'rei',    name:'病院坂灵',    cost:5, fac:'P-SP',    job:'医者', hp:47,  atk:15, rng:3, spd:0.7, sk:['灵界之门','masssilence']},
   {id:'rinco',  name:'秋凛子',      cost:5, fac:'P-SP',    job:'狂战', hp:62,  atk:13, rng:1, spd:1.1, sk:['神社拉闸','cleave']},
 ];
 /* ===== 攻击形式：近战(me)/远程(rg) × 物理(phys)/法术(magic) =====
@@ -1185,7 +1186,7 @@ const FACTIONS = {
   'P-SP':    {need:[2,4], desc:['P-SP 棋子攻击 10% 概率沉默目标 3 秒','概率提升至 24%']},
 };
 /* ===== 10 职业羁绊（刀塔自走棋职业移植：刀客=战士 / 守护=骑士 / 游侠=猎人 / 刺客=刺客 /
-   法师=法师 / 狂战=术士 / 咒术=萨满 / 医者=工匠；歌势音波、偶像应援为 demo 原设计保留
+   法师=法师 / 狂战=术士 / 咒术=萨满 / 医者=工匠；歌势音波为 demo 原设计保留，偶像应援 2026-09-19 重做为开局充能
    ——恶魔猎手因恶魔种族未搬而无克制对象，德鲁伊免费升星按要求不搬运。猎人 3/6 按成员数适配为 3/4） ===== */
 const CLASSES = {
   '刀客': {need:[2,4,6], desc:['刀客护甲 +7','刀客护甲 +11','刀客护甲 +14']},
@@ -1197,7 +1198,7 @@ const CLASSES = {
   '刺客': {need:[3,6], desc:['刺客攻击 18% 概率造成 3.5 倍暴击','暴击伤害提升至 4.5 倍']},
   '狂战': {need:[2,4], desc:['狂战吸血 26%','狂战吸血 42%']},
   '医者': {need:[2,4], desc:['全队每秒回复 1 生命','全队每秒回复 2 生命']},
-  '偶像': {need:[2,3], desc:['全队攻击 +0.5%','全队攻击 +1%']},
+  '偶像': {need:[2,3], desc:['全队棋子战斗开始时获得 10 点法力（应援充能）','全队棋子战斗开始时获得 20 点法力（应援充能）']},
 };
 /* 技能效果按费用分级增强：1费×0.92 → 3费×1.12 → 5费×1.32 */
 const skillCoef=c=>0.82+0.10*c;
@@ -1209,7 +1210,7 @@ const SKILL_INFO = {
   heal: (k,sv)=> sv&&sv.healN===2 ? `治疗生命比例最低的两名队友，各回复 ${P(130,k)}% 攻击生命` : `治疗生命比例最低的队友，回复 ${P(180,k)}% 攻击生命`,
   aheal: k=>`治疗全体队友，每人回复 ${P(90,k)}% 攻击生命`,
   rapid: k=>'接下来 3 次普通攻击伤害翻倍',
-  volley: k=>`对目标及其相邻敌人各造成 ${P(120,k)}% 攻击伤害`,
+  volley: k=>`对目标及其相邻敌人各造成 ${P(120,k)}% 攻击伤害，每段命中随机附加一种季节效果（🌸春=减速 / ☀夏=烧蓝 / 🍂秋=毒伤 / ❄冬=冻结）`,
   fireball: k=>`对最近的敌人造成 ${P(250,k)}% 攻击伤害`,
   frost: k=>`对最近的敌人造成 ${P(150,k)}% 攻击伤害，并冻结 1.5 秒`,
   break: k=>`对最近的敌人造成 ${P(130,k)}% 攻击伤害，移除其全部护盾，并使其 3 秒内无法获得护盾`,
@@ -1243,6 +1244,7 @@ const SKILL_INFO = {
            burn烧蓝 dot毒伤 selfheal自疗 vamp吸血 atkup增攻 splash溅射 exec斩杀 allymana回蓝
            healshield全队护盾 heallow单疗 foehealdown敌减疗 allatkup全体增攻
            shred破甲(-护甲值) sunder减魔抗(百分比) hex变形(禁技能含被动) petrify石化 silence沉默
+           season四季随机(🌸春=减速/☀夏=烧蓝/🍂秋=毒伤/❄冬=冻结，四时小路专属)
    原型（含新机制）：shred/sunder/hex/petrify/purebolt(纯粹伤害) 见 SKILL_INFO
    新机制参数：tauntT嘲讽 shieldPct/selfShield/allyShield护盾比 manaAmt回蓝量 healN治疗人数
              shellPct+blockCt/blockT 格挡buff  thornsB/thornsT 荆棘buff  drB/drT 减伤buff
@@ -1260,7 +1262,7 @@ const SKILL_VAR = {
   songlv: {fx:[['selfheal',.35]], txt:'园艺师扎根：回复自身相当于伤害 35% 的生命'},
   likou:  {fx:[['healshield',.06]], txt:'并为其附加 6% 最大生命护盾'},
   agari:  {fx:[['healshield',.04]], txt:'并使全体获得 4% 最大生命护盾'},
-  hoshimi:{fx:[['splash',.5,1,3]], p:{critPct:.20, critMul:2.2}, txt:'星屑突袭：突进并溅射周围 1 格敌人 50% 伤害（专属暴击 20%/2.2×）'},
+  hoshimi:{fx:[['splash',.5,1,3]], p:{critPct:.20, critMul:2.2}, txt:'猫爪突袭：突进并溅射周围 1 格敌人 50% 伤害（专属暴击 20%/2.2×）'},
   /* —— 2 费 —— */
   suiji:  {manaAmt:25, txt:'为队友回蓝（不含自己，避免自充能）'},
   kanban: {shellPct:.30, blockCt:.25, blockDmg:.5, blockT:4},
@@ -1270,7 +1272,7 @@ const SKILL_VAR = {
   aza:    {fx:[['allatkup',.10]], txt:'并提升全体 10% 攻击（本场战斗）'},
   pako:   {fx:[['heallow',.40]], txt:'并为生命比例最低的队友额外回复 40% 攻击生命'},
   zhijin: {pow:1.05, fx:[['vamp',.15]], p:{critPct:.20, critMul:2.2}, txt:'突进至最远的敌人，并永久获得 15% 吸血（专属暴击 20%/2.2×）'},
-  sishi:  {pow:1.05, fx:[['slow',.25,2]], txt:'并使命中者减速 25%，持续 2 秒'},
+  sishi:  {pow:1.05, fx:[['season']]},
   sumi:   {teamPct:.12},
   /* —— 3 费 —— */
   yukie:  {pow:1.10, fx:[['dot',.015]], txt:'并附加每 3 秒 1.5% 最大生命的毒伤'},
@@ -3403,8 +3405,8 @@ function startBattle(){
     const wkVamp = wkT>=2 ? 0.42 : wkT>=1 ? 0.26 : 0;
     t=tierOf(clsCnt,CLASSES,'医者');           // 工匠：全队回血
     if(t>=1) regen+=1; if(t>=2) regen+=1;
-    t=tierOf(clsCnt,CLASSES,'偶像');           // demo 原设计：全队攻击
-    if(t>=1) atkMul+=0.005; if(t>=2) atkMul+=0.005;
+    t=tierOf(clsCnt,CLASSES,'偶像');           // 偶像应援（2026-09-19 重做）：全队开局法力充能
+    const idolMana = t>=2 ? 20 : t>=1 ? 10 : 0;
     if(side===0){   // 羁绊启动音：至多 2 个已达档位羁绊（表现层）
       const act=[...Object.keys(facCnt).map(k=>({k,t:tierOf(facCnt,FACTIONS,k)})),
                  ...Object.keys(clsCnt).map(k=>({k,t:tierOf(clsCnt,CLASSES,k)}))].filter(x=>x.t>0);
@@ -3425,6 +3427,7 @@ function startBattle(){
         if(f==='P-SP' && huSil>0) u.silProc=huSil;                // 刀塔人类式：攻击概率沉默
       });
       if(starFull && hasFac(d,'星际')){ u.mana=u.maxmana; facSkMul=starSk; u.starfallFx=true; }  // 刀塔龙式：开局满蓝（星降特效在首次渲染时播放）
+      if(idolMana>0) u.mana=Math.min(u.maxmana,(u.mana||0)+idolMana);   // 偶像应援：全队开局法力（星际满蓝取上限不叠加）
       if(dwRng>0 && hasFac(d,'学园')) u.rng+=dwRng;               // 刀塔矮人式：射程 +1
       if(facHp>0){ u.maxhp=Math.round(u.maxhp*(1+facHp)); u.hp=u.maxhp; }
       u.atk=Math.round(u.atk*atkMul);
@@ -4104,6 +4107,13 @@ function applyFx(u,f,sv,units,allies,foes,power,dmg){
       case 'silence': if(hit){ f.silenceT=Math.max(f.silenceT||0,(a||2)*1000); dmgPopup(u,f,'🔇沉默','cast'); } break;
       case 'hex': if(hit){ f.hexT=Math.max(f.hexT,(a||2)*1000); dmgPopup(u,f,'🐧变形','cast'); } break;
       case 'petrify': if(hit){ const pt=(a||2)*1000; f.petrifyT=Math.max(f.petrifyT,pt); f.frozen=Math.max(f.frozen,pt); dmgPopup(u,f,'🗿石化','cast'); } break;
+      case 'season': if(hit){   // 四时小路专属：每段命中随机附一种季节效果
+        const r=rand();
+        if(r<0.25){ f.slowA=0.25; f.slowT=2000; dmgPopup(u,f,'🌸春·减速','cast'); }
+        else if(r<0.5){ const sb=Math.round((f.maxmana||50)*0.3); if(sb>0){ f.mana=Math.max(0,f.mana-sb); dmgPopup(u,f,'☀夏·-'+sb+'蓝','cast'); } }
+        else if(r<0.75){ f.poisonT=3000; f.poisonDmg=Math.max(f.poisonDmg||0,Math.round(f.maxhp*0.02)); dmgPopup(u,f,'🍂秋·毒伤','cast'); }
+        else { f.frozen=Math.max(f.frozen,1000); dmgPopup(u,f,'❄冬·冻结','cast'); }
+      } break;
       case 'shieldself': u.shield+=Math.round(u.maxhp*a); vfxAt(u,'ring shield',900); break;
       case 'healside': allies.forEach(t=>{ const real=Math.min(t.maxhp,t.hp+Math.round(power*a))-t.hp; t.hp+=real; bsHeal(u,real); vfxAt(t,'tex-sonic ring heal',800); }); break;
       case 'healshield': allies.forEach(t=>{ t.shield+=Math.round(t.maxhp*a); vfxAt(t,'ring shield',800); }); break;
@@ -4340,7 +4350,7 @@ function castSkill(u,tgt,units,skMul){
       if(!foes.length)break;
       const R=AOE_RADIUS.massfreeze, hit=aoeFoes(u,foes,R);
       vfxAt(u,'ring frost',950); vfxAoe(u,R,'frost',700); shakeCell(u.x,u.y);
-      log(`　❄ 海豚安魂曲波及 ${hit.length} 名敌人（范围 ${R} 格）`);
+      log(`　❄ 晨露凝霜波及 ${hit.length} 名敌人（范围 ${R} 格）`);
       hit.forEach(f=>{ vfxAt(f,'tex-frost',850); fxShards(f,'ice',2); const dd=dealDamage(u,f,Math.round(power*0.8),units);
         applyFx(u,f,sv,units,allies,foes,power,dd);
         if(f.hp>0){ f.frozen=Math.max(f.frozen,1000); } });

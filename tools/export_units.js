@@ -1,7 +1,7 @@
 /* 导出全部棋子数据为 JSON（复用 sim.js 的 DOM 桩方案），供生成 Excel */
 const fs = require('fs'), path = require('path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-let code = html.match(/<script>([\s\S]*)<\/script>/)[1];
+let code = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 code += "\n;globalThis.API = { UNITS, FACTIONS, CLASSES, SKILL_VAR, skillDesc, POOL_COPIES };";
 
 function makeEl() {

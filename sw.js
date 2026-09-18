@@ -1,5 +1,5 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v10';   // v10：全量 50 张 AI 立绘替换像素立绘（强制刷新头像缓存）
+const CACHE = 'vcache-v11';   // v11：2026-09-19 名单修订（艾因/希侑/初濑新立绘 + 费用与偶像羁绊改动）
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './tools/bot_strategy.js'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
