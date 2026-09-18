@@ -109,7 +109,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   background:radial-gradient(ellipse at center, rgba(0,0,0,.42), transparent 68%); }
 /* 备战棋子（棋盘+板凳统一格式）：名字牌去掉；出框站姿 + 星级叠左脚部 + 羁绊叠脚底（参考金铲铲式） */
 #board .cell > .unit .nm, #bench .unit .nm { display:none; }
-#board .cell > .unit .st, #bench .unit .st { top:auto; bottom:24%; left:4%; right:auto; }
+#board .cell > .unit .st { display:none; }   /* 棋盘星级也走 #synBadgeLayer 悬浮层（下移到脚部且不被下排头部遮挡） */
+#bench .unit .st { top:auto; bottom:24%; left:4%; right:auto; }
 #board .cell > .unit .syn { display:none; }   /* 棋盘徽章改走 #synBadgeLayer 悬浮层（根治下排头部越界遮挡） */
 #bench .unit .syn { top:auto; bottom:3%; right:4%; }
 /* 战斗：星级显示在血条上方（居中），名字独占底部 */
@@ -134,6 +135,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
 #synBadgeLayer .sy.on { filter:brightness(1.35) saturate(1.25) drop-shadow(0 0 4px #ffd24a); }
 #synBadgeLayer .unit.big-badge .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
+#synBadgeLayer .st { position:static; font-size:calc(var(--cell)*.17); color:#ffd24a; font-weight:bold;
+  letter-spacing:1px; text-shadow:0 1px 2px #000, 0 0 4px #000000cc; }
+#synBadgeLayer .unit.big-badge .st { font-size:calc(var(--cell)*.26); }
 .unit .arcs{ position:absolute; left:8%; right:8%; bottom:2px; height:30%; pointer-events:none; z-index:1; }
 .unit .arcs::after{ content:''; position:absolute; inset:0; border:2px solid transparent; border-radius:50%; }
 .unit .arcs.a1::after{ border-bottom-color:#ffd24acc; }
@@ -2067,11 +2071,19 @@ function paintSynBadges(){
     const top =g.cellY+(big?Math.max(0,y-1):y)*g.sy-(big?0.45:0.58)*g.ch;   // 头顶上方空带：不盖自己脸、不碰上排脸、下排头发够不着
     html+=`<div style="left:${left}px;top:${top}px"${big?' class="unit big-badge"':''}>${s}</div>`;
   };
+  const putStar=(u,x,y,big)=>{
+    if(!u || !u.star) return;
+    const left=g.cellX+x*g.sx+g.cw*0.04;
+    const top =g.cellY+(big?Math.max(0,y-1):y)*g.sy+(big?2:1)*g.ch*0.74;   // 星级下移到脚部（悬浮层保证不被下排头发盖住）
+    html+=`<div style="left:${left}px;top:${top}px"><span class="st">${'★'.repeat(u.star)}</span></div>`;
+  };
   for(let i=0;i<BOARD_W*BOARD_H;i++){
     const p=S.board[i];
-    if(p){ put(p, i%BOARD_W, (i/BOARD_W)|0, !!p.big); continue; }
-    if(S.phase==='prep' && S.enemyBoard && S.enemyBoard[i] && !hasCurse('fog'))
-      put(S.enemyBoard[i], i%BOARD_W, (i/BOARD_W)|0, !!S.enemyBoard[i].big);
+    if(p){ const x=i%BOARD_W, y=(i/BOARD_W)|0; put(p,x,y,!!p.big); putStar(p,x,y,!!p.big); continue; }
+    if(S.phase==='prep' && S.enemyBoard && S.enemyBoard[i] && !hasCurse('fog')){
+      const x=i%BOARD_W, y=(i/BOARD_W)|0;
+      put(S.enemyBoard[i], x, y, !!S.enemyBoard[i].big); putStar(S.enemyBoard[i], x, y, !!S.enemyBoard[i].big);
+    }
   }
   if(!html) return;
   const layer=document.createElement('div'); layer.id='synBadgeLayer'; layer.innerHTML=html;
