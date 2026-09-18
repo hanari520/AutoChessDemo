@@ -13,11 +13,11 @@
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
 body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-serif; height:100vh; height:100dvh; overscroll-behavior:none; display:flex; flex-direction:column; overflow:hidden; --spd:1;
   /* 棋盘格自适应：9 行（棋盘8+板凳1，含棋盘内边距与板凳标签行）+ 顶栏/信息栏/商店实测约 390px，宽受羁绊栏+侧栏约束 */
-  --cell:min(85px, calc((100vh - 390px)/9), calc((100vw - 580px)/8)); --gap:2px; --pad:7px; }
+  --cell:min(92px, calc((100vh - 335px)/9), calc((100vw - 580px)/8)); --gap:2px; --pad:7px; }
 .spd-b { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:5px; padding:2px 7px; cursor:pointer; font-size:13px; }
 .spd-b.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
 #topbar { display:flex; align-items:center; gap:14px; padding:9px 16px; background:#1c1830; border-bottom:2px solid #35294f; font-size:16px; flex-shrink:0; flex-wrap:wrap; }
-#main { flex:1; display:flex; justify-content:center; padding:10px; gap:20px; overflow:hidden; }
+#main { flex:1; display:flex; justify-content:center; padding:10px 10px 10px 22px; gap:20px; overflow:hidden; }
 #topbar b { color:#ffd24a; }
 .tag { background:#2a2344; padding:3px 10px; border-radius:6px; }
 .tag.pop-warn { background:#5b3a1e; box-shadow:0 0 0 1px #ffd24a, 0 0 10px #ffd24a55; animation:popPulse 1.2s ease-in-out infinite; }
@@ -25,33 +25,38 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 @keyframes popPulse { 0%,100%{ box-shadow:0 0 0 1px #ffd24a, 0 0 4px #ffd24a44; } 50%{ box-shadow:0 0 0 1px #ffd24a, 0 0 12px #ffd24aaa; } }
 #deployBtn.pulse { animation:deployPulse 1.1s ease-in-out infinite; }
 @keyframes deployPulse { 0%,100%{ box-shadow:0 0 0 0 #ffd24a00; } 50%{ box-shadow:0 0 0 2px #ffd24a, 0 0 14px #ffd24a88; } }
-#main { flex:1; display:flex; justify-content:center; padding:10px; padding-bottom:128px; gap:20px; overflow:hidden; }
+#main { flex:1; display:flex; justify-content:center; padding:10px 10px 10px 22px; gap:20px; overflow:hidden; }
 #boardwrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
 /* 首局欢迎指引（覆盖在空棋盘上，放上第一个棋子后消失） */
-#boardGuide{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:5;
-  background:#161228f2; border:1px solid #4a3d6e; border-radius:14px; padding:16px 20px; text-align:center; max-width:400px; width:max-content; }
-#boardGuide.hidden{ display:none; }
-#boardGuide h3{ color:#ffd24a; font-size:16px; margin-bottom:8px; }
-#boardGuide p{ font-size:13px; color:#c8bfe8; line-height:1.9; margin-bottom:10px; text-align:left; }
-#boardGuide .bdg-btns{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+#boardGuide{ display:none; }   /* 👋 欢迎指引已移除（与开局介绍弹窗叠加造成卡住观感），元素与函数一并下线 */
 /* 多多式：棋盘上方对手信息横幅 */
 #oppBar { width:calc(8*var(--cell) + 7*var(--gap) + 2*var(--pad) + 4px); max-width:96vw; background:#1c1830; border:1px solid #35294f; border-radius:10px;
   padding:5px 12px; text-align:center; flex-shrink:0; }
+/* 桌面端 oppBar 搬进左侧羁绊栏顶部后：宽度随栏自适应 */
+#synCol #oppBar { width:100%; max-width:none; font-size:13px; }
 #oppBar #enemyInfo { font-size:14px; line-height:1.55; }
 #board { display:grid; grid-template-columns:repeat(8,var(--cell)); grid-template-rows:repeat(8,var(--cell)); gap:var(--gap);
   background:#221c38; padding:var(--pad); border-radius:10px; border:2px solid #35294f; position:relative; }
-#unitLayer { position:absolute; left:var(--pad); top:var(--pad); width:calc(8*var(--cell) + 7*var(--gap)); height:calc(8*var(--cell) + 7*var(--gap)); pointer-events:none; z-index:2; }
+#unitLayer { position:absolute; left:var(--pad); top:var(--pad); width:calc(8*var(--cell) + 7*var(--gap)); height:calc(8*var(--cell) + 7*var(--gap)); pointer-events:none; z-index:20; }
 .unit.battle-unit { position:absolute; inset:auto; width:calc(var(--cell) - 8px); height:calc(var(--cell) - 8px); pointer-events:auto; isolation:isolate;
   transition:left calc(.45s/var(--spd)) ease, top calc(.45s/var(--spd)) ease, transform calc(.12s/var(--spd)) ease; overflow:visible; }
-.unit.battle-unit.lunge { transform:scale(1.15); }
+/* 攻击突进：朝目标方向顶一下再弹回（方向由 JS 写入 --lx/--ly） */
+.unit.battle-unit.lunge { animation:lungeanim calc(.3s/var(--spd)) ease; z-index:80 !important; }
+@keyframes lungeanim { 0%{ transform:none } 35%{ transform:translate(var(--lx,0px),var(--ly,0px)) scale(1.07) } 100%{ transform:none } }
+/* 行走摆动：坐标变化的 tick 挂 .walking，立绘小跳步 */
+.unit.battle-unit.walking .pt { animation:walkbob calc(.34s/var(--spd)) ease-in-out infinite alternate; }
+@keyframes walkbob { from{ transform:translateX(-50%) translateY(0) rotate(-2.5deg) } to{ transform:translateX(-50%) translateY(-7%) rotate(2.5deg) } }
+/* 受击抖动 */
+.unit.battle-unit.hitfx .pt { animation:hitshake .18s linear; }
+@keyframes hitshake { 0%,100%{ transform:translateX(-50%) } 30%{ transform:translateX(-57%) } 65%{ transform:translateX(-43%) } }
 /* 头目野怪 2×2 体格：战斗/备战预览均以锚点格真实占据 2×2（占格互斥由引擎保证，此处只负责尺寸与层级） */
-.unit.battle-unit.big, #board .unit.preview.big { width:calc(var(--cell)*2 + var(--gap) - 8px); height:calc(var(--cell)*2 + var(--gap) - 8px); z-index:6; }
+.unit.battle-unit.big, #board .unit.preview.big { width:calc(var(--cell)*2 + var(--gap) - 8px); height:calc(var(--cell)*2 + var(--gap) - 8px); z-index:13; }
 .unit.battle-unit.big .nm { font-size:15px; }
 .unit.battle-unit.big .st { font-size:12px; }
 .unit.battle-unit.big .fj { font-size:10px; }
 .unit.battle-unit.big .vfx.attached, #board .unit.preview.big .vfx.attached { left:-8px !important; top:-8px !important; width:calc(var(--cell)*2 + var(--gap)); height:calc(var(--cell)*2 + var(--gap)); }
 /* 刺客突进：飞行动画（缩放+拖影+提速过渡） */
-.unit.battle-unit.dashing { z-index:9; transition:left calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), top calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), transform calc(.45s/var(--spd)) ease;
+.unit.battle-unit.dashing { z-index:56; transition:left calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), top calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), transform calc(.45s/var(--spd)) ease;
   filter:drop-shadow(0 0 10px #c77dff) drop-shadow(0 0 18px #c77dff88); }
 .unit.battle-unit.dashing::after { content:''; position:absolute; inset:-6px; border-radius:8px;
   border:2px solid #c77dff; animation:dashRing calc(.45s/var(--spd)) ease-out forwards; }
@@ -67,35 +72,54 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .item-ghost { display:flex; align-items:center; justify-content:center; font-size:10px; text-align:center;
   background:#241e3e; border:1px solid #8dff9a; border-radius:8px; color:#8dff9a; padding:2px; }
 .unit { position:absolute; inset:4px; border-radius:6px; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; cursor:grab; text-align:center; line-height:1.1; overflow:hidden;
+  justify-content:center; cursor:grab; text-align:center; line-height:1.1; overflow:visible;
   border:2px solid #888; background:#5b6b8c; z-index:2;
   /* 文字随格子等比缩放：格子小（自适应下限）时不会溢出格界 */
   font-size:calc(var(--cell)*.16); }
+/* 板凳棋子保持格子内（立绘不出格，避免叠到棋盘） */
+/* 板凳棋子与棋盘备战棋子同格式：出框站姿（立绘/星级/羁绊继承全局规则，名字已隐藏）；
+   板凳单行无遮挡问题，其内容需盖住棋盘底边（立绘向上探出），DOM 顺序天然满足 */
 .unit .nm { font-weight:bold; padding:0 1px; }
-.unit .st { font-size:calc(var(--cell)*.15); opacity:.85; }
+.unit .st { position:absolute; top:-58%; left:2px; font-size:calc(var(--cell)*.17); opacity:1; z-index:1;
+  color:#ffd24a; font-weight:bold; letter-spacing:1px;
+  text-shadow:0 1px 2px #000, 0 0 4px #000000cc; }
 .unit .sk { font-size:calc(var(--cell)*.135); color:#9fe8ff; }
 .unit .fj { font-size:calc(var(--cell)*.115); color:#c8bfe8; letter-spacing:.3px; }
-.unit .its { position:absolute; top:2px; left:3px; font-size:calc(var(--cell)*.15); letter-spacing:-2px; z-index:2; }
+.unit .its { position:absolute; top:-30%; right:2px; font-size:calc(var(--cell)*.15); letter-spacing:-2px; z-index:2; }
 .unit.sel { border-color:#ffd24a; box-shadow:0 0 4px #ffd24a88; z-index:3; }
 .unit.ally { border-color:#4aa8ff; box-shadow:inset 0 0 0 999px rgba(74,168,255,.24); }
 .unit.enemy { border-color:#e05555; box-shadow:inset 0 0 0 999px rgba(224,85,85,.30); }
 /* 选中金光与阵营底罩叠加 */
 .unit.sel.ally { box-shadow:0 0 4px #ffd24a88, inset 0 0 0 999px rgba(74,168,255,.24); }
 .unit.sel.enemy { box-shadow:0 0 4px #ffd24a88, inset 0 0 0 999px rgba(224,85,85,.30); }
-.unit .fz { position:absolute; top:2px; right:22px; font-size:calc(var(--cell)*.14); z-index:2; }
-/* 棋子立绘：底层像素头像 + 文字浮层（文字加投影保证可读） */
-.unit .pt { position:absolute; left:4%; right:4%; top:6%; bottom:8%;
+.unit .fz { position:absolute; top:-30%; left:2px; font-size:calc(var(--cell)*.14); z-index:2; }
+/* 棋子立绘：破格站姿——脚踩格底线，身高约 1.5 格，头顶探入上一行（遮挡关系由行 z-index 决定） */
+.unit .pt { position:absolute; left:50%; bottom:3%; width:148%; height:230%;
+  transform:translateX(-50%); transform-origin:50% 100%;
   background-position:center bottom; background-repeat:no-repeat; background-size:contain;
-  image-rendering:pixelated; pointer-events:none; opacity:.94;
-  filter:drop-shadow(0 2px 2px rgba(0,0,0,.45)); }
+  pointer-events:none; opacity:.94;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));
+  animation:idlebob 2.6s ease-in-out infinite alternate; }
+@keyframes idlebob { from{ transform:translateX(-50%) translateY(0) } to{ transform:translateX(-50%) translateY(-3%) } }
+/* 脚下投影（垫在立绘后面，让角色真正"站"在格子上） */
+.unit.battle-unit::after, #board .cell > .unit::after, #bench .unit::after {
+  content:''; position:absolute; left:50%; bottom:1%; transform:translateX(-50%);
+  width:88%; height:14%; border-radius:50%; z-index:-1;
+  background:radial-gradient(ellipse at center, rgba(0,0,0,.42), transparent 68%); }
+/* 备战棋子（棋盘+板凳统一格式）：名字牌去掉；出框站姿 + 星级叠左脚部 + 羁绊叠脚底（参考金铲铲式） */
+#board .cell > .unit .nm, #bench .unit .nm { display:none; }
+#board .cell > .unit .st, #bench .unit .st { top:auto; bottom:24%; left:4%; right:auto; }
+#board .cell > .unit .syn, #bench .unit .syn { top:auto; bottom:3%; right:4%; }
+/* 战斗：星级显示在血条上方（居中），名字独占底部 */
+.unit.battle-unit .st { top:auto; bottom:26px; left:50%; right:auto; transform:translateX(-50%); }
 .unit .nm { position:absolute; left:2px; right:2px; bottom:3px; z-index:1; font-weight:bold; padding:1px 0;
   background:rgba(10,12,24,.6); border-radius:4px; text-shadow:0 1px 2px #000; }
 /* 羁绊徽章：固定右上角（备战/战斗同位）；战斗态敌我标签下移、状态表情移到星级下方让位 */
-.unit .syn { position:absolute; top:2px; right:3px; display:flex; justify-content:flex-end; gap:2px; z-index:1; pointer-events:none; }
+.unit .syn { position:absolute; top:-58%; right:2px; display:flex; justify-content:flex-end; gap:2px; z-index:1; pointer-events:none; }
 .unit .syn .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:center;
   background-repeat:no-repeat; background-size:contain; image-rendering:pixelated; pointer-events:auto;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
-.unit:has(.hpbar) .fz { top:15px; left:3px; right:auto; }
+/* 战斗态状态表情与基础位一致（悬浮头顶下方），旧 15px 锚点已废 */
 .btn.auto-on { border-color:#8dff9a; color:#8dff9a; box-shadow:0 0 8px #8dff9a55; }
 /* 羁绊反馈：激活图标点亮 / 刀客脚下金弧 / 溅射与冰封禁地 */
 .unit .syn .sy.on{ filter:brightness(1.35) saturate(1.25) drop-shadow(0 0 4px #ffd24a); }
@@ -134,7 +158,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 @keyframes ripplez{ from{ transform:scale(.3); opacity:.9 } to{ transform:scale(1.5); opacity:0 } }
 #aliveBar{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:4px;
   background:rgba(10,12,24,.6); border:1px solid #4a3d6e; border-radius:8px; padding:1px 12px; font-size:13px; font-weight:bold; white-space:nowrap; }
-#side #aliveBar { margin:0 0 10px; padding:8px 12px; }   /* 桌面右栏：装备与战报面板之间的存活计数条 */
+#synCol #aliveBar { margin:2px 0; padding:6px 8px; font-size:12px; gap:6px; }   /* 桌面左栏：杂兵信息与羁绊列表之间的存活计数条 */
 #aliveBar .ab-me{ color:#4aa8ff; } #aliveBar .ab-foe{ color:#ff7a7a; }
 /* 章节结算：结算动画 + 3 选 1 全局增强卡片 */
 .settle-hero{ text-align:center; font-size:17px; font-weight:bold; margin:6px 0; animation:augIn .5s both; }
@@ -181,12 +205,15 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .mode-card.on b{ color:#ffd24a; }
 #ovResume{ background:#1a2f5b; color:#9dd3e8; border-color:#4aa8ff; }
 #cursePick .cp-hd{ font-size:12px; color:#ff9a9a; margin-bottom:4px; }
-.cp-item{ display:flex; gap:6px; align-items:baseline; padding:3px 6px; border-radius:6px; cursor:pointer; font-size:12px; color:#c8bfe8; }
+.cp-item{ display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; padding:3px 6px; border-radius:6px; cursor:pointer; font-size:12px; color:#c8bfe8; }
 .cp-item:hover{ background:#241e3e; }
 .cp-item.on{ background:#2a2440; outline:1px solid #ff9a9a55; }
 .cp-item input{ accent-color:#ff9a9a; }
+.cp-item.cp-lock{ opacity:.42; cursor:not-allowed; }
+.cp-item.cp-lock:hover{ background:none; }
+.cp-item .cp-lk{ color:#ff9a9a; white-space:nowrap; font-size:11px; margin-left:auto; }
 .cp-item b{ color:#ffd24a; white-space:nowrap; }
-.cp-item .cp-d{ flex:1; }
+.cp-item .cp-d{ flex:1; min-width:150px; }   /* min-width 保证互斥标签放不下时整行换到下一行，而不是把描述挤成竖排单字 */
 .cp-item .cp-r{ color:#8dff9a; white-space:nowrap; font-size:11px; }
 /* 战绩弹窗页签 / 成就 / 排行 */
 #histTabs{ display:flex; gap:6px; margin-bottom:8px; }
@@ -203,7 +230,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .aug-card .at{ font-size:10px; color:#8a93c4; }
 @keyframes augIn{ from{ transform:translateY(14px) scale(.92); opacity:0; } to{ transform:none; opacity:1; } }
 .unit.big .syn .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
-.unit:has(.hpbar) .nm { bottom:12px; }
+/* 战斗态：血条/蓝条悬浮头顶（TFT 式），名字牌回到脚下 */
+.unit:has(.hpbar) .nm { bottom:4px; }
 .unit .st { position:absolute; top:2px; left:3px; z-index:1; font-size:calc(var(--cell)*.15);
   text-shadow:0 1px 2px #000; }
 .unit .sk { font-size:calc(var(--cell)*.135); color:#8dff9a; position:absolute; top:2px; right:3px; z-index:1;
@@ -214,10 +242,19 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #inspect .in-pt { height:2.6em; image-rendering:pixelated; }
 .unit.shielded { box-shadow:0 0 6px 2px #4aa8ff99; }
 .unit .hpbar { position:absolute; bottom:2px; left:4px; right:4px; height:4px; background:#333; border-radius:2px; }
-.unit .hpfill { height:100%; background:#5dd35d; border-radius:2px; transition:width .2s; }
+.unit.battle-unit .hpbar { bottom:19px; top:auto; left:8%; right:8%; height:calc(var(--cell)*.075); min-height:4px; box-shadow:0 1px 3px rgba(0,0,0,.65); }
+.unit .hpfill { height:100%; background:#ffd24a; border-radius:2px; transition:width .2s; }
 .unit .mpbar { position:absolute; bottom:7px; left:6px; right:6px; height:3px; background:#333; border-radius:2px; }
+.unit.battle-unit .mpbar { bottom:13px; top:auto; left:14%; right:14%; height:calc(var(--cell)*.05); min-height:3px; }
+/* 战斗极简外观（对齐参考图二）：去方框，只留 立绘 + 脚下血条/蓝条 + 星级；
+   名字/羁绊/装备隐藏；状态表情（❄💫等）与 🔮 标记出现时仍浮在头顶 */
+.unit.battle-unit { border-color:transparent; background:transparent; }
+.unit.battle-unit.ally, .unit.battle-unit.enemy, .unit.battle-unit.sel { box-shadow:none; border-color:transparent; }
+.unit.battle-unit .syn, .unit.battle-unit .its, .unit.battle-unit .nm { display:none; }
+/* 星级样式已全局金色化（见 .unit .st），战斗只覆盖位置：血条上方居中 */
+.unit.battle-unit .st { top:auto; bottom:26px; left:50%; right:auto; transform:translateX(-50%); }
 .unit .mpfill { height:100%; background:#4aa8ff; border-radius:2px; transition:width .1s; }
-.unit.enemy .hpfill { background:#e05555; }
+.unit.enemy .hpfill { background:#a02c2c; }
 .unit.enemy .mpfill { background:#c77dff; }
 .unit.frozen { filter:brightness(1.3) hue-rotate(40deg); }
 /* 星级进度高亮：单卡=浅微光；对子=金色描边强光（备战席/棋盘） */
@@ -286,9 +323,12 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 /* 费用角标：右下角常驻胶囊（不参与任何高亮争夺） */
 .card .cc { position:absolute; right:6px; bottom:6px; font-size:10px; font-weight:bold;
   border-radius:9px; padding:1px 7px; background:#000000aa; color:#fff; }
-#side { width:320px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex-shrink:0; }
+#side { width:320px; display:flex; flex-direction:column; gap:6px; overflow-y:auto; flex-shrink:0; }
+/* 右栏底部不留白：战报面板吃掉剩余高度，log 自适应显示更多行 */
+#side > .panel:last-child { flex:1; display:flex; flex-direction:column; min-height:200px; }
+#side > .panel:last-child #log { flex:1; max-height:none; min-height:130px; }
 /* ===== 多多式左侧羁绊竖栏 ===== */
-#synCol { width:172px; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; padding:2px 0; }
+#synCol { width:196px; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; padding:2px 0; }
 .syn-head { font-size:12px; color:#a99cd0; padding:3px 6px 2px; border-bottom:1px solid #2a2344; margin-bottom:3px; }
 .syn-badge { display:block; background:#161228; border:1px solid #2a2344; border-left:3px solid #3a3055;
   border-radius:8px; padding:5px 7px; margin:0 2px 4px; font-size:13px; color:#5e5580; cursor:default; }
@@ -318,8 +358,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #pbtns .btn { font-size:14px; padding:8px 6px; white-space:nowrap; overflow:hidden; }
 #fightBox { display:flex; align-items:center; flex-shrink:0; }
 #fightBox .btn { padding:14px 16px; font-size:16px; line-height:1.25; }
-.panel { background:#1c1830; border:1px solid #35294f; border-radius:10px; padding:10px; }
-.panel h3 { font-size:14px; color:#a99cd0; margin-bottom:8px; }
+.panel { background:#1c1830; border:1px solid #35294f; border-radius:10px; padding:8px 10px; }
+.panel h3 { font-size:14px; color:#a99cd0; margin-bottom:6px; }
 #synergy { font-size:12px; }
 #synergy .grp { margin-bottom:4px; }
 #synergy span { display:inline-block; background:#2a2344; border-radius:6px; padding:2px 6px; margin:2px; font-size:11px; }
@@ -330,6 +370,25 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .item-chip { background:#2a2344; border:1px solid #4a3d6e; border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; }
 .item-chip.sel { border-color:#ffd24a; background:#5b4a1e; box-shadow:0 0 6px #ffd24a66; }
 #log { font-size:13px; color:#b0a8c8; max-height:280px; overflow-y:auto; line-height:1.7; }
+/* ⚔🛡💚 本场战斗输出/抗伤/治疗统计条（金铲铲式：头像+星级+占比条+数值；战斗中实时刷新，战后保留上一场） */
+#statBar { margin-top:8px; border-top:1px solid #2a2344; padding-top:8px; font-size:12px; }
+#statBar:empty { display:none; }
+#statBar .stb-tabs { display:flex; gap:4px; margin-bottom:6px; }
+#statBar .stb-tab { flex:1; text-align:center; padding:3px 0; border:1px solid #3a2f55; border-radius:6px;
+  cursor:pointer; color:#8f88b0; user-select:none; }
+#statBar .stb-tab.on { color:#ffd24a; border-color:#ffd24a88; background:#ffd24a14; }
+#statBar .stb-row { display:flex; align-items:center; gap:5px; margin-bottom:2px; }
+#statBar .stb-row img { width:22px; height:22px; object-fit:contain; flex-shrink:0;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+#statBar .stb-star { width:34px; flex-shrink:0; color:#ffd24a; font-size:10px; letter-spacing:-1px; }
+#statBar .stb-bar { flex:1; height:10px; background:#221c38; border-radius:3px; overflow:hidden; display:flex; }
+#statBar .stb-bar i { display:block; height:100%; transition:width .3s; }
+#statBar .stb-row b { width:46px; text-align:right; color:#d8d3ea; flex-shrink:0; }
+#statBar .m-deal { background:linear-gradient(90deg,#ff8a4a,#ffd24a); }
+#statBar .m-dealM { background:linear-gradient(90deg,#8a5fd0,#c77dff); }
+#statBar .m-take { background:linear-gradient(90deg,#4a7dff,#6ec8ff); }
+#statBar .m-heal { background:linear-gradient(90deg,#3fae5f,#8dff9a); }
+#statBar .stb-empty { color:#6b6288; text-align:center; padding:4px 0; }
 #shopbar { display:flex; gap:8px; padding:8px 12px; background:#1c1830; border-top:2px solid #35294f; flex-shrink:0; align-items:stretch; }
 #shopbar .btn { align-self:center; white-space:nowrap; flex-shrink:0; }
 .btn.on { background:#5b4a1e; border-color:#ffd24a; }
@@ -372,7 +431,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #overlay h1 { font-size:32px; color:#ffd24a; flex-shrink:0; }
 #overlay button { padding:12px 40px; font-size:18px; border:none; border-radius:24px; background:#ffd24a; color:#223; font-weight:bold; cursor:pointer; }
 .fight-btn-row { display:flex; gap:10px; margin-top:6px; }
-.dmg { position:absolute; color:#ff7b7b; font-weight:bold; font-size:13px; pointer-events:none; z-index:9;
+.dmg { position:absolute; color:#ff7b7b; font-weight:bold; font-size:13px; pointer-events:none; z-index:50;
   animation:fly 1s ease-out forwards; }
 .dmg.heal { color:#8dff9a; }
 .dmg.cast { color:#4aa8ff; font-size:12px; }
@@ -590,7 +649,7 @@ body.touch .m-only { display:inline-block; }
 .bcard .bs { color:#9fe8ff; font-size:11px; margin-top:2px; }
 .bcard .bp { color:#8dff9a; font-size:10px; }
 /* ===== 战斗技能特效 ===== */
-.vfx { position:absolute; width:var(--cell); height:var(--cell); pointer-events:none; z-index:8;
+.vfx { position:absolute; width:var(--cell); height:var(--cell); pointer-events:none; z-index:40;
   display:flex; align-items:center; justify-content:center; }
 .vfx.ring { border:3px solid #ffd24a; border-radius:50%; animation:ringPop calc(.85s/var(--spd)) ease-out forwards; }
 .vfx.ring.heal { border-color:#8dff9a; }
@@ -598,9 +657,69 @@ body.touch .m-only { display:inline-block; }
 .vfx.ring.shield { border-color:#4aa8ff; }
 .vfx.ring.drain { border-color:#c77dff; }
 /* AoE 范围圈：以施法者为中心，直径 = (2R+1) 格，直观显示技能覆盖范围 */
-.vfx.aoe { border:3px solid #ffd24a; border-radius:50%; animation:aoePop calc(.7s/var(--spd)) ease-out forwards; z-index:6; }
+.vfx.aoe { border:3px solid #ffd24a; border-radius:50%; animation:aoePop calc(.7s/var(--spd)) ease-out forwards; z-index:60; }
 .vfx.aoe.frost { border-color:#9fe8ff; }
 .vfx.aoe.drain { border-color:#c77dff; }
+/* ===== 技能专属贴图特效（assets/fx/ AI 生图 + 抠图，随 cls 组合叠加在 ring/boom 底光上） ===== */
+.vfx[class*='tex-'] { background-size:contain; background-position:center; background-repeat:no-repeat;
+  filter:drop-shadow(0 0 6px rgba(255,255,255,.35)); }
+.vfx.tex-fireball { background-image:url(assets/fx/fireball.png); animation:texSpin calc(.6s/var(--spd)) ease-out forwards; }
+.vfx.tex-chain    { background-image:url(assets/fx/chain.png);    animation:texZap calc(.45s/var(--spd)) steps(3) forwards; }
+.vfx.tex-frost    { background-image:url(assets/fx/frost.png);    animation:texBloom calc(.8s/var(--spd)) ease-out forwards; }
+.vfx.tex-sonic    { background-image:url(assets/fx/sonic.png);    animation:texSpread calc(.7s/var(--spd)) ease-out forwards; }
+.vfx.tex-holy     { background-image:url(assets/fx/holy.png);     animation:texRise calc(.8s/var(--spd)) ease-out forwards; }
+.vfx.tex-petrify  { background-image:url(assets/fx/petrify.png);  animation:texCrack calc(.75s/var(--spd)) ease-out forwards; }
+.vfx.tex-poison   { background-image:url(assets/fx/poison.png);   animation:texWobble calc(.8s/var(--spd)) ease-in-out forwards; }
+.vfx.tex-starfall { background-image:url(assets/fx/starfall.png); animation:texShoot calc(.65s/var(--spd)) ease-out forwards; }
+.vfx.tex-gate    { background-image:url(assets/fx/gate.png);    animation:texGate calc(.85s/var(--spd)) ease-out forwards; }
+.vfx.tex-time    { background-image:url(assets/fx/time.png);    animation:texTime calc(.85s/var(--spd)) ease-in-out forwards; }
+.vfx.tex-slash   { background-image:url(assets/fx/slash.png);   animation:texSlash calc(.5s/var(--spd)) ease-out forwards; }
+.vfx.tex-quake   { background-image:url(assets/fx/quake.png);   animation:texQuake calc(.65s/var(--spd)) ease-out forwards; }
+.vfx.tex-memexp  { background-image:url(assets/fx/memexp.png);  animation:texSpin calc(.75s/var(--spd)) ease-out forwards; }
+.vfx.tex-jelly   { background-image:url(assets/fx/jelly.png);   animation:texJelly calc(.8s/var(--spd)) ease-in-out forwards; }
+.vfx.tex-barrier { background-image:url(assets/fx/barrier.png); animation:texBarrier calc(.9s/var(--spd)) ease-out forwards; }
+.vfx.tex-hush    { background-image:url(assets/fx/hush.png);    animation:texHush calc(.8s/var(--spd)) ease-out forwards; }
+@keyframes texGate   { from{ transform:scaleY(.1) scaleX(.7); opacity:0 } 35%{ transform:scaleY(1.08) scaleX(1); opacity:1 } to{ transform:scaleY(1.25) scaleX(1.1); opacity:0 } }
+@keyframes texTime   { from{ transform:scale(1.5) rotate(60deg); opacity:0 } 40%{ transform:scale(.95) rotate(-15deg); opacity:1 } to{ transform:scale(.55) rotate(-60deg); opacity:0 } }
+@keyframes texSlash  { 0%{ transform:translateX(45%) scaleX(.5); opacity:0 } 30%{ transform:translateX(0) scaleX(1.1); opacity:1 } 100%{ transform:translateX(-45%) scaleX(.6); opacity:0 } }
+@keyframes texQuake  { 0%{ transform:scale(.5) translateY(25%); opacity:0 } 30%{ transform:scale(1.12) translateY(0); opacity:1 } 55%{ transform:scale(1.02) translateY(2%) } 100%{ transform:scale(1.2) translateY(-4%); opacity:0 } }
+@keyframes texJelly  { 0%{ transform:scale(.3); opacity:0 } 30%{ transform:scale(1.25,.8); opacity:1 } 55%{ transform:scale(.85,1.15) } 80%{ transform:scale(1.1,.95) } 100%{ transform:scale(1.25); opacity:0 } }
+@keyframes texBarrier{ from{ transform:scale(.4) translateY(20%); opacity:0 } 35%{ transform:scale(1) translateY(0); opacity:1 } 75%{ transform:scale(1.05) translateY(0); opacity:.9 } to{ transform:scale(1.15) translateY(-4%); opacity:0 } }
+@keyframes texHush   { from{ transform:scale(.5) rotate(-14deg); opacity:0 } 40%{ transform:scale(1) rotate(-6deg); opacity:1 } to{ transform:scale(1.1) rotate(0deg); opacity:0 } }
+@keyframes texSpin   { from{ transform:scale(.35) rotate(-100deg); opacity:0 } 30%{ opacity:1 } to{ transform:scale(1.3) rotate(35deg); opacity:0 } }
+@keyframes texZap    { 0%{ transform:scale(.5); opacity:0 } 25%{ transform:scale(1.15); opacity:1 } 60%{ transform:scale(.92); opacity:1 } 100%{ transform:scale(1.2); opacity:0 } }
+@keyframes texBloom  { from{ transform:scale(.3) rotate(-45deg); opacity:0 } 40%{ transform:scale(1.08) rotate(0deg); opacity:1 } to{ transform:scale(1.35) rotate(18deg); opacity:0 } }
+@keyframes texSpread { from{ transform:scale(.4); opacity:0 } 30%{ transform:scale(1); opacity:1 } to{ transform:scale(1.6); opacity:0 } }
+@keyframes texRise   { from{ transform:translateY(30%) scale(.6); opacity:0 } 35%{ opacity:1 } to{ transform:translateY(-45%) scale(1.15); opacity:0 } }
+@keyframes texCrack  { 0%{ transform:scale(.55); opacity:0 } 25%{ transform:scale(1.05); opacity:1 } 70%{ transform:scale(1); opacity:.9; filter:grayscale(1) } 100%{ transform:scale(1.12); opacity:0; filter:grayscale(1) } }
+@keyframes texWobble { 0%{ transform:scale(.4); opacity:0 } 30%{ transform:scale(1.1) rotate(-6deg); opacity:1 } 60%{ transform:scale(.95) rotate(5deg) } 100%{ transform:scale(1.25) rotate(0deg); opacity:0 } }
+@keyframes texShoot  { from{ transform:translate(35%,-35%) scale(.7) rotate(8deg); opacity:0 } 30%{ opacity:1 } to{ transform:translate(-30%,30%) scale(1.2) rotate(8deg); opacity:0 } }
+/* ===== 技能 Cut-in：大招施法瞬间角色特写（仅大招名单触发） =====
+   挂在棋盘容器内：我方=棋盘左下角（红框区）、敌方=棋盘右上角（蓝框区）；
+   连发时旧卡向上滑出浅隐（.out），到期自然淡出后移除 */
+#cutinLayer { position:absolute; inset:var(--pad); pointer-events:none; z-index:70; }
+.cutin { position:absolute;
+  display:flex; align-items:center; gap:8px; width:min(330px,58%);
+  opacity:0; will-change:transform,opacity; }
+.cutin.L { left:0; bottom:1%; animation:cutinL calc(1.1s/var(--spd)) ease forwards; }
+.cutin.R { right:0; top:1%; flex-direction:row-reverse; text-align:right; animation:cutinR calc(1.1s/var(--spd)) ease forwards; }
+.cutin img { width:min(118px,13vw); height:min(118px,13vw); object-fit:contain;
+  filter:drop-shadow(0 4px 14px rgba(0,0,0,.6)); }
+.cutin.L img { animation:cutinNudge calc(1.1s/var(--spd)) ease; }
+.cutin.R img { animation:cutinNudge calc(1.1s/var(--spd)) ease reverse; }
+.cutin .ct { flex:1; background:linear-gradient(90deg,transparent,rgba(10,8,22,.88) 16%,rgba(10,8,22,.88) 84%,transparent);
+  padding:10px 16px; }
+.cutin.R .ct { background:linear-gradient(-90deg,transparent,rgba(10,8,22,.88) 16%,rgba(10,8,22,.88) 84%,transparent); }
+.cutin .ct b { display:block; font-size:clamp(15px,1.8vw,20px); color:#ffd24a; letter-spacing:2px;
+  text-shadow:0 2px 6px #000; }
+.cutin .ct span { font-size:clamp(10px,1.1vw,13px); color:#c8bfe8; }
+.cutin.L { border-left:3px solid #ffd24a88; }
+.cutin.R { border-right:3px solid #e0555588; }
+.cutin.out { animation:cutinOut calc(.4s/var(--spd)) ease forwards !important; }
+@keyframes cutinL { 0%{ transform:translateX(-115%); opacity:0 } 18%{ transform:translateX(0); opacity:1 } 78%{ transform:translateX(0); opacity:1 } 100%{ transform:translateX(-40%); opacity:0 } }
+@keyframes cutinR { 0%{ transform:translateX(115%); opacity:0 } 18%{ transform:translateX(0); opacity:1 } 78%{ transform:translateX(0); opacity:1 } 100%{ transform:translateX(40%); opacity:0 } }
+@keyframes cutinOut { from{ transform:translateX(0); opacity:1 } to{ transform:translateY(-46px); opacity:0 } }
+@keyframes cutinNudge { 0%,100%{ transform:scale(1) } 30%{ transform:scale(1.08) } }
 @keyframes aoePop { from{ transform:scale(.3); opacity:.95; } to{ transform:scale(1.1); opacity:0; } }
 .vfx.boom { border-radius:50%; background:radial-gradient(circle,#ffce5499 20%,#ff7b3344 55%,transparent 75%);
   animation:boom calc(.65s/var(--spd)) ease-out forwards; }
@@ -608,7 +727,7 @@ body.touch .m-only { display:inline-block; }
 .vfx.beam { height:5px; border-radius:3px; transform-origin:0 50%; opacity:.95;
   animation:beamFade calc(.45s/var(--spd)) forwards; box-shadow:0 0 8px 1px currentColor; }
 .vfx.proj { width:9px; height:9px; border-radius:50%;
-  transition:left calc(.4s/var(--spd)) linear, top calc(.4s/var(--spd)) linear; z-index:7; }
+  transition:left calc(.4s/var(--spd)) linear, top calc(.4s/var(--spd)) linear; z-index:41; }
 .vfx.slash { border-radius:50%;
   background:radial-gradient(circle,#ffffffcc 8%,#ffffff44 38%,transparent 62%);
   animation:boom calc(.4s/var(--spd)) ease-out forwards; }
@@ -714,7 +833,7 @@ body.touch .m-only { display:inline-block; }
 @keyframes critPop { 0%{ transform:scale(1.55); opacity:1; } 30%{ transform:translate(-3px,2px) scale(1.2); }
   55%{ transform:translate(3px,-2px) scale(1.3); } 100%{ transform:translateY(-26px) scale(1); opacity:0; } }
 /* ===== 战斗结果横幅 ===== */
-.result-banner { position:absolute; inset:0; z-index:12; display:flex; align-items:center; justify-content:center;
+.result-banner { position:absolute; inset:0; z-index:45; display:flex; align-items:center; justify-content:center;
   font-size:36px; font-weight:bold; pointer-events:none; overflow:hidden; border-radius:8px;
   animation:bannerPop .9s ease-out; }
 .result-banner.win { color:#ffd24a; text-shadow:0 0 18px #ffd24a,0 2px 4px #000;
@@ -765,22 +884,19 @@ body.touch .m-only { display:inline-block; }
 </div>
 <div id="main">
   <div id="synCol">
-    <div class="syn-head">🔗 阵营羁绊</div>
-    <div id="synFac"></div>
-    <div class="syn-head">⚔ 职业羁绊</div>
-    <div id="synJob"></div>
+    <div id="synAll"></div>
   </div>
   <div id="boardwrap">
     <div id="oppBar"><div id="enemyInfo"></div></div>
     <div style="position:relative">
       <div id="board"></div>
-      <div id="boardGuide" class="hidden"></div>
     </div>
     <div id="bench"></div>
   </div>
   <div id="side">
-    <div class="panel"><h3>🔍 棋子详情（单击棋子查看）</h3><div id="inspect"><div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div></div></div>
+    <div class="panel"><h3>⚔🛡💚 战斗统计</h3><div id="statBar"></div></div>
     <div class="panel" id="equipPanel"><h3>🎒 装备（点装备→点棋子穿戴；右键棋子卸下全部装备）</h3><div id="equip"></div></div>
+    <div class="panel"><h3>🔍 棋子详情（单击棋子查看）</h3><div id="inspect"><div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div></div></div>
     <div class="panel"><h3>战报</h3><div id="log"></div></div>
   </div>
 </div>
@@ -897,10 +1013,10 @@ body.touch .m-only { display:inline-block; }
     ③ 点【⚔ 开战】——全自动战斗，无需操作<br>
     ④ 胜利拿金币、每 5 回合掉装备；变强后再战
     <span class="is-h">💰 经济</span>
-    开局 10 金；每回合收入 1→5 金递增（第 5 回合起固定 5）；胜利 +2 金；利息每 10 金 +1（上限 5）；连胜/连败 3/5/7 → +2/+3/+4 金<br>
+    开局 10 金；每回合收入 1→5 金递增（第 5 回合起固定 5）；胜利 +2 金；利息每 10 金 +1（上限 5，挑战规则可改变）；连胜/连败 3/5/7 → +2/+3/+4 金<br>
     刷新商店 2 金；买经验 5 金 +4 经验（每回合自然 +2）；卖棋 1★ 原价、合成折价（<b style="color:#ffd24a">第 1 回合不可买经验</b>）
     <span class="is-h">🏪 商店与卡池</span>
-    5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）；共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费<br>
+    5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）；共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费（挑战规则可改变卡槽数）<br>
     卡片速读：左侧<b>色条</b> = 费用；<span style="color:#ffd24a">金边 = 对子</span>（买到即升星）；徽章并列 <span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span>
     <span class="is-h">🔗 羁绊（12 阵营 + 10 职业）</span>
     按<b>不同棋子</b>计数、达标触发 T1/T2；<b style="color:#8dff9a">首次达成每档 +1 金</b>。左侧竖栏看进度，棋子右上角显示所属羁绊图标，完整效果在<b>图鉴 → 🔗羁绊</b>。
@@ -920,7 +1036,7 @@ body.touch .m-only { display:inline-block; }
     单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）<br>
     快捷键：<b>R/A</b> 一键上阵 · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战；点【🏁 结束挑战】收兵结算（需二次确认）
     <span class="is-h">🎮 模式与荣誉</span>
-    开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（自选诅咒换补偿：人口上限 5、战争迷雾、守关提前等 9 种）<br>
+    开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（自选诅咒换补偿：禁用羁绊、紧缩货架、无梦等 14 种，少数互斥）<br>
     【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（19 项）· 🏆 本地排行 · 🌍 全球排行<br>
     【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）
   </p>
@@ -1228,29 +1344,73 @@ const TEMP_BUFFS=[
 /* ===== 挑战规则（诅咒/变体）：开局弹窗勾选，S.curses 存档；每条 = 限制 + 补偿 ===== */
 const CURSES=[
   {id:'nobond',   n:'⛓ 禁锢羁绊', d:'随机 2 个羁绊整体失效（我方拿不到其羁绊效果）', r:'开局 +10 金'},
+  {id:'nojob',    n:'🚫 职业禁令', d:'全部职业羁绊整体失效（只剩阵营羁绊可凑）', r:'开局 +15 金'},
+  {id:'nofac',    n:'🛑 阵营禁令', d:'全部阵营羁绊整体失效（只剩职业羁绊可凑）', r:'开局 +15 金'},
   {id:'shortch',  n:'⏱ 短章急行', d:'守关魔王每 15 回合来袭（周期 25→15）', r:'起始 +1 张升星券'},
   {id:'bloodpact',n:'🩸 血之契约', d:'生命上限 40 → 25', r:'守关胜利升星券 +2 张'},
   {id:'inflation',n:'📈 通货膨胀', d:'刷新 3 金、利息上限 3', r:'胜利奖金 +2 金'},
+  {id:'tinyshop', n:'🛒 紧缩货架', d:'商店只出 3 格（原 5 格）', r:'刷新 1 金'},
+  {id:'dreamless',n:'💤 无梦',     d:'不能购买经验（人口只靠每回合自然 +2）', r:'每回合收入 +2 金'},
   {id:'fog',      n:'🌫 战争迷雾', d:'备战期看不到敌方阵容预览', r:'临时增益半价'},
   {id:'solo',     n:'🪑 独木桥',   d:'人口上限 5（我方与敌方同步受限）', r:'开局 +20 金'},
   {id:'glass',    n:'🔮 玻璃大炮', d:'我方全体生命 -30%、攻击 +30%', r:'开局 +5 金'},
+  {id:'dry',      n:'💧 干涸',     d:'我方全体技能耗蓝 50 → 75（大招更慢）', r:'开局 +10 金'},
   {id:'hardland', n:'⛰ 硬着陆',   d:'敌方全体强度 +15%', r:'每回合收入 +2 金'},
   {id:'allin',    n:'🎲 孤注一掷', d:'存款不产生利息', r:'基础收入 +3 金/回合'},
 ];
+const BOND_BAN_IDS=['nobond','nojob','nofac'];   // 羁绊禁用类：共用 cursesData.nobond 名单 + nbList() 读取口
 let curseSel=[];   // 自定义诅咒挑战的勾选状态（会话内保留，重开不丢）
 function hasCurse(id){ return !!(S && S.curses && S.curses.includes(id)); }
-function nbList(){ return (hasCurse('nobond') && S.cursesData && S.cursesData.nobond) || []; }   // ⛓ 本局被禁用的羁绊名
+function nbList(){ return (S && S.cursesData && S.cursesData.nobond) || []; }   // ⛓ 本局被禁用的羁绊名（nobond/nojob/nofac 共用此名单，见 initBannedBonds）
+function bondBanCurses(){ return BOND_BAN_IDS.filter(hasCurse); }              // 生效中的羁绊禁用类诅咒
+function bondBanNames(){ return bondBanCurses().map(id=>{ const c=CURSES.find(x=>x.id===id); return c?c.n:id; }).join(' / '); }
+function bondBanLabel(id){ const n=nbList().length; if(!n) return '';          // 顶栏短标签：名单太长只给类别
+  if(id==='nojob') return '（全部职业）';
+  if(id==='nofac') return '（全部阵营）';
+  return `（${nbList().join('/')}）`; }
 function chLen(){ return hasCurse('shortch') ? 15 : 25; }        // 章节周期
-function refreshCost(){ return hasCurse('inflation') ? 3 : 2; }  // 刷新价格
+function shopSize(){ return hasCurse('tinyshop') ? 3 : SHOP_SIZE; }   // 🛒 紧缩货架：商店格数
+function refreshCost(){ return hasCurse('inflation') ? 3 : (hasCurse('tinyshop') ? 1 : 2); }  // 刷新价格
 function interestCap(){ return hasCurse('inflation') ? 3 : 5; }  // 利息上限
 function lvlCap(){ return hasCurse('solo') ? 5 : 11; }           // 人口上限
 function tempBuffCost(b){ return hasCurse('fog') ? Math.ceil(b.cost/2) : b.cost; }
-function baseIncome(){ return Math.min(S.round+1,5) + (hasCurse('allin')?3:0) + (hasCurse('hardland')?2:0); }
-function toggleCurse(id){ const i=curseSel.indexOf(id); if(i>=0) curseSel.splice(i,1); else curseSel.push(id); renderCursePick(); }
+function baseIncome(){ return Math.min(S.round+1,5) + (hasCurse('allin')?3:0) + (hasCurse('hardland')?2:0) + (hasCurse('dreamless')?2:0); }
+function hpMax(){ return hasCurse('bloodpact') ? 25 : 40; }   // 🩸 生命上限（显示与扣血日志共用）
+/* 下回合实际到账利息：孤注一掷直接归零，否则每 10 金 +1 并按通胀上限截断。
+   结算、顶栏预览、备战面板三处必须同源，否则会出现「预览的利息结算时不发」。 */
+function interestGain(){ return hasCurse('allin') ? 0 : Math.min(interestCap(), Math.floor(S.gold/10)); }
+/* 互斥表：两条诅咒打同一机制时惩罚会互相抵消，因此只能选其一。新增互斥对只需在此登记双向条目。
+   · allin × inflation：孤注一掷让利息恒为 0 → 通胀的「利息上限 3」失效，等于只付刷新惩罚却照拿两份补偿。
+   · tinyshop × inflation：两者都写刷新价，通胀的「刷新 3 金」会被货架的「刷新 1 金」反转成红利。 */
+const CURSE_CONFLICT={ allin:['inflation'], inflation:['allin','tinyshop'], tinyshop:['inflation'] };
+function curseBlockedBy(id){ return (CURSE_CONFLICT[id]||[]).find(x=>curseSel.includes(x)) || null; }
+function sanitizeCurses(list){   // 会话/存档里若同时存在互斥项，保留后出现的那条
+  const out=[];
+  (list||[]).forEach(id=>{ if(!CURSES.some(c=>c.id===id)) return;
+    (CURSE_CONFLICT[id]||[]).forEach(x=>{ const j=out.indexOf(x); if(j>=0) out.splice(j,1); });
+    if(!out.includes(id)) out.push(id); });
+  return out;
+}
+/* ⛓ 羁绊禁用名单：nobond 随机 2 条 / nojob 全部职业 / nofac 全部阵营，统一写入 cursesData.nobond。
+   nbList() 是唯一读取口——羁绊栏高亮、档位计算、战斗加成、编队计分、图鉴标记全部走它，
+   所以新增"禁用某类羁绊"的诅咒只要在这里登记名单，其余系统自动生效。 */
+function initBannedBonds(){
+  const ban=[];
+  if(hasCurse('nobond')) ban.push(...Object.keys(FACTIONS).concat(Object.keys(CLASSES)).sort(()=>rand()-0.5).slice(0,2));
+  if(hasCurse('nojob')) ban.push(...Object.keys(CLASSES));
+  if(hasCurse('nofac')) ban.push(...Object.keys(FACTIONS));
+  S.cursesData.nobond=[...new Set(ban)];
+}
+function toggleCurse(id){ const i=curseSel.indexOf(id);
+  if(i>=0) curseSel.splice(i,1);
+  else { (CURSE_CONFLICT[id]||[]).forEach(x=>{ const j=curseSel.indexOf(x); if(j>=0) curseSel.splice(j,1); });   // 互斥项自动取消勾选
+    curseSel.push(id); }
+  renderCursePick(); }
 function renderCursePick(){
   const box=$('cursePick'); if(!box) return;
   box.innerHTML=`<div class="cp-hd">⚠ 挑战规则（勾选诅咒换取补偿，可叠加；结算与排行会计入用诅咒数）</div>`+
-    CURSES.map(c=>`<label class="cp-item${curseSel.includes(c.id)?' on':''}"><input type="checkbox" ${curseSel.includes(c.id)?'checked':''} onchange="toggleCurse('${c.id}')"><b>${c.n}</b><span class="cp-d">${c.d}</span><span class="cp-r">${c.r}</span></label>`).join('');
+    CURSES.map(c=>{ const on=curseSel.includes(c.id), by=curseBlockedBy(c.id), bc=by?CURSES.find(x=>x.id===by):null;
+      return `<label class="cp-item${on?' on':''}${by?' cp-lock':''}"><input type="checkbox" ${on?'checked':''} ${by?'disabled':''} onchange="toggleCurse('${c.id}')"><b>${c.n}</b><span class="cp-d">${c.d}</span><span class="cp-r">${c.r}</span>${bc?`<span class="cp-lk">⛔ 与「${bc.n}」互斥，只能选其一</span>`:''}</label>`; }).join('');
 }
 /* ===== 三模式选择：普通 / 每日 / 自定义诅咒（开局与重开时询问） ===== */
 let selMode='normal';
@@ -1262,7 +1422,7 @@ function renderModePick(){
   const cards=[
     {m:'normal', t:'🎲 普通模式', d:'标准规则开局'},
     {m:'daily',  t:'📅 每日挑战', d:'种子 '+todaySeed()+' · 全体玩家同序列<br>今日诅咒：'+(dc?dc.n:'无')},
-    {m:'custom', t:'⚠ 自定义诅咒', d:'自选诅咒换取补偿<br>可叠加多条'},
+    {m:'custom', t:'⚠ 自定义诅咒', d:'自选诅咒换取补偿<br>可叠加多条（少数互斥）'},
   ];
   box.innerHTML=cards.map(c=>`<div class="mode-card${selMode===c.m?' on':''}" onclick="pickMode('${c.m}')"><b>${c.t}</b><div>${c.d}</div></div>`).join('');
   const cp=$('cursePick'), di=$('dailyInfo');
@@ -1470,22 +1630,22 @@ function newGame(opts){ opts=opts||{};
   if(S.daily){ S.dseed=todaySeed(); }
   applyRNG();
   // 挑战规则：每日=当日预置；自定义诅咒挑战=开局勾选；普通=无
-  S.curses = S.daily ? dailyCursesFor(S.dseed) : (opts.custom ? [...(curseSel||[])] : []);
-  if(hasCurse('nobond')){
-    const bp=Object.keys(FACTIONS).concat(Object.keys(CLASSES)).sort(()=>rand()-0.5);
-    S.cursesData.nobond=bp.slice(0,2);
-  }
-  if(hasCurse('bloodpact')) S.hp=25;
-  S.gold = 10 + (hasCurse('nobond')?10:0) + (hasCurse('solo')?20:0) + (hasCurse('glass')?5:0);
+  S.curses = S.daily ? dailyCursesFor(S.dseed) : (opts.custom ? sanitizeCurses(curseSel) : []);
+  if(opts.custom) curseSel=S.curses.slice();   // 互斥过滤结果同步回勾选区，弹窗不再残留已剔除项
+  initBannedBonds();
+  S.hp=hpMax();   // 🩸 血之契约：生命上限 40 → 25
+  S.gold = 10 + (hasCurse('nobond')?10:0) + (hasCurse('nojob')?15:0) + (hasCurse('nofac')?15:0)
+              + (hasCurse('solo')?20:0) + (hasCurse('glass')?5:0) + (hasCurse('dry')?10:0);
   if(hasCurse('shortch')) S.tickets=1;
   if(S.curses.length){
     log(`⚠ 挑战规则生效（共 ${S.curses.length} 条，整局可见于顶栏红色标签）：`);
     S.curses.forEach(id=>{ const c=CURSES.find(x=>x.id===id); if(!c) return;
-      if(id==='nobond'&&nbList().length){
-        log(`　⛓ 禁锢羁绊：本局禁用【${nbList().join('、')}】——这两项不产生任何羁绊效果 → 补偿：${c.r}`);
-        log(`　　（左侧羁绊栏与图鉴中会以 ⛔ 标记；编队/商店高亮也会跳过它们）`);
-      } else log(`　${c.n}：${c.d} → 补偿：${c.r}`);
-    });
+      log(`　${c.n}：${c.d} → 补偿：${c.r}`); });
+    if(nbList().length){   // 羁绊禁用类（nobond/nojob/nofac）统一汇报一次名单
+      const names=nbList();
+      log(`　⛔ 本局禁用羁绊 ${names.length} 项：${names.length<=4?names.join('、'):names.slice(0,4).join('、')+' 等'}`);
+      log(`　　（左侧羁绊栏与图鉴中会以 ⛔ 标记；编队/商店高亮也会跳过它们）`);
+    }
   }
   if(S.tickets>0) log(`🎫 当前持有升星券 ×${S.tickets}：点击 3★ 棋子，在详情面板升为 4★（顶栏 🎫 可查余量）`);
   prepEnemy();
@@ -1659,7 +1819,7 @@ function ownedTags(){ // 场上棋子的阵营/职业集合（去重按棋子）
 }
 function synTriggers(u){ // 购买该棋子后【新触发】的羁绊档位（如 '毛茸乐园 T1'）
   const out=[]; const tags=ownedTags();
-  const nb=(hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 被禁羁绊不高亮
+  const nb=nbList();   // ⛓ 被禁羁绊不高亮
   for(const key of tagKeys(u)){
     const ids=tags[key]; if(!ids) continue;
     const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
@@ -1671,7 +1831,7 @@ function synTriggers(u){ // 购买该棋子后【新触发】的羁绊档位（�
 }
 function synTags(u){ // 可补全（已有成员但尚未满档）的羁绊名
   const out=[]; const tags=ownedTags();
-  const nb=(hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 被禁羁绊不高亮
+  const nb=nbList();   // ⛓ 被禁羁绊不高亮
   for(const key of tagKeys(u)){
     const ids=tags[key]; if(!ids) continue;
     const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
@@ -1684,7 +1844,7 @@ function synTags(u){ // 可补全（已有成员但尚未满档）的羁绊名
 function boardTierKeys(){ // 当前场上已达成的全部羁绊档位（去重按棋子），如 ['F:深海:1','J:游侠:2']
   const out=[];
   const tags=ownedTags();
-  const nb=(hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 被禁羁绊不算档（竖栏/奖励同步失效）
+  const nb=nbList();   // ⛓ 被禁羁绊不算档（竖栏/奖励同步失效）
   for(const [key,ids] of Object.entries(tags)){
     const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
     if(!tbl[name] || (nb && nb.includes(name))) continue;
@@ -1768,7 +1928,7 @@ function rollShop(){
   S.shop.forEach(u=>{ if(u) S.pool[u.id]++; });
   // 多多自走棋官方规则：5 个卡槽每格独立按人口概率抽取，
   // 概率只与等级绑定，不绑定玩家已有羁绊、无隐藏修正
-  S.shop = Array(SHOP_SIZE).fill(0).map(()=>drawFromPool());
+  S.shop = Array(shopSize()).fill(0).map(()=>drawFromPool());   // 🛒 紧缩货架：3 格
   // 开局保底：第 1 回合商店至少有一张 1 费卡（1 金开局必定买得起，避免空场卡死）
   if(S.round===1 && !S.shop.some(u=>u && u.cost===1)){
     const ones=UNITS.filter(u=>u.cost===1 && S.pool[u.id]>0);
@@ -1825,7 +1985,7 @@ function unitInner(u){
   const mp = inBattle ? (isPassive(u) ? '<span class="sk">被动</span>'
       : `<div class="mpbar"><div class="mpfill" style="width:${m}%"></div></div>`) : '';
   return `<i class="pt" style="background-image:url(assets/units/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d,u.side)}
-    <span class="st">${'★'.repeat(u.star)}<span style="opacity:.8">${d.form==='me'?'⚔':'🏹'}</span></span>
+    <span class="st">${'★'.repeat(u.star)}</span>
     <span class="nm">${d.name}</span>
     ${u.arcs?`<span class="arcs a${Math.min(3,u.arcs)}"></span>`:''}
     ${mp}
@@ -1842,51 +2002,6 @@ function unitHTML(u,sel){
   return `<div class="unit cost${d.cost} ${sideCls} ${stCls} ${pairCls} ${sel?'sel':''} ${u.shield>0?'shielded':''} ${u.frozen>0?'frozen':''}" data-uid="${u.uid}" title="${tip}">${unitInner(u)}</div>`;
 }
 /* 首局欢迎指引：第 1 回合备战且棋盘为空时显示（放上棋子/开战即消失） */
-function renderBoardGuide(){
-  const g=$('boardGuide'); if(!g) return;
-  if(S.ms && !S.ms.guideDone && S.board.some(Boolean)) S.ms.guideDone=1;   // 上过棋子后不再打扰（之后卖空也不重现）
-  const show = S.phase==='prep' && S.round===1 && !S.board.some(Boolean) && !(S.ms&&S.ms.guideDone);
-  g.classList.toggle('hidden', !show);
-  if(!show) return;
-  const noPieces = !S.bench.some(Boolean) && !S.board.some(Boolean);
-  const cta = noPieces ? '🛒 买棋子并上阵' : '⚡ 一键上阵';
-  if(g.dataset.mode!==cta){   // 按钮文案随「席上有没有货」切换
-    g.dataset.mode=cta;
-    g.innerHTML=`<h3>👋 欢迎来到虚拟棋战</h3>
-      <p>① 点<b style="color:#8dff9a">下方商店</b>买喜欢的棋子（同名 3 个自动升星）<br>
-         ② 点<b style="color:#8dff9a">【${cta}】</b>自动布阵，或拖棋子上棋盘<br>
-         ③ 点<b style="color:#8dff9a">【⚔ 开战】</b>自动战斗，赢了拿金币和装备</p>
-      <div class="bdg-btns">
-        <button class="btn" onclick="document.getElementById('resetBtn').click()">🔄 选择游戏模式</button>
-        <button class="btn" onclick="guideAutoStart()">${cta}</button>
-      </div>
-      <div style="font-size:11px;color:#6b6288;margin-top:8px">提示：顶栏【🤖 托管】可让 AI 代打 · 详细规则见【❓ 玩法】</div>`;
-  }
-}
-/* 👋 引导卡主按钮：备战席没棋子时先自动买齐（买到人口上限），再一键上阵。
-   走常规 buy()（正常扣金币/卡池/自动合成）；只在第 1 回合空场引导时使用。 */
-function guideAutoStart(){
-  if(S.phase!=='prep') return;
-  const owned=()=>S.board.filter(Boolean).length + S.bench.filter(Boolean).length;
-  let bought=0, guard=0;
-  while(owned()<S.lvl && guard++<10){
-    let pick=-1, bestCost=-1;
-    for(let i=0;i<S.shop.length;i++){
-      const u=S.shop[i]; if(!u || u.cost>S.gold) continue;
-      if(u.cost>bestCost){ bestCost=u.cost; pick=i; }
-    }
-    if(pick<0) break;
-    const before=owned();
-    buy(pick);
-    if(owned()<=before && !S.shop[pick]) break;   // 购买未生效（席位满/合并不增员）则收手
-    bought++;
-  }
-  if(S.board.some(Boolean) || S.bench.some(Boolean)) autoDeploy();
-  renderAll();
-  if(bought) log(`👋 已自动购买 ${bought} 名棋子并上阵——也可以自己在商店挑选`);
-  else if(!S.board.some(Boolean) && !S.bench.some(Boolean)) log('⚠ 金币不足或商店买不起：下回合攒够钱再买');
-  else log('⚡ 已一键上阵');
-}
 function renderBoard(){
   const b=$('board'); b.innerHTML='';
   for(let y=0;y<BOARD_H;y++) for(let x=0;x<BOARD_W;x++){
@@ -1894,6 +2009,7 @@ function renderBoard(){
     const cell=document.createElement('div');
     cell.className='cell'+(y<BOARD_H/2?' enemy-side':'');
     cell.dataset.i=i;
+    cell.style.zIndex=String(1+y);   // 格子为底层；行序供 boss 预览遮挡判断（boss 预览会单独提层）
     const u=S.board[i];
     let isEnemyPreview=false;
     if(u) cell.innerHTML=unitHTML(u, S.selUid===u.uid);
@@ -1902,6 +2018,7 @@ function renderBoard(){
       cell.innerHTML=unitHTML(S.enemyBoard[i], false).replace('<div class="unit ','<div class="unit preview ');
       if(S.enemyBoard[i].big){   // 2×2 头目预览：从锚点格铺满 4 格（其余格为空，点击仅取消选中）
         const pe=cell.querySelector('.unit'); if(pe) pe.classList.add('big');
+        cell.style.zIndex=String(61+y);   // boss 立绘跨格：锚点格提到全部普通格子之上，避免空格子背景盖住下半身
       }
       cell.classList.add('enemy-preview-cell');
       isEnemyPreview=true;
@@ -1912,7 +2029,6 @@ function renderBoard(){
   // 攻击范围提示（选中 / 拖动时）：源格描金，可攻击格浅蓝
   paintRange();
   paintMoveSel();
-  renderBoardGuide();   // 首局空棋盘欢迎指引
 }
 /* 只切换已有格子的高亮 class，不重建 DOM（否则会打断浏览器 click 事件，导致点棋子失效） */
 function paintRange(){
@@ -1982,11 +2098,14 @@ function renderShop(){
 }
 function renderTop(){
   $('round').textContent=(S.daily?'📅 ':'')+(S.endless ? S.round+' ♾' : S.round);
-  $('roundMax').textContent = S.endless ? '' : '/25';
+  $('roundMax').textContent = S.endless ? '' : '/'+chLen();   // ⏱ 短章急行：章节周期 25→15
   $('hp').textContent=S.hp; $('gold').textContent=S.gold;
-  $('interest').textContent = S.phase==='prep' && S.lvl<lvlCap() ? `+${Math.min(interestCap(),Math.floor(S.gold/10))}` : '';
-  { const gcn=$('goldChipN'); if(gcn) gcn.textContent=S.gold;
-    const gci=$('goldChipI'); if(gci) gci.textContent = S.phase==='prep' ? ` +${Math.min(interestCap(),Math.floor(S.gold/10))}息` : ''; }
+  const ig=interestGain(), igTip=hasCurse('allin') ? '孤注一掷：存款不产生利息' : `利息：每10金+1，上限${interestCap()}。下回合利息预览见绿色数字`;
+  $('interest').textContent = S.phase==='prep' && S.lvl<lvlCap() && ig ? `+${ig}` : '';
+  { const gt=$('interest'); if(gt&&gt.parentElement) gt.parentElement.title=igTip;
+    const gcn=$('goldChipN'); if(gcn) gcn.textContent=S.gold;
+    const gci=$('goldChipI'); if(gci) gci.textContent = S.phase==='prep' && ig ? ` +${ig}息` : '';
+    const gc=$('goldChip'); if(gc) gc.title='当前金币（'+igTip+'）'; }
   renderTempBuffs();
   renderAutoFightBtn();
   { // 顶栏常驻诅咒标签：悬停看每条的说明与补偿
@@ -1997,13 +2116,13 @@ function renderTop(){
       else{
         ct.style.display='';
         ct.textContent='⚠ '+list.map(id=>{const c=CURSES.find(x=>x.id===id);
-          const nb=(id==='nobond'&&nbList().length)?`（${nbList().join('/')}）`:'';
+          const nb=BOND_BAN_IDS.includes(id)?bondBanLabel(id):'';
           return (c?c.n:id)+nb;}).join(' · ')
           +(S.daily?' ｜ 📅 每日':'');
         ct.title='挑战规则生效中：\n'+list.map(id=>{const c=CURSES.find(x=>x.id===id);
           if(!c) return id;
-          if(id==='nobond'&&nbList().length)
-            return `⛓ 禁锢羁绊：本局禁用【${nbList().join('、')}】\n　（这两项羁绊整体失效，我方拿不到任何档位效果）\n　→ 补偿：${c.r}`;
+          if(BOND_BAN_IDS.includes(id)&&nbList().length)
+            return `${c.n}：本局禁用【${nbList().join('、')}】\n　（这 ${nbList().length} 项羁绊整体失效，我方拿不到任何档位效果）\n　→ 补偿：${c.r}`;
           return `${c.n}：${c.d}\n　→ 补偿：${c.r}`;}).join('\n————————\n');
       }
     }
@@ -2035,9 +2154,11 @@ function renderTop(){
   $('lvlNum').textContent=S.lvl;
   $('xpText').textContent = S.lvl>=lvlCap() ? '人口已满' : `经验 ${S.xp}/${need}`;
   $('xpFill').style.width = S.lvl>=lvlCap() ? '100%' : Math.min(100,S.xp/need*100)+'%';
-  $('lvlBtn').textContent = S.lvl>=lvlCap() ? '人口已满' : (S.round===1 ? '首回合不可买经验' : (IS_TOUCH?'⬆️ 买经验 -5💰':'买经验 (F) +4经验 -5💰'));
-  $('lvlBtn').disabled = S.lvl>=lvlCap() || S.gold<4 || S.round===1;
-  $('refreshBtn').disabled = S.gold<2;
+  $('lvlBtn').textContent = S.lvl>=lvlCap() ? '人口已满'
+    : (hasCurse('dreamless') ? '💤 无梦：不可买经验' : (S.round===1 ? '首回合不可买经验' : (IS_TOUCH?'⬆️ 买经验 -5💰':'买经验 (F) +4经验 -5💰')));
+  $('lvlBtn').disabled = S.lvl>=lvlCap() || S.round===1 || hasCurse('dreamless') || S.gold<5;
+  $('refreshBtn').textContent = (IS_TOUCH?'🔄 刷新':'🔄 刷新 (D)')+` -${refreshCost()}💰`;   // 价格随诅咒变化（通胀 3 / 紧缩货架 1）
+  $('refreshBtn').disabled = S.gold<refreshCost();
   // 出售按钮：选中棋子后解锁，并预览回购价（多多式：1★原价、合成折价）
   const sel = S.selUid!=null ? findUnit(S.selUid) : null;
   if(sel){
@@ -2055,11 +2176,13 @@ function renderTop(){
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
     : S.streak>=4 ? `难度 ⬆（连胜 ${S.streak}，敌方增强 +${Math.min(4, S.streak-3)}%）` : '难度 ➖ 标准';
   $('enemyInfo').innerHTML = c.boss
-    ? `<b>${c.name}</b> · 野怪回合（${S.round>=20&&S.round<25?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">🏆 胜利掉 <b style="color:#8dff9a">2</b> 件装备 · 💤 失败不扣血、不动连胜，仍掉 <b style="color:#8dff9a">1</b> 件${S.round%25===0?' · <b style="color:#ff9a9a">章节守关战！胜败都有章节结算</b>':''}</span>`
+    ? `<b>${c.name}</b> · 野怪回合（${S.round>=20&&S.round<25?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">🏆 胜利掉 <b style="color:#8dff9a">2</b> 件装备 · 💤 失败不扣血、不动连胜，仍掉 <b style="color:#8dff9a">1</b> 件${S.round%chLen()===0?' · <b style="color:#ff9a9a">章节守关战！胜败都有章节结算</b>':''}</span>`
     : `<b>${c.name}</b>：` + Object.entries(c.mix).map(([j,n])=>`${j}×${n}`).join(' + ')
       + `<br><span style="font-size:11px;color:#8a93c4">${dynTxt} · 胜利 +1 金（装备只在野怪回合掉落）</span>`;
   $('gold2').textContent=S.gold;
-  $('interest2').textContent = `利息 +${Math.min(5,Math.floor(S.gold/10))}`;
+  { const ig2=interestGain();   // 与结算同源：通胀上限 3、孤注一掷为 0
+    $('interest2').textContent = `利息 +${ig2}`;
+    $('interest2').title = hasCurse('allin') ? '孤注一掷：存款不产生利息' : `每 10 金 +1，上限 ${interestCap()}`; }
 }
 const FAC_ICON={'深海':'🌊','星际':'🚀','毛茸乐园':'🐾','音律':'🎵','四禧丸子':'🍡','学园':'🎓','夜幕':'🌙','花语':'🌸','魔道':'🔮','森之国':'🌲','工造':'⚙️','P-SP':'🎬'};
 const JOB_ICON={'刀客':'🗡️','守护':'🛡️','歌势':'🎤','游侠':'🏹','法师':'☄️','咒术':'☠️','刺客':'🥷','狂战':'🪓','医者':'💊','偶像':'✨'};
@@ -2098,8 +2221,10 @@ function renderSynergy(){
     const d=byId(u.id);
     facsOf(d).forEach(f=>facCnt[f]=(facCnt[f]||0)+1);
     jobsOf(d).forEach(j=>clsCnt[j]=(clsCnt[j]||0)+1); });
-  $('synFac').innerHTML=synBadges(facCnt,FACTIONS,FAC_ICON);
-  $('synJob').innerHTML=synBadges(clsCnt,CLASSES,JOB_ICON);
+  // 阵营+职业合并为单列表（synBadges 内部排序：已触发置顶→档位深→缺口升序），不再分组
+  const allCnt={...facCnt}, allCfg={...FACTIONS,...CLASSES}, allIcons={...FAC_ICON,...JOB_ICON};
+  Object.entries(clsCnt).forEach(([k,v])=>{ allCnt[k]=(allCnt[k]||0)+v; });
+  $('synAll').innerHTML=synBadges(allCnt,allCfg,allIcons);
   // 玩家盒里的人口镜像（多多式：人口紧贴等级显示）
   $('pop2').textContent=S.board.filter(Boolean).length; $('popMax2').textContent=S.lvl;
 }
@@ -2744,7 +2869,7 @@ $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
 /* 队伍羁绊评分：已达成档位大分 + 朝下一档的进度小分（同名棋子按 1 个计，与战斗结算一致） */
 function teamSynScore(team){
   const cnt={}; const seen=new Set();
-  const nb=(hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 被禁羁绊不计分（编队不再优先凑它）
+  const nb=nbList();   // ⛓ 被禁羁绊不计分（编队不再优先凑它）
   team.forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id); const dd=byId(u.id);
     facsOf(dd).forEach(f=>{ if(nb && nb.includes(f)) return; cnt['F:'+f]=(cnt['F:'+f]||0)+1; });
     jobsOf(dd).forEach(j=>{ if(nb && nb.includes(j)) return; cnt['J:'+j]=(cnt['J:'+j]||0)+1; }); });
@@ -2888,6 +3013,7 @@ function tidyBench(){
 }
 $('tidyBtn').onclick=tidyBench;
 $('lvlBtn').onclick=()=>{ if(S.phase!=='prep'||S.lvl>=lvlCap())return;   // 5 金币买 4 经验（更快升人口凑羁绊）
+  if(hasCurse('dreamless')){ log('💤 无梦：本局不能购买经验（每回合自然 +2 经验照常）'); return; }
   if(S.round===1){ log('⚠ 第 1 回合不可购买经验（第 2 回合起可购买，自然经验不受影响）'); return; }
   if(S.gold<5){ log('⚠ 金币不足，无法购买升级经验'); return; }
   S.gold-=5; S.stats.goldSpent+=5; S.xp+=4;
@@ -3034,10 +3160,38 @@ paintSfxBtn();
    在 dealDamage/治疗结算处聚合 造成伤害/承受伤害/治疗量/击杀；endBattle 消费后置空。
    红线：绝不写入棋子持久状态，绝不触碰 S.stats 既有字段 ===== */
 let battleStats=null;
+let lastBattleStats=null;   // 上一场战斗统计（回合后供统计条展示，直到下一场开打）
 function bsRec(u){
   if(!battleStats||!u) return null;
-  return battleStats.units[u.uid] || (battleStats.units[u.uid]={side:u.side, name:byId(u.id).name, deal:0, take:0, heal:0, kills:0});
+  return battleStats.units[u.uid] || (battleStats.units[u.uid]={side:u.side, id:u.id, star:u.star||1, name:byId(u.id).name, deal:0, dealP:0, dealM:0, take:0, heal:0, kills:0});
 }
+/* ⚔🛡💚 统计条：战斗中实时（renderBattle 节流调用）、战后保留上一场；sim 桩下判空跳过 */
+let statMode='deal';
+const STAT_META={deal:['⚔ 输出','m-deal'],heal:['💚 治疗','m-heal'],take:['🛡 抗伤','m-take']};
+function setStatMode(m){ statMode=m; renderStatBar(); }
+function renderStatBar(){
+  if(typeof document==='undefined') return;
+  const bar=document.getElementById('statBar'); if(!bar) return;
+  const src = battleStats || lastBattleStats;
+  if(!src){ bar.innerHTML=''; return; }
+  const rows=Object.values(src.units).filter(r=>r[statMode]>0)
+    .sort((a,b)=>b[statMode]-a[statMode]).slice(0,5);
+  const mx=rows.length?rows[0][statMode]:1;
+  bar.innerHTML = `<div class="stb-tabs">${Object.keys(STAT_META).map(m=>
+      `<div class="stb-tab${m===statMode?' on':''}" onclick="setStatMode('${m}')">${STAT_META[m][0]}</div>`).join('')}</div>` +
+    (rows.length ? rows.map(r=>{
+      const wP = statMode==='deal' ? Math.round((r.dealP||0)/mx*100) : 0;
+      const wM = statMode==='deal' ? Math.round((r.dealM||0)/mx*100) : 0;
+      const body = statMode==='deal'
+        ? `<i class="m-deal" style="width:${wP}%"></i><i class="m-dealM" style="width:${wM}%"></i>`
+        : `<i class="${STAT_META[statMode][1]}" style="width:${Math.max(7,Math.round(r[statMode]/mx*100))}%"></i>`;
+      return `<div class="stb-row"><img src="assets/units/${r.id}.png" alt=""><span class="stb-star">${'★'.repeat(r.star||1)}</span>`+
+        `<div class="stb-bar">${body}</div><b>${r[statMode]}</b></div>`;
+      }).join('')
+      : `<div class="stb-empty">本回合暂无该类数据</div>`);
+}
+let _stbT=0;
+function statBarTick(){ const now=Date.now(); if(now-_stbT>500){ _stbT=now; renderStatBar(); } }
 function bsHeal(u, real){ if(real>0){ const r=bsRec(u); if(r) r.heal+=real; } }
 /* 装备战斗生效表（基础装 + 合成成品统一走这里）。成品新通道：
    critPct/critItemM 暴击、skillVamp 技能吸血、thorns 反伤、shieldTick 周期护盾、
@@ -3070,7 +3224,7 @@ const ITEM_FX={
 };
 function makeBattleUnit(u, side, x, y){
   const d=byId(u.id);
-  const b={...u, side, x, y, cd:0, moveCd:0, skillCd:0, maxmana:50, shield:0, frozen:0, rapid:0,
+  const b={...u, side, x, y, cd:0, moveCd:0, skillCd:0, maxmana:(side===0&&hasCurse('dry'))?75:50, shield:0, frozen:0, rapid:0,
     stun:0, atkDownA:0, atkDownT:0, slowA:0, slowT:0, noShieldT:0, healDownA:0, healDownT:0,
     poisonT:0, poisonDmg:0, atkMul:1, hpMul:1, spdMul:1, vamp:0, dmgReduce:0,
     tauntT:0, silenceT:0, blockCt:0, blockDmg:.5, blockT:0, thorns:0, thornsT:0, drBuff:0, drBuffT:0,
@@ -3176,8 +3330,8 @@ function startBattle(){
   const ab=document.createElement('div'); ab.id='aliveBar';   // 双方存活计数（战斗中实时）
   ab.innerHTML='<span class="ab-me">🔵 我 <b>0</b></span><span class="ab-sep">:</span><span class="ab-foe"><b>0</b> 🔴 敌</span>';
   if(IS_TOUCH){ $('oppBar').appendChild(ab); }   // 触屏：并入敌方信息栏（不遮挡）
-  else { const lp=$('log').closest && $('log').closest('.panel');   // 桌面：插在右栏「装备」与「战报」之间
-         if(lp && lp.parentNode) lp.parentNode.insertBefore(ab, lp);
+  else { const synAll=$('synAll');   // 桌面：左栏——杂兵信息（oppBar）与羁绊列表之间
+         if(synAll && synAll.parentNode) synAll.parentNode.insertBefore(ab, synAll);
          else $('oppBar').appendChild(ab); }
   const units=[];
   window.__bu=units;   // 调试：战斗单位快照
@@ -3193,7 +3347,7 @@ function startBattle(){
     const mine = units.filter(u=>u.side===side);
     const facCnt={}, clsCnt={};
     const seen=new Set(); // 羁绊按不同棋子计数：同名重复副本只算 1 个
-    const nb=(side===0 && hasCurse('nobond') && S.cursesData.nobond) || null;   // ⛓ 禁锢羁绊：我方被禁的羁绊不计档
+    const nb=side===0 ? nbList() : null;   // ⛓ 禁锢羁绊：我方被禁的羁绊不计档（敌方不受影响）
     mine.forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id);
       const d=byId(u.id);
       facsOf(d).forEach(f=>{ if(nb && nb.includes(f)) return; facCnt[f]=(facCnt[f]||0)+1; });
@@ -3464,7 +3618,12 @@ function startBattle(){
           }
           // 攻击表现：远程弹道 / 近战斩击 + 突进动作
           const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
-          if(ael){ ael.classList.add('lunge'); setTimeout(()=>ael.classList.remove('lunge'),260/SPEED); }
+          if(ael){
+            const g0=boardGeo(), ddx=tgt.x-u.x, ddy=tgt.y-u.y, L=Math.hypot(ddx,ddy)||1, kk=0.24*g0.cw;
+            ael.style.setProperty('--lx',(ddx/L*kk)+'px'); ael.style.setProperty('--ly',(ddy/L*kk)+'px');
+            ael.classList.remove('lunge'); void ael.offsetWidth; ael.classList.add('lunge');
+            setTimeout(()=>ael.classList.remove('lunge'),300/SPEED);
+          }
           if(d.form==='rg') fireProjectile(u,tgt, d.dtype==='phys'?'#ffd24a':'#c77dff');
           else hitFx(u,tgt,d.dtype);
           // 闪避（刀塔精灵式）：仅对普攻生效，命中判定失败则本次普攻落空
@@ -3548,6 +3707,9 @@ function medEcho(src, healed, units, foes){
 /* 主动治疗类技能的统一结算（治疗量按攻击/系数/羁绊/减疗折算） */
 function dealDamage(src,tgt,dmg,units,dtype){
   if(!tgt||tgt.hp<=0) return 0;
+  const tel=document.querySelector(`#unitLayer [data-uid="${tgt.uid}"]`);   // 受击抖动（纯表现，sim 桩下 tel 为 null 自然跳过）
+  if(tel){ tel.classList.remove('hitfx'); void tel.offsetWidth; tel.classList.add('hitfx');
+    setTimeout(()=>tel.classList.remove('hitfx'), 200/Math.max(1,SPEED)); }
   const raw=dmg;
   const spv=src&&src.pv;
   // 格挡：技能/增益赋予的临时格挡，或被动常驻格挡（克物理与普攻；变形期间被动失效）
@@ -3593,7 +3755,9 @@ function dealDamage(src,tgt,dmg,units,dtype){
   if(tgt.thorns && src && src.hp>0 && dmg>0){ src.hp-=Math.max(1,Math.round(tgt.maxhp*tgt.thorns)); dmgPopup(null,src,'荆棘','cast'); }
   dmgPopup(src,tgt,'-'+dmg);
   if(battleStats && dmg>0){                       // 战斗统计（只读插桩）
-    const rs=bsRec(src); if(rs) rs.deal+=dmg;
+    const rs=bsRec(src); if(rs){ rs.deal+=dmg;
+      if(dtype==='phys') rs.dealP+=dmg; else rs.dealM+=dmg;   // 物理橙/魔法(含纯粹)紫 分账
+    }
     const rt=bsRec(tgt); if(rt) rt.take+=dmg;
   }
   if(tgt.hp<=0){
@@ -3938,12 +4102,12 @@ function applyFx(u,f,sv,units,allies,foes,power,dmg){
       case 'hex': if(hit){ f.hexT=Math.max(f.hexT,(a||2)*1000); dmgPopup(u,f,'🐧变形','cast'); } break;
       case 'petrify': if(hit){ const pt=(a||2)*1000; f.petrifyT=Math.max(f.petrifyT,pt); f.frozen=Math.max(f.frozen,pt); dmgPopup(u,f,'🗿石化','cast'); } break;
       case 'shieldself': u.shield+=Math.round(u.maxhp*a); vfxAt(u,'ring shield',900); break;
-      case 'healside': allies.forEach(t=>{ const real=Math.min(t.maxhp,t.hp+Math.round(power*a))-t.hp; t.hp+=real; bsHeal(u,real); vfxAt(t,'ring heal',800); }); break;
+      case 'healside': allies.forEach(t=>{ const real=Math.min(t.maxhp,t.hp+Math.round(power*a))-t.hp; t.hp+=real; bsHeal(u,real); vfxAt(t,'tex-sonic ring heal',800); }); break;
       case 'healshield': allies.forEach(t=>{ t.shield+=Math.round(t.maxhp*a); vfxAt(t,'ring shield',800); }); break;
       case 'heallow': { if(!allies.length) break;
         const t=allies.reduce((x,y)=>y.hp/y.maxhp<x.hp/x.maxhp?y:x);
         const h=Math.round(power*a); const real=Math.min(t.maxhp,t.hp+h)-t.hp; t.hp+=real; bsHeal(u,real);
-        vfxAt(t,'ring heal',900); dmgPopup(u,t,'+'+h,'heal'); break; }
+        vfxAt(t,'tex-holy ring heal',900); dmgPopup(u,t,'+'+h,'heal'); break; }
       case 'dot': if(hit){ f.poisonT=3000; f.poisonDmg=Math.round(f.maxhp*a); } break;
       case 'selfheal': { const h=Math.round((dmg||0)*a); if(h>0){ const real=Math.min(u.maxhp,u.hp+h)-u.hp; u.hp+=real; bsHeal(u,real); } } break;
       case 'push': if(hit && !f.big){ const dx=Math.sign(f.x-u.x), dy=Math.sign(f.y-u.y);   // 2×2 头目巨体免击退
@@ -3966,9 +4130,38 @@ function applyFx(u,f,sv,units,allies,foes,power,dmg){
     }
   }
 }
+/* 🎬 大招 Cut-in：触发名单=AoE/变形/团盾类大技能；挂棋盘容器内（我左下角/敌右上角）；
+   连发时旧卡向上滑出浅隐（.out），到期自然淡出直接移除（避免 forwards 停帧后重播退出的闪现冲突）；
+   sim 桩下判空跳过。
+   【暂时下线】用户反馈特写太抢眼球——CUTIN_ENABLED=false 一键关闭；恢复改 true 即可 */
+const CUTIN_ENABLED = false;
+const CUTIN_ARCH = new Set(['massstun','massfreeze','masssilence','chain','frost','fireball','slam','hex','teamshield','bulwark']);
+function cutinDismiss(el){
+  if(!el || el.dataset.out) return;
+  el.dataset.out='1'; el.classList.add('out');
+  setTimeout(()=>el.remove(), 450/Math.max(1,SPEED));
+}
+function showCutin(u, nm, arch){
+  if(!CUTIN_ENABLED || !CUTIN_ARCH.has(arch) || typeof document === 'undefined' || !document.body) return;
+  let layer = document.getElementById('cutinLayer');
+  if(!layer){
+    layer = document.createElement('div'); layer.id='cutinLayer';
+    const host = ($('board') && $('board').parentElement) || document.body;   // 棋盘的 relative 包裹层
+    host.appendChild(layer);
+  }
+  const side = u.side===0 ? 'L' : 'R';
+  cutinDismiss(layer.querySelector('.cutin.'+side+':not([data-out])'));   // 同边旧特写向上滑出浅隐（两侧互不干扰）
+  const el = document.createElement('div');
+  el.className = 'cutin '+side;
+  el.innerHTML = `<img src="assets/units_big/${u.id}.png" alt="">
+    <div class="ct"><b>${nm}</b><span>${byId(u.id).name} · 大招发动</span></div>`;
+  layer.appendChild(el);
+  setTimeout(()=>{ el.remove(); }, 1180/Math.max(1,SPEED));   // 到期直接移除（进场动画 forwards 已停在淡出帧）
+}
 function castSkill(u,tgt,units,skMul){
   const d=byId(u.id), [nm,arch]=d.sk;
   const sv=svOf(u.id);
+  showCutin(u,nm,arch);   // 🎬 大招 Cut-in：仅名单内技能触发（同屏至多 1 个，纯表现层）
   u._casting=true;   // 施法标记：dealDamage 的技能吸血通道据此区分技能伤害与普攻伤害（同步清除）
   const power = Math.round(eatk(u)*(u.side===0?skMul:1)*d.skc*(u.sks||1)*(sv.pow||1)); // 技能倍率随星级增强 × 棋子变体
   const allies = units.filter(v=>v.hp>0&&v.side===u.side);
@@ -3989,6 +4182,7 @@ function castSkill(u,tgt,units,skMul){
       if(hits.length){ const c0=fxDir(u,hits[0]);      // 扇形剑气：以施法者为轴扫向首个目标方向
         const sw=fxNode('sweep',c0.a.x,c0.a.y,440);
         if(sw) sw.style['--rot']=(c0.ang*180/Math.PI).toFixed(0)+'deg'; }
+      vfxAt(u,'tex-slash',480);                        // 剑气旋风主视觉（6 斩客共享）
       hits.forEach(f=>{
         const h=fxDir(u,f);                            // 每个命中目标一道沿攻击方向的斩击线
         const sl=fxNode('slashline',h.b.x,h.b.y,340);
@@ -4026,7 +4220,7 @@ function castSkill(u,tgt,units,skMul){
         const h=Math.round(power*per*hm*hd);
         const real=Math.min(t.maxhp,t.hp+h)-t.hp; t.hp+=real; bsHeal(u,real);
         medEcho(u,real,units,foes);
-        vfxAt(t,'ring heal',950); fxRise(t,'mote',3); dmgPopup(u,t,'+'+h,'heal');
+        vfxAt(t,'tex-holy ring heal',950); fxRise(t,'mote',3); dmgPopup(u,t,'+'+h,'heal');
         const mA=(sv.fx||[]).find(f=>f[0]==='allymana');
         if(mA && !isPassive(t)) t.mana=Math.min(t.maxmana||60,t.mana+mA[1]);
       });
@@ -4048,7 +4242,7 @@ function castSkill(u,tgt,units,skMul){
     case 'fireball': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
       beam(u,f,facTint(u));
-      vfxAt(f,'boom',750);
+      vfxAt(f,'tex-fireball boom',750);
       { const pf=unitVisual(f); fxNode('shock',pf.x,pf.y,520); }   // 落点爆炸冲击波
       fxSparks(f,facTint(u),4,26); fxChips(f,facTint(u),3);        // + 碎屑（阵营色）
       const dd=dealDamage(u,f,Math.round(power*2.5),units);
@@ -4057,6 +4251,7 @@ function castSkill(u,tgt,units,skMul){
     case 'frost': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
       beam(u,f,'#9fe8ff');
+      vfxAt(f, sv.zone?'tex-frost':'tex-time',900);                 // 雪烛冰晶绽放 / 瑞娅时间漩涡
       fxShards(f,'ice',4);                                          // 浅蓝冰晶碎裂
       const dd=dealDamage(u,f,Math.round(power*1.5),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
@@ -4076,7 +4271,7 @@ function castSkill(u,tgt,units,skMul){
     case 'slam': {
       const hits=foes.filter(fl=>nearCells(fl,u,1));
       if(!hits.length) break;
-      vfxAt(u,'boom',750); shakeCell(u.x,u.y);
+      vfxAt(u,'tex-quake boom',750); shakeCell(u.x,u.y);
       { const pu=unitVisual(u); fxNode('shock',pu.x,pu.y,500); fxChips(u,'#b09a7a',4); }   // 地面冲击波 + 尘土粒子
       hits.forEach(f=>{ vfxAt(f,'ring',900); const dd=dealDamage(u,f,Math.round(power*1.2),units);
         applyFx(u,f,sv,units,allies,foes,power,dd);
@@ -4096,7 +4291,7 @@ function castSkill(u,tgt,units,skMul){
       if(arch==='shred') fxChips(f,'#ffb14a',3);      // 橙色护甲碎屑
       else if(arch==='sunder') boltFx(u,f,true);      // 紫色电弧
       else hexFx(f);                                  // 烟雾团包裹 + 变形落地弹性
-      vfxAt(f,'ring',900);
+      vfxAt(f, arch==='hex'?'tex-memexp ring':'ring',900);   // 悠亚记忆篡改：记忆漩涡
       const dd=dealDamage(u,f,Math.round(power*(arch==='hex'?1.1:1.2)),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
       break; }
@@ -4104,7 +4299,7 @@ function castSkill(u,tgt,units,skMul){
       const f=pickFoe(foes,u,sv);
       beam(u,f,'#d9c8a6');
       crackFx(f);                                      // 石化裂纹 + 石屑
-      vfxAt(f,'ring',900);
+      vfxAt(f,'tex-petrify ring',900);
       const dd=dealDamage(u,f,Math.round(power*1.3),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
       if(f.hp>0){ const pt=(sv.dur||2)*1000;
@@ -4114,7 +4309,7 @@ function castSkill(u,tgt,units,skMul){
     case 'curse': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
       beam(u,f,facTint(u));
-      vfxAt(f,'ring drain',950);
+      vfxAt(f,'tex-jelly ring drain',950);   // 果冻封印：Q弹封印球
       const dd=dealDamage(u,f,Math.round(power*1.0),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
       if(f.hp>0){ f.atkDownA=0.3; f.atkDownT=4000; dmgPopup(u,f,'🔻攻降','cast'); }
@@ -4123,7 +4318,7 @@ function castSkill(u,tgt,units,skMul){
       const f=pickFoe(foes,u,sv);
       beam(u,f,facTint(u));
       fxRise(f,'ember',3);                                          // 余烬火星上飘
-      vfxAt(f,'boom',750);
+      vfxAt(f,'tex-poison boom',750);
       const dd=dealDamage(u,f,Math.round(power*1.5),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
       if(f.hp>0){ const burn=Math.round(Math.min(f.mana,f.maxmana*0.3)); f.mana-=burn;
@@ -4134,7 +4329,7 @@ function castSkill(u,tgt,units,skMul){
       const R=AOE_RADIUS.massstun, hit=aoeFoes(u,foes,R);
       vfxAt(u,'ring',900); vfxAoe(u,R,'',700); shakeCell(u.x,u.y);
       log(`　💥 高音震魂波及 ${hit.length} 名敌人（范围 ${R} 格）`);
-      hit.forEach(f=>{ vfxAt(f,'ring',900); const dd=dealDamage(u,f,Math.round(power*1.0),units);
+      hit.forEach(f=>{ vfxAt(f,'tex-sonic ring',900); const dd=dealDamage(u,f,Math.round(power*1.0),units);
         applyFx(u,f,sv,units,allies,foes,power,dd);
         if(f.hp>0){ f.stun=Math.max(f.stun,1000); dmgPopup(u,f,'💫眩晕','cast'); } });
       break; }
@@ -4143,7 +4338,7 @@ function castSkill(u,tgt,units,skMul){
       const R=AOE_RADIUS.massfreeze, hit=aoeFoes(u,foes,R);
       vfxAt(u,'ring frost',950); vfxAoe(u,R,'frost',700); shakeCell(u.x,u.y);
       log(`　❄ 海豚安魂曲波及 ${hit.length} 名敌人（范围 ${R} 格）`);
-      hit.forEach(f=>{ fxShards(f,'ice',2); const dd=dealDamage(u,f,Math.round(power*0.8),units);
+      hit.forEach(f=>{ vfxAt(f,'tex-frost',850); fxShards(f,'ice',2); const dd=dealDamage(u,f,Math.round(power*0.8),units);
         applyFx(u,f,sv,units,allies,foes,power,dd);
         if(f.hp>0){ f.frozen=Math.max(f.frozen,1000); } });
       break; }
@@ -4151,7 +4346,7 @@ function castSkill(u,tgt,units,skMul){
     case 'tauntshield': {   // 魔导屏障：自身护盾+嘲讽（克刺客跳后排）
       u.shield+=Math.round(u.maxhp*(sv.shieldPct||.35));
       u.tauntT=(sv.tauntT||2)*1000;
-      vfxAt(u,'ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
+      vfxAt(u,'tex-barrier ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
       break; }
     case 'guard': {         // 忠诚守护：保最低队友+自身盾+嘲讽
       const mates=allies.filter(v=>v!==u);
@@ -4159,7 +4354,7 @@ function castSkill(u,tgt,units,skMul){
         t.shield+=Math.round(t.maxhp*(sv.allyShield||.3)); vfxAt(t,'ring shield',950); }
       u.shield+=Math.round(u.maxhp*(sv.selfShield||.2));
       u.tauntT=(sv.tauntT||1.5)*1000;
-      vfxAt(u,'ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
+      vfxAt(u,'tex-barrier ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
       break; }
     case 'manafeed': {      // 晨间报时：为队友回蓝+群疗（不含自己，避免自充能死循环）
       allies.forEach(t=>{
@@ -4168,7 +4363,7 @@ function castSkill(u,tgt,units,skMul){
         const h=Math.round(power*0.5*hm*hd);
         const real=Math.min(t.maxhp,t.hp+h)-t.hp; t.hp+=real; bsHeal(u,real);
         medEcho(u,real,units,foes);
-        vfxAt(t,'ring heal',900);
+        vfxAt(t,'tex-holy ring heal',900);
       });
       dmgPopup(u,u,'+'+(sv.manaAmt||25)+'蓝','cast');
       break; }
@@ -4180,11 +4375,12 @@ function castSkill(u,tgt,units,skMul){
       vfxAt(u,'ring shield',1100); shakeCell(u.x,u.y);
       break; }
     case 'teamshield': {    // 团盾：为全体队友附加护盾
-      allies.forEach(t=>{ t.shield+=Math.round(t.maxhp*(sv.teamPct||.12)); vfxAt(t,'ring shield',900); });
+      allies.forEach(t=>{ t.shield+=Math.round(t.maxhp*(sv.teamPct||.12)); vfxAt(t,'tex-barrier ring shield',900); });
       break; }
     case 'silence': { if(!foes.length)break;   // 沉默：克制回蓝施法阵容
       const f=pickFoe(foes,u,sv);
       beam(u,f,facTint(u));
+      vfxAt(f,'tex-hush',850);                           // 静默符印
       staticFx(f);                                     // 静电环
       const dd=dealDamage(u,f,Math.round(power*1.4),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
@@ -4194,7 +4390,7 @@ function castSkill(u,tgt,units,skMul){
       const targets=[...foes].sort((a,b)=>dist(a)-dist(b)).slice(0,3);
       const mult=[1.5,1.2,0.95]; let prev=u;
       targets.forEach((f,i)=>{ boltFx(prev,f); prev=f;      // 闪电折线（多段线段+闪烁）
-        vfxAt(f,'flash',600);
+        vfxAt(f,'tex-chain flash',600);
         const dd=dealDamage(u,f,Math.round(power*mult[i]),units);
         applyFx(u,f,sv,units,allies,foes,power,dd); shakeCell(f.x,f.y); });
       break; }
@@ -4206,20 +4402,20 @@ function castSkill(u,tgt,units,skMul){
         medEcho(u,real,units,foes);
         ['stun','frozen','slowT','atkDownT','healDownT','silenceT','noShieldT','hexT','petrifyT','arDownT','mrDownT'].forEach(k=>t[k]=0);
         t.slowA=0; t.atkDownA=0; t.healDownA=0;
-        vfxAt(t,'ring heal',950); vfxAt(t,'flash',600);
+        vfxAt(t,'tex-holy ring heal',950); vfxAt(t,'flash',600);
       });
       break; }
     case 'bulwark': {       // 壁垒：团盾+自身减伤+嘲讽
-      allies.forEach(t=>{ t.shield+=Math.round(t.maxhp*(sv.teamPct||.15)); vfxAt(t,'ring shield',950); });
+      allies.forEach(t=>{ t.shield+=Math.round(t.maxhp*(sv.teamPct||.15)); vfxAt(t,'tex-barrier ring shield',950); });
       u.drBuff=sv.drB||.15; u.drBuffT=(sv.drT||4)*1000;
       u.tauntT=(sv.tauntT||2.5)*1000;
-      vfxAt(u,'ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
+      vfxAt(u,'tex-barrier ring shield',1100); dmgPopup(u,u,'🎯嘲讽','cast');
       break; }
     case 'masssilence': { if(!foes.length)break;   // 灵界之门：范围沉默（不再是全屏）
       const R=AOE_RADIUS.masssilence, hit=aoeFoes(u,foes,R);
       staticFx(u); vfxAoe(u,R,'drain',700); shakeCell(u.x,u.y);
       log(`　🔇 灵界之门波及 ${hit.length} 名敌人（范围 ${R} 格）`);
-      hit.forEach(f=>{ staticFx(f); const dd=dealDamage(u,f,Math.round(power*1.1),units);
+      hit.forEach(f=>{ vfxAt(f,'tex-gate boom',750); staticFx(f); const dd=dealDamage(u,f,Math.round(power*1.1),units);
         applyFx(u,f,sv,units,allies,foes,power,dd);
         if(f.hp>0){ f.silenceT=(sv.dur||2)*1000; dmgPopup(u,f,'🔇沉默','cast'); } });
       break; }
@@ -4263,6 +4459,7 @@ function renderBattle(units){
       el.dataset.uid=u.uid;
       el.title=unitHTML(u,false).match(/title="([^"]*)"/)[1];
       el.innerHTML=unitInner(u);
+      const pe=el.querySelector('.pt'); if(pe) pe.style.animationDelay=(-((u.uid*137)%2600)/1000)+'s';   // 待机呼吸相位错开
       layer.appendChild(el);
     }
     const g=boardGeo();
@@ -4271,6 +4468,12 @@ function renderBattle(units){
     const bw=u.big?2*g.cw+g.gx:g.cw, bh=u.big?2*g.ch+g.gy:g.ch;
     el.style.left=(lx+u.x*g.sx+(bw-el.offsetWidth)/2)+'px';    // 用元素实测尺寸居中，兼容任意格子宽度
     el.style.top =(ly+u.y*g.sy+(bh-el.offsetHeight)/2)+'px';
+    el.style.zIndex=String(10+u.y*2+(u.big?3:0));  // 层内行遮挡：y 大=靠下=靠前；boss 加 3 保证压住下一行
+    if(el.dataset.gx!==undefined && (+el.dataset.gx!==u.x || +el.dataset.gy!==u.y)){
+      el.classList.add('walking');
+      clearTimeout(el._wt); el._wt=setTimeout(()=>el.classList.remove('walking'), 520/SPEED);
+    }
+    el.dataset.gx=u.x; el.dataset.gy=u.y;
     const hp=el.querySelector('.hpfill');
     if(hp) hp.style.width=Math.max(0,u.hp/u.maxhp*100)+'%';
     const mp=el.querySelector('.mpfill');
@@ -4305,6 +4508,7 @@ function renderBattle(units){
   if(ab){ const mb=ab.querySelector('.ab-me b'), fb=ab.querySelector('.ab-foe b');
     if(mb) mb.textContent=units.filter(u=>u.hp>0&&u.side===0).length;
     if(fb) fb.textContent=units.filter(u=>u.hp>0&&u.side===1).length; }
+  statBarTick();   // ⚔🛡💚 统计条实时刷新（500ms 节流）
 }
 function showResultBanner(won,cb){
   if(S.phase!=='battle') return;   // 已在结算流程中，防止重复横幅/重复结算
@@ -4429,7 +4633,7 @@ function chapterStop(){
   writeRunHistory(true); checkAchievements();   // 历史战绩 + 终局成就判定
   try{ localStorage.removeItem(saveKey()); }catch(e){}
   $('ovTitle').textContent=(S.daily?'📅 ':'')+'🏁 挑战结束';
-  $('ovText').innerHTML=`在第 ${Math.ceil(S.round/chLen())} 章 · 第 ${S.round} 回合收兵。<br>`+reportHTML('endless')+(S.daily?dailyCodeHTML():'')+globRowHTML();
+  $('ovText').innerHTML=`在第 ${Math.ceil(S.round/chLen())} 章 · 第 ${S.round} 回合收兵。<br>`+rankedNoteHTML()+reportHTML('endless')+(S.daily?dailyCodeHTML():'')+globRowHTML();
   const b1=$('ovBtn'); b1.textContent='再来一局'; b1.disabled=false; b1.style.display='inline-block';
   b1.onclick=()=>{ $('overlay').classList.add('hidden'); newGame({daily:!!S.daily}); };   // 每日挑战再来一局=同种子重试
   $('ovBtn2').style.display='none';
@@ -4458,17 +4662,19 @@ function endBattle(alive0,alive1){
     if(td && td.deal>=5000) (S.ms=S.ms||{}).mvp5k=1;   // 成就里程碑：单场输出 5000+
     if(td) bestLine=`　⚔ 本场之最：输出 ${td.name}（${td.deal}）· 承伤 ${tt?tt.name+'（'+tt.take+'）':'—'}`+
       (th&&th.heal>0?` · 治疗 ${th.name}（+${th.heal}）`:'');
+    lastBattleStats=battleStats;   // 保留给统计条（回合后查看上一场输出/抗伤/治疗）
     battleStats=null;
   }
   // —— 结构化结算块：收集后倒序写出（log 是 unshift，倒序写=面板正序读）——
   const blk=[];
   const flush=()=>{ for(let i=blk.length-1;i>=0;i--) log(blk[i]); };
+  renderStatBar();   // 回合后统计条切换到上一场数据
   blk.push(`📋 第 ${S.round} 回合结算：${won?'胜利':'失败'}（我方存活 ${alive0} · 敌方存活 ${alive1}）`);
   // 基础收入阶梯：第 1 回合 1 金 → 第 5 回合起固定 5 金（回合结束发放下一回合的收入）
   const settleIncome = ()=>{ const inc=baseIncome();
     addGold(inc,`基础收入（第 ${S.round+1} 回合）`,blk);
-    const ic=interestCap();
-    if(!hasCurse('allin')) addGold(Math.min(ic,Math.floor(S.gold/10)),'存款利息（每10金+1，上限'+ic+'）',blk);
+    const ig=interestGain();   // 孤注一掷 → 0；通胀 → 上限 3（与顶栏/备战面板同源）
+    if(ig) addGold(ig,'存款利息（每10金+1，上限'+interestCap()+'）',blk);
     const gi=augTotal('gold'); if(gi) addGold(gi,'全局增强·生财经纬',blk); };
   if(isCreep){
     /* 野怪回合：失败不扣血、不影响连胜；掉落装备——胜利 2 件、失败也有 1 件（保底）
@@ -4509,7 +4715,7 @@ function endBattle(alive0,alive1){
     const dmg = 1 + Math.floor(Math.max(0,survivors-1)/2);
     S.hp -= dmg; S.stats.dmgTaken+=dmg;
     (S.stats.hpLog=S.stats.hpLog||[]).push({r:S.round,d:dmg});        // 阶段扣血曲线记录
-    blk.push(`　💔 扣血明细：敌方存活 ${survivors} 人 → 扣 ${dmg} 血（剩余 ${S.hp<0?0:S.hp}/40）`);
+    blk.push(`　💔 扣血明细：敌方存活 ${survivors} 人 → 扣 ${dmg} 血（剩余 ${S.hp<0?0:S.hp}/${hpMax()}）`);
     if(S.hp<=0){ S.hp=0; if(bestLine)blk.push(bestLine); flush(); gameOver(false); return; }
     const lb = S.lossStreak>=7?4 : S.lossStreak>=5?3 : S.lossStreak>=3?2 : 0; // 连败补偿阶梯：3/5/7 → +2/3/4
     if(lb) addGold(lb,`连败补偿（${S.lossStreak} 连败）`,blk);
@@ -4601,7 +4807,7 @@ function gameOver(win){
   writeRunHistory(win); checkAchievements();   // 历史战绩 + 终局成就判定
   try{ localStorage.removeItem(saveKey()); }catch(e){}   // 顺手修：曾误写死旧键 'vc_save'
   $('ovTitle').textContent = (S.daily?'📅 ':'')+(win ? '🏅 最终胜利！' : (S.endless?'♾ 无限模式终结':'💀 挑战失败'));
-  $('ovText').innerHTML = (win?'':`在第 ${S.round} 回合倒下。<br>`)+reportHTML(win?'win':'lose')+(S.daily?dailyCodeHTML():'')+globRowHTML();
+  $('ovText').innerHTML = (win?'':`在第 ${S.round} 回合倒下。<br>`)+rankedNoteHTML()+reportHTML(win?'win':'lose')+(S.daily?dailyCodeHTML():'')+globRowHTML();
   $('ovBtn').textContent='再来一局';
   $('ovBtn').onclick=restartGame;   // 显式重绑：防止残留上一流程（章节继续）的 onclick 导致按钮失灵
   $('ovBtn').style.display='inline-block';
@@ -4615,7 +4821,7 @@ function endRunEarly(){  // 🏁 主动收兵：任意模式备战期均可（�
   writeRunHistory(!!S.endless); checkAchievements();   // 记入历史 + 终局成就判定
   try{ localStorage.removeItem(saveKey()); }catch(e){}
   $('ovTitle').textContent=(S.daily?'📅 ':'')+(S.endless?'♾ 无限模式结算':'🏁 提前收兵');
-  $('ovText').innerHTML=`主动结束挑战，安然退场。<br>`+reportHTML('endless')+(S.daily?dailyCodeHTML():'')+globRowHTML();
+  $('ovText').innerHTML=`主动结束挑战，安然退场。<br>`+rankedNoteHTML()+reportHTML('endless')+(S.daily?dailyCodeHTML():'')+globRowHTML();
   $('ovBtn').textContent='再来一局';
   $('ovBtn').onclick=restartGame;   // 显式重绑（同 gameOver，防 onclick 残留）
   $('ovBtn').style.display='inline-block';
@@ -4695,7 +4901,7 @@ function renderBook(){
       const banned=nbList().includes(k);
       return `<div class="bsy-item${banned?' banned':''}"><span class="bsy-ico">${icons[k]||'❓'}</span><b>${banned?'⛔ ':''}${k}</b>`+
         `<span class="bsy-need">${c.need.join(' / ')} 人</span>`+
-        (banned?`<div class="bsy-desc" style="color:#ff9a9a">本局被「⛓ 禁锢羁绊」禁用：不产生任何档位效果</div>`:'')+
+        (banned?`<div class="bsy-desc" style="color:#ff9a9a">本局被「${bondBanNames()}」禁用：不产生任何档位效果</div>`:'')+
         c.desc.map((d,i)=>`<div class="bsy-desc">T${i+1}（${c.need[i]}人）：${d}</div>`).join('')+
         `<div class="bsy-mem">现有成员 ${members} 名</div></div>`;
     }).join('');
@@ -4765,7 +4971,7 @@ const SAVE_KEY='vc_save3', HIST_KEY='vc_history', DAILY_KEY='vc_daily3';
 /* 🌍 全球排行（腾讯云 CloudBase 云函数网关，国内直连；数据存 PG 表 lb_entries） */
 const LB_API='https://hanari-d6gjqwx683f6c455d.service.tcloudbase.com';
 function lbHeaders(){ return {'Content-Type':'application/json'}; }
-async function lbFetch(path){ const r=await fetch(LB_API+path,{headers:lbHeaders()}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+async function lbFetch(path){ const r=await fetch(LB_API+path,{headers:lbHeaders(),cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }   // no-store：榜单必须实时，禁止 HTTP 层缓存
 function saveKey(){ return (S && S.daily) ? DAILY_KEY : SAVE_KEY; }   // 每日挑战独立存档（不覆盖普通进度）
 function saveGame(){ // 仅备战阶段保存（战斗中刷新不损失进度：回到该回合开打前）
   if(S.phase!=='prep') return;
@@ -4782,7 +4988,7 @@ function loadGame(key){ key=key||SAVE_KEY;
     if(!S) S={}; // 直接从存档启动时 S 尚未初始化
     Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
     S.tickets=S.tickets||0; S.tempBuff=S.tempBuff||null;   // 旧存档兼容
-    S.ms=S.ms||{}; S.curses=S.curses||[]; S.cursesData=S.cursesData||{};
+    S.ms=S.ms||{}; S.curses=sanitizeCurses(S.curses); S.cursesData=S.cursesData||{};   // 旧存档可能同时存有互斥项
     S.daily=(key===DAILY_KEY)||!!S.daily; S.dseed=S.dseed||todaySeed();
     applyRNG();
     S.auto = autoStoreGet(); setAutoUI();
@@ -4808,7 +5014,17 @@ function histH2(){ return histTab==='log'?'📜 历史战绩（最近 50 局）'
 function histTitle(){ return histTab==='log'?'🏆 荣誉殿堂 · 战绩记录':histTab==='achv'?'🏆 荣誉殿堂 · 成就收藏':histTab==='gl'?'🏆 荣誉殿堂 · 🌍 全球排行':'🏆 荣誉殿堂 · 本地排行'; }
 /* ===== 🌍 全球排行（Cloudflare Worker + KV，信任模式）===== */
 function lbNick(){ try{ return localStorage.getItem('vc_nick')||''; }catch(e){ return ''; } }
-function globRowHTML(){   // 终局结算里的提交行（离线时不显示）
+/* 自定义诅咒局不计入排行榜：自选诅咒自带补偿（+金/半价/发券）且组合由玩家自定，
+   成绩与其他玩家不可比；每日挑战是全体同种子+同预置诅咒，照常入榜。
+   判定只看"是否诅咒局"，所以自定义模式但一条没勾（等同普通模式）仍然入榜。 */
+function rankedRun(){ return !!S.daily || !(S.curses||[]).length; }
+function rankedHist(x){ return !!x.daily || !(x.curses||0); }   // 同一规则用于历史记录条目（旧存档字段齐全，无需迁移）
+function rankedNoteHTML(){   // 不计榜说明：放在结算屏【顶部】做横幅，避免压在底部按钮/备战席那条带上
+  if(rankedRun()) return '';
+  return `<div style="margin:4px 0 10px;font-size:12px;color:#ff9a9a">⚠ 自定义诅咒局不计入排行榜（成绩已记入 📜 战绩记录）</div>`;
+}
+function globRowHTML(){   // 终局结算里的提交行（离线时不显示；自定义诅咒局不提供入口）
+  if(!rankedRun()) return '';
   if(typeof navigator!=='undefined' && navigator.onLine===false) return '';
   return `<div id="globRow" style="margin-top:10px;display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap">
     <input id="nickIn" maxlength="12" placeholder="昵称（12 字内）" value="${lbNick().replace(/"/g,'&quot;')}"
@@ -4818,6 +5034,7 @@ function globRowHTML(){   // 终局结算里的提交行（离线时不显示）
 }
 async function submitScore(){
   const btn=$('globBtn'), msg=$('globMsg'), inp=$('nickIn');
+  if(!rankedRun()){ if(msg) msg.textContent='自定义诅咒局不计入排行榜（成绩已记入战绩记录）'; return; }   // 兜底：UI 已不提供入口
   const name=(inp&&inp.value||'').trim();
   if(!name){ if(msg) msg.textContent='请先输入昵称'; return; }
   try{ localStorage.setItem('vc_nick',name); }catch(e){}
@@ -4872,7 +5089,7 @@ function renderHistory(){
   $('histList').innerHTML = h.length ? h.map(x=>{
     const d=new Date(x.ts), p=n=>String(n).padStart(2,'0');
     return `<div class="hrow"><span>${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</span>
-      <span>${x.win?'🏅 胜利':'💀 失败'}${x.endless?'（无尽）':''}${x.daily?' 📅':''}${x.curses?` ⚠×${x.curses}`:''}</span>
+      <span>${x.win?'🏅 胜利':'💀 失败'}${x.endless?'（无尽）':''}${x.daily?' 📅':''}${x.curses?` ⚠×${x.curses}`:''}${rankedHist(x)?'':' 🚫不计榜'}</span>
       <span>第 ${x.round} 回合${x.ch>1?` · ${x.ch} 章`:''} · ❤${x.hp} · 最高连胜${x.maxStreak} · 击杀${x.kills}</span></div>`;
   }).join('') : '<div style="color:#6b6288;padding:14px;text-align:center">暂无历史对局</div>';
 }
@@ -4880,17 +5097,18 @@ function lineupIcons(ids){ return (ids||[]).map(id=>`<img class="lb-pt" src="ass
 function renderLeaderboard(){
   let h=[]; try{ h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){}
   if(!h.length){ $('histList').innerHTML='<div style="color:#6b6288;padding:14px;text-align:center">暂无记录——先打完一局</div>'; return; }
-  const rows=[...h].sort((a,b)=> (b.ch||1)-(a.ch||1) || b.round-a.round || (b.kills||0)-(a.kills||0));
+  const rows=[...h].filter(rankedHist).sort((a,b)=> (b.ch||1)-(a.ch||1) || b.round-a.round || (b.kills||0)-(a.kills||0));   // 自定义诅咒局不入榜
   const today=h.filter(x=>x.daily && x.dseed===todaySeed());
   const best=today.length? Math.max(...today.map(x=>x.round)) : 0;
+  const note=`<div style="color:#6b6288;font-size:11px;margin-top:8px">※ 自定义诅咒局不计入排行（自选诅咒自带补偿，成绩不具可比性）——它们仍完整保留在「📜 战绩记录」页</div>`;
   $('histList').innerHTML=(best?`<div style="color:#9dd3e8;font-size:12px;margin-bottom:6px">📅 今日每日挑战最佳：第 ${best} 回合（种子 ${todaySeed()}，挑战码 DC-${todaySeed()}-${best}）</div>`:'')+
-    rows.slice(0,20).map((x,i)=>{
+    (rows.length? rows.slice(0,20).map((x,i)=>{
     const d=new Date(x.ts), p=n=>String(n).padStart(2,'0');
     return `<div class="hrow lb"><span class="lb-rk">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
       <span>${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</span>
       <span>${x.daily?'📅 ':''}${x.ch||1} 章 · 第 ${x.round} 回合${x.curses?` · ⚠诅咒×${x.curses}`:''}</span>
       <span class="lb-team">${lineupIcons(x.lineup)}</span></div>`;
-  }).join('');
+  }).join('') : '<div style="color:#6b6288;font-size:12px;padding:8px">排行榜只收录普通模式与每日挑战的成绩</div>')+note;
 }
 function renderAchv(){
   const got=achvGet();
@@ -4995,6 +5213,8 @@ function fitBoard(){
 }
 addEventListener('resize',fitBoard); fitBoard();
 /* 启动：开局即询问模式（三选一）；有存档时提供「继续上一局」按钮（优先今日每日） */
+let autoBusy=false;   // 必须声明在 initApp 之前：initApp → newGame 在"上次开着托管"时会直接调 autoPilot，
+                      // 声明晚于此处会撞 TDZ 抛错，把后面的 renderAll()/showIntro() 一起打断
 (function initApp(){
   try{
     const d=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');
@@ -5006,6 +5226,8 @@ addEventListener('resize',fitBoard); fitBoard();
     if(d && typeof d.round==='number') resumeAvail={label:`▶ 继续每日挑战（第 ${d.round} 回合）`, key:DAILY_KEY};
     else if(n && typeof n.round==='number') resumeAvail={label:`▶ 继续上一局（第 ${n.round} 回合）`, key:SAVE_KEY};
   }catch(e){}
+  /* 桌面端：敌方阵容横幅挪到左侧羁绊栏顶部；触屏保持原位（竖屏仍显示在棋盘上方） */
+  if(!IS_TOUCH){ try{ $('synCol').insertBefore($('oppBar'), $('synCol').firstChild); }catch(e){} }
   newGame(); renderAll();   // 背景先渲染一局（选择模式后真正开新局覆盖）
   showIntro(false);
 })();
@@ -5057,7 +5279,6 @@ function renderAutoFightBtn(){
 }
 $('autoFightBtn').onclick=()=>{ if(!S||S.phase==='over') return; setAutoFight(!S.autoFight);
   log(S.autoFight?'▶ 自动开战开启：保持当前阵容连续战斗':'⏸ 自动开战关闭'); };
-let autoBusy=false;
 function autoPilot(delay=900){
   if(!S || !S.auto || S.phase!=='prep' || autoBusy) return;
   autoBusy=true;
@@ -5096,6 +5317,6 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
   if(S.auto && S.phase==='prep') autoPilot(300);
 };
 </script>
-<script src="tools/bot_strategy.js?v=2"></script>
+<script src="tools/bot_strategy.js?v=3"></script>
 </body>
 </html>

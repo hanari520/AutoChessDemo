@@ -6,7 +6,7 @@
    sim.js 依赖：S/byId/pairCount/buy/clickUnit/rollShop/checkLevel/autoDeployBest 会被符号改写，
    其余只允许调用 function 声明（挂 globalThis），不得直接引用顶层 const（如 XP_NEED/FACTIONS）。
    BOT_VER 会在托管开启时打进战报，用于确认浏览器加载的不是缓存的旧策略文件。 */
-const BOT_VER='策略 v2.1（普通玩家模型：看牌定型/触发式搜牌/五段经济/节点拉级/危机all-in + 升星券/顶配停刷/诅咒适配）';
+const BOT_VER='策略 v2.2（普通玩家模型：看牌定型/触发式搜牌/五段经济/节点拉级/危机all-in + 升星券/顶配停刷/诅咒适配 + 无梦禁购经验/紧缩货架读 shopSize）';
 
 /* ---------- 阵容计划：看牌定型 + 粘性 ---------- */
 function botTagCount(){   // 牌面（场上+备战席）独特棋子的阵营/职业计数
@@ -156,6 +156,7 @@ function botPrepSteps() {
     const mode=botEconMode();
     if(mode==='crisis'||mode==='urgent') return;   // 有命才有钱：先稳战力不买经验
     if(S.round===1) return;                        // 首回合禁购经验
+    if(typeof hasCurse==='function' && hasCurse('dreamless')) return;   // 💤 无梦：本局禁购经验（不能绕过按钮直接改 S.xp）
     const cap=(typeof lvlCap==='function')?lvlCap():11;   // 🪑 独木桥诅咒：上限 5
     if(S.lvl>=cap) return;
     if(S.gold>=50){
