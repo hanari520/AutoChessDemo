@@ -51,6 +51,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 @keyframes hitshake { 0%,100%{ transform:translateX(-50%) } 30%{ transform:translateX(-57%) } 65%{ transform:translateX(-43%) } }
 /* 头目野怪 2×2 体格：战斗/备战预览均以锚点格真实占据 2×2（占格互斥由引擎保证，此处只负责尺寸与层级） */
 .unit.battle-unit.big, #board .unit.preview.big { width:calc(var(--cell)*2 + var(--gap) - 8px); height:calc(var(--cell)*2 + var(--gap) - 8px); z-index:13; }
+#board .unit.preview.big { top:auto; bottom:4px; }   /* 预览 2×2 底对齐锚点格：向上铺开，不探进下一行（配合锚点格 z=2+y 的行序遮挡） */
 .unit.battle-unit.big .nm { font-size:15px; }
 .unit.battle-unit.big .st { font-size:12px; }
 .unit.battle-unit.big .fj { font-size:10px; }
@@ -117,7 +118,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 /* 羁绊徽章：固定右上角（备战/战斗同位）；战斗态敌我标签下移、状态表情移到星级下方让位 */
 .unit .syn { position:absolute; top:-58%; right:2px; display:flex; justify-content:flex-end; gap:2px; z-index:1; pointer-events:none; }
 .unit .syn .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:center;
-  background-repeat:no-repeat; background-size:contain; image-rendering:pixelated; pointer-events:auto;
+  background-repeat:no-repeat; background-size:contain; pointer-events:auto;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
 /* 战斗态状态表情与基础位一致（悬浮头顶下方），旧 15px 锚点已废 */
 .btn.auto-on { border-color:#8dff9a; color:#8dff9a; box-shadow:0 0 8px #8dff9a55; }
@@ -2023,7 +2024,7 @@ function renderBoard(){
       cell.innerHTML=unitHTML(S.enemyBoard[i], false).replace('<div class="unit ','<div class="unit preview ');
       if(S.enemyBoard[i].big){   // 2×2 头目预览：从锚点格铺满 4 格（其余格为空，点击仅取消选中）
         const pe=cell.querySelector('.unit'); if(pe) pe.classList.add('big');
-        cell.style.zIndex=String(61+y);   // boss 立绘跨格：锚点格提到全部普通格子之上，避免空格子背景盖住下半身
+        cell.style.zIndex=String(2+y);   // boss 立绘跨格：锚点格提到上两行格子之上、让位于下一行（行序遮挡与普通棋子一致）
       }
       cell.classList.add('enemy-preview-cell');
       isEnemyPreview=true;
@@ -4491,7 +4492,7 @@ function renderBattle(units){
     const bw=u.big?2*g.cw+g.gx:g.cw, bh=u.big?2*g.ch+g.gy:g.ch;
     el.style.left=(lx+u.x*g.sx+(bw-el.offsetWidth)/2)+'px';    // 用元素实测尺寸居中，兼容任意格子宽度
     el.style.top =(ly+u.y*g.sy+(bh-el.offsetHeight)/2)+'px';
-    el.style.zIndex=String(10+u.y*2+(u.big?3:0));  // 层内行遮挡：y 大=靠下=靠前；boss 加 3 保证压住下一行
+    el.style.zIndex=String(10+u.y*2+(u.big?1:0));  // 层内行遮挡：y 大=靠下=靠前；boss 加 1 压住本行、让位于下一行（脚部不再盖住下排棋子）
     if(el.dataset.gx!==undefined && (+el.dataset.gx!==u.x || +el.dataset.gy!==u.y)){
       el.classList.add('walking');
       clearTimeout(el._wt); el._wt=setTimeout(()=>el.classList.remove('walking'), 520/SPEED);
