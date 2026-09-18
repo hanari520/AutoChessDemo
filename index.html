@@ -4610,7 +4610,8 @@ function gameOver(win){
 }
 function endRunEarly(){  // 🏁 主动收兵：任意模式备战期均可（无限模式记胜，普通/每日/自定义记弃局）
   if(S.phase!=='prep') return;
-  S.phase='over'; endRunCleanup();
+  S.phase='over'; endRunCleanup(); hideOvClose();
+  resumeAvail=null;   // 存档已删除，「继续上一局」不再有效
   writeRunHistory(!!S.endless); checkAchievements();   // 记入历史 + 终局成就判定
   try{ localStorage.removeItem(saveKey()); }catch(e){}
   $('ovTitle').textContent=(S.daily?'📅 ':'')+(S.endless?'♾ 无限模式结算':'🏁 提前收兵');
@@ -4827,7 +4828,11 @@ async function submitScore(){
         round:S.round, ch:Math.ceil(S.round/chLen()), kills:S.stats.kills, curses:(S.curses||[]).length,
         lineup:S.board.filter(Boolean).slice(0,6).map(u=>u.id)})})
       .then(r=>r.json());
-    if(j.ok){ if(btn) btn.textContent='✓ 已提交（第 '+j.rank+' 名）'; if(msg) msg.textContent='成绩已进入全球排行（战绩 → 🌍全局 查看）'; }
+    if(j.ok){
+      if(btn) btn.textContent='✓ 已提交（第 '+j.rank+' 名）';
+      if(msg) msg.textContent='成绩已进入全球排行（战绩 → 🌍全局 查看）';
+      try{ localStorage.setItem('vc_lastSubmit', JSON.stringify({name, board:S.daily?'daily':'normal', round:S.round, kills:S.stats.kills, ts:Date.now()})); }catch(e){}
+    }
     else{ if(btn){ btn.disabled=false; btn.textContent='🌍 提交全球排行'; } if(msg) msg.textContent='提交失败：'+(j.error||'未知错误'); }
   }catch(e){
     if(btn){ btn.disabled=false; btn.textContent='🌍 提交全球排行'; }
@@ -4846,6 +4851,15 @@ async function renderGlobalBoard(){
     const sec=(t,list,showCh)=>`<div style="margin-bottom:10px"><div style="color:#ffd24a;font-size:12px;margin-bottom:4px">${t}</div>`+
       (list&&list.length? list.slice(0,15).map((x,i)=>row(x,i,showCh)).join('') : '<div style="color:#6b6288;font-size:12px">暂无记录，快来抢占第一</div>')+'</div>';
     el.innerHTML= sec('📅 每日榜 · 今日（种子 '+seed+'）', dn.list, false) + sec('🏆 普通榜 · 最远章节', nj.list, true);
+    /* 数据库读写分离存在秒级同步延迟：刚提交的成绩可能还没出现在榜上，明确告知避免误解 */
+    try{
+      const ls=JSON.parse(localStorage.getItem('vc_lastSubmit')||'null');
+      const onList = ls && ((dn.list&&dn.list.some(x=>x.name===ls.name&&x.round===ls.round)) || (nj.list&&nj.list.some(x=>x.name===ls.name&&x.round===ls.round)));
+      if(ls && !onList){
+        const when=new Date(ls.ts), p=n=>String(n).padStart(2,'0');
+        el.innerHTML+=`<div style="margin-top:6px;font-size:11px;color:#9dd3e8">🕒 你刚提交：${String(ls.name).replace(/[<>&]/g,'')} · 第 ${ls.round} 回合（${p(when.getHours())}:${p(when.getMinutes())} 提交，全网同步中，稍后刷新可见）</div>`;
+      }
+    }catch(e){}
   }catch(e){
     el.innerHTML='<div style="color:#6b6288;padding:12px;text-align:center">🌍 全球排行暂不可用（离线或服务未响应）</div>';
   }
