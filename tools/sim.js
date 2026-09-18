@@ -1,5 +1,7 @@
 /* 无头模拟器：加载 index.html 的游戏脚本，用 DOM 桩跑真实战斗逻辑，
-   由"普通玩家"机器人代打，统计 25 回合通关率（含野怪回合掉装备胜率）。用法：node tools/sim.js [局数] */
+   由"普通玩家"机器人代打，统计各章守关通过率（r25/50/75/100 魔王战胜负；守关失败不终局，
+   对局按普通回合扣血死亡结束）。用法：node tools/sim.js [局数]；MAXR=100 环境变量可在
+   打完 r100 章节结算后截断（只测前四章时省算力，章节统计不受影响） */
 const fs = require('fs'), path = require('path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
@@ -112,28 +114,37 @@ if (process.env.T4) { require('./_t4_tests.js').run(A, driveBattle); process.exi
 
 /* ---------- 主循环 ---------- */
 const N = parseInt(process.argv[2] || '100', 10);
+const MAXR = parseInt(process.env.MAXR || '0', 10);   // 调试用：>0 时打完该回合的章节结算即截断（章节统计在截断点之前，不受影响）
 globalThis.hpCurve = {}; globalThis.wrStats = {}; globalThis.creepWR = {};
 const results = [];
 let ch1Wins = 0;
+const chWins = [0, 0, 0, 0];      // 各章守关胜利局数（第 k 位 = 打赢 r25k 魔王的局数；第 5 章起并入第 4 位）
+const chReached = [0, 0, 0, 0];   // 打到该章守关战（存活至该回合）的局数
 for (let g = 0; g < N; g++) {
   (0, eval)('newGame()'); (0, eval)('renderAll()');
   let outcome = null;
   let chapters = 0, ch1 = false;
-  for (let guard = 0; guard < 130; guard++) {
+  for (let guard = 0; guard < 400; guard++) {
     const preWins = A.S.stats.wins, curRound = A.S.round, hpBefore = A.S.hp, preStreak = A.S.streak;
     if (A.S.phase === 'chapter') {   // 章节结算：记录守关胜负 → 选增强 → 继续下一章（败亡即终局）
       const won = !!A.S.settleWon;
+      const ci = Math.min(3, chapters);
+      chReached[ci]++; if (won) chWins[ci]++;
       if (won && chapters === 0) ch1Wins++;
       chapters++;
       if (typeof globalThis.pickAug === 'function' && A.S.settleOffer && A.S.settlePick == null) globalThis.pickAug(0);
       globalThis.chapterContinue();
+      if (MAXR > 0 && A.S.round > MAXR) {
+        outcome = { win: chapters > 0, chapters, round: A.S.round, hp: A.S.hp, streak: A.S.stats.maxStreak, kills: A.S.stats.kills, truncated: true };
+        break;
+      }
       continue;
     }
     botPrep();
     (0, eval)('startBattle')();
     driveBattle();
     const S = A.S;
-    if (curRound % 5 === 0 && curRound <= 25) {  // 野怪回合战果：以胜负统计增量为准
+    if (curRound % 5 === 0) {  // 野怪回合战果（含第二~四章 r30+）：以胜负统计增量为准
       (globalThis.creepWR[curRound] = globalThis.creepWR[curRound] || []).push(S.stats.wins > preWins ? 1 : 0);
     }
     if (process.env.DBG) {
@@ -160,7 +171,10 @@ for (let g = 0; g < N; g++) {
   results.push(outcome);
 }
 const wins = results.filter(r => r.chapters >= 1);
-console.log(`局数=${N} 击败r25守关魔王=${ch1Wins} (${(ch1Wins / N * 100).toFixed(1)}%)  到达结算=${wins.length}  平均推进章节数=${(results.reduce((s,r)=>s+r.chapters,0)/N).toFixed(2)}  平均最终回合=${(results.reduce((s,r)=>s+r.round,0)/N).toFixed(1)}`);
+const fmtPct = (a, b) => b ? (a / b * 100).toFixed(1) + '%' : '—';
+console.log(`局数=${N}${MAXR ? `（r${MAXR} 截断）` : ''}  平均推进章节数=${(results.reduce((s,r)=>s+r.chapters,0)/N).toFixed(2)}  平均最终回合=${(results.reduce((s,r)=>s+r.round,0)/N).toFixed(1)}  到达结算=${wins.length}`);
+console.log('章节守关通过率（累计，占全部局数）: ' + chWins.map((w, i) => `第${i + 1}章 ${w}/${N}=${fmtPct(w, N)}`).join('  '));
+console.log('章节守关通过率（条件，占打到该章的局数）: ' + chWins.map((w, i) => `第${i + 1}章 ${fmtPct(w, chReached[i])}(${chReached[i]})`).join('  '));
 const lossRounds = results.filter(r => !r.win).map(r => r.round);
 if (lossRounds.length) {
   const hist = {};
