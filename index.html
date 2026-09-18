@@ -1197,7 +1197,7 @@ const CLASSES = {
   '咒术': {need:[2], desc:['战斗开始时，将一名随机敌人变形 2.5 秒（无法行动且禁用技能含被动）']},
   '刺客': {need:[3,6], desc:['刺客攻击 18% 概率造成 3.5 倍暴击','暴击伤害提升至 4.5 倍']},
   '狂战': {need:[2,4], desc:['狂战吸血 26%','狂战吸血 42%']},
-  '医者': {need:[2,4], desc:['全队每秒回复 1 生命','全队每秒回复 2 生命']},
+  '医者': {need:[2,4], desc:['每 5 秒为生命比例最低的队友回复 4% 最大生命（急救）','每 5 秒为生命比例最低的两名队友各回复 6% 最大生命（急救）']},
   '偶像': {need:[2,3], desc:['全队棋子战斗开始时获得 10 点法力（应援充能）','全队棋子战斗开始时获得 20 点法力（应援充能）']},
 };
 /* 技能效果按费用分级增强：1费×0.92 → 3费×1.12 → 5费×1.32 */
@@ -3403,8 +3403,7 @@ function startBattle(){
     const asCrit = asT>=1 ? 0.18 : 0, asCritM = asT>=2 ? 4.5 : 3.5;
     const wkT=tierOf(clsCnt,CLASSES,'狂战');   // 术士：吸血
     const wkVamp = wkT>=2 ? 0.42 : wkT>=1 ? 0.26 : 0;
-    t=tierOf(clsCnt,CLASSES,'医者');           // 工匠：全队回血
-    if(t>=1) regen+=1; if(t>=2) regen+=1;
+    const mdT=tierOf(clsCnt,CLASSES,'医者');   // 医者急救（2026-09-19 重做：原工匠式全队回血与歌势回血重叠）：周期救护生命最低队友
     t=tierOf(clsCnt,CLASSES,'偶像');           // 偶像应援（2026-09-19 重做）：全队开局法力充能
     const idolMana = t>=2 ? 20 : t>=1 ? 10 : 0;
     if(side===0){   // 羁绊启动音：至多 2 个已达档位羁绊（表现层）
@@ -3435,6 +3434,7 @@ function startBattle(){
       if(mrBuff>0) u.mr=Math.min(0.85,(u.mr||0)+mrBuff);          // 娜迦式：全队魔抗（封顶 85%）
       if(hasJob(d,'刀客') && waT>=1){ u.ar += waT>=3?14 : waT>=2?11 : 7; u.arcs=waT; }      // 战士式护甲 + 脚下金弧
       if(hasJob(d,'守护') && knP>0){ u.knightP=knP; u.knightSh=knSh; u.knightCd=3000; }  // 骑士式周期护盾
+      if(mdT>=1){ u.medicCd=5000; u.medicPct=mdT>=2?0.06:0.04; u.medicN=mdT>=2?2:1; }   // 医者急救：周期救护生命最低队友
       if(hasJob(d,'游侠') && hgBounce>0) u.bounceP=hgBounce;       // 猎人式弹射
       if(hasJob(d,'刺客') && asCrit>0){ u.crit=Math.min(0.6,(u.crit||0)+asCrit); u.critM=Math.max(u.critM||0,asCritM); }    // 刺客暴击与装备/专属暴击合并：率相加封顶60%、暴伤取大
       if(hasJob(d,'刺客')) u.moveMul=0.8;                        // 刺客职业特性：移动力 +25%（跳后排后步频更快、不易被围死）
@@ -3529,6 +3529,16 @@ function startBattle(){
         u.knightCd-=TICK;
         if(u.knightCd<=0){ u.knightCd=3000;
           if(rand()<u.knightP){ u.shield+=Math.round(u.maxhp*u.knightSh); vfxAt(u,'ring shield',800); sfx('shield'); dmgPopup(null,u,'🛡盾','cast'); } }
+      }
+      if(u.medicCd>0){                               // 医者（急救）：每 5 秒救护生命比例最低的队友（尊重减疗）
+        u.medicCd-=TICK;
+        if(u.medicCd<=0){ u.medicCd=5000;
+          const hd=o=>o.healDownT>0?(1-o.healDownA):1;
+          const pool=units.filter(o=>o.side===u.side&&o.hp>0&&o.hp<o.maxhp)
+            .sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp).slice(0,u.medicN||1);
+          pool.forEach(o=>{ const h=Math.round(o.maxhp*u.medicPct*hd(o)); const real=Math.min(o.maxhp,o.hp+h)-o.hp;
+            o.hp+=real; bsHeal(u,real); vfxAt(o,'tex-holy ring heal',800); dmgPopup(u,o,'+'+h,'heal'); });
+        }
       }
       if(u.shieldTick){                               // 不朽圣盾：每 3 秒稳定获得 8% 生命护盾（禁盾期间不生效）
         if(u.itemShieldCd>0) u.itemShieldCd-=TICK;
