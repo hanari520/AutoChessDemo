@@ -110,7 +110,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 /* 备战棋子（棋盘+板凳统一格式）：名字牌去掉；出框站姿 + 星级叠左脚部 + 羁绊叠脚底（参考金铲铲式） */
 #board .cell > .unit .nm, #bench .unit .nm { display:none; }
 #board .cell > .unit .st, #bench .unit .st { top:auto; bottom:24%; left:4%; right:auto; }
-#board .cell > .unit .syn, #bench .unit .syn { top:auto; bottom:3%; right:4%; }
+#board .cell > .unit .syn { display:none; }   /* 棋盘徽章改走 #synBadgeLayer 悬浮层（根治下排头部越界遮挡） */
+#bench .unit .syn { top:auto; bottom:3%; right:4%; }
 /* 战斗：星级显示在血条上方（居中），名字独占底部 */
 .unit.battle-unit .st { top:auto; bottom:26px; left:50%; right:auto; transform:translateX(-50%); }
 .unit .nm { position:absolute; left:2px; right:2px; bottom:3px; z-index:1; font-weight:bold; padding:1px 0;
@@ -124,6 +125,15 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .btn.auto-on { border-color:#8dff9a; color:#8dff9a; box-shadow:0 0 8px #8dff9a55; }
 /* 羁绊反馈：激活图标点亮 / 刀客脚下金弧 / 溅射与冰封禁地 */
 .unit .syn .sy.on{ filter:brightness(1.35) saturate(1.25) drop-shadow(0 0 4px #ffd24a); }
+/* 羁绊徽章悬浮层（备战棋盘）：脱离棋子元素、置于全部立绘之上，任何头部越界都盖不住徽章 */
+#synBadgeLayer { position:absolute; inset:0; z-index:60; pointer-events:none; }
+#synBadgeLayer > div { position:absolute; display:flex; justify-content:flex-end; gap:2px; }
+#synBadgeLayer .syn { display:flex; gap:2px; position:static; }
+#synBadgeLayer .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:center;
+  background-repeat:no-repeat; background-size:contain; pointer-events:auto;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
+#synBadgeLayer .sy.on { filter:brightness(1.35) saturate(1.25) drop-shadow(0 0 4px #ffd24a); }
+#synBadgeLayer .unit.big-badge .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
 .unit .arcs{ position:absolute; left:8%; right:8%; bottom:2px; height:30%; pointer-events:none; z-index:1; }
 .unit .arcs::after{ content:''; position:absolute; inset:0; border:2px solid transparent; border-radius:50%; }
 .unit .arcs.a1::after{ border-bottom-color:#ffd24acc; }
@@ -2036,6 +2046,36 @@ function renderBoard(){
   // 攻击范围提示（选中 / 拖动时）：源格描金，可攻击格浅蓝
   paintRange();
   paintMoveSel();
+  paintSynBadges();   // 羁绊徽章悬浮层（全板置顶，任何立绘越界都盖不住）
+}
+/* 羁绊徽章悬浮层：徽章脱离棋子元素、按格子右上角定位画在全板最高层，
+   根治「下排棋子头部越界盖住上排棋子徽章」；战争迷雾下不给敌方预览画徽章 */
+function paintSynBadges(){
+  const b=$('board'); if(!b) return;
+  const old=document.getElementById('synBadgeLayer'); if(old) old.remove();
+  if(S.phase!=='prep') return;   // 徽章悬浮层只属于备战棋盘（开战流程中的 renderBoard 不重建）
+  const g=boardGeo();
+  let html='';
+  const put=(u,x,y,big)=>{
+    if(!u || x<0 || y<0 || x>=BOARD_W || y>=BOARD_H) return;
+    const d=byId(u.id); if(!d) return;
+    const s=synIconsHTML(d); if(!s) return;
+    const n=(s.match(/class="sy/g)||[]).length || 1;
+    const bw=g.cw*(big?0.30:0.19);
+    const w=n*bw+(n-1)*2;
+    const left=g.cellX+x*g.sx+(big?2*g.cw+g.gx:g.cw)-4-w;
+    const top =g.cellY+(big?Math.max(0,y-1):y)*g.sy-(big?0.45:0.58)*g.ch;   // 头顶上方空带：不盖自己脸、不碰上排脸、下排头发够不着
+    html+=`<div style="left:${left}px;top:${top}px"${big?' class="unit big-badge"':''}>${s}</div>`;
+  };
+  for(let i=0;i<BOARD_W*BOARD_H;i++){
+    const p=S.board[i];
+    if(p){ put(p, i%BOARD_W, (i/BOARD_W)|0, !!p.big); continue; }
+    if(S.phase==='prep' && S.enemyBoard && S.enemyBoard[i] && !hasCurse('fog'))
+      put(S.enemyBoard[i], i%BOARD_W, (i/BOARD_W)|0, !!S.enemyBoard[i].big);
+  }
+  if(!html) return;
+  const layer=document.createElement('div'); layer.id='synBadgeLayer'; layer.innerHTML=html;
+  b.appendChild(layer);
 }
 /* 只切换已有格子的高亮 class，不重建 DOM（否则会打断浏览器 click 事件，导致点棋子失效） */
 function paintRange(){
@@ -3319,6 +3359,7 @@ function fillBoardBeforeBattle(){
 function startBattle(){
   if(S.phase!=='prep') return;
   closeDrawer();   // 抽屉（商店/详情）开着时开战：先收起，不挡战斗画面
+  const _sl=document.getElementById('synBadgeLayer'); if(_sl) _sl.remove();   // 徽章悬浮层只属于备战棋盘
   stopTickLoop(); // 关闭任何残余的战斗时钟
   fillBoardBeforeBattle();   // 人口不满先自动补位（只上场、不动阵型、不合成）；全空则维持原拦截
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
