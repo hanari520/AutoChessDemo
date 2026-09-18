@@ -36,7 +36,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 #synCol #oppBar { width:100%; max-width:none; font-size:13px; }
 #oppBar #enemyInfo { font-size:14px; line-height:1.55; }
 #board { display:grid; grid-template-columns:repeat(8,var(--cell)); grid-template-rows:repeat(8,var(--cell)); gap:var(--gap);
-  background:#221c38; padding:var(--pad); border-radius:10px; border:2px solid #35294f; position:relative; }
+  background:#221c38; padding:var(--pad); border-radius:10px; border:2px solid #35294f; position:relative; isolation:isolate; }
+/* isolation：棋盘自成层叠上下文——格/单位/特效/伤害数字/徽章悬浮层的 z 只在板内竞争，
+   任何板内 z 再高也不会泄漏到弹窗（histModal 55 / bookModal 40）/抽屉(38)/悬浮提示之上 */
 #unitLayer { position:absolute; left:var(--pad); top:var(--pad); width:calc(8*var(--cell) + 7*var(--gap)); height:calc(8*var(--cell) + 7*var(--gap)); pointer-events:none; z-index:20; }
 .unit.battle-unit { position:absolute; inset:auto; width:calc(var(--cell) - 8px); height:calc(var(--cell) - 8px); pointer-events:auto; isolation:isolate;
   transition:left calc(.45s/var(--spd)) ease, top calc(.45s/var(--spd)) ease, transform calc(.12s/var(--spd)) ease; overflow:visible; }
@@ -110,9 +112,9 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 /* 备战棋子（棋盘+板凳统一格式）：名字牌去掉；出框站姿 + 星级叠左脚部 + 羁绊叠脚底（参考金铲铲式） */
 #board .cell > .unit .nm, #bench .unit .nm { display:none; }
 #board .cell > .unit .st { display:none; }   /* 棋盘星级也走 #synBadgeLayer 悬浮层（下移到脚部且不被下排头部遮挡） */
-#bench .unit .st { top:auto; bottom:24%; left:4%; right:auto; }
+#bench .unit .st { top:auto; bottom:9%; left:4%; right:auto; }   /* 与棋盘一致：星级贴脚部 */
 #board .cell > .unit .syn { display:none; }   /* 棋盘徽章改走 #synBadgeLayer 悬浮层（根治下排头部越界遮挡） */
-#bench .unit .syn { top:auto; bottom:3%; right:4%; }
+#bench .unit .syn { top:-58%; bottom:auto; right:2px; }   /* 与棋盘一致：徽章悬浮头顶上方空带 */
 /* 战斗：星级显示在血条上方（居中），名字独占底部 */
 .unit.battle-unit .st { top:auto; bottom:26px; left:50%; right:auto; transform:translateX(-50%); }
 .unit .nm { position:absolute; left:2px; right:2px; bottom:3px; z-index:1; font-weight:bold; padding:1px 0;
