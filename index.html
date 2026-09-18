@@ -739,7 +739,7 @@ body.touch .m-only { display:inline-block; }
   <span class="tag" id="curseTag" style="display:none;color:#ff9a9a;border-color:#ff9a9a66;cursor:help"></span>
   <span class="tag" id="ticketTag" style="cursor:help" title="升星券：把一名 3★ 棋子升为 4★。来源：守关胜利、挑战规则补偿。用法：点击 3★ 棋子 → 详情面板金色按钮">🎫 ×0</span>
   <div class="fight-btn-row">
-    <button class="btn" id="histBtn">📜 战绩</button>
+    <button class="btn" id="histBtn" title="战绩记录 · 🏅成就（19 项）· 🏆本地排行 · 🌍全球排行">🏆 荣誉殿堂</button>
     <button class="btn" id="bookBtn">📖 图鉴</button>
     <button class="btn" id="autoBtn">🤖 托管</button>
     <button class="btn" id="helpBtn">❓ 玩法</button>
@@ -828,7 +828,7 @@ body.touch .m-only { display:inline-block; }
 <div id="histModal" class="hidden">
   <div id="histPanel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <h2>📜 历史战绩（最近 50 局）</h2>
+      <h2 id="histTitle">🏆 荣誉殿堂 · 战绩 / 成就 / 排行</h2>
       <button class="btn" id="histClose">✕ 关闭</button>
     </div>
     <div id="histTabs">
@@ -4652,6 +4652,7 @@ function writeRunHistory(win){   // 终局统一写入（战绩/成就/排行共
 }
 let histTab='log';   // 战绩弹窗页签：log=战绩 achv=成就 lb=排行
 function histH2(){ return histTab==='log'?'📜 历史战绩（最近 50 局）':histTab==='achv'?'🏅 成就':histTab==='gl'?'🌍 全球排行':'🏆 排行榜'; }
+function histTitle(){ return histTab==='log'?'🏆 荣誉殿堂 · 战绩记录':histTab==='achv'?'🏆 荣誉殿堂 · 成就收藏':histTab==='gl'?'🏆 荣誉殿堂 · 🌍 全球排行':'🏆 荣誉殿堂 · 本地排行'; }
 /* ===== 🌍 全球排行（Cloudflare Worker + KV，信任模式）===== */
 function lbNick(){ try{ return localStorage.getItem('vc_nick')||''; }catch(e){ return ''; } }
 function globRowHTML(){   // 终局结算里的提交行（离线时不显示）
@@ -4738,7 +4739,7 @@ function renderHistTab(){
   else if(histTab==='achv') renderAchv();
   else if(histTab==='gl') renderGlobalBoard();
   else renderLeaderboard();
-  const h2=document.querySelector('#histPanel h2'); if(h2) h2.textContent=histH2();
+  const h2=document.querySelector('#histPanel h2'); if(h2) h2.textContent=histTitle();
   document.querySelectorAll('#histTabs .tab').forEach(b=>b.classList.toggle('on', b.dataset.t===histTab));
 }
 $('histBtn').onclick=()=>{ renderHistTab(); $('histModal').classList.remove('hidden'); };
