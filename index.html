@@ -4609,11 +4609,10 @@ $('bookClose').onclick=()=>$('bookModal').classList.add('hidden');
 
 /* ================= 存档 / 继续上一局 / 历史战绩 ================= */
 const SAVE_KEY='vc_save3', HIST_KEY='vc_history', DAILY_KEY='vc_daily3';
-/* 🌍 全球排行（CloudBase PG REST，国内直连；LB_PUBKEY 为公开匿名密钥，仅授 SELECT/INSERT） */
-const LB_REST='https://hanari-d6gjqwx683f6c455d.api.tcloudbasegateway.com/v1/rdb/rest/lb_entries';
-const LB_PUBKEY='eyJhbGciOiJSUzI1NiIsImtpZCI6IjJlNGZiMTFkLTAwZTQtNDNmMi1iMTM3LTUzMzBhZGJkODliMiJ9.eyJpc3MiOiJodHRwczovL2hhbmFyaS1kNmdqcXd4NjgzZjZjNDU1ZC5hcC1zaGFuZ2hhaS50Y2ItYXBpLnRlbmNlbnRjbG91ZGFwaS5jb20iLCJzdWIiOiJhbm9uIiwiYXVkIjoiaGFuYXJpLWQ2Z2pxd3g2ODNmNmM0NTVkIiwiZXhwIjo0MDkzMzUxMTMzLCJpYXQiOjE3ODk2Njc5MzMsIm5vbmNlIjoiMVFLaDJzWnBSR0NfR2RESkpFYXJGUSIsImF0X2hhc2giOiIxUUtoMnNacFJHQ19HZERKSkVhckZRIiwibmFtZSI6IkFub255bW91cyIsInNjb3BlIjoiYW5vbnltb3VzIiwicHJvamVjdF9pZCI6ImhhbmFyaS1kNmdqcXd4NjgzZjZjNDU1ZCIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.POeADMt6qiUGJReGOkh30iD8VHdJAs2g31MtjBYLTI4je30-x8jMlof0fBF0VRKW4mkI-xEu_NCtI6lC7QJT3gkGHwIb7wVGX48t83ThPUCfEJw0EajxYiEkiSqafu372qZzh3BojX31cRuQTAwc79v8sjigZkCWcdRKUq0YCT9QX2-bb5HRH8P5hZtfYkRIZZnhKKUoaCp93VvXL5sXx9Y4OKgKGS1816K7TAlOjLAn51Z_xd-SaHvBQqm1m_C8RQXFJCVpeSy1OqGE4IRg3YB_Bi1EzU2oOF95DhPyGI6DQfoSHC-3TFuo-I4SHJAoONsYZ5D6qs5tWo7braQXlA';
-function lbHeaders(){ return {apikey:LB_PUBKEY, Authorization:'Bearer '+LB_PUBKEY}; }
-async function lbFetch(qs){ const r=await fetch(LB_REST+'?'+qs,{headers:lbHeaders()}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+/* 🌍 全球排行（腾讯云 CloudBase 云函数网关，国内直连；数据存 PG 表 lb_entries） */
+const LB_API='https://hanari-d6gjqwx683f6c455d.service.tcloudbase.com';
+function lbHeaders(){ return {'Content-Type':'application/json'}; }
+async function lbFetch(path){ const r=await fetch(LB_API+path,{headers:lbHeaders()}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 function saveKey(){ return (S && S.daily) ? DAILY_KEY : SAVE_KEY; }   // 每日挑战独立存档（不覆盖普通进度）
 function saveGame(){ // 仅备战阶段保存（战斗中刷新不损失进度：回到该回合开打前）
   if(S.phase!=='prep') return;
@@ -4670,18 +4669,13 @@ async function submitScore(){
   try{ localStorage.setItem('vc_nick',name); }catch(e){}
   if(btn){ btn.disabled=true; btn.textContent='提交中…'; }
   try{
-    const board=S.daily?'daily':'normal', seed=S.daily?(S.dseed||todaySeed()):null;
-    const entry={board, seed, name, round:S.round, ch:Math.ceil(S.round/chLen()), kills:S.stats.kills, curses:(S.curses||[]).length,
-      lineup:S.board.filter(Boolean).slice(0,6).map(u=>u.id)};
-    const ins=await fetch(LB_REST,{method:'POST',headers:{...lbHeaders(),'Content-Type':'application/json','Prefer':'return=representation'},
-      body:JSON.stringify(entry)});
-    if(!ins.ok) throw new Error('HTTP '+ins.status);
-    const rows=await ins.json(); const id=rows[0]&&rows[0].id;
-    const order=board==='daily'?'round.desc,kills.desc,created_at.asc':'ch.desc,round.desc,kills.desc,created_at.asc';
-    const list=await lbFetch('select=id&board=eq.'+board+(board==='daily'?'&seed=eq.'+seed:'')+'&order='+order+'&limit=50');
-    const rank=list.findIndex(x=>x.id===id)+1;
-    if(btn) btn.textContent = rank>0 ? ('✓ 已提交（第 '+rank+' 名）') : '✓ 已提交';
-    if(msg) msg.textContent='成绩已进入全球排行（战绩 → 🌍全局 查看）';
+    const j=await fetch(LB_API+'/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name, board:S.daily?'daily':'normal', seed:S.daily?(S.dseed||todaySeed()):0,
+        round:S.round, ch:Math.ceil(S.round/chLen()), kills:S.stats.kills, curses:(S.curses||[]).length,
+        lineup:S.board.filter(Boolean).slice(0,6).map(u=>u.id)})})
+      .then(r=>r.json());
+    if(j.ok){ if(btn) btn.textContent='✓ 已提交（第 '+j.rank+' 名）'; if(msg) msg.textContent='成绩已进入全球排行（战绩 → 🌍全局 查看）'; }
+    else{ if(btn){ btn.disabled=false; btn.textContent='🌍 提交全球排行'; } if(msg) msg.textContent='提交失败：'+(j.error||'未知错误'); }
   }catch(e){
     if(btn){ btn.disabled=false; btn.textContent='🌍 提交全球排行'; }
     if(msg) msg.textContent='提交失败：网络不可达（离线也可继续游戏）';
@@ -4692,12 +4686,13 @@ async function renderGlobalBoard(){
   el.innerHTML='<div style="color:#8a93c4;padding:12px;text-align:center">🌍 加载全球排行中…</div>';
   try{
     const seed=todaySeed();
-    const normal=await lbFetch('select=name,round,ch,kills,curses&board=eq.normal&order=ch.desc,round.desc,kills.desc,created_at.asc&limit=20');
-    const daily=await lbFetch('select=name,round,kills,curses&board=eq.daily&seed=eq.'+seed+'&order=round.desc,kills.desc,created_at.asc&limit=20');
+    const [dn,nj]=await Promise.all([
+      lbFetch('/api/top?board=daily&seed='+seed),
+      lbFetch('/api/top?board=normal')]);
     const row=(x,i,showCh)=>`<div class="hrow"><span class="lb-rk">${i+1}</span><span>${String(x.name).replace(/[<>&]/g,'')}</span><span>${showCh?(x.ch+' 章 · '):''}第 ${x.round} 回合</span><span>击杀 ${x.kills}${x.curses?` · ⚠×${x.curses}`:''}</span></div>`;
     const sec=(t,list,showCh)=>`<div style="margin-bottom:10px"><div style="color:#ffd24a;font-size:12px;margin-bottom:4px">${t}</div>`+
-      (list&&list.length? list.map((x,i)=>row(x,i,showCh)).join('') : '<div style="color:#6b6288;font-size:12px">暂无记录，快来抢占第一</div>')+'</div>';
-    el.innerHTML= sec('📅 每日榜 · 今日（种子 '+seed+'）', daily, false) + sec('🏆 普通榜 · 最远章节', normal, true);
+      (list&&list.length? list.slice(0,15).map((x,i)=>row(x,i,showCh)).join('') : '<div style="color:#6b6288;font-size:12px">暂无记录，快来抢占第一</div>')+'</div>';
+    el.innerHTML= sec('📅 每日榜 · 今日（种子 '+seed+'）', dn.list, false) + sec('🏆 普通榜 · 最远章节', nj.list, true);
   }catch(e){
     el.innerHTML='<div style="color:#6b6288;padding:12px;text-align:center">🌍 全球排行暂不可用（离线或服务未响应）</div>';
   }
