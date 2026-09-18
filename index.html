@@ -166,6 +166,8 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .arti-card .ad2{ font-size:10px; color:#a99ed0; margin:3px 0; line-height:1.5; }
 .arti-card .btn[disabled]{ opacity:.4; cursor:default; }
 .item-chip.arti{ border-color:#ffd24a; box-shadow:0 0 6px #ffd24a44; }
+.auto-equip-row{ display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
+.auto-equip-row .btn{ padding:4px 10px; font-size:12px; border-color:#8dff9a88; color:#8dff9a; }
 /* 玩法说明分区标题 */
 #ovText .is-h{ display:block; color:#ffd24a; font-weight:bold; font-size:14px; margin:9px 0 2px; padding-bottom:2px; border-bottom:1px solid #35294f; }
 /* 挑战规则勾选区（开局弹窗） */
@@ -2075,6 +2077,75 @@ function renderTempBuffs(){
     return `<button class="btn tb${owned?' on':''}" ${dis?'disabled':''} title="${b.desc}（每回合限购 1 个）" onclick="buyTempBuff('${b.id}')">${b.e}${b.short} ${cost}💰${owned?'✓':''}</button>`;
   }).join('');
 }
+/* ⚡ 一键装备：自动合成背包里能凑成的成品 → 把装备按「输出给主C、防御给前排」分配给场上棋子
+   分配策略与托管一致：主C = 场上（非守护）星²×费用最高者；防御装给生命最高的前排；
+   遵循装备槽上限 maxEquip()，多余的留在背包。返回实际穿戴件数。 */
+function autoEquipAll(){
+  if(S.phase!=='prep'){ log('⚠ 只能备战期整理装备'); return 0; }
+  if(!S.items.length){ log('🎒 背包里没有装备'); return 0; }
+  // ① 先合成：反复找可行的成品配方，优先合成（成品强于两件基础装）
+  let merged=0, guard=0;
+  while(guard++<30){
+    let done=false;
+    outer: for(let i=0;i<S.items.length;i++) for(let j=i+1;j<S.items.length;j++){
+      if(comboOf(S.items[i],S.items[j])){ combineBagPair(i,j); merged++; done=true; break outer; }
+    }
+    if(!done) break;
+  }
+  // ② 分配：主C 优先吃输出装，前排吃防御装
+  const board=S.board.map((u,i)=>({u,i})).filter(x=>x.u);
+  if(!board.length){ log('🎒 场上还没有棋子，装备留在背包（先上阵再一键装备）'); return 0; }
+  // 主C 判定与托管（botMainCarry）保持一致：场上非守护中「星²×费用」最高者
+  const carryPower=u=>Math.pow(u.star||1,2)*byId(u.id).cost;
+  const carry=board.filter(x=>byId(x.u.id).job!=='守护').sort((a,b)=>carryPower(b.u)-carryPower(a.u))[0] || board[0];
+  const fronts=board.slice().sort((a,b)=>{
+    const da=byId(a.u.id), db=byId(b.u.id);
+    const fa=['守护','刀客','狂战'].includes(da.job)?1:0, fb=['守护','刀客','狂战'].includes(db.job)?1:0;
+    return (fb-fa) || (b.u.maxhp-a.u.maxhp);
+  });
+  let worn=0;
+  // 分配顺序：主C 最优先 → 前排 → 其余棋子（保证输出装不会被前排抢走、主C 不会空槽）
+  const rest=board.filter(x=>x!==carry && !fronts.includes(x));
+  const order=[carry,...fronts.filter(f=>f!==carry),...rest];
+  const freeSlot=x=>((x.u.items||[]).length<maxEquip());
+  const val=k=>ITEMS[k].arti?2:ITEMS[k].crafted?1:0;   // 同类型内优先分配更强的装备（神器 > 成品 > 基础装）
+  // ① 各取所需：主C 只拿输出装、其他棋子只拿防御装（不留错配）
+  for(const spot of order){
+    const u=spot.u, isCarry=(spot===carry);
+    while(S.items.length && freeSlot(spot)){
+      if(!u.items) u.items=[];
+      let pick=-1, bestVal=-1;
+      for(let i=0;i<S.items.length;i++){
+        if(!!isDmgItem(S.items[i])!==isCarry) continue;
+        const v=val(S.items[i]);
+        if(v>bestVal){ bestVal=v; pick=i; }
+      }
+      if(pick<0) break;   // 没有该类型的装备了，进入兜底
+      u.items.push(S.items.splice(pick,1)[0]);
+      worn++;
+    }
+  }
+  // ② 兜底：剩下的装备按类型派给最合适的空槽（输出装优先给非坦克，防御装优先给前排）
+  while(S.items.length){
+    const isDmg=isDmgItem(S.items[0]);
+    const cands=[...order].sort((a,b)=>{
+      const sa=(a===carry?0:1), sb=(b===carry?0:1);
+      const tankA=fronts.includes(a)?0:1, tankB=fronts.includes(b)?0:1;
+      return isDmg ? (sa-sb || tankB-tankA) : (tankA-tankB || sa-sb);
+    });
+    const spot=cands.find(freeSlot);
+    if(!spot) break;   // 所有槽位都满了
+    const u=spot.u; u.items=u.items||[];
+    u.items.push(S.items.shift());
+    worn++;
+  }
+  if(worn||merged){
+    sfx('equip');
+    log(`⚡ 一键装备：${merged?`合成 ${merged} 件成品、`:''}穿戴 ${worn} 件（主C【${byId(carry.u.id).name}】优先输出装，前排优先防御装）${S.items.length?`，背包剩 ${S.items.length} 件`:''}`);
+    renderAll();
+  } else log('🎒 背包有装备但场上棋子装备槽都满了');
+  return worn;
+}
 function renderEquip(){
   const e=$('equip');
   // 身上装备条：当前查看的棋子（抽屉化后详情/背包不同屏，装备抽屉里也保留拖卸/点卸入口）
@@ -2088,6 +2159,9 @@ function renderEquip(){
     }
   }
   if(!S.items.length){ e.innerHTML=wornHtml+'<span style="color:#6b6288;font-size:12px">暂无装备，战斗胜利后掉落</span>'; bindWornChips(); return; }
+  // ⚡ 一键装备：自动合成 + 按「输出给主C、防御给前排」穿戴
+  const autoBtn=`<div class="auto-equip-row"><button class="btn" id="autoEquipBtn" title="自动合成背包内的成品，并把装备分配给场上棋子：输出装给主C、防御装给前排（备战期可用）"
+    onclick="autoEquipAll()">⚡ 一键装备（${S.items.length} 件）</button><span style="font-size:10px;color:#6b6288">输出→主C · 防御→前排</span></div>`;
   // 可合成预览：背包内两件基础装凑成配方时给出合成入口（未定义配方的组合不强凑，保持独立佩戴）
   const pairs=[];
   for(let i=0;i<S.items.length;i++) for(let j=i+1;j<S.items.length;j++){
@@ -2099,7 +2173,7 @@ function renderEquip(){
   const artiHtml=`<div class="arti-box"><div class="arti-hd">⚒ 神器升阶 <span style="color:#6b6288;font-size:10px">（背包成品 ${craftN}/3 · 任意 3 件熔铸 1 件）</span></div>`+
     ARTIFACTS.map(k=>{ const it=ITEMS[k]; const dis=S.phase!=='prep'||craftN<3;
       return `<div class="arti-card" title="${it.desc}"><b>${it.e} ${it.n}</b><div class="ad2">${it.desc}</div><button class="btn" style="padding:1px 8px;font-size:11px" ${dis?'disabled':''} onclick="forgeArtifact('${k}')">⚒ 升阶</button></div>`; }).join('')+`</div>`;
-  e.innerHTML=wornHtml+artiHtml+pairs.slice(0,3).map(p=>
+  e.innerHTML=autoBtn+wornHtml+artiHtml+pairs.slice(0,3).map(p=>
     `<div class="combo-row" title="合成预览：${ITEMS[p.a].n} + ${ITEMS[p.b].n} → ${ITEMS[p.prod].n}（${ITEMS[p.prod].desc}）">⛓ ${ITEMS[p.a].e}+${ITEMS[p.b].e}→${ITEMS[p.prod].e}${ITEMS[p.prod].n}
       <button class="btn" style="padding:1px 8px;font-size:11px;margin-left:4px" onclick="combineBagPair(${p.i},${p.j})">合成</button></div>`).join('');
   bindWornChips();
