@@ -47,7 +47,7 @@ global.document = {
 };
 global.window = global;
 global.addEventListener = () => {};
-global.localStorage = { _s:{}, getItem(k){ return this._s[k] ?? null; }, setItem(k,v){ this._s[k]=String(v); }, removeItem(k){ delete this._s[k]; } };
+global.localStorage = { _s: process.env.TB ? { vc_bottempbuff: '1' } : {}, getItem(k){ return this._s[k] ?? null; }, setItem(k,v){ this._s[k]=String(v); }, removeItem(k){ delete this._s[k]; } };
 global.matchMedia = () => ({ matches: false });
 global.requestAnimationFrame = () => 0;
 global.innerWidth = 1280; global.innerHeight = 800;
@@ -56,6 +56,15 @@ global.navigator = { serviceWorker: null };
 global.setInterval = () => 0; global.clearInterval = () => {};
 global.setTimeout = (fn, ms) => { if(fakeTimers.length>20000) fakeTimers.length=0; fakeTimers.push({ t: fakeClock + (ms || 0), fn }); return fakeTimers.length; };
 global.clearTimeout = () => {};
+
+/* 确定性回归：SEED=42 node tools/sim.js 20 同代码路径 → 逐字节一致。
+   必须在游戏代码 eval 之前替换（游戏顶层 let RND=Math.random 在求值时捕获引用）；
+   mulberry32 —— 普通模式 rand() 直通 Math.random，跨进程种子不同则 before/after 对比不可复现。 */
+if (process.env.SEED) {
+  let t = (+process.env.SEED) >>> 0;
+  Math.random = () => { t += 0x6D2B79F5 | 0; let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
+}
 
 (0, eval)(code);
 const A = globalThis.API;
@@ -132,7 +141,11 @@ for (let g = 0; g < N; g++) {
       chReached[ci]++; if (won) chWins[ci]++;
       if (won && chapters === 0) ch1Wins++;
       chapters++;
-      if (typeof globalThis.pickAug === 'function' && A.S.settleOffer && A.S.settlePick == null) globalThis.pickAug(0);
+      if (typeof globalThis.pickAug === 'function' && A.S.settleOffer && A.S.settlePick == null) {
+        // ③ 增强选择走 bot_strategy.js 的 botAugPick（与浏览器 autoSettle 同一份策略）；缺省兜底选第 0 张
+        const ai = (typeof globalThis.botAugPick === 'function') ? globalThis.botAugPick(A.S.settleOffer) : 0;
+        globalThis.pickAug(ai >= 0 ? ai : 0);
+      }
       globalThis.chapterContinue();
       if (MAXR > 0 && A.S.round > MAXR) {
         outcome = { win: chapters > 0, chapters, round: A.S.round, hp: A.S.hp, streak: A.S.stats.maxStreak, kills: A.S.stats.kills, truncated: true };

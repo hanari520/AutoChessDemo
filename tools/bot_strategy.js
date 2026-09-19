@@ -6,7 +6,7 @@
    sim.js 依赖：S/byId/pairCount/buy/clickUnit/rollShop/checkLevel/autoDeployBest 会被符号改写，
    其余只允许调用 function 声明（挂 globalThis），不得直接引用顶层 const（如 XP_NEED/FACTIONS）。
    BOT_VER 会在托管开启时打进战报，用于确认浏览器加载的不是缓存的旧策略文件。 */
-const BOT_VER='策略 v2.2（普通玩家模型：看牌定型/触发式搜牌/五段经济/节点拉级/危机all-in + 升星券/顶配停刷/诅咒适配 + 无梦禁购经验/紧缩货架读 shopSize）';
+const BOT_VER='策略 v2.3（普通玩家模型：看牌定型/触发式搜牌/五段经济/节点拉级/危机all-in + 章末放血搜牌/增强三选一评分/章首防御姿态/守关前抢人口 + 升星券/顶配停刷/诅咒适配 + 无梦禁购经验/紧缩货架读 shopSize）';
 
 /* ---------- 阵容计划：看牌定型 + 粘性 ---------- */
 function botTagCount(){   // 牌面（场上+备战席）独特棋子的阵营/职业计数
@@ -57,6 +57,10 @@ function botEconMode(){   // 经济模式（普通玩家的局势判断，优先
   if(S.gold>=50) return 'healthy';                                 // 吃满利息线：有目标才小搜
   return 'save';                                                   // 攒钱期：白嫖不搜
 }
+function botChEnd(){   // 章末 3 回合（含守关回合 r25/50/75/100…；shortch 15 周期时 r13-15/28-30/…）：
+  const L=(typeof chLen==='function')?chLen():25;   // 章内位置判定一律走 chLen()，勿写死 25
+  return (S.round-1)%L >= L-3;                      // 章首 5 回合（(S.round-1)%L<5）维持严格 50 地板=现状
+}
 
 /* ---------- 商店评分：普通玩家的"心动程度" ---------- */
 function botScoreShop(u, plan){
@@ -70,9 +74,43 @@ function botScoreShop(u, plan){
   return 0;                                        // 无关的高费散牌：不买
 }
 
+/* ---------- 增强三选一评分（③）：稀有度 > 局面适配，取最高分 ----------
+   实测教训（SEED=42 N=100，2026-09-19）：纯稀有度排序（金55/蓝30/白10 + hp≤16 常驻触发的
+   回蓝偏置 + 非守护≥6 恒真的急速偏置）把 atk/hp 白卡系统性顶掉，ch3/4 累计 -4/-11pp——
+   幸存者 r40 起均值 14-16，「hp≤16」不是危机信号而是常态；技能急速受蓝量约束收益递减。
+   修正：削弱版（守关败）稀有度压平+适配减半；sustain 阈值取 12（与游戏 dyn 濒死减压线一致）；
+   非守护加成只给装备大师。AUGS 是顶层 const 不可见 → 稀有度走函数声明 augRarity()。 */
+function botAugScore(off){
+  const id=off.id;
+  const r=(typeof augRarity==='function')?augRarity(id):1;
+  // 稀有度：强效按面值；削弱版压平（弱金≈强蓝、弱蓝≈好白）——弱金常不如强白
+  let sc = off.weak ? (r===3?28:r===2?20:12) : (r===3?55:r===2?30:10);
+  let adapt=0;
+  if(S.hp<=12 && ['startshield','regen','mana','atkmana'].includes(id)) adapt+=25;   // 真濒死：先祖庇护/回血回蓝
+  if(id==='synres'){   // 羁绊共鸣：档位多的阵容才配拿金
+    const syn=(typeof teamSynScore==='function')?teamSynScore(S.board.filter(Boolean)):0;
+    if(syn>=15) adapt+=25;                                        // ≈已激活 ≥3 档（每档 5+3i 分）
+  }
+  if(id==='eqslot' && S.board.filter(Boolean).filter(u=>byId(u.id).job!=='守护').length>=6) adapt+=15;
+  if(S.botDef && ['startshield','regen','ar','mr','hp'].includes(id)) adapt+=15;   // ④ 防御姿态：防御系倾斜（真濒血时与 sustain 加分叠加≈加倍）
+  return sc + (off.weak ? Math.round(adapt/2) : adapt);           // 适配分：削弱版减半
+}
+function botAugPick(offer){   // 返回应选下标（-1 兜底给调用方随机/首张）
+  let bi=-1, bv=-1e9;
+  (offer||[]).forEach((o,i)=>{ const v=botAugScore(o); if(v>bv){ bv=v; bi=i; } });
+  return bi;
+}
+
 function botPrepSteps() {
   if (S.phase !== 'prep') return [];
   const JOB_FRONT = new Set(['守护', '刀客', '狂战']);
+  // ④ 血量相对线：每章首回合的 prep 判定一次防御姿态（hp<60% 上限 → 本章进入防御姿态）。
+  // 依据：幸存者 r40 起均值常驻 15-16/40，crisis 绝对线（hp≤15）对多数对局常驻触发、已无预警
+  // 意义——相对线只改「姿态」（装备/换血/增强向前排与防御系倾斜），不改 botEconMode 经济判定；
+  // crisis/urgent 绝对线保留且优先级更高。
+  const L=(typeof chLen==='function')?chLen():25;
+  if((S.round-1)%L===0) S.botDef = S.hp < ((typeof hpMax==='function')?hpMax():40)*0.6;
+  const def = S.botDef===true;
   const plan = botPlan();
   const freeBench = () => S.bench.filter(x=>!x).length;
 
@@ -164,6 +202,17 @@ function botPrepSteps() {
       while(S.lvl<cap && S.gold>=55 && g++<12){
         const b=S.lvl; S.gold-=5; S.xp+=4; checkLevel();
         if(S.lvl>b) break;                         // 升一级就停——像人一样一次拉一个节点
+        // ⑤ 经验加速 A/B（2026-09-19）已回退：每回合最多 2 脚（升级不停继续买下一级）实测
+        // 三种子合并 ch2-4 均值 -4.9pp（71.7/63.3/55.0→67.7/60.0/47.7）——溢出金币从搜牌战力
+        // 被抽去填 6→7=32xp 经验墙，人口上去了板面质量反而掉，未达 ≥+3pp 采纳线。
+      }
+    } else if(botChEnd() && S.gold>=35 && xpNeed(S.lvl)-S.xp<=8){
+      // ②a 章末卡点放宽：两脚内能升级（缺口≤8）也买——升级节点尽量赶在守关战前落地
+      //（人口是守关战最硬的杠杆；每脚保 35 本底线，最多两脚）
+      let g=0;
+      while(S.lvl<cap && S.gold>=40 && g++<2){
+        const b=S.lvl; S.gold-=5; S.xp+=4; checkLevel();
+        if(S.lvl>b) break;
       }
     } else if(S.gold>=30 && S.xp+4>=xpNeed(S.lvl)){
       S.gold-=5; S.xp+=4; checkLevel();
@@ -190,7 +239,14 @@ function botPrepSteps() {
           if(!dmgItem && JOB_FRONT.has(d.job) && u.maxhp>best){ best=u.maxhp; ti=i; }
         });
       }
-      if(ti<0) S.board.forEach((u,i)=>{ if(u&&(!u.items||u.items.length < (typeof maxEquip==='function'?maxEquip():2))&&ti<0) ti=i; });
+      if(ti<0){
+        if(!dmgItem && def){
+          // ④ 防御姿态：前排装备槽已满 → 防御装轮换到背包队尾（资源向前排倾斜，不散装给后排）
+          S.items.push(S.items.shift());
+          continue;
+        }
+        S.board.forEach((u,i)=>{ if(u&&(!u.items||u.items.length < (typeof maxEquip==='function'?maxEquip():2))&&ti<0) ti=i; });
+      }
       if(ti<0) break;
       S.selItem=0; clickUnit('board', ti);
     }
@@ -207,12 +263,14 @@ function botPrepSteps() {
     S.bench.forEach((u,i)=>{
       if(!u||!weak(u)||pairCount(u.id)>=2) return;
       if(botInPlan(u,plan)) return;                       // 计划内的留着凑羁绊
+      if(def && JOB_FRONT.has(byId(u.id).job)) return;    // ④ 防御姿态：前排不卖
       S.selUid=u.uid; sellSelected();
     });
     if(members.length>=S.lvl){
       let sold=0;
       for(const u of members.filter(weak)){
         if(sold>=3) break;
+        if(def && JOB_FRONT.has(byId(u.id).job)) continue;   // ④ 防御姿态：前排不卖
         const pos=findUnit(u.uid); if(!pos||pos[0]!=='board') continue;
         const refund=sellRefund(u);
         let pick=-1, best=-1;
@@ -228,6 +286,18 @@ function botPrepSteps() {
       }
     }
   }});
+  // ④.5 临时增益（②b，默认关）：localStorage 'vc_bottempbuff'==='1' 时启用——
+  //    章末回合且 hp≤25 或 crisis/urgent → 买 25💰「开场齐射」（buyTempBuff 游戏全局函数，
+  //    每回合限 1 个、战争迷雾半价；sim 的 localStorage 桩默认空 → 模拟口径即默认关）。
+  //    ⚠ 用户约定：托管花钱买消耗品动经济结构，先试玩再决定是否默认开。
+  steps.push({ n:'增益', fn(){
+    let on=false;
+    try{ on=(localStorage.getItem('vc_bottempbuff')==='1'); }catch(e){}
+    if(!on || !botChEnd()) return;
+    const mode=botEconMode();
+    if(!(S.hp<=25 || mode==='crisis' || mode==='urgent')) return;
+    if(typeof buyTempBuff==='function') buyTempBuff('nuke');
+  }});
   // ⑤ 搜牌（触发式，不再习惯性 roll-down）：普通玩家只在有理由时才 D——
   //    危机 all-in / 连败适度搜 / 多面听小搜 / 满级卡 50 追三；攒钱期与健康白嫖期都不刷。
   steps.push({ n:'搜牌', fn(done){
@@ -235,17 +305,22 @@ function botPrepSteps() {
     const onB=S.board.filter(Boolean);
     if(onB.length>0 && onB.every(u=>(u.star||1)>=3)){ if(typeof done==='function') done(); return; }
     const mode=botEconMode();
+    const chEnd=botChEnd();   // ① 章末 3 回合=难度顶点+守关败零成本：唯一能 all-in 不心疼的窗口
     let floor, max, keep=50;
-    if(mode==='crisis'){ floor=2; max=40; keep=0; }
+    if(mode==='crisis'){ floor=2; max=40; keep=0; }              // 绝对线永远最高，不受章内位置影响
     else if(mode==='urgent'){ floor=15; max=20; }
     else if(mode==='chase'){ floor=50; max=30; }
     else if(mode==='healthy'){
-      // 有目标才小搜：存在"三星在望"目标，或本金囤太多（≥65）时花一点——普通玩家不守财奴
-      const ids=new Set([...S.board,...S.bench].filter(Boolean).map(u=>u.id));
-      let listens=0; ids.forEach(id=>{ if(botProg3(id)>=5&&!has3star(id)) listens++; });
-      if(listens<1 && S.gold<65){ if(typeof done==='function') done(); return; }
-      floor=52; max=10;
+      if(chEnd){ floor=30; max=20; keep=0; }   // ① 章末放血：利息抵不过流血，地板 52→30、上限×2
+      else {
+        // 有目标才小搜：存在"三星在望"目标，或本金囤太多（≥65）时花一点——普通玩家不守财奴
+        const ids=new Set([...S.board,...S.bench].filter(Boolean).map(u=>u.id));
+        let listens=0; ids.forEach(id=>{ if(botProg3(id)>=5&&!has3star(id)) listens++; });
+        if(listens<1 && S.gold<65){ if(typeof done==='function') done(); return; }
+        floor=52; max=10;
+      }
     }
+    else if(chEnd){ floor=30; max=20; keep=0; }   // ① 攒钱期章末也放血（章首 5 回合维持严格 50 地板）
     else { if(typeof done==='function') done(); return; }   // 攒钱期：靠白嫖
     let rolls=0;
     const rc=(typeof refreshCost==='function')?refreshCost():2;   // 📈 通胀诅咒：刷新 3 金
