@@ -68,5 +68,13 @@ r40 起幸存者 HP 常驻 15-16/40、守关条件通过率 87-93%、syn_test �
 ## 七、推送与线上状态
 
 - git 提交链：f5afdc9（①+③）→ 674fc84（④）→ a2b97e1（②）→ dbf7cf3（⑤回退+BOT_VER v2.3+?v=4）
-  → d2657d0（bossMult 1.15）→ 本报告提交。
-- PUSH_STATUS: PENDING（见下方更新）
+  → d2657d0（bossMult 1.15）→ d54a3e5（本报告）。
+- 推送通道：github.com 直连与注册表代理均断；**api.github.com 通道完成推送**。注意：
+  api_push_multi.js 只推「本地最新一个提交」的变更文件，本轮先误推了仅报告的 3 文件，
+  随后用全量 tree 比对（本地 git blob SHA vs 远端 tree）补齐 5 个差异文件
+  （index.html/tools/bot_strategy.js/tools/sim.js/CHANGELOG.md/tools/syn_test.js），
+  远端 main=4a148194，remote-only=0（内容级完全同步；本地与远端提交 SHA 因 API 通道天然分叉，
+  这是本仓库 API 推送通道的既有形态）。tools/syn_test.js 为前一会话遗留漏推，一并补上。
+- 线上验证（2026-09-19）：`curl -sL https://autochess.hanari520.cn/ | grep -o 'bot_strategy.js?v=[0-9]*'`
+  → **bot_strategy.js?v=4** ✓；线上 bot_strategy.js 含「策略 v2.3」与 botAugScore/botChEnd/botDef ✓。
+- PUSH_STATUS: OK（api.github.com 通道，远端 main=4a148194，线上 ?v=4 已生效）
