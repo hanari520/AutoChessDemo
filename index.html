@@ -72,7 +72,7 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .cell.rng-src { background:#5a4a8e; box-shadow:inset 0 0 0 2px #ffd24a; }
 .cell.equip-hl { box-shadow:inset 0 0 0 2px #8dff9a, 0 0 12px #8dff9a66; }
 .item-chip { cursor:grab; user-select:none; }
-.item-ghost { display:flex; align-items:center; justify-content:center; font-size:10px; text-align:center;
+.unit.item-ghost { display:flex; align-items:center; justify-content:center; font-size:10px; text-align:center;
   background:#241e3e; border:1px solid #8dff9a; border-radius:8px; color:#8dff9a; padding:2px; }
 .unit { position:absolute; inset:4px; border-radius:6px; display:flex; flex-direction:column; align-items:center;
   justify-content:center; cursor:grab; text-align:center; line-height:1.1; overflow:visible;
@@ -136,10 +136,10 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   background-repeat:no-repeat; background-size:contain; pointer-events:auto;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
 #synBadgeLayer .sy.on { filter:brightness(1.35) saturate(1.25) drop-shadow(0 0 4px #ffd24a); }
-#synBadgeLayer .unit.big-badge .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
+#synBadgeLayer .big-badge .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
 #synBadgeLayer .st { position:static; font-size:calc(var(--cell)*.17); color:#ffd24a; font-weight:bold;
   letter-spacing:1px; text-shadow:0 1px 2px #000, 0 0 4px #000000cc; }
-#synBadgeLayer .unit.big-badge .st { font-size:calc(var(--cell)*.26); }
+#synBadgeLayer .big-badge .st { font-size:calc(var(--cell)*.26); }
 .unit .arcs{ position:absolute; left:8%; right:8%; bottom:2px; height:30%; pointer-events:none; z-index:1; }
 .unit .arcs::after{ content:''; position:absolute; inset:0; border:2px solid transparent; border-radius:50%; }
 .unit .arcs.a1::after{ border-bottom-color:#ffd24acc; }
@@ -2071,13 +2071,13 @@ function paintSynBadges(){
     const w=n*bw+(n-1)*2;
     const left=g.cellX+x*g.sx+(big?2*g.cw+g.gx:g.cw)-4-w;
     const top =g.cellY+(big?Math.max(0,y-1):y)*g.sy-(big?0.45:0.58)*g.ch;   // 头顶上方空带：不盖自己脸、不碰上排脸、下排头发够不着
-    html+=`<div style="left:${left}px;top:${top}px"${big?' class="unit big-badge"':''}>${s}</div>`;
+    html+=`<div style="left:${left}px;top:${top}px"${big?' class="big-badge"':''}>${s}</div>`;
   };
   const putStar=(u,x,y,big)=>{
     if(!u || !u.star) return;
     const left=g.cellX+x*g.sx+g.cw*0.04;
     const top =g.cellY+(big?Math.max(0,y-1):y)*g.sy+(big?2:1)*g.ch*0.74;   // 星级下移到脚部（悬浮层保证不被下排头发盖住）
-    html+=`<div style="left:${left}px;top:${top}px"><span class="st">${'★'.repeat(u.star)}</span></div>`;
+    html+=`<div style="left:${left}px;top:${top}px"${big?' class="big-badge"':''}><span class="st">${'★'.repeat(u.star)}</span></div>`;
   };
   for(let i=0;i<BOARD_W*BOARD_H;i++){
     const p=S.board[i];

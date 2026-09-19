@@ -1,5 +1,12 @@
 # 更新日志
 
+## 2026-09-19 · 修复：2×2 大棋子徽章层泄漏 .unit 底卡样式（备战棋盘被巨大蓝灰面板遮盖）
+
+- **现象**：备战期棋盘上出现一块 #5B6B8C 底 + #888 边框的巨型半透明面板（从大棋子徽章位一直撑到棋盘右下角），底部挂着该棋子的羁绊徽章。
+- **根因**：`paintSynBadges` 给大棋子的徽章包装 div 复用了 `class="unit big-badge"`（为了复用徽章尺寸选择器），但 `.unit` 基类是「棋子卡兜底外观」——`position:absolute; inset:4px; border:2px solid #888; background:#5b6b8c`。包装 div 只有内联 left/top，`inset` 的 right/bottom 未被覆盖 → div 从徽章锚点一直拉伸到 `#synBadgeLayer`（=全板）右下角减 4px，底卡样式全部显形。
+- **修复**：包装 div 只保留 `big-badge` 类，选择器 `#synBadgeLayer .unit.big-badge .sy/.st` → `#synBadgeLayer .big-badge .sy/.st`；顺手让 `putStar` 的大棋子星级行也挂 `big-badge`（原本 `.big-badge .st` 大字号规则因星级行无类而永远不生效）。同型问题顺手修：`.item-ghost` 提升为 `.unit.item-ghost`（原与 `.unit` 同权重且排在前面，装备拖拽幽灵被 `.unit` 基类盖成蓝灰卡，现在恢复深底绿框）。
+- **验证**：playwright 页内驱动——放 2×2 大棋子后徽章层各包装 div 背景透明、尺寸正常；给包装 div 加回 `unit` 类即复现 330×461 的 #5B6B8C/#888 面板（反证根因）；棋盘截图正常。改动全在 index.html，SW 对页面网络优先，无需升 CACHE。
+
 ## 2026-09-19 · 托管 v2.3：五项增强（章末经济/增强评分/防御姿态/守关抢人口）+ SEED 确定性 + 漏斗回锚
 
 - **方法基座**：sim.js 新增 `SEED` 确定性补丁（mulberry32 替换 Math.random，必须在游戏代码 eval 前注入）；**决策纪律升级为三种子配对合并**（SEED=42/43/44 各 N=100）——实测单种子聚合会被「顺序跑局共享 RNG 流 + 蝴蝶发散」放大成 ±10pp 假信号（同改动 seed42 ch4 +13pp、seed44 -5pp）。
