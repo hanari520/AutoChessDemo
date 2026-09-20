@@ -1501,7 +1501,30 @@ function rand(){ return RND(); }
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15, 1|a); t=t+Math.imul(t^t>>>7, 61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 function todaySeed(){ const d=new Date(); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
 function seedHash(n){ let x=(n^0x9E3779B9)>>>0; x=Math.imul(x^x>>>16, 0x45d9f3b); x=Math.imul(x^x>>>16, 0x45d9f3b); return (x^x>>>16)>>>0; }
-function dailyCursesFor(seed){ const c=CURSES[seedHash(seed)%CURSES.length]; return c?[c.id]:[]; }   // 当日预置诅咒
+/* 当日预置诅咒：按日期确定性挑选，且近 DAILY_GAP 天内不重复。
+   老写法 CURSES[seedHash(日期)%条数] 离散性差——实测近 14 天「干涸」出现 4 次、同一条隔天再来
+   （09-18 与 09-20 都是短章急行，用户报告），所以改成从锚点日逐日链式推导：每天的候选池
+   剔除近 DAILY_GAP 天已用过的诅咒，再按 seedHash 取模。历史只能由日期本身推出（不能存本地、
+   也不能问服务器），否则同一天的不同玩家会拿到不同诅咒、当日榜就失去可比性。 */
+const DAILY_GAP=10;                        // 近 10 天不重复（14 条里至少留 4 条候选）
+const DAILY_EPOCH=Date.UTC(2026,0,1);      // 推导起点；更早的日期走老规则（已无人再玩）
+const _dailyCurseCache=new Map();
+function dailySeedOf(ms){ const d=new Date(ms); return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate(); }   // 仅作日历推算，与本地时区无关
+function dailyCurseOf(seed){
+  if(_dailyCurseCache.has(seed)) return _dailyCurseCache.get(seed);
+  const target=Date.UTC(Math.floor(seed/10000), Math.floor(seed/100)%100-1, seed%100);
+  let pick=CURSES[seedHash(seed)%CURSES.length];        // 锚点之前 / 时钟异常（超出 4000 天）的兜底
+  if(target>=DAILY_EPOCH){
+    const recent=[]; let cur=DAILY_EPOCH;
+    for(let guard=0; cur<=target && guard<4000; guard++, cur+=86400000){
+      const pool=CURSES.filter(c=>!recent.includes(c.id));
+      pick=(pool.length?pool:CURSES)[seedHash(dailySeedOf(cur))%(pool.length||CURSES.length)];
+      recent.push(pick.id); if(recent.length>DAILY_GAP) recent.shift();
+    }
+  }
+  _dailyCurseCache.set(seed,pick); return pick;
+}
+function dailyCursesFor(seed){ const c=dailyCurseOf(seed); return c?[c.id]:[]; }   // 当日预置诅咒
 function applyRNG(){ RND = (S && S.daily) ? mulberry32(seedHash(S.dseed||todaySeed())) : Math.random; }
 function dailyInfoHTML(){
   const cid=dailyCursesFor(todaySeed())[0];
@@ -5309,7 +5332,11 @@ let autoBusy=false;   // 必须声明在 initApp 之前：initApp → newGame �
 (function initApp(){
   try{
     const d=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');
-    if(d && d.dseed!==todaySeed()) localStorage.removeItem(DAILY_KEY);   // 昨天的每日存档作废
+    /* 每日存档作废的两种情形：① 昨天的存档；② 存档里的诅咒与当前当日诅咒不符——当日规则表改过
+       （如修「近期重复」后今日诅咒由短章急行变硬着陆），两套规则同种子同榜不可比，必须重开；
+       重开成本为零：同种子同起点。 */
+    if(d && (d.dseed!==todaySeed() || (d.curses||[]).join()!==dailyCursesFor(d.dseed||todaySeed()).join()))
+      localStorage.removeItem(DAILY_KEY);
   }catch(e){}
   try{
     const d=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');
