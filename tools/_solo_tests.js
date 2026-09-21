@@ -1,6 +1,7 @@
 /* 🪑 独木桥商店品质成长测试：由 sim.js 以 T5=1 调起（T5=1 node tools/sim.js），复用其 DOM 桩与 API 导出。
    验证：① 升档公式与下次升档回合；② 满人口后商店 4/5 费随回合解锁（未满人口与早期节奏不变）；
-   ③ 跨档战报只在跨档回合出现；④ 顶栏品质倒计时 UI；⑤ 普通模式不受影响。 */
+   ③ 跨档战报只在跨档回合出现；④ 顶栏品质倒计时 UI；⑤ 普通模式不受影响；
+   ⑥ 提前升档：花金币立即 +1 档（价格递增），排班到点自动追平消耗提前档。 */
 module.exports.run = function (A) {
   const fails = [];
   const ok = (cond, msg) => { if (!cond) fails.push(msg); else console.log('  ✓ ' + msg); };
@@ -56,17 +57,19 @@ module.exports.run = function (A) {
   A.S.lvl = 4; A.S.round = 6; ev('soloQualityNotice()');
   ok(lastLog().includes('已达最高'), '人口未满 5 时不播报（升档只对满人口有意义）');
 
-  console.log('[d] 顶栏 UI：品质倒计时替代经验位');
+  console.log('[d] 顶栏 UI：品质倒计时 + 提前升档按钮');
   A.S.lvl = 5; A.S.round = 6; ev('renderAll()');
   const xpText = () => document.getElementById('xpText').textContent;
   const btn = () => document.getElementById('lvlBtn');
-  ok(xpText() === '🪑 品质 Lv6 · 5回合后升 Lv7', 'r6 顶栏倒计时：' + xpText());
+  ok(xpText() === '品质 Lv6 · 5回合后升 Lv7', 'r6 顶栏倒计时：' + xpText());
   A.S.round = 10; ev('renderAll()');
-  ok(xpText() === '🪑 品质 Lv6 · 1回合后升 Lv7', 'r10 倒计时收窄：' + xpText());
+  ok(xpText() === '品质 Lv6 · 1回合后升 Lv7', 'r10 倒计时收窄：' + xpText());
   ok(document.getElementById('xpFill').style.width !== '100%', '品质条不再恒满格（按 5→11 进度）: ' + document.getElementById('xpFill').style.width);
-  ok(btn().textContent === '人口已满' && btn().title.includes('第 11 回合'), '买经验按钮提示第 11 回合自动升档：' + btn().title);
+  ok(btn().textContent === '提前升档 (F) -10金' && btn().title.includes('立即升到品质 Lv7'), '满人口按钮变提前升档（首档 10 金）：' + btn().textContent);
+  ok(btn().disabled === false, '金币充足（30 金）时按钮可用');
   A.S.round = 31; ev('renderAll()');
-  ok(xpText() === '🪑 品质 Lv11 · 已达最高', '升满后显示已达最高：' + xpText());
+  ok(xpText() === '品质 Lv11 · 已达最高', '升满后显示已达最高：' + xpText());
+  ok(btn().textContent === '品质已满' && btn().disabled === true, '品质满后按钮变「品质已满」并禁用：' + btn().textContent);
   A.S.lvl = 2; A.S.round = 1; ev('renderAll()');
   ok(xpText().includes('经验'), '人口未满时仍显示普通经验位：' + xpText());
 
@@ -76,6 +79,38 @@ module.exports.run = function (A) {
   ok(!lastLog().includes('独木桥'), '普通模式无品质播报');
   ok(xpText().includes('经验'), '普通模式经验位照旧：' + xpText());
   ok(btn().textContent.includes('买经验'), '普通模式买经验按钮照旧：' + btn().textContent);
+
+  console.log('[f] 提前升档：购买/计价递增/品质生效/排班追平消化');
+  // toggleCurse 是开关语义：前面用例可能已把 solo 留在勾选区（间接 eval 清不掉 curseSel），
+  // 先开一局探测，没生效再补一次 toggle，保证任何执行顺序下都从「solo 已激活」开始
+  ev('newGame({custom:true}); renderAll()');
+  if(!A.S.curses.includes('solo')) ev('toggleCurse("solo"); newGame({custom:true}); renderAll()');
+  ok(A.S.curses.includes('solo'), '[f] 前置：solo 诅咒已激活');
+  A.S.lvl = 5; A.S.round = 6; A.S.gold = 100; ev('renderAll()');
+  ok(ev('soloBoostCost()') === 10, '首档价格 10 金');
+  ok(ev('soloBoostBuy()') === true && A.S.soloBoost === 1 && A.S.gold === 90, '买 1 档：金 100→90，提前档计数 1');
+  ok(ev('soloShopLvl()') === 7, 'r6 买档后有效品质 Lv7（排班 6 + 提前 1）：' + ev('soloShopLvl()'));
+  ok(lastLog().includes('提前升档 → 7 级概率'), '购买战报：' + lastLog());
+  ok(ev('soloBoostCost()') === 15, '第二档价格递增 15 金');
+  ok(ev('soloBoostBuy()') === true && ev('soloShopLvl()') === 8, '再买 1 档：有效品质 Lv8');
+  ok(ev('soloShopNextR()') === 21, '倒计时按「排班先追平、再下一跳才 +1」计：下次有效升档 r21（实际 ' + ev('soloShopNextR()') + '）');
+  ev('renderAll()');
+  ok(xpText().includes('已提前2档') && xpText().includes('品质 Lv8'), '顶栏显示已提前档数：' + xpText());
+  A.S.round = 11; ev('soloQualityNotice()');
+  ok(A.S.soloBoost === 1 && ev('soloShopLvl()') === 8, 'r11 排班追平：消化 1 个提前档，品质维持 Lv8');
+  ok(lastLog().includes('追平提前档'), '追平战报：' + lastLog());
+  A.S.round = 16; ev('soloQualityNotice()');
+  ok(A.S.soloBoost === 0 && ev('soloShopLvl()') === 8, 'r16 再追平：提前档耗尽，品质仍 Lv8');
+  A.S.round = 21; ev('soloQualityNotice()');
+  ok(ev('soloShopLvl()') === 9 && lastLog().includes('品质自动提升 → 9 级'), 'r21 排班跨档恢复正常播报：' + lastLog());
+  A.S.gold = 9; ev('renderAll()');
+  ok(btn().disabled === true, '金币不足（9 金 < 10 金）时按钮禁用');
+  ok(ev('soloBoostBuy()') === false && A.S.soloBoost === 0, '金币不足购买被拒');
+  A.S.gold = 100; A.S.round = 31; ev('renderAll()');
+  ok(btn().textContent === '品质已满' && btn().disabled === true, 'r31 品质满 11：按钮禁用');
+  ok(ev('soloBoostBuy()') === false, '品质已满购买被拒');
+  A.S.lvl = 4; A.S.round = 6; A.S.gold = 100; ev('renderAll()');
+  ok(btn().textContent.includes('买经验'), '人口未满 5 时按钮仍是买经验（提前档只对满人口有意义）：' + btn().textContent);
 
   console.log(fails.length ? '\n✗ ' + fails.length + ' 项失败：\n  - ' + fails.join('\n  - ') : '\n✅ 全部通过');
   if (fails.length) process.exitCode = 1;
