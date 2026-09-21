@@ -1,5 +1,5 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v13';   // v13：「黑金棋馆」视觉重设计（透视棋盘/大立绘商店卡/SVG 图标 HUD）
+const CACHE = 'vcache-v14';   // v14：独木桥提前升档（满人口后可花金币买品质档，排班到点自动追平）
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './tools/bot_strategy.js'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
