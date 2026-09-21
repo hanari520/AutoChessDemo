@@ -1133,7 +1133,7 @@ body.touch .m-only { display:inline-block; }
     开局 10 金；每回合收入 1→5 金递增（第 5 回合起固定 5）；胜利 +2 金；利息每 10 金 +1（上限 5，挑战规则可改变）；连胜/连败 3/5/7 → +2/+3/+4 金<br>
     刷新商店 2 金；买经验 5 金 +4 经验（每回合自然 +2）；卖棋 1★ 原价、合成折价（<b style="color:#ffd24a">第 1 回合不可买经验</b>）
     <span class="is-h">🏪 商店与卡池</span>
-    5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）；共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费（挑战规则可改变卡槽数）；🪑 独木桥下人口封 5，满人口后概率改为随回合自动升档（每 5 回合 +1 级）<br>
+    5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）；共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费（挑战规则可改变卡槽数）；🪑 独木桥下人口封 5，满人口后概率改为随回合自动升档（每 5 回合 +1 级，可花金币提前买档）<br>
     卡片速读：左侧<b>色条</b> = 费用；<span style="color:#ffd24a">金边 = 对子</span>（买到即升星）；徽章并列 <span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span>
     <span class="is-h">🔗 羁绊（12 阵营 + 10 职业）</span>
     按<b>不同棋子</b>计数、达标触发 T1/T2；<b style="color:#8dff9a">首次达成每档 +1 金</b>。左侧竖栏看进度，棋子右上角显示所属羁绊图标，完整效果在<b>图鉴 → 🔗羁绊</b>。
@@ -1471,7 +1471,7 @@ const CURSES=[
   {id:'tinyshop', n:'🛒 紧缩货架', d:'商店只出 3 格（原 5 格）', r:'刷新 1 金'},
   {id:'dreamless',n:'💤 无梦',     d:'不能购买经验（人口只靠每回合自然 +2）', r:'每回合收入 +2 金'},
   {id:'fog',      n:'🌫 战争迷雾', d:'备战期看不到敌方阵容预览', r:'临时增益半价'},
-  {id:'solo',     n:'🪑 独木桥',   d:'人口上限 5（我方与敌方同步受限）；满人口后商店品质随回合自动提升', r:'开局 +20 金'},
+  {id:'solo',     n:'🪑 独木桥',   d:'人口上限 5（我方与敌方同步受限）；满人口后商店品质随回合自动提升，备战期可花金币提前升档（排班到点自动追平）', r:'开局 +20 金'},
   {id:'glass',    n:'🔮 玻璃大炮', d:'我方全体生命 -30%、攻击 +30%', r:'开局 +5 金'},
   {id:'dry',      n:'💧 干涸',     d:'我方全体技能耗蓝 50 → 75（大招更慢）', r:'开局 +10 金'},
   {id:'hardland', n:'⛰ 硬着陆',   d:'敌方全体强度 +15%', r:'每回合收入 +2 金'},
@@ -1495,14 +1495,46 @@ function lvlCap(){ return hasCurse('solo') ? 5 : 11; }           // 人口上限
 /* 🪑 独木桥：人口封 5 后商店概率失去等级成长，改随回合自动升档补偿——
    r6 起每 5 回合 +1 级（r6→6级 … r31→11级封顶）。抽卡、顶栏倒计时、升档战报
    三处必须同源走 soloShopLvl()，不要另写公式。 */
-function soloShopLvl(){ return Math.min(11, 5 + Math.floor((S.round-1)/5)); }
-function soloShopNextR(){ const q=soloShopLvl(); return q>=11 ? 0 : (q-4)*5+1; }   // 下次升档回合号（0=已满）
-/* 升档战报：只在真正跨档的回合说话（与上一回合的同源公式对比，不引入存档字段） */
+function soloBaseQ(r){ r=r||S.round; return Math.min(11, 5+Math.floor((r-1)/5)); }   // 纯排班品质（不含提前档）
+function soloShopLvl(){ return Math.min(11, soloBaseQ() + (S.soloBoost||0)); }       // 有效品质 = 排班 + 已买提前档
+function soloBoostCost(){ return 10 + 5*(S.soloBoost||0); }    // 提前档价格递增：10/15/20/25/30…
+/* 下次品质「有效提升」的回合号（0=已满）：有提前档时排班先追平（品质不动），追完才真正 +1 */
+function soloShopNextR(){
+  const q0=soloShopLvl();
+  if(q0>=11) return 0;
+  let b=soloBaseQ(), B=S.soloBoost||0;
+  for(let r=S.round+1;r<=S.round+40;r++){
+    const nb=Math.min(11,5+Math.floor((r-1)/5));
+    if(nb>b){ b=nb; if(B>0) B--; else return r; }
+  }
+  return 0;
+}
+/* 升档结算（回合推进时调用）：排班跨档回合先消化提前档（品质维持并播报追平），无提前档才正常播报升档 */
 function soloQualityNotice(){
   if(!hasCurse('solo') || S.lvl<lvlCap()) return;
-  const q=soloShopLvl(), qp=Math.min(11, 5+Math.floor((S.round-2)/5));
-  if(q>qp) log(q>=11 ? `🪑 独木桥：商店品质已达最高 — 11 级概率（4费 ${SHOP_ODDS[11][3]}% / 5费 ${SHOP_ODDS[11][4]}%）`
-                     : `🪑 独木桥：商店品质自动提升 → ${q} 级概率（4费 ${SHOP_ODDS[q][3]}% / 5费 ${SHOP_ODDS[q][4]}%）`);
+  if(soloBaseQ()>soloBaseQ(S.round-1)){   // 本回合是排班跨档回合
+    if((S.soloBoost||0)>0){ S.soloBoost--;
+      log(`🪑 独木桥：自动升档追平提前档——品质维持 Lv${soloShopLvl()} 概率（提前档已消耗，下次升档第 ${soloShopNextR()||'—'} 回合）`);
+    } else {
+      const q=soloShopLvl();
+      log(q>=11 ? `🪑 独木桥：商店品质已达最高 — 11 级概率（4费 ${SHOP_ODDS[11][3]}% / 5费 ${SHOP_ODDS[11][4]}%）`
+                : `🪑 独木桥：商店品质自动提升 → ${q} 级概率（4费 ${SHOP_ODDS[q][3]}% / 5费 ${SHOP_ODDS[q][4]}%）`);
+    }
+  }
+}
+/* 🪑 提前升档：满人口后备战期花金币立即 +1 档品质；不改排班——排班到点自动追平（消耗该提前档）。
+   每档约买来 5 回合的高品质窗口，与 2 星/利息抢钱，是独木桥满人口后的核心经济决策 */
+function soloBoostBuy(){
+  if(S.phase!=='prep' || !hasCurse('solo') || S.lvl<lvlCap()) return false;
+  if(soloShopLvl()>=11){ log('🪑 商店品质已达最高（11 级概率），无需提前升档'); return false; }
+  const cost=soloBoostCost();
+  if(S.gold<cost){ log(`⚠ 金币不足：提前升档需要 ${cost} 金（当前 ${S.gold}）`); return false; }
+  S.gold-=cost; S.stats.goldSpent+=cost;
+  S.soloBoost=(S.soloBoost||0)+1; sfx('lvlup');
+  const q=soloShopLvl();
+  log(`🪑 独木桥：提前升档 → ${q} 级概率（4费 ${SHOP_ODDS[q][3]}% / 5费 ${SHOP_ODDS[q][4]}%），花费 ${cost} 金（排班到点自动追平）`);
+  renderAll();
+  return true;
 }
 function tempBuffCost(b){ return hasCurse('fog') ? Math.ceil(b.cost/2) : b.cost; }
 function baseIncome(){ return Math.min(S.round+1,5) + (hasCurse('allin')?3:0) + (hasCurse('hardland')?2:0) + (hasCurse('dreamless')?2:0); }
@@ -1772,7 +1804,7 @@ function checkLevel(){ let need=xpNeed(S.lvl);
 let S;
 function newGame(opts){ opts=opts||{};
   S = { round:1, hp:40, gold:10, lvl:2, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[], augs:[], tickets:0, tempBuff:null,
-    ms:{}, curses:[], cursesData:{}, daily:false, dseed:0,
+    ms:{}, curses:[], cursesData:{}, soloBoost:0, daily:false, dseed:0,
     bench:Array(BENCH).fill(null), board:Array(BOARD_H*BOARD_W).fill(null),
     shop:[], enemyBoard:[], uid:1, log:[], items:[], selItem:null, selUid:null, pool:{},
     stats:{wins:0,losses:0,maxStreak:0,maxLossStreak:0,kills:0,dmgTaken:0,goldEarned:0,goldSpent:0,bought:0,
@@ -1802,7 +1834,7 @@ function newGame(opts){ opts=opts||{};
       log(`　　（左侧羁绊栏与图鉴中会以 ⛔ 标记；编队/商店高亮也会跳过它们）`);
     }
   }
-  if(hasCurse('solo')) log('🪑 独木桥：人口升满 5 后，商店品质随回合自动提升——第 6 回合起每 5 回合 +1 级，第 31 回合升满 11 级（左下品质条有倒计时）');
+  if(hasCurse('solo')) log('🪑 独木桥：人口升满 5 后，商店品质随回合自动提升——第 6 回合起每 5 回合 +1 级，第 31 回合升满 11 级；满人口后可点「提前升档」花金币立即 +1 档（10/15/20… 金递增，排班到点自动追平消耗）');
   if(S.tickets>0) log(`🎫 当前持有升星券 ×${S.tickets}：点击 3★ 棋子，在详情面板升为 4★（顶栏 🎫 可查余量）`);
   prepEnemy();
   rollShop();   // 开局发牌（含第 1 回合保底 1 费）
@@ -2383,14 +2415,14 @@ function renderTop(){
   const need=xpNeed(S.lvl);
   $('lvlNum').textContent=S.lvl;
   const capped = S.lvl>=lvlCap();
-  if(hasCurse('solo') && capped){   // 🪑 独木桥：经验位换成品质升档倒计时（下一次自动升档还差几个回合）
-    const q=soloShopLvl(), nx=soloShopNextR();
-    $('xpText').textContent = `品质 Lv${q}${nx?` · ${nx-S.round}回合后升 Lv${q+1}`:' · 已达最高'}`;
-    $('xpText').title = '独木桥：人口封顶 5，商店各费用档概率改为随回合自动升档（每 5 回合 +1 级）';
+  if(hasCurse('solo') && capped){   // 🪑 独木桥：经验位换成品质倒计时，买经验按钮变「提前升档」
+    const q=soloShopLvl(), nx=soloShopNextR(), B=S.soloBoost||0, cost=soloBoostCost();
+    $('xpText').textContent = `品质 Lv${q}${nx?` · ${nx-S.round}回合后升 Lv${q+1}`:' · 已达最高'}${B?` · 已提前${B}档`:''}`;
+    $('xpText').title = '独木桥：人口封顶 5，商店品质随回合自动升档（每 5 回合 +1 级）；备战期可花金币提前升档，排班到点会追平消耗提前档';
     $('xpFill').style.width = ((q-5)/6*100)+'%';
-    $('lvlBtn').textContent = '人口已满';
-    $('lvlBtn').title = nx ? `人口封顶 5，无法购买经验；商店品质 Lv${q} 将在第 ${nx} 回合自动升到 Lv${q+1}`
-                           : '人口封顶 5，无法购买经验；商店品质已达最高（11 级概率）';
+    $('lvlBtn').textContent = q>=11 ? '品质已满' : (IS_TOUCH?`提前升档 -${cost}金`:`提前升档 (F) -${cost}金`);
+    $('lvlBtn').title = q>=11 ? '商店品质已达最高（11 级概率）'
+      : `花 ${cost} 金立即升到品质 Lv${q+1}（4费 ${SHOP_ODDS[q+1][3]}% / 5费 ${SHOP_ODDS[q+1][4]}%）；不改自动升档排班，到点会追平这次提前`;
   } else {
     $('xpText').textContent = capped ? '人口已满' : `经验 ${S.xp}/${need}`;
     $('xpText').title = '';
@@ -2399,7 +2431,9 @@ function renderTop(){
       : (hasCurse('dreamless') ? '无梦：不可买经验' : (S.round===1 ? '首回合不可买经验' : (IS_TOUCH?'买经验 -5金':'买经验 (F) +4经验 -5金')));
     $('lvlBtn').title = '';
   }
-  $('lvlBtn').disabled = S.lvl>=lvlCap() || S.round===1 || hasCurse('dreamless') || S.gold<5;
+  $('lvlBtn').disabled = (hasCurse('solo') && capped)
+    ? (soloShopLvl()>=11 || S.gold<soloBoostCost())   // 🪑 提前升档：品质已满或金币不足时禁用
+    : (capped || S.round===1 || hasCurse('dreamless') || S.gold<5);
   { // 各费用出现率（与真实抽卡同源：独木桥封顶时按品质等级）
     const orow=$('oddsRow');
     if(orow){
@@ -3283,7 +3317,9 @@ function tidyBench(){
   renderAll();
 }
 $('tidyBtn').onclick=tidyBench;
-$('lvlBtn').onclick=()=>{ if(S.phase!=='prep'||S.lvl>=lvlCap())return;   // 5 金币买 4 经验（更快升人口凑羁绊）
+$('lvlBtn').onclick=()=>{ if(S.phase!=='prep')return;
+  if(hasCurse('solo') && S.lvl>=lvlCap()){ soloBoostBuy(); return; }   // 🪑 满人口：按钮已变提前升档（F 同键）
+  if(S.lvl>=lvlCap())return;   // 5 金币买 4 经验（更快升人口凑羁绊）
   if(hasCurse('dreamless')){ log('💤 无梦：本局不能购买经验（每回合自然 +2 经验照常）'); return; }
   if(S.round===1){ log('⚠ 第 1 回合不可购买经验（第 2 回合起可购买，自然经验不受影响）'); return; }
   if(S.gold<5){ log('⚠ 金币不足，无法购买升级经验'); return; }
@@ -5277,7 +5313,7 @@ function saveGame(){ // 仅备战阶段保存（战斗中刷新不损失进度�
   const KEY=saveKey();
   try{ localStorage.setItem(KEY,JSON.stringify({round:S.round,hp:S.hp,gold:S.gold,lvl:S.lvl,xp:S.xp,
     streak:S.streak,lossStreak:S.lossStreak,endless:S.endless,lock:!!S.lock,synDone:S.synDone||[],augs:S.augs||[],tickets:S.tickets||0,tempBuff:S.tempBuff||null,
-    ms:S.ms||{},curses:S.curses||[],cursesData:S.cursesData||{},daily:!!S.daily,dseed:S.dseed||0,bench:S.bench,board:S.board,shop:S.shop,
+    ms:S.ms||{},curses:S.curses||[],cursesData:S.cursesData||{},soloBoost:S.soloBoost||0,daily:!!S.daily,dseed:S.dseed||0,bench:S.bench,board:S.board,shop:S.shop,
     uid:S.uid,log:S.log,items:S.items,pool:S.pool,stats:S.stats,ts:Date.now()})); }catch(e){}
 }
 function loadGame(key){ key=key||SAVE_KEY;
@@ -5286,7 +5322,7 @@ function loadGame(key){ key=key||SAVE_KEY;
     if(!o||typeof o.round!=='number'||!Array.isArray(o.board)||!Array.isArray(o.bench)) return false;
     if(!S) S={}; // 直接从存档启动时 S 尚未初始化
     Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
-    S.tickets=S.tickets||0; S.tempBuff=S.tempBuff||null;   // 旧存档兼容
+    S.tickets=S.tickets||0; S.tempBuff=S.tempBuff||null; S.soloBoost=S.soloBoost||0;   // 旧存档兼容
     S.ms=S.ms||{}; S.curses=sanitizeCurses(S.curses); S.cursesData=S.cursesData||{};   // 旧存档可能同时存有互斥项
     S.daily=(key===DAILY_KEY)||!!S.daily; S.dseed=S.dseed||todaySeed();
     applyRNG();
