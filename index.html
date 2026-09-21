@@ -933,7 +933,9 @@ body.touch .m-only { display:inline-block; }
   mask:var(--ic) center/contain no-repeat; -webkit-mask:var(--ic) center/contain no-repeat; }
 .spdwrap { display:flex; gap:3px; align-items:center; }
 #curseTag { color:#ee8177; border:1px solid rgba(224,88,76,.5); background:rgba(224,88,76,.08);
-  padding:2px 8px; font-size:12px; max-width:42vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  padding:2px 8px; font-size:12px; cursor:help;
+  flex:0 1 260px; min-width:100px; max-width:440px;   /* 多诅咒不挤换行：空间不足时收缩截断，完整名单见 title 悬停 */
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #ticketTag { color:var(--gold-hi); border:1px solid var(--gold-dim); background:rgba(224,169,78,.07);
   padding:2px 8px; font-size:12px; white-space:nowrap; }
 #endBtn { background:#3d1a1a; color:#ee8177; border-color:rgba(224,88,76,.55); }
