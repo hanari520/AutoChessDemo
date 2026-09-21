@@ -1,5 +1,5 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v12';   // v12：AI 羁绊图标 22 张重制 + 2×2 boss 预览遮挡修复
+const CACHE = 'vcache-v13';   // v13：「黑金棋馆」视觉重设计（透视棋盘/大立绘商店卡/SVG 图标 HUD）
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './tools/bot_strategy.js'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

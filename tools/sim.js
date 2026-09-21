@@ -119,6 +119,7 @@ if (process.env.T1) { require('./_t1_tests.js').run(A, driveBattle); process.exi
 if (process.env.T2) { require('./_t2_tests.js').run(A, driveBattle); process.exit(0); }
 if (process.env.T3) { require('./_t3_tests.js').run(A, driveBattle); process.exit(0); }
 if (process.env.T4) { require('./_t4_tests.js').run(A, driveBattle); process.exit(0); }
+if (process.env.T5) { require('./_solo_tests.js').run(A, driveBattle); process.exit(0); }   // 🪑 独木桥品质成长
 
 
 /* ---------- 主循环 ---------- */
@@ -129,8 +130,12 @@ const results = [];
 let ch1Wins = 0;
 const chWins = [0, 0, 0, 0];      // 各章守关胜利局数（第 k 位 = 打赢 r25k 魔王的局数；第 5 章起并入第 4 位）
 const chReached = [0, 0, 0, 0];   // 打到该章守关战（存活至该回合）的局数
+/* CURSE=id1,id2：整局注入自定义诅咒（勾选走游戏自己的 toggleCurse 入口——indirect eval
+   顶层 let curseSel 不可直接赋值；勾选跨局保留，循环内每局都显式带 custom 重开） */
+const CURSE_ENV = process.env.CURSE || '';
+if (CURSE_ENV) CURSE_ENV.split(',').forEach(c => (0, eval)(`toggleCurse("${c.trim()}")`));
 for (let g = 0; g < N; g++) {
-  (0, eval)('newGame()'); (0, eval)('renderAll()');
+  (0, eval)(`newGame(${CURSE_ENV ? '{custom:true}' : ''})`); (0, eval)('renderAll()');
   let outcome = null;
   let chapters = 0, ch1 = false;
   for (let guard = 0; guard < 400; guard++) {
@@ -211,4 +216,8 @@ if (bm.length) {
   const avg = bm.reduce((a, b) => a + b, 0) / bm.length;
   const pct = p => bm[Math.min(bm.length - 1, Math.floor(bm.length * p))];
   console.log(`战斗时长(游戏秒): 平均${(avg/1000).toFixed(1)} 中位${(pct(0.5)/1000).toFixed(1)} p90 ${(pct(0.9)/1000).toFixed(1)} | 超时(≥59s) ${globalThis.battleTimeouts||0}/${bm.length} = ${(((globalThis.battleTimeouts||0)/bm.length)*100).toFixed(1)}%`);
+}
+if (process.env.DBGLOG) {   // 调试：导出最后一局战报里的指定关键词（逗号分隔），如 DBGLOG=独木桥
+  const kws = (process.env.DBGLOG || '独木桥').split(',');
+  A.S.log.filter(l => kws.some(k => l.includes(k))).forEach(l => console.log('[log]', l));
 }

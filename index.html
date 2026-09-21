@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#1c1830">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#14110d">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
@@ -11,92 +11,225 @@
 <title>虚拟棋战 VirtuaReal Auto Chess</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
-body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-serif; height:100vh; height:100dvh; overscroll-behavior:none; display:flex; flex-direction:column; overflow:hidden; --spd:1;
-  /* 棋盘格自适应：9 行（棋盘8+板凳1，含棋盘内边距与板凳标签行）+ 顶栏/信息栏/商店实测约 390px，宽受羁绊栏+侧栏约束 */
-  --cell:min(92px, calc((100vh - 335px)/9), calc((100vw - 580px)/8)); --gap:2px; --pad:7px; }
-.spd-b { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:5px; padding:2px 7px; cursor:pointer; font-size:13px; }
-.spd-b.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
-#topbar { display:flex; align-items:center; gap:14px; padding:9px 16px; background:#1c1830; border-bottom:2px solid #35294f; font-size:16px; flex-shrink:0; flex-wrap:wrap; }
-#main { flex:1; display:flex; justify-content:center; padding:10px 10px 10px 22px; gap:20px; overflow:hidden; }
-#topbar b { color:#ffd24a; }
-.tag { background:#2a2344; padding:3px 10px; border-radius:6px; }
-.tag.pop-warn { background:#5b3a1e; box-shadow:0 0 0 1px #ffd24a, 0 0 10px #ffd24a55; animation:popPulse 1.2s ease-in-out infinite; }
-.tag.pop-warn b { color:#ffd24a; }
-@keyframes popPulse { 0%,100%{ box-shadow:0 0 0 1px #ffd24a, 0 0 4px #ffd24a44; } 50%{ box-shadow:0 0 0 1px #ffd24a, 0 0 12px #ffd24aaa; } }
+/* ============================================================================
+   虚拟棋战 · 视觉世界「黑金棋馆」（2026-09-21 重设计，依据 taste-skill + impeccable）
+   Design Read：Operate 模式夜间竞技场 HUD · 暖炭黑舞台 + 焰金贵价色 + 玉/赤对抗色
+   拨盘：VARIANCE 5 / MOTION 4 / DENSITY 7
+   三种形状各司其职：面板=直角+金脊+角饰；按钮=切角铭牌；格子=4px 小圆角
+   分节：①令牌 ②基础/舞台底 ③浏览器表面 ④顶栏 ⑤面板与按钮 ⑥左栏羁绊
+        ⑦棋盘场地 ⑧棋子(引擎层迁移) ⑨商店 ⑩右栏 ⑪弹窗 ⑫战斗特效(引擎迁移)
+        ⑬触屏/抽屉 ⑭移动端 ⑮无障碍
+   ============================================================================ */
+
+/* ===== ① 设计令牌 ===== */
+:root{
+  --bg0:#0b0a08;  --bg1:#14110d;  --bg2:#1c1812;  --bg3:#252017;  --bg4:#31291d;
+  --line:rgba(235,215,175,.10);  --line-2:rgba(235,215,175,.22);
+  --tx0:#f0ead9;  --tx1:#c6b9a2;  --tx2:#a2937a;  --tx3:#7a6d58;
+  --gold:#e0a94e; --gold-hi:#f4d387; --gold-dim:#8a6526;
+  --ally:#54c7a2; --foe:#e0584c;  --mp:#5b9fd8;  --heal:#7cc971; --arc:#a678d8;
+  --c1:#9a9484; --c2:#7fb069; --c3:#5b9fd8; --c4:#a678d8; --c5:#e0a94e;
+  --cell:min(104px, calc((100vh - 370px)/9), calc((100vw - 580px)/8)); --gap:2px; --pad:7px; --spd:1;
+  /* 桌面端此公式仅为 JS 失效时的兜底：fitBoard() 会按中央区实测宽高覆盖 --cell */
+  --bcell:calc(var(--cell)*.82);   /* 备战席格：棋盘格的 82% */
+  --cut:7px;   /* 按钮切角尺寸 */
+}
+
+/* ===== ② 基础 / 舞台底 ===== */
+body { background:
+    radial-gradient(1100px 560px at 50% 30%, rgba(224,169,78,.05), transparent 70%),
+    radial-gradient(1400px 700px at 50% 115%, rgba(90,60,25,.22), transparent 72%),
+    linear-gradient(180deg,#161209 0%,var(--bg1) 46%,var(--bg0) 100%);
+  color:var(--tx0); font-family:"Segoe UI",system-ui,sans-serif; height:100vh; height:100dvh;
+  overscroll-behavior:none; display:flex; flex-direction:column; overflow:hidden; }
+.spd-b { background:var(--bg2); color:var(--tx1); border:1px solid var(--line-2); border-radius:4px;
+  padding:2px 8px; cursor:pointer; font-size:12px; letter-spacing:.3px; }
+.spd-b.on { background:var(--gold-dim); color:var(--gold-hi); border-color:var(--gold); }
+
+/* ===== ③ 浏览器表面（craft-floor：滚动条/选区也是设计） ===== */
+html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
+::-webkit-scrollbar { width:8px; height:8px; }
+::-webkit-scrollbar-thumb { background:#3a3226; border-radius:0; }
+::-webkit-scrollbar-thumb:hover { background:#4d4232; }
+::-webkit-scrollbar-track { background:transparent; }
+::selection { background:rgba(224,169,78,.30); color:var(--tx0); }
+
+/* ===== ④ 顶栏：左章节 · 中资源 · 右操作 ===== */
+#topbar { display:flex; align-items:center; gap:10px; padding:7px 14px; flex-shrink:0; flex-wrap:wrap;
+  background:linear-gradient(180deg,rgba(12,10,7,.97),rgba(12,10,7,.78) 72%,transparent);
+  border-bottom:1px solid var(--line); font-size:15px; position:relative; }
+#topbar::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(224,169,78,.35) 18%,rgba(224,169,78,.35) 82%,transparent); }
+#topbar b { color:var(--gold-hi); }
+/* 章节块：回合数 + 25 格刻度（boss 格加宽） */
+#roundBox { display:flex; align-items:center; gap:9px; padding:3px 10px 3px 2px; }
+#roundBox .rn { font-size:19px; font-weight:bold; color:var(--tx0); letter-spacing:.5px; }
+#roundBox .rn b{ color:var(--tx0); }
+#roundBox .rn .rm { color:var(--tx3); font-size:12px; font-weight:normal; }
+#roundTicks { display:flex; gap:2px; align-items:center; }
+#roundTicks i { width:5px; height:9px; background:#2c261c; border:1px solid rgba(235,215,175,.08); }
+#roundTicks i.on { background:var(--gold-dim); border-color:var(--gold); }
+#roundTicks i.boss { width:9px; height:12px; }
+#roundTicks i.boss.on { background:var(--foe); border-color:var(--foe); }
+/* 资源 HUD 块：图标 + 大数字 + 小标签 */
+.res { display:flex; align-items:center; gap:7px; padding:3px 12px 3px 9px; position:relative; }
+.res::before{ content:''; width:15px; height:15px; background:currentColor; flex-shrink:0;
+  mask:var(--ic) center/contain no-repeat; -webkit-mask:var(--ic) center/contain no-repeat; }
+.res .rv { font-size:17px; font-weight:bold; color:var(--tx0); line-height:1.1; }
+.res .rl { font-size:10px; color:var(--tx2); letter-spacing:2px; line-height:1.1; }
+.res .ri { font-size:11px; color:var(--heal); font-weight:bold; }
+#resHp { color:var(--foe); }  #resGold { color:var(--gold); }  #resPop { color:var(--tx1); }  #resStreak { color:var(--gold-hi); }
+#resHp .rv, #resGold .rv { color:var(--tx0); }
+.tag { background:transparent; padding:0; border-radius:0; }
+.tag.pop-warn { background:rgba(138,101,38,.25); border:1px solid var(--gold); box-shadow:none;
+  animation:popPulse 1.2s ease-in-out infinite; padding:3px 10px; border-radius:0; }
+.tag.pop-warn b { color:var(--gold-hi); }
+@keyframes popPulse { 0%,100%{ border-color:var(--gold); } 50%{ border-color:var(--gold-hi); } }
 #deployBtn.pulse { animation:deployPulse 1.1s ease-in-out infinite; }
-@keyframes deployPulse { 0%,100%{ box-shadow:0 0 0 0 #ffd24a00; } 50%{ box-shadow:0 0 0 2px #ffd24a, 0 0 14px #ffd24a88; } }
-#main { flex:1; display:flex; justify-content:center; padding:10px 10px 10px 22px; gap:20px; overflow:hidden; }
+@keyframes deployPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(224,169,78,0); } 50%{ box-shadow:0 0 0 2px var(--gold); } }
+#topbar .spacer { flex:1; }
+#topbar .btn { padding:5px 12px; font-size:13px; }
+
+/* ===== ⑤ 面板与按钮 ===== */
+#main { flex:1; display:flex; justify-content:center; padding:8px 10px; gap:16px; overflow:hidden; }
+.panel { background:linear-gradient(180deg,rgba(37,32,23,.92),rgba(22,19,14,.96));
+  border:1px solid var(--line); border-radius:0; padding:9px 11px; position:relative; }
+.panel::before{ content:''; position:absolute; top:-1px; left:-1px; width:10px; height:10px;
+  border-top:2px solid var(--gold-dim); border-left:2px solid var(--gold-dim); pointer-events:none; }
+.panel h3 { font-size:11px; color:var(--tx2); font-weight:normal; letter-spacing:3px; margin-bottom:7px;
+  padding-bottom:5px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:7px; }
+.panel h3::before{ content:''; width:3px; height:11px; background:var(--gold); flex-shrink:0; }
+/* 按钮：切角金属铭牌；基类=中性，金色只给主行动与激活态 */
+.btn { background:var(--bg3); color:var(--tx1); border:1px solid var(--line-2); border-radius:0;
+  padding:6px 14px; cursor:pointer; font-size:14px; font-weight:bold;
+  clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut)); }
+.btn:hover { background:var(--bg4); color:var(--tx0); }
+.btn:disabled { opacity:.4; cursor:default; }
+.btn.off { background:var(--bg2); color:var(--tx3); border-color:var(--line); }
+.btn.on { background:var(--gold-dim); border-color:var(--gold); color:var(--gold-hi); }
+.btn.ic { display:inline-flex; align-items:center; gap:6px; }
+.btn.ic::before { content:''; width:13px; height:13px; background:currentColor; flex-shrink:0;
+  mask:var(--ic) center/contain no-repeat; -webkit-mask:var(--ic) center/contain no-repeat; }
+#deployBtn { background:var(--gold-dim); color:var(--gold-hi); border-color:var(--gold); }
+#deployBtn:hover { background:#9c752d; color:#fff2d0; }
+.btn.auto-on { border-color:var(--ally); color:var(--ally); box-shadow:none; }
+#autoFightBtn.af-on { background:#1d3a2a; color:var(--ally); border-color:var(--ally); }
+#endBtn.arm-flash { animation:endflash .45s infinite alternate; }
+@keyframes endflash{ from{ box-shadow:0 0 0 rgba(224,88,76,0); } to{ box-shadow:0 0 10px rgba(224,88,76,.7); } }
+
+/* ===== ⑥ 左栏羁绊 ===== */
 #boardwrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
-/* 首局欢迎指引（覆盖在空棋盘上，放上第一个棋子后消失） */
-#boardGuide{ display:none; }   /* 👋 欢迎指引已移除（与开局介绍弹窗叠加造成卡住观感），元素与函数一并下线 */
-/* 多多式：棋盘上方对手信息横幅 */
-#oppBar { width:calc(8*var(--cell) + 7*var(--gap) + 2*var(--pad) + 4px); max-width:96vw; background:#1c1830; border:1px solid #35294f; border-radius:10px;
-  padding:5px 12px; text-align:center; flex-shrink:0; }
-/* 桌面端 oppBar 搬进左侧羁绊栏顶部后：宽度随栏自适应 */
-#synCol #oppBar { width:100%; max-width:none; font-size:13px; }
-#oppBar #enemyInfo { font-size:14px; line-height:1.55; }
+#oppBar { width:calc(8*var(--cell) + 7*var(--gap) + 2*var(--pad) + 4px); max-width:96vw;
+  background:rgba(22,19,14,.9); border:1px solid var(--line); border-radius:0; padding:5px 12px;
+  text-align:center; flex-shrink:0; position:relative; }
+#oppBar::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background:var(--foe); opacity:.55; }
+#synCol #oppBar { width:100%; max-width:none; font-size:11px; line-height:1.45; padding:4px 8px; }
+#oppBar #enemyInfo { font-size:13px; line-height:1.55; }
+#synCol { width:196px; display:flex; flex-direction:column; gap:3px; flex-shrink:0; overflow-y:auto; padding:2px 0; }
+.syn-head { display:flex; align-items:baseline; gap:6px; font-size:12px; color:var(--tx0); font-weight:bold;
+  letter-spacing:2px; padding:4px 8px 6px; border-bottom:1px solid var(--line); margin:0 2px 4px; }
+.syn-head .en { color:var(--gold); letter-spacing:3px; font-size:10px; }
+.syn-head .sub { margin-left:auto; font-size:10px; color:var(--tx3); letter-spacing:0; font-weight:normal; }
+.syn-foot { margin:2px 4px 0; padding:6px 6px; font-size:10.5px; color:var(--tx3); cursor:pointer;
+  border-top:1px solid var(--line); letter-spacing:.5px; }
+.syn-foot:hover { color:var(--gold-hi); }
+.syn-badge { display:block; background:rgba(24,20,14,.85); border:1px solid var(--line); border-left:2px solid #3d362a;
+  border-radius:0; padding:5px 8px; margin:0 2px 4px; font-size:13px; color:var(--tx2); cursor:default; }
+.syn-badge .syn-top { display:flex; align-items:center; gap:6px; }
+.syn-badge .ico { font-size:15px; filter:grayscale(1); opacity:.5; }
+.syn-badge .cnt { margin-left:auto; font-weight:bold; font-size:12px; white-space:nowrap; }
+.syn-badge.on { color:var(--tx0); border-color:var(--line-2); }
+.syn-badge.on .ico { filter:none; opacity:1; }
+.syn-badge.t1 { border-left-color:var(--c1); color:var(--tx1); }
+.syn-badge.t2 { border-left-color:var(--gold); background:linear-gradient(90deg,rgba(138,101,38,.20),rgba(24,20,14,.85) 55%); color:var(--gold-hi); }
+.syn-empty { color:var(--tx3); font-size:12px; padding:4px 6px; }
+.syn-eff { font-size:11px; line-height:1.4; margin-top:3px; padding-top:2px; border-top:1px dashed rgba(235,215,175,.12); opacity:.92; word-break:break-all; }
+.syn-badge .pips { display:flex; gap:2px; margin-left:5px; }
+.syn-badge .pips i { width:5px; height:5px; border-radius:0; background:#3d362a; }
+.syn-badge .pips i.on { background:var(--gold); }
+.syn-badge.t1 .pips i.on { background:var(--c1); }
+#aliveBar{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:4px;
+  background:rgba(12,10,7,.7); border:1px solid var(--line); border-radius:0; padding:2px 12px;
+  font-size:12px; font-weight:bold; white-space:nowrap; }
+#synCol #aliveBar { margin:2px 0; padding:6px 8px; font-size:12px; gap:6px; }
+#aliveBar .ab-me{ color:var(--ally); } #aliveBar .ab-foe{ color:#ee8177; }
+.syn-badge.banned { border-color:rgba(224,88,76,.4); opacity:.82; }
+.syn-badge.banned .syn-top { color:#ee8177; }
+.syn-badge.banned .pips i { background:#3d362a; }
+.syn-eff.ban { color:#ee8177; }
+
+/* ===== ⑦ 棋盘场地：强透视（近大远小）+ 地台追光 + 石砖格 + 金色中线 ===== */
+#boardwrap { perspective:1150px; perspective-origin:50% -18%; }
 #board { display:grid; grid-template-columns:repeat(8,var(--cell)); grid-template-rows:repeat(8,var(--cell)); gap:var(--gap);
-  background:#221c38; padding:var(--pad); border-radius:10px; border:2px solid #35294f; position:relative; isolation:isolate; }
-/* isolation：棋盘自成层叠上下文——格/单位/特效/伤害数字/徽章悬浮层的 z 只在板内竞争，
-   任何板内 z 再高也不会泄漏到弹窗（histModal 55 / bookModal 40）/抽屉(38)/悬浮提示之上 */
+  padding:var(--pad); position:relative; isolation:isolate; border:none; border-radius:0;
+  --rx:11deg;
+  transform:rotateX(var(--rx)); transform-origin:50% 100%;
+  background:
+    radial-gradient(70% 55% at 50% 46%, rgba(224,169,78,.10), transparent 74%),
+    linear-gradient(180deg,#171310 0%,#221b12 52%,#2b2214 100%);
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    inset 0 0 46px rgba(0,0,0,.55),
+    0 22px 44px rgba(0,0,0,.5); }
+/* 中线：敌我分界的金色光缝（低于棋子层，不挡交互） */
+#board::before { content:''; position:absolute; left:var(--pad); right:var(--pad); top:calc(50% - 1px); height:2px;
+  z-index:5; pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(224,169,78,.45) 12%,rgba(244,211,135,.7) 50%,rgba(224,169,78,.45) 88%,transparent); }
+.cell { background:rgba(126,196,205,.055); border-radius:4px; position:relative;
+  box-shadow:inset 0 1px 0 rgba(200,230,240,.05), inset 0 0 0 1px rgba(0,0,0,.28); }
+.cell.enemy-side { background:rgba(196,84,96,.13); }
+.cell.drop-hl { background:rgba(224,169,78,.26); filter:none; }
+.cell.rng-hl { background:rgba(91,159,216,.16); box-shadow:inset 0 0 0 2px rgba(122,190,255,.5); }
+.cell.rng-src { background:rgba(224,169,78,.22); box-shadow:inset 0 0 0 2px var(--gold); }
+.cell.equip-hl { box-shadow:inset 0 0 0 2px var(--heal), 0 0 10px rgba(124,201,113,.4); }
+#board .cell.mv-hl, #bench .bslot.mv-hl { box-shadow:inset 0 0 0 2px rgba(84,199,162,.5); filter:brightness(1.2); }
+
+/* ===== ⑧ 棋子（引擎层：定位/动画原样迁移，仅皮肤值换 token） ===== */
 #unitLayer { position:absolute; left:var(--pad); top:var(--pad); width:calc(8*var(--cell) + 7*var(--gap)); height:calc(8*var(--cell) + 7*var(--gap)); pointer-events:none; z-index:20; }
 .unit.battle-unit { position:absolute; inset:auto; width:calc(var(--cell) - 8px); height:calc(var(--cell) - 8px); pointer-events:auto; isolation:isolate;
   transition:left calc(.45s/var(--spd)) ease, top calc(.45s/var(--spd)) ease, transform calc(.12s/var(--spd)) ease; overflow:visible; }
-/* 攻击突进：朝目标方向顶一下再弹回（方向由 JS 写入 --lx/--ly） */
 .unit.battle-unit.lunge { animation:lungeanim calc(.3s/var(--spd)) ease; z-index:80 !important; }
 @keyframes lungeanim { 0%{ transform:none } 35%{ transform:translate(var(--lx,0px),var(--ly,0px)) scale(1.07) } 100%{ transform:none } }
-/* 行走摆动：坐标变化的 tick 挂 .walking，立绘小跳步 */
 .unit.battle-unit.walking .pt { animation:walkbob calc(.34s/var(--spd)) ease-in-out infinite alternate; }
 @keyframes walkbob { from{ transform:translateX(-50%) translateY(0) rotate(-2.5deg) } to{ transform:translateX(-50%) translateY(-7%) rotate(2.5deg) } }
-/* 受击抖动 */
 .unit.battle-unit.hitfx .pt { animation:hitshake .18s linear; }
 @keyframes hitshake { 0%,100%{ transform:translateX(-50%) } 30%{ transform:translateX(-57%) } 65%{ transform:translateX(-43%) } }
-/* 头目野怪 2×2 体格：战斗/备战预览均以锚点格真实占据 2×2（占格互斥由引擎保证，此处只负责尺寸与层级） */
 .unit.battle-unit.big, #board .unit.preview.big { width:calc(var(--cell)*2 + var(--gap) - 8px); height:calc(var(--cell)*2 + var(--gap) - 8px); z-index:13; }
-#board .unit.preview.big { top:auto; bottom:4px; }   /* 预览 2×2 底对齐锚点格：向上铺开，不探进下一行（配合锚点格 z=2+y 的行序遮挡） */
+#board .unit.preview.big { top:auto; bottom:4px; }
 .unit.battle-unit.big .nm { font-size:15px; }
 .unit.battle-unit.big .st { font-size:12px; }
 .unit.battle-unit.big .fj { font-size:10px; }
 .unit.battle-unit.big .vfx.attached, #board .unit.preview.big .vfx.attached { left:-8px !important; top:-8px !important; width:calc(var(--cell)*2 + var(--gap)); height:calc(var(--cell)*2 + var(--gap)); }
-/* 刺客突进：飞行动画（缩放+拖影+提速过渡） */
 .unit.battle-unit.dashing { z-index:56; transition:left calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), top calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), transform calc(.45s/var(--spd)) ease;
-  filter:drop-shadow(0 0 10px #c77dff) drop-shadow(0 0 18px #c77dff88); }
+  filter:drop-shadow(0 0 10px var(--arc)) drop-shadow(0 0 18px rgba(166,120,216,.55)); }
 .unit.battle-unit.dashing::after { content:''; position:absolute; inset:-6px; border-radius:8px;
-  border:2px solid #c77dff; animation:dashRing calc(.45s/var(--spd)) ease-out forwards; }
+  border:2px solid var(--arc); animation:dashRing calc(.45s/var(--spd)) ease-out forwards; }
 @keyframes dashRing { from{ transform:scale(.7); opacity:1; } to{ transform:scale(1.6); opacity:0; } }
 .vfx.attached { left:-4px !important; top:-4px !important; width:var(--cell); height:var(--cell); }
-.cell { background:#2a2444; border-radius:6px; position:relative; }
-.cell.enemy-side { background:#3a2430; }
-.cell.drop-hl { background:#5a4a8e; filter:brightness(1.4); }
-.cell.rng-hl { background:#3f5a7e; box-shadow:inset 0 0 0 2px #6ec8ff88; }
-.cell.rng-src { background:#5a4a8e; box-shadow:inset 0 0 0 2px #ffd24a; }
-.cell.equip-hl { box-shadow:inset 0 0 0 2px #8dff9a, 0 0 12px #8dff9a66; }
-.item-chip { cursor:grab; user-select:none; }
 .unit.item-ghost { display:flex; align-items:center; justify-content:center; font-size:10px; text-align:center;
-  background:#241e3e; border:1px solid #8dff9a; border-radius:8px; color:#8dff9a; padding:2px; }
-.unit { position:absolute; inset:4px; border-radius:6px; display:flex; flex-direction:column; align-items:center;
+  background:rgba(29,42,32,.9); border:1px solid var(--heal); border-radius:4px; color:var(--heal); padding:2px; }
+.unit { position:absolute; inset:4px; border-radius:4px; display:flex; flex-direction:column; align-items:center;
   justify-content:center; cursor:grab; text-align:center; line-height:1.1; overflow:visible;
   border:2px solid #888; background:#5b6b8c; z-index:2;
-  /* 文字随格子等比缩放：格子小（自适应下限）时不会溢出格界 */
   font-size:calc(var(--cell)*.16); }
-/* 板凳棋子保持格子内（立绘不出格，避免叠到棋盘） */
-/* 板凳棋子与棋盘备战棋子同格式：出框站姿（立绘/星级/羁绊继承全局规则，名字已隐藏）；
-   板凳单行无遮挡问题，其内容需盖住棋盘底边（立绘向上探出），DOM 顺序天然满足 */
+/* 费用底座：备战/上场棋子按费用区分底色与描边（战斗态在下方规则中转透明） */
+.unit.cost1 { background:linear-gradient(180deg,#3a3f4a,#262a33); border-color:#8a92a3; }
+.unit.cost2 { background:linear-gradient(180deg,#23422e,#182b20); border-color:#5fae7f; }
+.unit.cost3 { background:linear-gradient(180deg,#20374e,#16283a); border-color:#5b9fd8; }
+.unit.cost4 { background:linear-gradient(180deg,#372a52,#251c38); border-color:#a678d8; }
+.unit.cost5 { background:linear-gradient(180deg,#4a3a16,#33270f); border-color:var(--gold); }
 .unit .nm { font-weight:bold; padding:0 1px; }
-.unit .st { position:absolute; top:-58%; left:2px; font-size:calc(var(--cell)*.17); opacity:1; z-index:1;
-  color:#ffd24a; font-weight:bold; letter-spacing:1px;
-  text-shadow:0 1px 2px #000, 0 0 4px #000000cc; }
-.unit .sk { font-size:calc(var(--cell)*.135); color:#9fe8ff; }
-.unit .fj { font-size:calc(var(--cell)*.115); color:#c8bfe8; letter-spacing:.3px; }
+.unit .st { position:absolute; top:2px; left:3px; z-index:1; font-size:calc(var(--cell)*.15);
+  color:var(--gold-hi); font-weight:bold; letter-spacing:1px; text-shadow:0 1px 2px #000; }
+.unit .sk { font-size:calc(var(--cell)*.135); color:var(--heal); position:absolute; top:2px; right:3px; z-index:1; text-shadow:0 1px 2px #000; }
+.unit .fj { font-size:calc(var(--cell)*.115); color:var(--tx1); letter-spacing:.3px; }
 .unit .its { position:absolute; top:-30%; right:2px; font-size:calc(var(--cell)*.15); letter-spacing:-2px; z-index:2; }
-.unit.sel { border-color:#ffd24a; box-shadow:0 0 4px #ffd24a88; z-index:3; }
-.unit.ally { border-color:#4aa8ff; box-shadow:inset 0 0 0 999px rgba(74,168,255,.24); }
-.unit.enemy { border-color:#e05555; box-shadow:inset 0 0 0 999px rgba(224,85,85,.30); }
-/* 选中金光与阵营底罩叠加 */
-.unit.sel.ally { box-shadow:0 0 4px #ffd24a88, inset 0 0 0 999px rgba(74,168,255,.24); }
-.unit.sel.enemy { box-shadow:0 0 4px #ffd24a88, inset 0 0 0 999px rgba(224,85,85,.30); }
+.unit.sel { border-color:var(--gold); box-shadow:0 0 4px rgba(224,169,78,.55); z-index:3; }
+.unit.ally { border-color:var(--ally); box-shadow:inset 0 0 0 999px rgba(84,199,162,.16); }
+.unit.enemy { border-color:var(--foe); box-shadow:inset 0 0 0 999px rgba(224,88,76,.20); }
+.unit.sel.ally { box-shadow:0 0 4px rgba(224,169,78,.55), inset 0 0 0 999px rgba(84,199,162,.16); }
+.unit.sel.enemy { box-shadow:0 0 4px rgba(224,169,78,.55), inset 0 0 0 999px rgba(224,88,76,.20); }
 .unit .fz { position:absolute; top:-30%; left:2px; font-size:calc(var(--cell)*.14); z-index:2; }
-/* 棋子立绘：破格站姿——脚踩格底线，身高约 1.5 格，头顶探入上一行（遮挡关系由行 z-index 决定） */
 .unit .pt { position:absolute; left:50%; bottom:3%; width:148%; height:230%;
   transform:translateX(-50%); transform-origin:50% 100%;
   background-position:center bottom; background-repeat:no-repeat; background-size:contain;
@@ -104,50 +237,39 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));
   animation:idlebob 2.6s ease-in-out infinite alternate; }
 @keyframes idlebob { from{ transform:translateX(-50%) translateY(0) } to{ transform:translateX(-50%) translateY(-3%) } }
-/* 脚下投影（垫在立绘后面，让角色真正"站"在格子上） */
 .unit.battle-unit::after, #board .cell > .unit::after, #bench .unit::after {
   content:''; position:absolute; left:50%; bottom:1%; transform:translateX(-50%);
   width:88%; height:14%; border-radius:50%; z-index:-1;
-  background:radial-gradient(ellipse at center, rgba(0,0,0,.42), transparent 68%); }
-/* 备战棋子（棋盘+板凳统一格式）：名字牌去掉；出框站姿 + 星级叠左脚部 + 羁绊叠脚底（参考金铲铲式） */
+  background:radial-gradient(ellipse at center, rgba(0,0,0,.5), transparent 68%); }
 #board .cell > .unit .nm, #bench .unit .nm { display:none; }
-#board .cell > .unit .st { display:none; }   /* 棋盘星级也走 #synBadgeLayer 悬浮层（下移到脚部且不被下排头部遮挡） */
-#bench .unit .st { top:auto; bottom:9%; left:4%; right:auto; }   /* 与棋盘一致：星级贴脚部 */
-#board .cell > .unit .syn { display:none; }   /* 棋盘徽章改走 #synBadgeLayer 悬浮层（根治下排头部越界遮挡） */
-#bench .unit .syn { top:-58%; bottom:auto; right:2px; }   /* 与棋盘一致：徽章悬浮头顶上方空带 */
-/* 战斗：星级显示在血条上方（居中），名字独占底部 */
+#board .cell > .unit .st { display:none; }
+#bench .unit .st { top:auto; bottom:9%; left:4%; right:auto; }
+#board .cell > .unit .syn { display:none; }
+#bench .unit .syn { top:-58%; bottom:auto; right:2px; }
 .unit.battle-unit .st { top:auto; bottom:26px; left:50%; right:auto; transform:translateX(-50%); }
 .unit .nm { position:absolute; left:2px; right:2px; bottom:3px; z-index:1; font-weight:bold; padding:1px 0;
-  background:rgba(10,12,24,.6); border-radius:4px; text-shadow:0 1px 2px #000; }
-/* 羁绊徽章：固定右上角（备战/战斗同位）；战斗态敌我标签下移、状态表情移到星级下方让位 */
+  background:rgba(10,8,5,.62); border-radius:3px; text-shadow:0 1px 2px #000; }
 .unit .syn { position:absolute; top:-58%; right:2px; display:flex; justify-content:flex-end; gap:2px; z-index:1; pointer-events:none; }
 .unit .syn .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:center;
   background-repeat:no-repeat; background-size:contain; pointer-events:auto;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
-/* 战斗态状态表情与基础位一致（悬浮头顶下方），旧 15px 锚点已废 */
-.btn.auto-on { border-color:#8dff9a; color:#8dff9a; box-shadow:0 0 8px #8dff9a55; }
-/* 羁绊反馈：激活图标点亮 / 刀客脚下金弧 / 溅射与冰封禁地 */
-.unit .syn .sy.on{ filter:brightness(1.35) saturate(1.25) drop-shadow(0 0 4px #ffd24a); }
-/* 羁绊徽章悬浮层（备战棋盘）：脱离棋子元素、置于全部立绘之上，任何头部越界都盖不住徽章 */
+.unit .syn .sy.on{ filter:brightness(1.3) saturate(1.2) drop-shadow(0 0 3px var(--gold)); }
 #synBadgeLayer { position:absolute; inset:0; z-index:60; pointer-events:none; }
 #synBadgeLayer > div { position:absolute; display:flex; justify-content:flex-end; gap:2px; }
 #synBadgeLayer .syn { display:flex; gap:2px; position:static; }
 #synBadgeLayer .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:center;
   background-repeat:no-repeat; background-size:contain; pointer-events:auto;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
-#synBadgeLayer .sy.on { filter:brightness(1.35) saturate(1.25) drop-shadow(0 0 4px #ffd24a); }
+#synBadgeLayer .sy.on { filter:brightness(1.3) saturate(1.2) drop-shadow(0 0 3px var(--gold)); }
 #synBadgeLayer .big-badge .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
-#synBadgeLayer .st { position:static; font-size:calc(var(--cell)*.17); color:#ffd24a; font-weight:bold;
-  letter-spacing:1px; text-shadow:0 1px 2px #000, 0 0 4px #000000cc; }
+#synBadgeLayer .st { position:static; font-size:calc(var(--cell)*.17); color:var(--gold-hi); font-weight:bold;
+  letter-spacing:1px; text-shadow:0 1px 2px #000, 0 0 4px rgba(0,0,0,.8); }
 #synBadgeLayer .big-badge .st { font-size:calc(var(--cell)*.26); }
 .unit .arcs{ position:absolute; left:8%; right:8%; bottom:2px; height:30%; pointer-events:none; z-index:1; }
 .unit .arcs::after{ content:''; position:absolute; inset:0; border:2px solid transparent; border-radius:50%; }
-.unit .arcs.a1::after{ border-bottom-color:#ffd24acc; }
-.unit .arcs.a2::after{ border-bottom-color:#ffd24acc; border-top-color:#ffd24a55; }
-.unit .arcs.a3::after{ border-color:#ffd24acc; box-shadow:0 0 6px #ffd24a44; }
-.vfx.splashfx{ border-radius:50%; border:2px solid #9fe8ff; background:radial-gradient(circle,#9fe8ff44 0%,transparent 70%); }
-.vfx.aoe.frost{ background:rgba(159,232,255,.16); border:2px solid rgba(159,232,255,.6); box-shadow:inset 0 0 22px rgba(159,232,255,.4); border-radius:12px; }
-/* 常驻羁绊光环：阵营激活后的可感知反馈（radial glow，纯 CSS 零节点） */
+.unit .arcs.a1::after{ border-bottom-color:rgba(224,169,78,.8); }
+.unit .arcs.a2::after{ border-bottom-color:rgba(224,169,78,.8); border-top-color:rgba(224,169,78,.35); }
+.unit .arcs.a3::after{ border-color:rgba(224,169,78,.8); box-shadow:0 0 6px rgba(224,169,78,.28); }
 .unit::before{ content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none; background:var(--bvg,none); z-index:0; }
 .unit.bv-shenhai{ --bvg:radial-gradient(circle at 50% 68%, rgba(95,215,221,.30), transparent 74%); }
 .unit.bv-xingji{ --bvg:radial-gradient(circle at 50% 30%, rgba(176,138,224,.30), transparent 72%); }
@@ -162,525 +284,330 @@ body { background:#12101c; color:#e8e4f0; font-family:"Segoe UI",system-ui,sans-
 .unit.bv-psp{ --bvg:radial-gradient(circle at 50% 68%, rgba(106,159,232,.28), transparent 72%); }
 .unit.bv-yemu-fog{ box-shadow:inset 0 0 16px rgba(58,63,102,.9); }
 .unit.bv-yemu-fog::before{ background:rgba(58,63,102,.38); animation:fogpulse 2.2s ease-in-out infinite; }
+@keyframes fogpulse{ 0%,100%{ opacity:.5 } 50%{ opacity:.95 } }
 .unit.bv-fashi-rune::after{ content:'🔮'; position:absolute; top:0; right:2px; font-size:calc(var(--cell)*.2); opacity:.85; pointer-events:none; }
 .unit.hexed::after{ content:'🐑'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:calc(var(--cell)*.5); opacity:.88; pointer-events:none; animation:hexbob 1s ease-in-out infinite alternate; }
-.unit.hasregen .hpfill{ box-shadow:0 0 6px #8dff9a; }
+@keyframes hexbob{ from{ transform:translateY(-4%) } to{ transform:translateY(6%) } }
+.unit.hasregen .hpfill{ box-shadow:0 0 6px var(--heal); }
 .unit.shredded .st{ text-decoration:line-through; }
 .fashi-rune{ position:absolute; top:0; right:2px; font-size:calc(var(--cell)*.2); opacity:.85; pointer-events:none; z-index:2; }
 .vfx.star::after{ content:'✨'; position:absolute; inset:0; display:flex; align-items:flex-start; justify-content:center; font-size:calc(var(--cell)*.35); animation:starfall .7s both; }
 @keyframes starfall{ from{ transform:translateY(-60%); opacity:0 } 40%{ opacity:1 } to{ transform:translateY(30%); opacity:0 } }
-@keyframes fogpulse{ 0%,100%{ opacity:.5 } 50%{ opacity:.95 } }
-@keyframes hexbob{ from{ transform:translateY(-4%) } to{ transform:translateY(6%) } }
-.vfx.ripple{ border:2px solid #f2a7c3; border-radius:50%; animation:ripplez .6s both; }
-@keyframes ripplez{ from{ transform:scale(.3); opacity:.9 } to{ transform:scale(1.5); opacity:0 } }
-#aliveBar{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:4px;
-  background:rgba(10,12,24,.6); border:1px solid #4a3d6e; border-radius:8px; padding:1px 12px; font-size:13px; font-weight:bold; white-space:nowrap; }
-#synCol #aliveBar { margin:2px 0; padding:6px 8px; font-size:12px; gap:6px; }   /* 桌面左栏：杂兵信息与羁绊列表之间的存活计数条 */
-#aliveBar .ab-me{ color:#4aa8ff; } #aliveBar .ab-foe{ color:#ff7a7a; }
-/* 章节结算：结算动画 + 3 选 1 全局增强卡片 */
-.settle-hero{ text-align:center; font-size:17px; font-weight:bold; margin:6px 0; animation:augIn .5s both; }
-.settle-hero.win{ color:#8dff9a; } .settle-hero.lose{ color:#ff9a9a; }
-.settle-row{ text-align:center; font-size:13px; color:#dcd6f2; margin:4px 0; }
-.settle-ask{ text-align:center; margin:10px 0 8px; color:#ffd24a; font-weight:bold; animation:augIn .5s .1s both; }
-.aug-row{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
-.aug-card{ width:150px; background:#241e3e; border:2px solid #4a3d6e; border-radius:10px; padding:9px 8px; text-align:center; cursor:pointer; animation:augIn .45s both; transition:transform .15s, border-color .15s, box-shadow .15s; }
-.aug-card:hover{ transform:translateY(-3px); border-color:#ffd24a; }
-.aug-card.picked{ border-color:#8dff9a; box-shadow:0 0 10px #8dff9a66; }
-.aug-card.dim{ opacity:.4; pointer-events:none; }
-.aug-card .ad{ font-size:12px; color:#c8bfe8; margin:5px 0; min-height:36px; }
-.aug-card.r2{ border-color:#4aa8ff88; }
-.aug-card.r3{ border-color:#ffd24aaa; box-shadow:0 0 10px #ffd24a22; }
-.aug-card .ar-tag{ font-size:10px; border:1px solid; border-radius:8px; padding:0 6px; margin-left:4px; vertical-align:2px; }
-.in-ticket{ margin:6px 0 2px; padding:6px 8px; text-align:center; border:1px solid #ffd24a; border-radius:8px; color:#ffd24a; font-size:12px; cursor:pointer; background:#2a2440; }
-.in-ticket:hover{ background:#3a3055; }
-.unit.star4 .st{ color:#ffd24a; opacity:1; text-shadow:0 0 5px #ffd24a; }
-#tempBuffBox{ display:flex; flex-direction:column; gap:4px; align-self:stretch; }
-#tempBuffBox .btn.tb{ align-self:stretch; padding:4px 8px; font-size:11px; min-width:0; white-space:nowrap; }
-#tempBuffBox .btn.tb.on{ border-color:#8dff9a; color:#8dff9a; }
-#autoFightBtn.af-on{ background:#1e5b2a; color:#8dff9a; border-color:#8dff9a; box-shadow:0 0 8px #8dff9a44; }
-#endBtn.arm-flash{ animation:endflash .45s infinite alternate; }
-@keyframes endflash{ from{ box-shadow:0 0 0 #ff9a9a00; } to{ box-shadow:0 0 12px #ff9a9abb; } }
-.arti-box{ display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-bottom:6px; }
-.arti-box .arti-hd{ grid-column:1/-1; font-size:12px; color:#ffd24a; }
-.arti-card{ background:#241e3e; border:1px solid #ffd24a55; border-radius:8px; padding:5px 6px; font-size:11px; color:#dcd6f2; }
-.arti-card b{ color:#ffd24a; font-size:12px; }
-.arti-card .ad2{ font-size:10px; color:#a99ed0; margin:3px 0; line-height:1.5; }
-.arti-card .btn[disabled]{ opacity:.4; cursor:default; }
-.item-chip.arti{ border-color:#ffd24a; box-shadow:0 0 6px #ffd24a44; }
-.auto-equip-row{ display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
-.auto-equip-row .btn{ padding:4px 10px; font-size:12px; border-color:#8dff9a88; color:#8dff9a; }
-/* 玩法说明分区标题 */
-#ovText .is-h{ display:block; color:#ffd24a; font-weight:bold; font-size:14px; margin:9px 0 2px; padding-bottom:2px; border-bottom:1px solid #35294f; }
-/* 挑战规则勾选区（开局弹窗） */
-#cursePick{ max-width:560px; margin:8px auto 0; text-align:left; }
-/* 三模式选择卡片 */
-#modePick{ max-width:560px; margin:8px auto 2px; display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:8px; }
-.mode-card{ flex:1 1 0; min-width:150px; background:#1c1830; border:1px solid #35294f; border-radius:10px; padding:8px 6px; text-align:center; cursor:pointer; font-size:11px; color:#a99ed0; line-height:1.55; }
-.mode-card b{ display:block; font-size:13px; color:#dcd6f2; margin-bottom:3px; }
-.mode-card:hover{ border-color:#6a5a9e; transform:translateY(-1px); }
-.mode-card.on{ border-color:#ffd24a; background:#241e3e; box-shadow:0 0 10px #ffd24a2e; color:#dcd6f2; }
-.mode-card.on b{ color:#ffd24a; }
-#ovResume{ background:#1a2f5b; color:#9dd3e8; border-color:#4aa8ff; }
-#cursePick .cp-hd{ font-size:12px; color:#ff9a9a; margin-bottom:4px; }
-.cp-item{ display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; padding:3px 6px; border-radius:6px; cursor:pointer; font-size:12px; color:#c8bfe8; }
-.cp-item:hover{ background:#241e3e; }
-.cp-item.on{ background:#2a2440; outline:1px solid #ff9a9a55; }
-.cp-item input{ accent-color:#ff9a9a; }
-.cp-item.cp-lock{ opacity:.42; cursor:not-allowed; }
-.cp-item.cp-lock:hover{ background:none; }
-.cp-item .cp-lk{ color:#ff9a9a; white-space:nowrap; font-size:11px; margin-left:auto; }
-.cp-item b{ color:#ffd24a; white-space:nowrap; }
-.cp-item .cp-d{ flex:1; min-width:150px; }   /* min-width 保证互斥标签放不下时整行换到下一行，而不是把描述挤成竖排单字 */
-.cp-item .cp-r{ color:#8dff9a; white-space:nowrap; font-size:11px; }
-/* 战绩弹窗页签 / 成就 / 排行 */
-#histTabs{ display:flex; gap:6px; margin-bottom:8px; }
-#histTabs .tab.on{ border-color:#ffd24a; color:#ffd24a; }
-.achv-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; }
-.achv{ background:#1c1830; border:1px solid #35294f; border-radius:8px; padding:6px 8px; font-size:11px; color:#6b6288; }
-.achv.got{ border-color:#ffd24a88; color:#dcd6f2; }
-.achv b{ font-size:12px; color:inherit; }
-.achv.got b{ color:#ffd24a; }
-.achv .ad2{ margin-top:3px; line-height:1.5; }
-.hrow.lb .lb-rk{ min-width:26px; text-align:center; color:#ffd24a; }
-.lb-pt{ width:20px; height:20px; image-rendering:pixelated; vertical-align:middle; border-radius:4px; background:#241e3e; margin-right:2px; }
-.lb-team{ min-width:0; }
-.aug-card .at{ font-size:10px; color:#8a93c4; }
-@keyframes augIn{ from{ transform:translateY(14px) scale(.92); opacity:0; } to{ transform:none; opacity:1; } }
-.unit.big .syn .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
-/* 战斗态：血条/蓝条悬浮头顶（TFT 式），名字牌回到脚下 */
-.unit:has(.hpbar) .nm { bottom:4px; }
-.unit .st { position:absolute; top:2px; left:3px; z-index:1; font-size:calc(var(--cell)*.15);
-  text-shadow:0 1px 2px #000; }
-.unit .sk { font-size:calc(var(--cell)*.135); color:#8dff9a; position:absolute; top:2px; right:3px; z-index:1;
-  text-shadow:0 1px 2px #000; }
-.unit .fj { font-size:calc(var(--cell)*.115); color:#c8bfe8; letter-spacing:.3px; }
-.card .cnpt { height:1.3em; vertical-align:-30%; margin-right:3px; image-rendering:pixelated; }
-.bcard .bnpt { height:2em; margin-right:4px; image-rendering:pixelated; vertical-align:middle; }
-#inspect .in-pt { height:2.6em; image-rendering:pixelated; }
-.unit.shielded { box-shadow:0 0 6px 2px #4aa8ff99; }
-.unit .hpbar { position:absolute; bottom:2px; left:4px; right:4px; height:4px; background:#333; border-radius:2px; }
-.unit.battle-unit .hpbar { bottom:19px; top:auto; left:8%; right:8%; height:calc(var(--cell)*.075); min-height:4px; box-shadow:0 1px 3px rgba(0,0,0,.65); }
-.unit .hpfill { height:100%; background:#ffd24a; border-radius:2px; transition:width .2s; }
-.unit .mpbar { position:absolute; bottom:7px; left:6px; right:6px; height:3px; background:#333; border-radius:2px; }
-.unit.battle-unit .mpbar { bottom:13px; top:auto; left:14%; right:14%; height:calc(var(--cell)*.05); min-height:3px; }
-/* 战斗极简外观（对齐参考图二）：去方框，只留 立绘 + 脚下血条/蓝条 + 星级；
-   名字/羁绊/装备隐藏；状态表情（❄💫等）与 🔮 标记出现时仍浮在头顶 */
-.unit.battle-unit { border-color:transparent; background:transparent; }
-.unit.battle-unit.ally, .unit.battle-unit.enemy, .unit.battle-unit.sel { box-shadow:none; border-color:transparent; }
-.unit.battle-unit .syn, .unit.battle-unit .its, .unit.battle-unit .nm { display:none; }
-/* 星级样式已全局金色化（见 .unit .st），战斗只覆盖位置：血条上方居中 */
-.unit.battle-unit .st { top:auto; bottom:26px; left:50%; right:auto; transform:translateX(-50%); }
-.unit .mpfill { height:100%; background:#4aa8ff; border-radius:2px; transition:width .1s; }
-.unit.enemy .hpfill { background:#a02c2c; }
-.unit.enemy .mpfill { background:#c77dff; }
-.unit.frozen { filter:brightness(1.3) hue-rotate(40deg); }
-/* 星级进度高亮：单卡=浅微光；对子=金色描边强光（备战席/棋盘） */
-#board .unit.solo, #bench .unit.solo { border-color:#aab3cc; filter:drop-shadow(0 0 2px #ffffff40); }
-#board .unit.pair, #bench .unit.pair { border-color:#ffd24a; filter:drop-shadow(0 0 4px #ffd24acc); box-shadow:0 0 0 1px #ffd24a55; }
-#board .unit.preview { opacity:.9; pointer-events:none; filter:saturate(.85); }
-/* ===== 商店卡片信息分层（方案A：通道分区，互不冲突）=====
-   ① 费用 → 左侧色条 + 背景色调 + 右下角费用角标（常驻，永不被他项覆盖）
-   ② 边框 → 只表示「买到即可升级」（对子）
-   ③ 状态 → 图标徽章并列，可同时显示多个（对子/追三/羁绊） */
-.card.paircard { border:2px solid #ffd24a !important; box-shadow:0 0 12px #ffd24a88; }
-.card .badges { display:flex; flex-wrap:wrap; gap:3px; justify-content:center; margin:4px 0 2px; }
-.card .bd { font-size:9px; font-weight:bold; border-radius:6px; padding:1px 5px; white-space:nowrap;
-  border:1px solid transparent; }
-.card .bd.pair { color:#ffd24a; background:#ffd24a1f; border-color:#ffd24a66; }
-.card .bd.c3   { color:#ff8ad8; background:#ff8ad81f; border-color:#ff8ad866; }
-.card .bd.trig { color:#8dff9a; background:#8dff9a1f; border-color:#8dff9a66; }
-.card .bd.syn  { color:#4ac8ff; background:#4ac8ff1f; border-color:#4ac8ff66; }
-.card .bd.dim  { color:#aab3cc; background:#aab3cc14; border-color:#aab3cc33; }
-#sellBtn.sell-hl { border-color:#ff8ad8 !important; color:#ff8ad8 !important; box-shadow:0 0 12px #ff8ad888; }
-/* 拖棋子到商店卡片区出售：容器红色 tint（box-shadow inset，不拦截点击）+ pointer-events:none 横幅 */
-#shop.sell-zone { background:#3a1c26; box-shadow: inset 0 0 0 2px #ff8ad8aa; border-radius:8px; }
-#sellBanner { position:fixed; z-index:120; pointer-events:none; display:none; padding:4px 14px;
-  background:#2a1520; color:#ff9a9a; border:1px solid #ff8ad8; border-radius:8px;
-  font-size:13px; font-weight:bold; white-space:nowrap; }
-#dragGhost.in-sell { opacity:.35; }   // 进入出售区：幽灵半透明上移，不遮商店卡片
-/* 装备合成：背包合成预览行 + 成品芯片金边 + 详情面板就地合成行 */
-.combo-row { font-size:11px; color:#ffd24a; background:#2a2344; border:1px dashed #6b5a1e; border-radius:6px; padding:2px 8px; margin-bottom:4px; display:flex; align-items:center; justify-content:space-between; }
-.item-chip.crafted { border-color:#ffd24a; color:#ffd24a; background:#2e2718; }
-.in-combo { margin:5px 0; padding:5px 8px; border:1px dashed #ffd24a; border-radius:6px; color:#ffd24a; font-size:12px; cursor:pointer; }
-#inspect .in-sell { margin-top:8px; text-align:center; background:#5b1e1e; color:#ffb0b0; border:1px solid #7a3030; border-radius:7px; padding:5px; cursor:pointer; font-weight:bold; }
-#inspect .in-sell:hover { background:#7a2626; border-color:#ff9a9a; }
-/* ===== 棋子详情面板（停靠右栏：装备栏上方） ===== */
-#inspect { font-size:13px; line-height:1.55; color:#dcd6f0; }
-#inspect .in-empty { color:#8a93c4; text-align:center; padding:10px 0; }
-#inspect .in-hd { font-size:14px; color:#ffd24a; display:flex; align-items:center; gap:6px; }
-#inspect .in-star { color:#ffd24a; letter-spacing:1px; }
-#inspect .in-close { margin-left:auto; cursor:pointer; color:#8a93c4; padding:0 4px; }
-#inspect .in-close:hover { color:#fff; }
-#inspect .in-tag { color:#9fe8ff; margin:2px 0 6px; }
-#inspect .in-row { display:flex; justify-content:space-between; border-bottom:1px dashed #ffffff18; padding:1px 0; }
-#inspect .in-row span { color:#8a93c4; }
-#inspect .in-row b { color:#e8e4f0; min-width:56px; text-align:right; }
-#inspect .in-sk { margin-top:6px; color:#c77dff; font-weight:bold; }
-#inspect .in-desc { color:#cdd6f4; margin:2px 0 6px; }
-#inspect .in-item { color:#8dff9a; }
 .unit.stunned { animation:stunWob .5s infinite; }
 @keyframes stunWob { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
 .unit.weakened { filter:grayscale(.5) brightness(.85); }
-.unit.slowed { box-shadow:0 0 0 2px #8affd466; }
-.cost1{background:#5b6b8c;border-color:#9db}.cost2{background:#3f7d5c;border-color:#7fc9a0}
-.cost3{background:#7a5bb0;border-color:#b79ae8}
-.cost4{background:#a8762c;border-color:#e6b45a}
-.cost5{background:#8a5a12;border-color:#ffd24a}
-/* ===== 商店卡片按费用着色：左侧色条 + 顶部同色渐变（与棋盘棋子配色一致） ===== */
-.card .costbar { position:absolute; left:0; top:0; bottom:0; width:5px; border-radius:9px 0 0 9px; }
-.card.cost1 .costbar{background:#9db}    .card.cost2 .costbar{background:#7fc9a0}
-.card.cost3 .costbar{background:#b79ae8} .card.cost4 .costbar{background:#e6b45a}
-.card.cost5 .costbar{background:#ffd24a}
-.card.cost1{ border-color:#5d6d8e; background:linear-gradient(180deg,#2b3450,#241e3e 60%); }
-.card.cost2{ border-color:#3f7d5c; background:linear-gradient(180deg,#22402f,#241e3e 60%); }
-.card.cost3{ border-color:#7a5bb0; background:linear-gradient(180deg,#352a52,#241e3e 60%); }
-.card.cost4{ border-color:#a8762c; background:linear-gradient(180deg,#4a3512,#241e3e 60%); }
-.card.cost5{ border-color:#c99a1f; background:linear-gradient(180deg,#5a3d0a,#241e3e 60%); }
-.card.cost4 .cn,.card.cost5 .cn { text-shadow:0 0 6px #ffd24a66; }
-/* 费用角标：右下角常驻胶囊（不参与任何高亮争夺） */
-.card .cc { position:absolute; right:6px; bottom:6px; font-size:10px; font-weight:bold;
-  border-radius:9px; padding:1px 7px; background:#000000aa; color:#fff; }
-#side { width:320px; display:flex; flex-direction:column; gap:6px; overflow-y:auto; flex-shrink:0; }
-/* 右栏底部不留白：战报面板吃掉剩余高度，log 自适应显示更多行 */
-#side > .panel:last-child { flex:1; display:flex; flex-direction:column; min-height:200px; }
-#side > .panel:last-child #log { flex:1; max-height:none; min-height:130px; }
-/* ===== 多多式左侧羁绊竖栏 ===== */
-#synCol { width:196px; display:flex; flex-direction:column; gap:2px; flex-shrink:0; overflow-y:auto; padding:2px 0; }
-.syn-head { font-size:12px; color:#a99cd0; padding:3px 6px 2px; border-bottom:1px solid #2a2344; margin-bottom:3px; }
-.syn-badge { display:block; background:#161228; border:1px solid #2a2344; border-left:3px solid #3a3055;
-  border-radius:8px; padding:5px 7px; margin:0 2px 4px; font-size:13px; color:#5e5580; cursor:default; }
-.syn-badge .syn-top { display:flex; align-items:center; gap:6px; }
-.syn-badge .ico { font-size:15px; filter:grayscale(1); opacity:.55; }
-.syn-badge .cnt { margin-left:auto; font-weight:bold; font-size:12px; white-space:nowrap; }
-.syn-badge.on { color:#d8d2ea; }
-.syn-badge.on .ico { filter:none; opacity:1; }
-.syn-badge.t1 { border-left-color:#c98a4b; background:#231a10; color:#e8cf9a; }
-.syn-badge.t2 { border-left-color:#ffd24a; background:#2b2410; color:#ffe9a8; box-shadow:0 0 6px #ffd24a30; }
-.syn-empty { color:#565073; font-size:12px; padding:4px 6px; }
-/* 已触发档位的效果文本（直接展示，不再只显示 2/4 / MAX） */
-.syn-eff { font-size:11px; line-height:1.4; margin-top:3px; padding-top:2px; border-top:1px dashed #ffffff1a; opacity:.92; word-break:break-all; }
-/* 羁绊档位点阵（多多式铜/金档点亮） */
-.syn-badge .pips { display:flex; gap:2px; margin-left:5px; }
-.syn-badge .pips i { width:6px; height:6px; border-radius:50%; background:#3a3055; }
-.syn-badge .pips i.on { background:#ffd24a; box-shadow:0 0 4px #ffd24a; }
-.syn-badge.t1 .pips i.on { background:#c98a4b; box-shadow:0 0 4px #c98a4b88; }
-/* ===== 多多式底部玩家信息盒 ===== */
-#shopbar { gap:10px; }
+.unit.slowed { box-shadow:0 0 0 2px rgba(138,255,212,.4); }
+.unit.star4 .st{ color:var(--gold-hi); opacity:1; text-shadow:0 0 5px var(--gold); }
+.unit.shielded { box-shadow:0 0 6px 2px rgba(91,159,216,.6); }
+.unit .hpbar { position:absolute; bottom:2px; left:4px; right:4px; height:4px; background:rgba(0,0,0,.6); border-radius:2px; }
+.unit.battle-unit .hpbar { bottom:19px; top:auto; left:8%; right:8%; height:calc(var(--cell)*.075); min-height:4px; box-shadow:0 1px 3px rgba(0,0,0,.65); }
+.unit .hpfill { height:100%; background:var(--gold); border-radius:2px; transition:width .2s; }
+.unit .mpbar { position:absolute; bottom:7px; left:6px; right:6px; height:3px; background:rgba(0,0,0,.6); border-radius:2px; }
+.unit.battle-unit .mpbar { bottom:13px; top:auto; left:14%; right:14%; height:calc(var(--cell)*.05); min-height:3px; }
+.unit:has(.hpbar) .nm { bottom:4px; }
+.unit .mpfill { height:100%; background:var(--mp); border-radius:2px; transition:width .1s; }
+.unit.enemy .hpfill { background:#b03a30; }
+.unit.enemy .mpfill { background:var(--arc); }
+.unit.frozen { filter:brightness(1.3) hue-rotate(40deg); }
+.unit.battle-unit { border-color:transparent; background:transparent; }
+.unit.battle-unit.ally, .unit.battle-unit.enemy, .unit.battle-unit.sel { box-shadow:none; border-color:transparent; }
+.unit.battle-unit .syn, .unit.battle-unit .its, .unit.battle-unit .nm { display:none; }
+.unit.battle-unit .st { top:auto; bottom:26px; left:50%; right:auto; transform:translateX(-50%); }
+#board .unit.solo, #bench .unit.solo { border-color:#b9b2a2; filter:drop-shadow(0 0 2px rgba(240,234,217,.28)); }
+#board .unit.pair, #bench .unit.pair { border-color:var(--gold); filter:drop-shadow(0 0 4px rgba(224,169,78,.8)); box-shadow:0 0 0 1px rgba(224,169,78,.35); }
+#board .unit.preview { opacity:.9; pointer-events:none; filter:saturate(.85); }
+#tempBuffBox{ display:flex; flex-direction:column; gap:4px; align-self:stretch; }
+#tempBuffBox .btn.tb{ align-self:stretch; padding:4px 8px; font-size:11px; min-width:0; white-space:nowrap; }
+#tempBuffBox .btn.tb.on{ border-color:var(--ally); color:var(--ally); }
+#moveHint { position:fixed; left:50%; transform:translateX(-50%); z-index:65; display:none;
+  background:#1d2a22; color:var(--ally); border:1px solid var(--ally); border-radius:0;
+  padding:5px 14px; font-size:12px; font-weight:bold; white-space:nowrap; pointer-events:none;
+  box-shadow:0 4px 14px rgba(0,0,0,.66); }
+.unit.mvsrc { border-color:var(--heal) !important; box-shadow:0 0 8px rgba(124,201,113,.6) !important; z-index:4; }
+#dragGhost.in-sell { opacity:.35; }   /* 进入出售区：幽灵半透明上移，不遮商店卡片 */
+
+/* ===== ⑨ 底栏 / 商店 ===== */
+#shopbar { display:flex; gap:10px; padding:6px 12px; flex-shrink:0; align-items:stretch; position:relative;
+  background:linear-gradient(180deg,rgba(12,10,7,.5),rgba(10,8,6,.97) 30%);
+  border-top:1px solid var(--line); }
+#shopbar::before{ content:''; position:absolute; left:0; right:0; top:-1px; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(224,169,78,.3) 15%,rgba(224,169,78,.3) 85%,transparent); }
+#shopbar .btn { align-self:center; white-space:nowrap; flex-shrink:0; }
+#shopctlCol, #auxCol { display:flex; flex-direction:column; gap:5px; justify-content:center; align-self:stretch; flex-shrink:0; }
+#shopctlCol .btn, #auxCol .btn { align-self:stretch; padding:6px 10px; font-size:13px; line-height:1.2; min-width:92px; text-align:center; white-space:nowrap; }
+#goldChip { align-self:stretch; text-align:center; padding:5px 10px; background:var(--bg2); border:1px solid var(--gold-dim); border-radius:0; color:var(--gold-hi); font-size:15px; font-weight:bold; white-space:nowrap; }
+#goldChip .gi { font-size:10px; color:var(--heal); font-weight:normal; }
+#shop { display:flex; gap:8px; flex:1; align-items:stretch; min-width:0; }
+.card { flex:1; min-width:0; background:linear-gradient(180deg,var(--bg3),var(--bg2) 62%); border:1px solid var(--line-2); border-radius:0;
+  padding:5px 8px 13px; cursor:pointer; text-align:center; transition:transform .12s, border-color .12s; position:relative; overflow:hidden;
+  clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut)); }
+.card:hover { transform:translateY(-3px); border-color:var(--gold); }
+.card .costbar { position:absolute; left:0; top:0; bottom:0; width:3px; }
+.card .art { height:64px; flex:none; display:flex; align-items:flex-end; justify-content:center; margin:1px 0 2px; overflow:hidden; }
+.card .art img { max-height:100%; max-width:82%; width:auto; height:auto; object-fit:contain; filter:drop-shadow(0 3px 5px rgba(0,0,0,.5)); }
+.card .cn { font-weight:bold; font-size:13px; letter-spacing:.5px; text-align:left; padding:0 1px; }
+.card .stb { display:flex; align-items:center; gap:8px; margin:4px -8px -13px; padding:3px 9px;
+  background:rgba(8,6,4,.72); border-top:1px solid rgba(235,215,175,.08); }
+.card .stb .cc2 { margin-left:auto; min-width:15px; height:15px; border-radius:50%; text-align:center;
+  font-size:10px; line-height:15px; font-weight:bold; color:#14110d; padding:0 2px; }
+.card .stat { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:bold; color:var(--tx1); }
+.card .stat i { width:9px; height:9px; background:currentColor; mask:var(--ic) center/contain no-repeat; -webkit-mask:var(--ic) center/contain no-repeat; }
+.card .stat.hp { color:#e08a80; } .card .stat.atk { color:var(--gold); }
+.card .tis { display:flex; gap:4px; margin:2px 0 1px; min-height:17px; align-items:center; overflow:hidden; }
+.card .tis .tb { display:inline-flex; align-items:center; gap:3px; font-size:10px; color:var(--tx1);
+  background:var(--bg4); border:1px solid var(--line-2); border-radius:9px; padding:1px 6px 1px 2px;
+  white-space:nowrap; font-style:normal; }
+.card .tis .ti, .card .ti { width:14px; height:14px; border-radius:50%; background-color:var(--gold-dim); border:none;
+  background-size:75%; background-position:center; background-repeat:no-repeat; filter:none; opacity:1; }
+.card .badges { position:absolute; top:3px; right:3px; left:auto; display:flex; flex-wrap:wrap; gap:3px; justify-content:flex-end; z-index:2; }
+.card .bd { font-size:10px; font-weight:bold; border-radius:0; padding:1px 6px; white-space:nowrap; border:1px solid transparent; letter-spacing:.5px; }
+.card .bd.pair { color:var(--gold-hi); background:rgba(224,169,78,.12); border-color:rgba(224,169,78,.4); }
+.card .bd.c3   { color:#ef9ad8; background:rgba(239,154,216,.1); border-color:rgba(239,154,216,.4); }
+.card .bd.trig { color:var(--heal); background:rgba(124,201,113,.1); border-color:rgba(124,201,113,.4); }
+.card .bd.syn  { color:#6fc3e8; background:rgba(111,195,232,.1); border-color:rgba(111,195,232,.4); }
+.card .bd.dim  { color:var(--tx2); background:rgba(162,147,122,.08); border-color:rgba(162,147,122,.2); }
+.card.paircard { border:1px solid var(--gold) !important; box-shadow:inset 0 0 0 1px var(--gold); }
+.card.sold { opacity:.22; pointer-events:none; }
+.card .cc { position:absolute; right:0; bottom:0; font-size:11px; font-weight:bold; padding:1px 8px 0 9px; color:#14110d; clip-path:polygon(9px 0,100% 0,100% 100%,0 100%); }
+.card.cost1 .costbar{ background:var(--c1); } .card.cost1 .cc2{ background:var(--c1); }
+.card.cost2 .costbar{ background:var(--c2); } .card.cost2 .cc2{ background:var(--c2); }
+.card.cost3 .costbar{ background:var(--c3); } .card.cost3 .cc2{ background:var(--c3); }
+.card.cost4 .costbar{ background:var(--c4); } .card.cost4 .cc2{ background:var(--c4); }
+.card.cost5 .costbar{ background:var(--gold); } .card.cost5 .cc2{ background:var(--gold-hi); }
+.card.cost1{ border-color:rgba(154,148,132,.35); } .card.cost2{ border-color:rgba(127,176,105,.45); }
+.card.cost3{ border-color:rgba(91,159,216,.45); } .card.cost4{ border-color:rgba(166,120,216,.45); }
+.card.cost5{ border-color:rgba(224,169,78,.55); }
+#sellBtn.sell-hl { border-color:#ef9ad8 !important; color:#ef9ad8 !important; box-shadow:0 0 10px rgba(239,154,216,.55); }
+#shop.sell-zone { background:rgba(80,28,36,.5); box-shadow:inset 0 0 0 2px rgba(239,154,216,.66); }
+#sellBanner { position:fixed; z-index:120; pointer-events:none; display:none; padding:4px 14px;
+  background:#241014; color:#ee8177; border:1px solid #ef9ad8; border-radius:0; font-size:13px; font-weight:bold; white-space:nowrap; }
+#bench { display:grid; grid-template-columns:repeat(8,var(--bcell)); gap:var(--gap); padding:var(--pad);
+  background:rgba(16,13,10,.85); border-top:1px solid var(--line); border-radius:0; flex-shrink:0;
+  width:max-content; align-self:center; }
+.bslot { width:var(--bcell); height:var(--bcell); background:rgba(240,220,180,.03); border:1px dashed rgba(235,215,175,.14); border-radius:4px; position:relative; }
+.bslot .unit { inset:2px; font-size:calc(var(--bcell)*.2); }
 #playerBox { display:flex; flex-direction:column; gap:6px; width:320px; flex-shrink:0; justify-content:center; }
-#lvlBox { background:#161228; border:1px solid #35294f; border-radius:8px; padding:5px 8px; }
-.lvl-row { display:flex; justify-content:space-between; font-size:13px; color:#cdd6f4; margin-bottom:4px; }
-.xpbar { height:8px; background:#221c38; border-radius:4px; overflow:hidden; border:1px solid #4a3d6e; }
-.xpfill { height:100%; width:0%; background:linear-gradient(90deg,#4aa8ff,#8dd0ff); transition:width .3s; }
+#lvlBox { background:var(--bg2); border:1px solid var(--line); border-left:2px solid var(--gold-dim); border-radius:0; padding:5px 9px; }
+.lvl-row { display:flex; justify-content:space-between; font-size:13px; color:var(--tx1); margin-bottom:4px; }
+.lvl-row .ln { font-size:16px; font-weight:bold; color:var(--tx0); }
+.xpbar { height:7px; background:rgba(0,0,0,.5); border-radius:0; overflow:hidden; border:none; }
+.xpfill { height:100%; width:0%; background:linear-gradient(90deg,var(--gold-dim),var(--gold)); transition:width .3s; }
 #pbtns { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-#pbtns .btn { font-size:14px; padding:8px 6px; white-space:nowrap; overflow:hidden; }
+#pbtns .btn { font-size:13px; padding:6px; white-space:nowrap; overflow:hidden; }
 #fightBox { display:flex; align-items:center; flex-shrink:0; }
-#fightBox .btn { padding:14px 16px; font-size:16px; line-height:1.25; }
-.panel { background:#1c1830; border:1px solid #35294f; border-radius:10px; padding:8px 10px; }
-.panel h3 { font-size:14px; color:#a99cd0; margin-bottom:6px; }
+#fightBox .btn { padding:14px 18px; font-size:17px; line-height:1.3; }
+#fightBox .btn::after { content:'SPACE · 空格'; display:block; font-size:9px; font-weight:normal; letter-spacing:3px; color:rgba(20,17,13,.75); }
+#fightBtn { background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,#c98f38); color:#1d1508; border:1px solid #f6dfae; }
+#fightBtn:hover { background:linear-gradient(180deg,#fae2a5,var(--gold-hi) 55%,var(--gold)); }
+#fightBtn:disabled { filter:grayscale(.7) brightness(.6); }
+#fightBox .btn:not(#fightBtn)::after { content:none; }
+#log { font-size:13px; color:var(--tx1); max-height:280px; overflow-y:auto; line-height:1.7; }
 #synergy { font-size:12px; }
 #synergy .grp { margin-bottom:4px; }
-#synergy span { display:inline-block; background:#2a2344; border-radius:6px; padding:2px 6px; margin:2px; font-size:11px; }
-#synergy span.on { background:#5b4a1e; color:#ffd24a; }
-#enemyInfo { font-size:14px; color:#ffb0b0; line-height:1.6; }
-#enemyInfo b { color:#ffd24a; }
+#synergy span { display:inline-block; background:var(--bg3); border-radius:0; padding:2px 7px; margin:2px; font-size:11px; }
+#synergy span.on { background:var(--gold-dim); color:var(--gold-hi); }
+#enemyInfo { font-size:13px; color:#ee8177; line-height:1.6; }
+#enemyInfo b { color:var(--gold-hi); }
 #equip { display:flex; flex-wrap:wrap; gap:6px; min-height:34px; }
-.item-chip { background:#2a2344; border:1px solid #4a3d6e; border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; }
-.item-chip.sel { border-color:#ffd24a; background:#5b4a1e; box-shadow:0 0 6px #ffd24a66; }
-#log { font-size:13px; color:#b0a8c8; max-height:280px; overflow-y:auto; line-height:1.7; }
-/* ⚔🛡💚 本场战斗输出/抗伤/治疗统计条（金铲铲式：头像+星级+占比条+数值；战斗中实时刷新，战后保留上一场） */
-#statBar { margin-top:8px; border-top:1px solid #2a2344; padding-top:8px; font-size:12px; }
+.item-chip { background:var(--bg3); border:1px solid var(--line-2); border-radius:0; padding:4px 9px; font-size:12px; cursor:pointer; }
+.item-chip.sel { border-color:var(--gold); background:var(--gold-dim); color:var(--gold-hi); }
+.item-chip.arti { border-color:var(--gold); color:var(--gold-hi); background:#291f0e; }
+.item-chip.crafted { border-color:var(--gold); color:var(--gold-hi); background:#291f0e; }
+.auto-equip-row{ display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
+.auto-equip-row .btn{ padding:4px 10px; font-size:12px; border-color:rgba(124,201,113,.55); color:var(--heal); }
+.combo-row { font-size:11px; color:var(--gold-hi); background:var(--bg3); border:1px dashed var(--gold-dim); border-radius:0; padding:2px 8px; margin-bottom:4px; display:flex; align-items:center; justify-content:space-between; }
+.in-combo { margin:5px 0; padding:5px 8px; border:1px dashed var(--gold); border-radius:0; color:var(--gold-hi); font-size:12px; cursor:pointer; }
+#inspect { font-size:13px; line-height:1.55; color:var(--tx0); }
+#inspect .in-empty { color:var(--tx2); text-align:center; padding:10px 0; }
+#inspect .in-hd { font-size:14px; color:var(--gold-hi); display:flex; align-items:center; gap:6px; }
+#inspect .in-star { color:var(--gold-hi); letter-spacing:1px; }
+#inspect .in-close { margin-left:auto; cursor:pointer; color:var(--tx2); padding:0 4px; }
+#inspect .in-close:hover { color:var(--tx0); }
+#inspect .in-tag { color:#8fd0e8; margin:2px 0 6px; }
+#inspect .in-row { display:flex; align-items:center; gap:7px; padding:2px 0; }
+#inspect .in-row > span { color:var(--tx2); font-size:11px; width:30px; flex-shrink:0; letter-spacing:2px; }
+#inspect .in-row .bar { flex:1; height:5px; background:rgba(0,0,0,.5); position:relative; }
+#inspect .in-row .bar i { position:absolute; left:0; top:0; bottom:0; display:block; }
+#inspect .in-row b { min-width:40px; text-align:right; color:var(--tx0); font-size:12px; }
+#inspect .in-row.r-hp .bar i { background:linear-gradient(90deg,#b04a3e,#e08a80); }
+#inspect .in-row.r-atk .bar i { background:linear-gradient(90deg,#9c752d,var(--gold)); }
+#inspect .in-row.r-spd .bar i { background:linear-gradient(90deg,#3d6d9c,#7abaff); }
+#inspect .in-row.r-rng .bar i { background:linear-gradient(90deg,#6d4a9c,#bb92ec); }
+#inspect .in-row.r-plain { gap:14px; }
+#inspect .in-row.r-plain b { flex:1; text-align:left; min-width:0; }
+#inspect .in-sk { margin-top:6px; color:var(--arc); font-weight:bold; }
+#inspect .in-desc { color:var(--tx1); margin:2px 0 6px; }
+#inspect .in-item { color:var(--heal); }
+#inspect .in-sell { margin-top:8px; text-align:center; background:#2a1212; color:#ee8177; border:1px solid #6e3434; border-radius:0; padding:5px; cursor:pointer; font-weight:bold; }
+#inspect .in-sell:hover { background:#3d1a1a; border-color:#ee8177; }
+#inspect .in-unequip { margin-top:6px; text-align:center; background:#16222e; color:#8fd0e8; border:1px solid var(--c3); border-radius:0; padding:5px; cursor:pointer; font-weight:bold; }
+#inspect .in-item-chip { display:inline-block; background:var(--bg3); border:1px solid var(--line-2); border-radius:0;
+  padding:2px 8px; margin:2px 4px 2px 0; cursor:grab; font-size:12px; touch-action:none; }
+#inspect .in-ticket { margin:6px 0 2px; padding:6px 8px; text-align:center; border:1px solid var(--gold); border-radius:0; color:var(--gold-hi); font-size:12px; cursor:pointer; background:var(--bg3); }
+#inspect .in-ticket:hover { background:var(--bg4); }
+.worn-strip { background:#16222e; border:1px dashed rgba(111,195,232,.4); border-radius:0; padding:5px 8px; margin-bottom:8px;
+  font-size:12px; color:#8fd0e8; line-height:1.9; }
+.worn-strip .in-item-chip { background:#16222e; border-color:rgba(111,195,232,.55); margin:2px 6px 2px 0; }
+.worn-strip b { color:var(--gold-hi); }
+#inspect.inspect-hl { box-shadow:0 0 0 2px rgba(124,201,113,.6) !important; }
+.drop-panel-hl { box-shadow:0 0 0 2px rgba(124,201,113,.6) !important; }
+#statBar { margin-top:8px; border-top:1px solid var(--line); padding-top:8px; font-size:12px; }
 #statBar:empty { display:none; }
 #statBar .stb-tabs { display:flex; gap:4px; margin-bottom:6px; }
-#statBar .stb-tab { flex:1; text-align:center; padding:3px 0; border:1px solid #3a2f55; border-radius:6px;
-  cursor:pointer; color:#8f88b0; user-select:none; }
-#statBar .stb-tab.on { color:#ffd24a; border-color:#ffd24a88; background:#ffd24a14; }
+#statBar .stb-tab { flex:1; text-align:center; padding:3px 0; border:1px solid var(--line); border-radius:0;
+  cursor:pointer; color:var(--tx2); user-select:none; letter-spacing:2px; }
+#statBar .stb-tab.on { color:var(--gold-hi); border-color:var(--gold-dim); background:rgba(224,169,78,.08); }
 #statBar .stb-row { display:flex; align-items:center; gap:5px; margin-bottom:2px; }
-#statBar .stb-side { width:4px; height:26px; border-radius:2px; flex-shrink:0; }
-#statBar .stb-side.ally { background:#ffd24a; }   /* 黄=我方（与战斗血条同色系） */
-#statBar .stb-side.enemy { background:#e05555; }  /* 红=敌方 */
-#statBar .stb-row img { width:22px; height:22px; object-fit:contain; flex-shrink:0;
-  filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
-#statBar .stb-star { width:34px; flex-shrink:0; color:#ffd24a; font-size:10px; letter-spacing:-1px; }
-#statBar .stb-bar { flex:1; height:10px; background:#221c38; border-radius:3px; overflow:hidden; display:flex; }
+#statBar .stb-side { width:3px; height:26px; flex-shrink:0; }
+#statBar .stb-side.ally { background:var(--gold); }
+#statBar .stb-side.enemy { background:var(--foe); }
+#statBar .stb-row img { width:22px; height:22px; object-fit:contain; flex-shrink:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+#statBar .stb-star { width:34px; flex-shrink:0; color:var(--gold-hi); font-size:10px; letter-spacing:-1px; }
+#statBar .stb-bar { flex:1; height:9px; background:rgba(0,0,0,.5); border-radius:0; overflow:hidden; display:flex; }
 #statBar .stb-bar i { display:block; height:100%; transition:width .3s; }
-#statBar .stb-row b { width:46px; text-align:right; color:#d8d3ea; flex-shrink:0; }
-#statBar .m-deal { background:linear-gradient(90deg,#ff8a4a,#ffd24a); }
-#statBar .m-dealM { background:linear-gradient(90deg,#8a5fd0,#c77dff); }
-#statBar .m-take { background:linear-gradient(90deg,#4a7dff,#6ec8ff); }
-#statBar .m-heal { background:linear-gradient(90deg,#3fae5f,#8dff9a); }
-#statBar .stb-empty { color:#6b6288; text-align:center; padding:4px 0; }
-#shopbar { display:flex; gap:8px; padding:8px 12px; background:#1c1830; border-top:2px solid #35294f; flex-shrink:0; align-items:stretch; }
-#shopbar .btn { align-self:center; white-space:nowrap; flex-shrink:0; }
-.btn.on { background:#5b4a1e; border-color:#ffd24a; }
-/* 刷新/锁定：纵向并排一列，紧贴商店右侧 */
-#shopctlCol, #auxCol { display:flex; flex-direction:column; gap:5px; justify-content:center; align-self:stretch; flex-shrink:0; }
-#goldChip { align-self:stretch; text-align:center; padding:5px 10px; background:#241e3e; border:1px solid #ffd24a66; border-radius:8px; color:#ffd24a; font-size:15px; font-weight:bold; white-space:nowrap; }
-#goldChip .gi { font-size:10px; color:#8dff9a; font-weight:normal; }
-#shopctlCol .btn, #auxCol .btn { align-self:stretch; padding:6px 10px; font-size:13px; line-height:1.2; min-width:92px; text-align:center; white-space:nowrap; }
-#shop { display:flex; gap:8px; flex:1; align-items:stretch; min-width:0; }
-.card { flex:1; min-width:0; background:#241e3e; border:1px solid #4a3d6e; border-radius:10px; padding:8px 8px 22px;
-  cursor:pointer; text-align:center; transition:transform .1s; position:relative; }
-.card:hover { transform:translateY(-3px); border-color:#ffd24a; }
-.card .cn { font-weight:bold; font-size:15px; }
-.card .cfj { font-size:10px; color:#c8bfe8; }
-.card .ct { font-size:11px; color:#a99cd0; margin:3px 0; }
-.card .cs { font-size:10px; color:#9fe8ff; }
-.card .cd { font-size:10px; color:#9fe8ff; min-height:24px; }
-/* 费用角标样式见上方 .card .cc（右下角常驻胶囊） */
-.card.sold { opacity:.25; pointer-events:none; }
-#bench { display:grid; grid-template-columns:repeat(8,var(--cell)); gap:var(--gap); padding:var(--pad); background:#181428;
-  border-top:1px solid #2a2344; border-radius:10px; flex-shrink:0; }
-.bslot { width:var(--cell); height:var(--cell); background:#221c38; border:1px dashed #4a3d6e; border-radius:6px; position:relative; }
-.bslot .unit { inset:3px; }
-.btn { background:#5b4a1e; color:#ffd24a; border:1px solid #ffd24a; border-radius:8px; padding:6px 14px;
-  cursor:pointer; font-size:15px; font-weight:bold; }
-.btn:hover { background:#7a6528; }
-.btn.off { background:#2a2344; color:#8a93c4; border-color:#4a3d6e; }
-.btn:disabled { opacity:.4; cursor:default; }
-#overlay { position:fixed; inset:0; background:#0b0912e0; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:14px; z-index:40; text-align:center; padding:16px; overflow-y:auto; }
-#overlay.hidden { display:none; }
-/* 弹窗卡片：限制高度，正文可滚动，按钮区始终可见（避免长文案把按钮挤出屏幕） */
-#ovCard { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:620px;
-  max-height:92vh; background:#161226; border:2px solid #35294f; border-radius:16px; padding:18px 20px; position:relative; }
-#ovText { overflow-y:auto; flex:1 1 auto; min-height:0; }
-#ovClose { position:absolute; top:8px; right:12px; cursor:pointer; color:#8a93c4; font-size:20px; line-height:1;
-  padding:4px 8px; border-radius:8px; user-select:none; }
-#ovClose:hover { color:#fff; background:#ffffff18; }
-#ovBtns { display:flex; gap:10px; flex-shrink:0; flex-wrap:wrap; justify-content:center; }
-#overlay h1 { font-size:32px; color:#ffd24a; flex-shrink:0; }
-#overlay button { padding:12px 40px; font-size:18px; border:none; border-radius:24px; background:#ffd24a; color:#223; font-weight:bold; cursor:pointer; }
-.fight-btn-row { display:flex; gap:10px; margin-top:6px; }
-.dmg { position:absolute; color:#ff7b7b; font-weight:bold; font-size:13px; pointer-events:none; z-index:50;
-  animation:fly 1s ease-out forwards; }
-.dmg.heal { color:#8dff9a; }
-.dmg.cast { color:#4aa8ff; font-size:12px; }
-.dmg.poison { color:#9dff6b; font-size:11px; }
-@keyframes fly { to { transform:translateY(-24px); opacity:0; } }
+#statBar .stb-row b { width:46px; text-align:right; color:var(--tx0); flex-shrink:0; }
+#statBar .m-deal { background:linear-gradient(90deg,#c9703d,var(--gold)); }
+#statBar .m-dealM { background:linear-gradient(90deg,#7d55a8,var(--arc)); }
+#statBar .m-take { background:linear-gradient(90deg,#3d6d9c,#7abaff); }
+#statBar .m-heal { background:linear-gradient(90deg,#3d8a54,var(--heal)); }
+#statBar .stb-empty { color:var(--tx2); text-align:center; padding:4px 0; }
+.drag-ghost-anchor{}
 #dragGhost { position:fixed; z-index:99; pointer-events:none; opacity:.85; width:calc(var(--cell) - 8px); height:calc(var(--cell) - 8px); display:none; }
 #dragGhost .unit { position:relative; inset:0; width:100%; height:100%; }
-/* ===== 图鉴 ===== */
-#bookModal { position:fixed; inset:0; background:#0b0912e6; z-index:40; display:flex; align-items:center; justify-content:center; }
-#bookModal.hidden { display:none; }
-/* 图鉴·羁绊说明（全部阵营/职业羁绊的档位与效果） */
-#bookSyn, #bookItems { display:grid; grid-template-columns:1fr 1fr; gap:5px 14px; margin:8px 0 12px; }
-.bsy-title { grid-column:1/-1; font-size:14px; color:#a99cd0; border-bottom:1px solid #2a2344; padding:2px 0 5px; }
-.bsy-item { background:#161228; border:1px solid #2a2344; border-radius:8px; padding:6px 9px; font-size:12.5px; color:#cdd6f4; }
-.bsy-item b { color:#ffd24a; margin-right:6px; }
-.bsy-ico { margin-right:2px; }
-.bsy-need { color:#8dff9a; font-size:11.5px; }
-.bsy-desc { color:#a9a2c8; margin-top:3px; line-height:1.45; }
-.bsy-item.banned { border-color:#ff9a9a66; background:#241a24; }
-.bsy-item.banned b { color:#ff9a9a; }
-.syn-badge.banned { border-color:#ff9a9a55; opacity:.82; }
-.syn-badge.banned .syn-top { color:#ff9a9a; }
-.syn-badge.banned .pips i { background:#4a3d6e; }
-.syn-eff.ban { color:#ff9a9a; }
-.bsy-mem { color:#565073; font-size:11px; margin-top:3px; }
-/* ===== 存档恢复 / 战绩 / 移动端 ===== */
-#resumeOv { position:fixed; inset:0; background:#0b0912ee; display:flex; flex-direction:column;
+
+/* 章节结算 */
+.settle-hero{ text-align:center; font-size:17px; font-weight:bold; margin:6px 0; animation:augIn .5s both; }
+.settle-hero.win{ color:var(--heal); } .settle-hero.lose{ color:#ee8177; }
+.settle-row{ text-align:center; font-size:13px; color:var(--tx1); margin:4px 0; }
+.settle-ask{ text-align:center; margin:10px 0 8px; color:var(--gold-hi); font-weight:bold; animation:augIn .5s .1s both; }
+.aug-row{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.aug-card{ width:150px; background:var(--bg2); border:1px solid var(--line-2); border-radius:0; padding:9px 8px; text-align:center; cursor:pointer; animation:augIn .45s both; transition:transform .15s, border-color .15s; }
+.aug-card:hover{ transform:translateY(-3px); border-color:var(--gold); }
+.aug-card.picked{ border-color:var(--heal); box-shadow:inset 0 0 0 1px var(--heal); }
+.aug-card.dim{ opacity:.4; pointer-events:none; }
+.aug-card .ad{ font-size:12px; color:var(--tx1); margin:5px 0; min-height:36px; }
+.aug-card.r2{ border-color:rgba(91,159,216,.55); }
+.aug-card.r3{ border-color:var(--gold); box-shadow:inset 0 0 0 1px rgba(224,169,78,.3); }
+.aug-card .ar-tag{ font-size:10px; border:1px solid; border-radius:0; padding:0 6px; margin-left:4px; vertical-align:2px; }
+.aug-card .at{ font-size:10px; color:var(--tx2); }
+
+/* ===== ⑩ 弹窗 ===== */
+#overlay { position:fixed; inset:0; background:rgba(5,4,3,.9); display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:14px; z-index:40; text-align:center; padding:16px; overflow-y:auto; }
+#overlay.hidden { display:none; }
+#ovCard { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:620px;
+  max-height:92vh; background:linear-gradient(180deg,#221c13,#120f0a 70%); border:1px solid var(--line-2); border-radius:0; padding:18px 20px; position:relative; }
+#ovCard::before{ content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid var(--gold); border-left:2px solid var(--gold); }
+#ovCard::after{ content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid var(--gold); border-right:2px solid var(--gold); }
+#ovText { overflow-y:auto; flex:1 1 auto; min-height:0; text-align:left; }
+#ovText .is-h{ display:block; color:var(--gold-hi); font-weight:bold; font-size:14px; margin:9px 0 2px; padding-bottom:2px; border-bottom:1px solid var(--line); }
+#ovClose { position:absolute; top:8px; right:12px; cursor:pointer; color:var(--tx2); font-size:20px; line-height:1; padding:4px 8px; user-select:none; }
+#ovClose:hover { color:var(--tx0); background:rgba(240,234,217,.1); }
+#ovBtns { display:flex; gap:10px; flex-shrink:0; flex-wrap:wrap; justify-content:center; }
+#overlay h1 { font-size:30px; color:var(--gold-hi); flex-shrink:0; letter-spacing:4px; font-weight:bold; }
+#overlay button { padding:12px 40px; font-size:17px; border:1px solid var(--gold); border-radius:0; background:var(--gold); color:#1d1508; font-weight:bold; cursor:pointer;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
+#overlay button:hover { background:var(--gold-hi); }
+#cursePick{ max-width:560px; margin:8px auto 0; text-align:left; }
+#modePick{ max-width:560px; margin:8px auto 2px; display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:8px; }
+.mode-card{ flex:1 1 0; min-width:150px; background:var(--bg2); border:1px solid var(--line); border-radius:0; padding:8px 6px; text-align:center; cursor:pointer; font-size:11px; color:var(--tx2); line-height:1.55; }
+.mode-card b{ display:block; font-size:13px; color:var(--tx0); margin-bottom:3px; }
+.mode-card:hover{ border-color:var(--tx2); transform:translateY(-1px); }
+.mode-card.on{ border-color:var(--gold); background:var(--bg3); color:var(--tx1); }
+.mode-card.on b{ color:var(--gold-hi); }
+#ovResume{ background:#16222e; color:#8fd0e8; border-color:var(--c3); }
+#cursePick .cp-hd{ font-size:12px; color:#ee8177; margin-bottom:4px; }
+.cp-item{ display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; padding:3px 6px; border-radius:0; cursor:pointer; font-size:12px; color:var(--tx1); }
+.cp-item:hover{ background:var(--bg3); }
+.cp-item.on{ background:var(--bg3); outline:1px solid rgba(238,129,119,.4); }
+.cp-item input{ accent-color:var(--foe); }
+.cp-item.cp-lock{ opacity:.42; cursor:not-allowed; }
+.cp-item.cp-lock:hover{ background:none; }
+.cp-item .cp-lk{ color:#ee8177; white-space:nowrap; font-size:11px; margin-left:auto; }
+.cp-item b{ color:var(--gold-hi); white-space:nowrap; }
+.cp-item .cp-d{ flex:1; min-width:150px; }
+.cp-item .cp-r{ color:var(--heal); white-space:nowrap; font-size:11px; }
+#resumeOv { position:fixed; inset:0; background:rgba(5,4,3,.94); display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:18px; z-index:60; text-align:center; padding:20px; }
 #resumeOv.hidden { display:none; }
-#resumeOv h1 { font-size:32px; color:#ffd24a; }
-#resumeOv button { padding:12px 32px; font-size:17px; border:none; border-radius:22px;
-  background:#ffd24a; color:#223; font-weight:bold; cursor:pointer; }
-#resumeOv button.ghost { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; }
-#histModal { position:fixed; inset:0; background:#0b0912e0; display:flex;
-  align-items:center; justify-content:center; z-index:55; }
+#resumeOv h1 { font-size:30px; color:var(--gold-hi); letter-spacing:4px; }
+#resumeOv button { padding:12px 32px; font-size:17px; border:1px solid var(--gold); border-radius:0; background:var(--gold); color:#1d1508; font-weight:bold; cursor:pointer; }
+#resumeOv button.ghost { background:var(--bg3); color:var(--tx1); border:1px solid var(--line-2); }
+#histModal { position:fixed; inset:0; background:rgba(5,4,3,.9); display:flex; align-items:center; justify-content:center; z-index:55; }
 #histModal.hidden { display:none; }
-#histPanel { background:#1c1830; border:1px solid #35294f; border-radius:14px; padding:18px;
+#histPanel { background:linear-gradient(180deg,#221c13,#120f0a 70%); border:1px solid var(--line-2); border-radius:0; padding:18px;
   width:min(92vw,470px); max-height:80vh; overflow-y:auto; }
-#histPanel h2 { color:#ffd24a; font-size:17px; }
+#histPanel h2 { color:var(--gold-hi); font-size:16px; letter-spacing:3px; }
 .hrow { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:13px;
-  padding:8px 4px; border-bottom:1px solid #2a2344; color:#cdd6f4; }
-/* ===== 触屏适配基础（仅 body.touch 时生效，桌面零影响）=====
-   touch-action:none：手指按住棋子/装备拖动时禁止浏览器接管手势滚动（否则触发 pointercancel，拖拽断掉） */
-.touch .unit, .touch .item-chip { touch-action:none; -webkit-touch-callout:none; }
-.btn, .card, .spd-b, .btab { touch-action:manipulation; }
-/* 触屏点选移动：选中源棋子描绿光；可放目标格（我方半区+备战席）亮绿框 */
-.unit.mvsrc { border-color:#8dff9a !important; box-shadow:0 0 8px #8dff9a99 !important; z-index:4; }
-#board .cell.mv-hl, #bench .bslot.mv-hl { box-shadow:inset 0 0 0 2px #8dff9a66; filter:brightness(1.22); }
-/* 点选移动提示条（触屏专用，底部动作条上方居中） */
-#moveHint { position:fixed; left:50%; transform:translateX(-50%); z-index:65; display:none;
-  background:#1e2c22; color:#8dff9a; border:1px solid #8dff9a; border-radius:18px;
-  padding:5px 14px; font-size:12px; font-weight:bold; white-space:nowrap; pointer-events:none;
-  box-shadow:0 4px 14px #000a; }
-/* ===== 手机抽屉（触屏专用：商店/详情+装备+战报收进底部抽屉，桌面不存在这些元素的使用）===== */
-.m-only { display:none; }   /* 触屏按钮默认隐藏，桌面永远不可见 */
-body.touch .m-only { display:inline-block; }
-#mDrawer { position:fixed; left:0; right:0; top:0; bottom:0; z-index:38; display:flex;
-  align-items:flex-end; justify-content:center; pointer-events:none; }   /* 无遮罩：抽屉外可继续点棋盘 */
-#mDrawer.hidden { display:none; }
-#mDrawerBox { width:100%; max-height:76vh; max-height:76dvh; background:#161226; border:2px solid #35294f; border-bottom:none;
-  border-radius:16px 16px 0 0; display:flex; flex-direction:column; pointer-events:auto;
-  box-shadow:0 -10px 34px #000d; animation:mDrawerIn .18s ease-out; }
-@keyframes mDrawerIn { from{ transform:translateY(36px); opacity:.4; } to{ transform:none; opacity:1; } }
-#mDrawerHead { display:flex; align-items:center; justify-content:space-between; padding:8px 12px 6px;
-  border-bottom:1px solid #2a2344; flex-shrink:0; }
-#mDrawerTitle { color:#ffd24a; font-size:15px; }
-#mDrawerClose { padding:4px 12px; font-size:13px; }
-#mDrawerBody { overflow-y:auto; padding:8px 10px calc(10px + env(safe-area-inset-bottom)); min-height:0; }
-.m-sec.hidden { display:none; }
-.m-sec #side { width:100%; }
-/* 触屏详情抽屉里的卸装备按钮（手机无右键卸装路径，补齐） */
-#inspect .in-unequip { margin-top:6px; text-align:center; background:#1e2c44; color:#9dd3e8; border:1px solid #4ac8ff;
-  border-radius:7px; padding:5px; cursor:pointer; font-weight:bold; }
-/* 详情面板内的已穿装备芯片：拖到装备栏卸下（点按=卸下单件） */
-#inspect .in-item-chip { display:inline-block; background:#2a2344; border:1px solid #4a3d6e; border-radius:8px;
-  padding:2px 8px; margin:2px 4px 2px 0; cursor:grab; font-size:12px; touch-action:none; }
-/* 装备抽屉顶部的「身上装备」条（当前查看棋子）：拖到下面背包卸下 / 点按卸下 */
-.worn-strip { background:#1e2c44; border:1px dashed #4ac8ff66; border-radius:8px; padding:5px 8px; margin-bottom:8px;
-  font-size:12px; color:#9dd3e8; line-height:1.9; }
-.worn-strip .in-item-chip { background:#1e2c44; border-color:#4ac8ff88; margin:2px 6px 2px 0; }
-.worn-strip b { color:#ffd24a; }
-/* 拖装备时的落点高亮：详情面板（=穿给该棋子）/ 装备背包面板（=卸下） */
-#inspect.inspect-hl { box-shadow:0 0 0 2px #8dff9a99 !important; }
-.drop-panel-hl { box-shadow:0 0 0 2px #8dff9a99 !important; }
-@media (max-width:880px){
-  /* 格子随屏幕宽高自适应（宽：8 列 + 间隙/内边距 ≈40px；高：顶栏+敌方条+板凳+底部动作条 ≈420px），
-     dvh 行在支持的浏览器覆盖 vh 行（手机地址栏收展时 100vh 不准） */
-  body { --cell:56px;
-    --cell:min(56px, calc((100vw - 44px)/8), calc((100vh - 355px)/8));
-    --cell:min(56px, calc((100vw - 44px)/8), calc((100dvh - 355px)/8)); }
-  #main { flex-direction:column; align-items:center; overflow-y:auto; padding:6px; padding-bottom:16px; gap:8px; }
-  /* 竖屏阅读顺序：棋盘最优先，羁绊徽章与详情/装备/战报面板垫在下方 */
-  #boardwrap { order:0; }
-  #synCol { order:1; width:min(96vw,520px); flex-direction:row; flex-wrap:wrap; gap:2px; }
-  #synCol .syn-head { display:none; }
-  #synCol .syn-badge { margin:1px; }
-  #side { order:2; width:min(96vw,520px); }
-  #topbar { gap:6px; padding:5px 8px; padding-top:calc(5px + env(safe-area-inset-top)); font-size:13px; }
-  #topbar .tag { padding:2px 7px; }
-  #topbar .btn { padding:5px 8px; font-size:12px; }
-  .fight-btn-row { display:flex; flex-wrap:wrap; gap:6px; }
-  #overlay h1 { font-size:26px; }
-  /* 底部动作条（三行）：商店横滑 → 刷新/锁定/开战 → 等级条 + 操作按钮 */
-  #shopbar { flex-wrap:wrap; gap:6px; padding:6px 8px calc(6px + env(safe-area-inset-bottom)); }
-  #shop { order:1; flex-basis:100%; overflow-x:auto; padding-bottom:2px; }
-  #shop .card { flex:0 0 auto; min-width:106px; max-width:132px; padding:6px 4px 18px; }
-  #shop .card .cd, #shop .card .cs, #shop .card .ct { display:none; }
-  #shop .card .cn { font-size:13px; }
-  #shopctlCol { order:2; flex-direction:row; flex:1; align-items:center; min-width:0; }
-  #shopctlCol .btn { min-width:0; flex:1; padding:8px 6px; font-size:12px; }
-  #auxCol { order:2; flex-direction:row; flex:1; align-items:center; min-width:0; }
-  #auxCol .btn { min-width:0; flex:1; padding:8px 6px; font-size:12px; }
-  #fightBox { order:2; }
-  #fightBox .btn { padding:10px 16px; font-size:15px; }
-  #goldChip { display:none; }   /* 金币顶栏/等级条已有，省一行 */
-  #playerBox { order:3; flex-basis:100%; width:auto; gap:4px; }
-  #lvlBox { display:flex; align-items:center; gap:8px; padding:3px 8px; }
-  #lvlBox .lvl-row { margin:0; white-space:nowrap; font-size:11px; }
-  #lvlBox .xpbar { flex:1; height:5px; min-width:40px; }
-  #pbtns { grid-template-columns:repeat(4,1fr); gap:5px; }
-  #pbtns .btn { font-size:12px; padding:8px 2px; }
-  /* 触屏（body.touch）：商店/羁绊/装备/详情/战报全部收进抽屉，底栏只剩
-     [🏪商店][🔗羁绊][🎒装备][📋详情][⚔开战] + 等级行 + 操作行；羁绊不再挤占棋盘空间 */
-  body.touch #mShopBtn { order:1; flex:1; padding:10px 1px; font-size:12px; }
-  body.touch #mBondBtn { order:2; flex:1; padding:10px 1px; font-size:12px; }
-  body.touch #mEquipBtn { order:3; flex:1; padding:10px 1px; font-size:12px; }
-  body.touch #mSideBtn { order:4; flex:1; padding:10px 1px; font-size:12px; }
-  body.touch #fightBox { order:5; margin-left:auto; }
-  body.touch #playerBox { order:6; }
-  body.touch #mDrawerBox #shopctlCol { flex-direction:row; }
-  body.touch #mDrawerBox #shopctlCol .btn { flex:1; padding:10px 6px; font-size:13px; }
-  body.touch #mDrawerBox #auxCol { flex-direction:row; }
-  body.touch #mDrawerBox #auxCol .btn { flex:1; padding:10px 6px; font-size:13px; }
-  body.touch #tempBuffBox { flex-direction:row; flex:2; }
-  body.touch #tempBuffBox .btn.tb { flex:1; padding:8px 2px; font-size:10px; }
-  body.touch #mEquipSec .panel { width:100%; }
-  /* 羁绊抽屉：恢复竖排完整列表（阵营/职业分组头 + 效果文本），替代页面里的横排压缩条 */
-  body.touch #mBondSec #synCol { flex-direction:column; width:100%; overflow:visible; }
-  body.touch #mBondSec .syn-head { display:block; font-size:13px; padding:6px 2px 4px; }
-  body.touch #mBondSec .syn-badge { margin:0 0 6px; padding:7px 9px; font-size:13px; }
-  #log { max-height:140px; }
-  /* 图鉴/战绩：底部抽屉（全宽上滑面板）；#bookPanel/#bookGrid 因基线定义靠后，另在样式表末尾覆盖 */
-  #bookModal, #histModal { align-items:flex-end; }
-  #histPanel { width:100vw; max-height:80vh; max-height:80dvh; border-radius:16px 16px 0 0; padding:12px 14px; }
-}
-/* 手机横屏：左侧棋盘 + 右侧信息栏，顶栏与商店压缩，板凳席移到棋盘右侧竖排。
-   羁绊徽章栏与敌方横幅隐藏（敌方阵容棋盘上半区直接可见，羁绊可开图鉴查），商店条恢复单行 */
-@media (orientation:landscape) and (max-height:540px){
-  body { --cell:44px;
-    --cell:min(44px, calc((100vw - 330px)/9), calc((100vh - 150px)/9));
-    --cell:min(44px, calc((100vw - 330px)/9), calc((100dvh - 150px)/9)); }
-  #main { flex-direction:row; justify-content:center; padding:4px; gap:8px; overflow:hidden; }
-  #boardwrap { flex-direction:row; align-items:flex-start; gap:6px; }
-  #oppBar { display:none; }
-  #bench { grid-template-columns:var(--cell); grid-template-rows:repeat(8,var(--cell)); border-top:none; border-left:1px solid #2a2344; padding:4px; }
-  #synCol { display:none; }
-  #side { width:262px; flex-shrink:0; overflow-y:auto; }
-  #side .panel { padding:6px 8px; }
-  #topbar { gap:6px; padding:4px 8px; font-size:12px; flex-wrap:nowrap; }
-  #topbar .tag { white-space:nowrap; padding:2px 6px; }
-  #topbar .btn { padding:4px 7px; font-size:11px; }
-  .btn { padding:5px 8px; font-size:12px; }
-  .fight-btn-row { display:flex; flex-wrap:wrap; gap:4px; }
-  /* 商店条恢复单行：等级/操作 | 商店横滑 | 刷新/锁定 | 开战 */
-  #shopbar { flex-wrap:nowrap; padding:4px 6px calc(4px + env(safe-area-inset-bottom)); gap:5px; }
-  #playerBox { order:0; flex:0 0 200px; width:auto; }
-  #lvlBox { display:block; padding:3px 6px; }
-  #lvlBox .lvl-row { font-size:10px; margin:0 0 2px; white-space:nowrap; }
-  #lvlBox .xpbar { height:5px; }
-  #pbtns { grid-template-columns:repeat(2,1fr); gap:3px; }
-  #pbtns .btn { font-size:10px; padding:4px 2px; }
-  #shop { order:0; flex:1; flex-basis:0; min-width:0; overflow-x:auto; }
-  #shop .card { flex:1 1 0; min-width:0; max-width:110px; padding:4px 2px; }
-  #shop .card .cd, #shop .card .cfj, #shop .card .ct, #shop .card .cs { display:none; }
-  #shop .card .cn { font-size:11px; }
-  #shopctlCol { order:0; flex:0 0 auto; flex-direction:column; }
-  #shopctlCol .btn { flex:0 0 auto; min-width:84px; padding:3px 6px; font-size:10px; }
-  #auxCol { order:0; flex:0 0 auto; flex-direction:column; }
-  #auxCol .btn { flex:0 0 auto; min-width:84px; padding:3px 6px; font-size:10px; }
-  #fightBox .btn { padding:6px 10px; font-size:13px; }
-  #log { max-height:110px; }
-  /* 触屏横屏：商店/羁绊/装备/详情进抽屉后，底栏单行 [五入口压缩][开战] */
-  body.touch #mShopBtn { order:1; padding:6px 4px; font-size:11px; }
-  body.touch #mBondBtn { order:2; padding:6px 4px; font-size:11px; }
-  body.touch #mEquipBtn { order:3; padding:6px 4px; font-size:11px; }
-  body.touch #mSideBtn { order:4; padding:6px 4px; font-size:11px; }
-  body.touch #playerBox { order:5; flex:1 1 auto; flex-basis:auto; min-width:0; }
-  body.touch #fightBox { order:6; margin-left:auto; }
-  body.touch #lvlBox { display:none; }
-}
-#bookPanel { width:min(920px,94vw); max-height:90vh; background:#161226; border:2px solid #35294f; border-radius:14px;
+  padding:8px 4px; border-bottom:1px solid var(--line); color:var(--tx1); }
+#histTabs{ display:flex; gap:6px; margin-bottom:8px; }
+#histTabs .tab.on{ border-color:var(--gold); color:var(--gold-hi); }
+.achv-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; }
+.achv{ background:var(--bg2); border:1px solid var(--line); border-radius:0; padding:6px 8px; font-size:11px; color:var(--tx2); }
+.achv.got{ border-color:var(--gold-dim); color:var(--tx0); }
+.achv b{ font-size:12px; color:inherit; }
+.achv.got b{ color:var(--gold-hi); }
+.achv .ad2{ margin-top:3px; line-height:1.5; }
+.hrow.lb .lb-rk{ min-width:26px; text-align:center; color:var(--gold-hi); }
+.lb-pt{ width:20px; height:20px; image-rendering:pixelated; vertical-align:middle; border-radius:0; background:var(--bg3); margin-right:2px; }
+.lb-team{ min-width:0; }
+/* 图鉴 */
+#bookModal { position:fixed; inset:0; background:rgba(5,4,3,.92); z-index:40; display:flex; align-items:center; justify-content:center; }
+#bookModal.hidden { display:none; }
+#bookPanel { width:min(920px,94vw); max-height:90vh; background:linear-gradient(180deg,#221c13,#120f0a 70%); border:1px solid var(--line-2); border-radius:0;
   display:flex; flex-direction:column; padding:14px 16px; }
 #bookHead { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-#bookHead h2 { font-size:18px; color:#ffd24a; }
-/* 图鉴双标签：棋子（默认）/ 羁绊说明 */
+#bookHead h2 { font-size:17px; color:var(--gold-hi); letter-spacing:3px; }
 #bookTabs { display:flex; gap:6px; margin-left:auto; margin-right:12px; }
-.btab { background:#2a2344; color:#cdd6f4; border:1px solid #4a3d6e; border-radius:14px; padding:4px 14px; cursor:pointer; font-size:13px; }
-.btab.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
+.btab { background:var(--bg3); color:var(--tx1); border:1px solid var(--line-2); border-radius:0; padding:4px 14px; cursor:pointer; font-size:13px; }
+.btab.on { background:var(--gold-dim); color:var(--gold-hi); border-color:var(--gold); }
 #bookUnits.hidden, #bookSyn.hidden, #bookItems.hidden { display:none; }
 #bookUnits { display:flex; flex-direction:column; min-height:0; flex:1; }
-#bookSyn, #bookItems { overflow-y:auto; min-height:0; flex:1; }
-#bookFilters { border-bottom:1px solid #2a2344; padding-bottom:8px; margin-bottom:10px; }
+#bookSyn, #bookItems { display:grid; grid-template-columns:1fr 1fr; gap:5px 14px; margin:8px 0 12px; overflow-y:auto; min-height:0; flex:1; }
+#bookFilters { border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:10px; }
 .bf-row { display:flex; align-items:flex-start; gap:8px; margin:4px 0; }
-.bf-label { font-size:12px; color:#a99cd0; width:32px; flex-shrink:0; padding-top:5px; }
+.bf-label { font-size:11px; color:var(--tx2); width:32px; flex-shrink:0; padding-top:5px; letter-spacing:2px; }
 .bf-chips { display:flex; flex-wrap:wrap; gap:5px; }
-.bf-chip { background:#2a2344; border:1px solid #4a3d6e; border-radius:6px; padding:3px 9px; font-size:12px; cursor:pointer; }
-.bf-chip:hover { border-color:#ffd24a; }
-.bf-chip.on { background:#5b4a1e; color:#ffd24a; border-color:#ffd24a; }
-.bf-chip.all.on { background:#2f4a1e; color:#b8f0a0; border-color:#b8f0a0; }
+.bf-chip { background:var(--bg3); border:1px solid var(--line-2); border-radius:0; padding:3px 9px; font-size:12px; cursor:pointer; }
+.bf-chip:hover { border-color:var(--gold); }
+.bf-chip.on { background:var(--gold-dim); color:var(--gold-hi); border-color:var(--gold); }
+.bf-chip.all.on { background:#243020; color:#a8d8a0; border-color:#7fb069; }
 #bookGrid { overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; padding-right:4px; }
-.bcard { background:#241e3e; border:1px solid #4a3d6e; border-left-width:4px; border-radius:10px; padding:8px 10px; font-size:12px; line-height:1.5; }
+.bcard { background:var(--bg2); border:1px solid var(--line-2); border-left-width:2px; border-radius:0; padding:8px 10px; font-size:12px; line-height:1.5; }
 .bcard .bn { font-weight:bold; font-size:13px; display:flex; justify-content:space-between; align-items:center; }
-.bcard .bc { font-size:11px; color:#ffd24a; }
-.bcard .bf2 { color:#c8bfe8; font-size:11px; }
-.bcard .bs { color:#9fe8ff; font-size:11px; margin-top:2px; }
-.bcard .bp { color:#8dff9a; font-size:10px; }
-/* ===== 战斗技能特效 ===== */
-.vfx { position:absolute; width:var(--cell); height:var(--cell); pointer-events:none; z-index:40;
-  display:flex; align-items:center; justify-content:center; }
-.vfx.ring { border:3px solid #ffd24a; border-radius:50%; animation:ringPop calc(.85s/var(--spd)) ease-out forwards; }
-.vfx.ring.heal { border-color:#8dff9a; }
+.bcard .bc { font-size:11px; color:var(--gold-hi); }
+.bcard .bf2 { color:var(--tx1); font-size:11px; }
+.bcard .bs { color:#8fd0e8; font-size:11px; margin-top:2px; }
+.bcard .bp { color:var(--heal); font-size:10px; }
+.bsy-title { grid-column:1/-1; font-size:13px; color:var(--tx2); letter-spacing:2px; border-bottom:1px solid var(--line); padding:2px 0 5px; }
+.bsy-item { background:var(--bg2); border:1px solid var(--line); border-radius:0; padding:6px 9px; font-size:12px; color:var(--tx1); }
+.bsy-item b { color:var(--gold-hi); margin-right:6px; }
+.bsy-ico { margin-right:2px; }
+.bsy-need { color:var(--heal); font-size:11px; }
+.bsy-desc { color:var(--tx2); margin-top:3px; line-height:1.45; }
+.bsy-item.banned { border-color:rgba(224,88,76,.4); background:#1d1310; }
+.bsy-item.banned b { color:#ee8177; }
+.bsy-mem { color:var(--tx3); font-size:11px; margin-top:3px; }
+.card .cnpt { max-height:100%; max-width:82%; width:auto; height:auto; object-fit:contain; image-rendering:auto; }
+#inspect .in-pt { height:2.6em; image-rendering:pixelated; }
+.bcard .bnpt { height:2em; margin-right:4px; image-rendering:pixelated; vertical-align:middle; }
+
+/* ===== ⑪ 战斗特效（引擎层迁移） ===== */
+.vfx { position:absolute; width:var(--cell); height:var(--cell); pointer-events:none; z-index:40; display:flex; align-items:center; justify-content:center; }
+.vfx.splashfx{ border-radius:50%; border:2px solid #9fe8ff; background:radial-gradient(circle,rgba(159,232,255,.27) 0%,transparent 70%); }
+.vfx.aoe.frost{ background:rgba(159,232,255,.16); border:2px solid rgba(159,232,255,.6); box-shadow:inset 0 0 22px rgba(159,232,255,.4); border-radius:12px; }
+.vfx.ring { border:3px solid var(--gold); border-radius:50%; animation:ringPop calc(.85s/var(--spd)) ease-out forwards; }
+.vfx.ring.heal { border-color:var(--heal); }
 .vfx.ring.frost { border-color:#9fe8ff; }
-.vfx.ring.shield { border-color:#4aa8ff; }
-.vfx.ring.drain { border-color:#c77dff; }
-/* AoE 范围圈：以施法者为中心，直径 = (2R+1) 格，直观显示技能覆盖范围 */
-.vfx.aoe { border:3px solid #ffd24a; border-radius:50%; animation:aoePop calc(.7s/var(--spd)) ease-out forwards; z-index:60; }
+.vfx.ring.shield { border-color:var(--mp); }
+.vfx.ring.drain { border-color:var(--arc); }
+.vfx.aoe { border:3px solid var(--gold); border-radius:50%; animation:aoePop calc(.7s/var(--spd)) ease-out forwards; z-index:60; }
 .vfx.aoe.frost { border-color:#9fe8ff; }
-.vfx.aoe.drain { border-color:#c77dff; }
-/* ===== 技能专属贴图特效（assets/fx/ AI 生图 + 抠图，随 cls 组合叠加在 ring/boom 底光上） ===== */
+.vfx.aoe.drain { border-color:var(--arc); }
+@keyframes aoePop { from{ transform:scale(.3); opacity:.95; } to{ transform:scale(1.1); opacity:0; } }
+@keyframes ringPop { from{transform:scale(.25);opacity:1} to{transform:scale(1.5);opacity:0} }
+@keyframes boom { from{transform:scale(.2);opacity:1} to{transform:scale(1.9);opacity:0} }
+@keyframes beamFade { 0%{opacity:.95} 100%{opacity:0} }
 .vfx[class*='tex-'] { background-size:contain; background-position:center; background-repeat:no-repeat;
   filter:drop-shadow(0 0 6px rgba(255,255,255,.35)); }
 .vfx.tex-fireball { background-image:url(assets/fx/fireball.png); animation:texSpin calc(.6s/var(--spd)) ease-out forwards; }
@@ -714,53 +641,39 @@ body.touch .m-only { display:inline-block; }
 @keyframes texCrack  { 0%{ transform:scale(.55); opacity:0 } 25%{ transform:scale(1.05); opacity:1 } 70%{ transform:scale(1); opacity:.9; filter:grayscale(1) } 100%{ transform:scale(1.12); opacity:0; filter:grayscale(1) } }
 @keyframes texWobble { 0%{ transform:scale(.4); opacity:0 } 30%{ transform:scale(1.1) rotate(-6deg); opacity:1 } 60%{ transform:scale(.95) rotate(5deg) } 100%{ transform:scale(1.25) rotate(0deg); opacity:0 } }
 @keyframes texShoot  { from{ transform:translate(35%,-35%) scale(.7) rotate(8deg); opacity:0 } 30%{ opacity:1 } to{ transform:translate(-30%,30%) scale(1.2) rotate(8deg); opacity:0 } }
-/* ===== 技能 Cut-in：大招施法瞬间角色特写（仅大招名单触发） =====
-   挂在棋盘容器内：我方=棋盘左下角（红框区）、敌方=棋盘右上角（蓝框区）；
-   连发时旧卡向上滑出浅隐（.out），到期自然淡出后移除 */
+/* Cut-in */
 #cutinLayer { position:absolute; inset:var(--pad); pointer-events:none; z-index:70; }
-.cutin { position:absolute;
-  display:flex; align-items:center; gap:8px; width:min(330px,58%);
-  opacity:0; will-change:transform,opacity; }
+.cutin { position:absolute; display:flex; align-items:center; gap:8px; width:min(330px,58%); opacity:0; will-change:transform,opacity; }
 .cutin.L { left:0; bottom:1%; animation:cutinL calc(1.1s/var(--spd)) ease forwards; }
 .cutin.R { right:0; top:1%; flex-direction:row-reverse; text-align:right; animation:cutinR calc(1.1s/var(--spd)) ease forwards; }
-.cutin img { width:min(118px,13vw); height:min(118px,13vw); object-fit:contain;
-  filter:drop-shadow(0 4px 14px rgba(0,0,0,.6)); }
+.cutin img { width:min(118px,13vw); height:min(118px,13vw); object-fit:contain; filter:drop-shadow(0 4px 14px rgba(0,0,0,.6)); }
 .cutin.L img { animation:cutinNudge calc(1.1s/var(--spd)) ease; }
 .cutin.R img { animation:cutinNudge calc(1.1s/var(--spd)) ease reverse; }
-.cutin .ct { flex:1; background:linear-gradient(90deg,transparent,rgba(10,8,22,.88) 16%,rgba(10,8,22,.88) 84%,transparent);
-  padding:10px 16px; }
-.cutin.R .ct { background:linear-gradient(-90deg,transparent,rgba(10,8,22,.88) 16%,rgba(10,8,22,.88) 84%,transparent); }
-.cutin .ct b { display:block; font-size:clamp(15px,1.8vw,20px); color:#ffd24a; letter-spacing:2px;
-  text-shadow:0 2px 6px #000; }
-.cutin .ct span { font-size:clamp(10px,1.1vw,13px); color:#c8bfe8; }
-.cutin.L { border-left:3px solid #ffd24a88; }
-.cutin.R { border-right:3px solid #e0555588; }
+.cutin .ct { flex:1; background:linear-gradient(90deg,transparent,rgba(10,8,5,.9) 16%,rgba(10,8,5,.9) 84%,transparent); padding:10px 16px; }
+.cutin.R .ct { background:linear-gradient(-90deg,transparent,rgba(10,8,5,.9) 16%,rgba(10,8,5,.9) 84%,transparent); }
+.cutin .ct b { display:block; font-size:clamp(15px,1.8vw,20px); color:var(--gold-hi); letter-spacing:2px; text-shadow:0 2px 6px #000; }
+.cutin .ct span { font-size:clamp(10px,1.1vw,13px); color:var(--tx1); }
+.cutin.L { border-left:3px solid rgba(224,169,78,.55); }
+.cutin.R { border-right:3px solid rgba(224,88,76,.55); }
 .cutin.out { animation:cutinOut calc(.4s/var(--spd)) ease forwards !important; }
 @keyframes cutinL { 0%{ transform:translateX(-115%); opacity:0 } 18%{ transform:translateX(0); opacity:1 } 78%{ transform:translateX(0); opacity:1 } 100%{ transform:translateX(-40%); opacity:0 } }
 @keyframes cutinR { 0%{ transform:translateX(115%); opacity:0 } 18%{ transform:translateX(0); opacity:1 } 78%{ transform:translateX(0); opacity:1 } 100%{ transform:translateX(40%); opacity:0 } }
 @keyframes cutinOut { from{ transform:translateX(0); opacity:1 } to{ transform:translateY(-46px); opacity:0 } }
 @keyframes cutinNudge { 0%,100%{ transform:scale(1) } 30%{ transform:scale(1.08) } }
-@keyframes aoePop { from{ transform:scale(.3); opacity:.95; } to{ transform:scale(1.1); opacity:0; } }
-.vfx.boom { border-radius:50%; background:radial-gradient(circle,#ffce5499 20%,#ff7b3344 55%,transparent 75%);
+.vfx.boom { border-radius:50%; background:radial-gradient(circle,rgba(255,206,84,.6) 20%,rgba(255,123,51,.27) 55%,transparent 75%);
   animation:boom calc(.65s/var(--spd)) ease-out forwards; }
-.vfx.flash { background:radial-gradient(circle,#ffffffcc 15%,#ffffff44 45%,transparent 70%); animation:boom calc(.55s/var(--spd)) forwards; }
-.vfx.beam { height:5px; border-radius:3px; transform-origin:0 50%; opacity:.95;
-  animation:beamFade calc(.45s/var(--spd)) forwards; box-shadow:0 0 8px 1px currentColor; }
-.vfx.proj { width:9px; height:9px; border-radius:50%;
-  transition:left calc(.4s/var(--spd)) linear, top calc(.4s/var(--spd)) linear; z-index:41; }
-.vfx.slash { border-radius:50%;
-  background:radial-gradient(circle,#ffffffcc 8%,#ffffff44 38%,transparent 62%);
+.vfx.flash { background:radial-gradient(circle,rgba(255,255,255,.8) 15%,rgba(255,255,255,.27) 45%,transparent 70%); animation:boom calc(.55s/var(--spd)) forwards; }
+.vfx.beam { height:5px; border-radius:3px; transform-origin:0 50%; opacity:.95; animation:beamFade calc(.45s/var(--spd)) forwards; box-shadow:0 0 8px 1px currentColor; }
+.vfx.proj { width:9px; height:9px; border-radius:50%; transition:left calc(.4s/var(--spd)) linear, top calc(.4s/var(--spd)) linear; z-index:41; }
+.vfx.slash { border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.8) 8%,rgba(255,255,255,.27) 38%,transparent 62%);
   animation:boom calc(.4s/var(--spd)) ease-out forwards; }
-/* 刺客暴击：紫色爆裂特效 */
-.vfx.crit.gold { background:radial-gradient(circle,#ffd24acc 15%,#c8960a66 50%,transparent 72%); box-shadow:0 0 16px #ffd24a99; }
-.vfx.charge { border:2px solid #fff; border-radius:50%; box-shadow:0 0 12px #ffffff66, inset 0 0 8px #ffffff44; opacity:0;
+.vfx.crit.gold { background:radial-gradient(circle,rgba(224,169,78,.8) 15%,rgba(200,150,10,.4) 50%,transparent 72%); box-shadow:0 0 16px rgba(224,169,78,.6); }
+.vfx.charge { border:2px solid #fff; border-radius:50%; box-shadow:0 0 12px rgba(255,255,255,.4), inset 0 0 8px rgba(255,255,255,.27); opacity:0;
   animation:chargeIn calc(.26s/var(--spd)) ease-in forwards; }
 @keyframes chargeIn { 0%{transform:scale(1.8);opacity:0} 55%{opacity:.95} 100%{transform:scale(.5);opacity:0} }
-.vfx.s3 { zoom:1.25; filter:drop-shadow(0 0 5px #ffd24abb); }   /* 3★ 施法特效分层：放大 + 金晕 */
-.vfx.crit { border-radius:50%; background:radial-gradient(circle,#c77dffaa 15%,#7a3fd455 50%,transparent 72%);
+.vfx.s3 { zoom:1.25; filter:drop-shadow(0 0 5px rgba(224,169,78,.73)); }
+.vfx.crit { border-radius:50%; background:radial-gradient(circle,rgba(166,120,216,.67) 15%,rgba(122,63,212,.33) 50%,transparent 72%);
   animation:boom calc(.5s/var(--spd)) ease-out forwards; }
-/* ===== 命中/技能特效扩展（纯装饰层：transform/opacity 动画，时长随 --spd 缩放；
-   粒子经 fxNode 生成：棋盘坐标即元素中心（关键帧内统一 translate(-50%,-50%)），到时自动 remove ===== */
 .vfx.pt { width:9px; height:9px; border-radius:50%; box-shadow:0 0 7px 1px currentColor; animation:ptFly calc(.5s/var(--spd)) ease-out forwards; }
 .vfx.chip { width:7px; height:7px; border-radius:1px; box-shadow:0 0 5px currentColor; animation:ptFly calc(.55s/var(--spd)) ease-out forwards; }
 @keyframes ptFly { from{ transform:translate(-50%,-50%) scale(1); opacity:1; }
@@ -768,48 +681,47 @@ body.touch .m-only { display:inline-block; }
 .vfx.shard { width:16px; height:19px; clip-path:polygon(50% 0,100% 100%,12% 78%);
   animation:shardFly calc(.55s/var(--spd)) ease-out forwards; }
 .vfx.shard.ice { background:linear-gradient(180deg,#f0fdff,#5cc8ec); box-shadow:0 0 6px #9fe8ff; }
-.vfx.shard.gl { background:linear-gradient(180deg,#eef7ff,#2f8fe8); box-shadow:0 0 6px #4aa8ff; }
+.vfx.shard.gl { background:linear-gradient(180deg,#eef7ff,#2f8fe8); box-shadow:0 0 6px var(--mp); }
 .vfx.shard.stone { background:linear-gradient(180deg,#ffffff,#8c8c8c); box-shadow:0 0 5px #d9d9d9; }
 @keyframes shardFly { from{ transform:translate(-50%,-50%) rotate(0deg) scale(.75); opacity:1; }
   to{ transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,-22px))) rotate(var(--rr,120deg)) scale(.35); opacity:0; } }
 .vfx.slashline { width:48px; height:4px; border-radius:2px;
-  background:linear-gradient(90deg,transparent,#ffe9a8 25%,#fff 55%,transparent);
-  box-shadow:0 0 8px 1px #ffe9a899;
+  background:linear-gradient(90deg,transparent,#f4d387 25%,#fff 55%,transparent);
+  box-shadow:0 0 8px 1px rgba(244,211,135,.6);
   animation:slashIn calc(.32s/var(--spd)) ease-out forwards; }
 @keyframes slashIn { from{ transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scaleX(.25); opacity:0; }
   25%{ opacity:1; } to{ transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scaleX(1.3); opacity:0; } }
 .vfx.rune { width:calc(var(--cell)*.9); height:calc(var(--cell)*.9); border-radius:50%;
-  background:radial-gradient(circle,#f2d6ffe6 0%,#a86ee877 42%,transparent 68%); box-shadow:0 0 12px 2px #a86ee899;
+  background:radial-gradient(circle,rgba(242,214,255,.9) 0%,rgba(168,110,232,.47) 42%,transparent 68%); box-shadow:0 0 12px 2px rgba(168,110,232,.6);
   animation:runeSpin calc(.5s/var(--spd)) ease-out forwards; }
 @keyframes runeSpin { from{ transform:translate(-50%,-50%) scale(.35) rotate(0deg); opacity:1; }
   to{ transform:translate(-50%,-50%) scale(1.2) rotate(140deg); opacity:0; } }
-.vfx.impact { width:calc(var(--cell)*.55); height:calc(var(--cell)*.55); border-radius:50%; border:3px solid #ffffffcc;
-  background:radial-gradient(circle,#ffffff88 0%,transparent 70%); box-shadow:0 0 8px #ffffff77;
+.vfx.impact { width:calc(var(--cell)*.55); height:calc(var(--cell)*.55); border-radius:50%; border:3px solid rgba(255,255,255,.8);
+  background:radial-gradient(circle,rgba(255,255,255,.53) 0%,transparent 70%); box-shadow:0 0 8px rgba(255,255,255,.47);
   animation:impactPop calc(.36s/var(--spd)) ease-out forwards; }
 @keyframes impactPop { from{ transform:translate(-50%,-50%) scale(.25); opacity:.95; }
   to{ transform:translate(-50%,-50%) scale(1); opacity:0; } }
-/* 弹道升级：渐隐拖尾（i.tail 指向来源方向），法术弹道白芯强发光 */
 .vfx.proj i.tail { position:absolute; left:-24px; top:3px; width:24px; height:3px; border-radius:2px;
   background:linear-gradient(90deg,transparent,currentColor); transform-origin:100% 50%; }
-.vfx.proj.magic { border:1px solid #ffffff99; }
+.vfx.proj.magic { border:1px solid rgba(255,255,255,.6); }
 .vfx.sweep { width:calc(var(--cell)*2.1); height:calc(var(--cell)*2.1); border:4px solid transparent;
-  border-top-color:#ffe9a8; border-right-color:#ffe9a880; border-radius:50%;
+  border-top-color:rgba(244,211,135,.9); border-right-color:rgba(244,211,135,.5); border-radius:50%;
   animation:sweepSpin calc(.42s/var(--spd)) ease-out forwards; }
 @keyframes sweepSpin { from{ transform:translate(-50%,-50%) rotate(calc(var(--rot,0deg) - 55deg)); opacity:.95; }
   to{ transform:translate(-50%,-50%) rotate(calc(var(--rot,0deg) + 75deg)) scale(1.12); opacity:0; } }
-.vfx.shock { width:calc(var(--cell)*1.5); height:calc(var(--cell)*.75); border:3px solid #ffd9a0cc; border-radius:50%;
+.vfx.shock { width:calc(var(--cell)*1.5); height:calc(var(--cell)*.75); border:3px solid rgba(255,217,160,.8); border-radius:50%;
   animation:shockPop calc(.5s/var(--spd)) ease-out forwards; }
 @keyframes shockPop { from{ transform:translate(-50%,-50%) scale(.3); opacity:1; }
   to{ transform:translate(-50%,-50%) scale(1.5); opacity:0; } }
 .vfx.smoke { width:calc(var(--cell)*.95); height:calc(var(--cell)*.95); border-radius:50%; filter:blur(2px);
-  background:radial-gradient(circle,#c7a8f088 0%,#6b5a8455 52%,transparent 72%);
+  background:radial-gradient(circle,rgba(199,168,240,.53) 0%,rgba(107,90,132,.33) 52%,transparent 72%);
   animation:smokePuff calc(.72s/var(--spd)) ease-in-out forwards; }
 @keyframes smokePuff { 0%{ transform:translate(-50%,-50%) scale(.35); opacity:0; }
   30%{ transform:translate(-50%,-50%) scale(1.18); opacity:.95; }
   60%{ transform:translate(-50%,-50%) scale(.92); opacity:.8; }
   100%{ transform:translate(-50%,-50%) scale(1.05); opacity:0; } }
 .vfx.crack { width:calc(var(--cell)*.95); height:calc(var(--cell)*.95); border-radius:50%;
-  background:radial-gradient(circle,#f0f0f0d9 0%,#a8a8a855 40%,transparent 66%);
+  background:radial-gradient(circle,rgba(240,240,240,.85) 0%,rgba(168,168,168,.33) 40%,transparent 66%);
   animation:crackIn calc(.55s/var(--spd)) ease-out forwards; }
 @keyframes crackIn { from{ transform:translate(-50%,-50%) scale(.5) rotate(-8deg); opacity:1; }
   to{ transform:translate(-50%,-50%) scale(1.08) rotate(4deg); opacity:0; } }
@@ -819,25 +731,25 @@ body.touch .m-only { display:inline-block; }
   to{ transform:translate(-50%,-50%) rotate(200deg); opacity:0; } }
 .vfx.bolt { height:16px; background:linear-gradient(180deg,#fff,#ffe14a 55%,#ffb84a);
   clip-path:polygon(46% 0,63% 34%,52% 32%,72% 66%,59% 63%,84% 100%,36% 72%,49% 74%,24% 36%,39% 38%);
-  filter:drop-shadow(0 0 4px #ffe14acc); animation:boltFlick calc(.4s/var(--spd)) steps(2) forwards; }
-.vfx.bolt.su { background:linear-gradient(180deg,#fff,#c77dff 55%,#8a4fd4); filter:drop-shadow(0 0 4px #c77dffcc); }
+  filter:drop-shadow(0 0 4px rgba(255,225,74,.8)); animation:boltFlick calc(.4s/var(--spd)) steps(2) forwards; }
+.vfx.bolt.su { background:linear-gradient(180deg,#fff,#c77dff 55%,#8a4fd4); filter:drop-shadow(0 0 4px rgba(199,125,255,.8)); }
 @keyframes boltFlick { 0%{ transform:translate(-50%,-50%) rotate(var(--rot,0deg)); opacity:1; }
   45%{ opacity:.35; } 70%{ opacity:1; } 100%{ opacity:0; } }
 .vfx.ember { width:7px; height:7px; border-radius:50%; background:#ff9a3d; box-shadow:0 0 7px 2px #ff9a3d;
   animation:emberRise calc(.75s/var(--spd)) ease-out forwards; }
 @keyframes emberRise { from{ transform:translate(-50%,-50%); opacity:1; } 40%{ opacity:.85; }
   to{ transform:translate(calc(-50% + var(--dx,0px)),calc(-50% - 40px)) scale(.3); opacity:0; } }
-.vfx.mote { width:7px; height:7px; border-radius:50%; background:#8dff9a; box-shadow:0 0 7px 2px #8dff9a;
+.vfx.mote { width:7px; height:7px; border-radius:50%; background:var(--heal); box-shadow:0 0 7px 2px var(--heal);
   animation:moteRise calc(.8s/var(--spd)) ease-out forwards; }
 @keyframes moteRise { from{ transform:translate(-50%,-50%) scale(.6); opacity:0; } 30%{ opacity:1; }
   to{ transform:translate(calc(-50% + var(--dx,0px)),calc(-50% - 44px)) scale(1); opacity:0; } }
 .vfx.pillar { width:12px; height:calc(var(--cell)*1.3); border-radius:6px 6px 3px 3px; transform-origin:50% 100%;
-  background:linear-gradient(0deg,#8dff9a00,#8dff9aaa 45%,#d9ffe0e0);
+  background:linear-gradient(0deg,rgba(141,255,154,0),rgba(141,255,154,.67) 45%,rgba(217,255,224,.88));
   animation:pillarUp calc(.7s/var(--spd)) ease-out forwards; }
 @keyframes pillarUp { from{ transform:translate(-50%,-100%) scaleY(.1); opacity:.95; }
   to{ transform:translate(-50%,-100%) scaleY(1); opacity:0; } }
 .vfx.thread { height:3px; border-radius:2px; background:linear-gradient(90deg,transparent,#ff5a5a 60%,#ffb0b0);
-  box-shadow:0 0 6px 1px #ff5a5a99;
+  box-shadow:0 0 6px 1px rgba(255,90,90,.6);
   animation:threadPulse calc(.38s/var(--spd)) forwards; }
 @keyframes threadPulse { 0%{ transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scaleX(.35); opacity:.9; }
   50%{ transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scaleX(1); opacity:1; }
@@ -847,55 +759,235 @@ body.touch .m-only { display:inline-block; }
 .unit.battle-unit.squash { animation:squashB calc(.42s/var(--spd)) ease-out; }
 @keyframes squashB { 0%,100%{ transform:scale(1,1); } 35%{ transform:scale(1.25,.6); } 70%{ transform:scale(.92,1.16); } }
 #board.quake { animation:quake calc(.28s/var(--spd)); }
-@keyframes quake { 0%,100%{ transform:translate(0,0); } 25%{ transform:translate(-3px,2px); }
-  55%{ transform:translate(3px,-2px); } 80%{ transform:translate(-2px,-1px); } }
-.dmg.crit { color:#ffb84a; font-size:17px; animation:critPop calc(.6s/var(--spd)) ease-out forwards; }
+@keyframes quake { 0%,100%{ transform:rotateX(var(--rx,0deg)) translate(0,0); } 25%{ transform:rotateX(var(--rx,0deg)) translate(-3px,2px); }
+  55%{ transform:rotateX(var(--rx,0deg)) translate(3px,-2px); } 80%{ transform:rotateX(var(--rx,0deg)) translate(-2px,-1px); } }
+.dmg { position:absolute; color:#ff8a80; font-weight:bold; font-size:13px; pointer-events:none; z-index:50;
+  animation:fly 1s ease-out forwards; }
+.dmg.heal { color:var(--heal); }
+.dmg.cast { color:var(--mp); font-size:12px; }
+.dmg.poison { color:#9dff6b; font-size:11px; }
+@keyframes fly { to { transform:translateY(-24px); opacity:0; } }
+.dmg.crit { color:var(--gold-hi); font-size:17px; animation:critPop calc(.6s/var(--spd)) ease-out forwards; }
 @keyframes critPop { 0%{ transform:scale(1.55); opacity:1; } 30%{ transform:translate(-3px,2px) scale(1.2); }
   55%{ transform:translate(3px,-2px) scale(1.3); } 100%{ transform:translateY(-26px) scale(1); opacity:0; } }
-/* ===== 战斗结果横幅 ===== */
 .result-banner { position:absolute; inset:0; z-index:45; display:flex; align-items:center; justify-content:center;
-  font-size:36px; font-weight:bold; pointer-events:none; overflow:hidden; border-radius:8px;
+  font-size:36px; font-weight:bold; letter-spacing:6px; pointer-events:none; overflow:hidden; border-radius:0;
   animation:bannerPop .9s ease-out; }
-.result-banner.win { color:#ffd24a; text-shadow:0 0 18px #ffd24a,0 2px 4px #000;
-  background:linear-gradient(180deg,#ffd24a22,transparent); }
-.result-banner.lose { color:#ff7b7b; text-shadow:0 0 18px #ff5a5a,0 2px 4px #000;
-  background:linear-gradient(180deg,#ff5a5a22,transparent); animation:bannerPop .9s ease-out, shakeB .5s .45s 2; }
+.result-banner.win { color:var(--gold-hi); text-shadow:0 0 18px rgba(224,169,78,.6),0 2px 4px #000;
+  background:linear-gradient(180deg,rgba(224,169,78,.13),transparent); }
+.result-banner.lose { color:#ff8a80; text-shadow:0 0 18px rgba(224,88,76,.6),0 2px 4px #000;
+  background:linear-gradient(180deg,rgba(224,88,76,.13),transparent); animation:bannerPop .9s ease-out, shakeB .5s .45s 2; }
 @keyframes bannerPop { from{transform:scale(.3);opacity:0} 60%{transform:scale(1.12)} to{transform:scale(1);opacity:1} }
 @keyframes shakeB { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
 .confetti { position:absolute; top:-12px; width:7px; height:11px; animation:confFall linear forwards; }
 @keyframes confFall { to { transform:translateY(520px) rotate(540deg); opacity:.65; } }
-@keyframes ringPop { from{transform:scale(.25);opacity:1} to{transform:scale(1.5);opacity:0} }
-@keyframes boom { from{transform:scale(.2);opacity:1} to{transform:scale(1.9);opacity:0} }
-@keyframes beamFade { 0%{opacity:.95} 100%{opacity:0} }
 .cell.shake .unit { animation:cellShake .35s; }
 @keyframes cellShake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-3px,1px)}
   50%{transform:translate(3px,-1px)} 75%{transform:translate(-2px,0)} }
-/* ===== 手机覆盖（置于样式表末尾：#bookPanel/#bookGrid 基线规则定义在 880 断点之后，须在此再压一层）===== */
+@keyframes augIn{ from{ transform:translateY(14px) scale(.92); opacity:0; } to{ transform:none; opacity:1; } }
+.vfx.ripple{ border:2px solid #f2a7c3; border-radius:50%; animation:ripplez .6s both; }
+@keyframes ripplez{ from{ transform:scale(.3); opacity:.9 } to{ transform:scale(1.5); opacity:0 } }
+
+/* ===== ⑫ 触屏 / 抽屉 ===== */
+.touch .unit, .touch .item-chip { touch-action:none; -webkit-touch-callout:none; }
+.btn, .card, .spd-b, .btab { touch-action:manipulation; }
+.m-only { display:none; }
+body.touch .m-only { display:inline-block; }
+#mDrawer { position:fixed; left:0; right:0; top:0; bottom:0; z-index:38; display:flex;
+  align-items:flex-end; justify-content:center; pointer-events:none; }
+#mDrawer.hidden { display:none; }
+#mDrawerBox { width:100%; max-height:76vh; max-height:76dvh; background:linear-gradient(180deg,#221c13,#100d09 70%); border:1px solid var(--line-2); border-bottom:none;
+  border-radius:0; display:flex; flex-direction:column; pointer-events:auto;
+  box-shadow:0 -10px 34px rgba(0,0,0,.85); animation:mDrawerIn .18s ease-out; }
+@keyframes mDrawerIn { from{ transform:translateY(36px); opacity:.4; } to{ transform:none; opacity:1; } }
+#mDrawerHead { display:flex; align-items:center; justify-content:space-between; padding:8px 12px 6px;
+  border-bottom:1px solid var(--line); flex-shrink:0; }
+#mDrawerTitle { color:var(--gold-hi); font-size:15px; letter-spacing:2px; }
+#mDrawerClose { padding:4px 12px; font-size:13px; }
+#mDrawerBody { overflow-y:auto; padding:8px 10px calc(10px + env(safe-area-inset-bottom)); min-height:0; }
+.m-sec.hidden { display:none; }
+.m-sec #side { width:100%; }
+
+/* ===== ⑬ 右栏 ===== */
+#side { width:320px; display:flex; flex-direction:column; gap:8px; overflow-y:auto; flex-shrink:0; }
+#side > .panel:last-child { flex:1; display:flex; flex-direction:column; min-height:200px; }
+#side > .panel:last-child #log { flex:1; max-height:none; min-height:130px; }
+
+/* ===== ⑭ 移动端（机制保留：列布局/抽屉/横屏板凳竖排） ===== */
 @media (max-width:880px){
-  #bookPanel { width:100vw; max-height:88vh; max-height:88dvh; border-radius:16px 16px 0 0; padding:12px; }
+  body { --cell:56px;
+    --cell:min(56px, calc((100vw - 44px)/8), calc((100vh - 360px)/8));
+    --cell:min(56px, calc((100vw - 44px)/8), calc((100dvh - 360px)/8)); }
+  #boardwrap { perspective:none; }
+  #board { transform:none; }
+  #main { flex-direction:column; align-items:center; overflow-y:auto; padding:6px; padding-bottom:16px; gap:8px; }
+  #boardwrap { order:0; }
+  #synCol { order:1; width:min(96vw,520px); flex-direction:row; flex-wrap:wrap; gap:2px; }
+  #synCol .syn-head { display:none; }
+  #synCol .syn-badge { margin:1px; }
+  #side { order:2; width:min(96vw,520px); }
+  #topbar { gap:6px; padding:5px 8px; padding-top:calc(5px + env(safe-area-inset-top)); font-size:13px; }
+  #roundBox .rn { font-size:16px; }
+  #roundTicks { display:none; }
+  #topbar .btn { padding:5px 8px; font-size:12px; }
+  .fight-btn-row { display:flex; flex-wrap:wrap; gap:6px; }
+  #overlay h1 { font-size:24px; }
+  #shopbar { flex-wrap:wrap; gap:6px; padding:6px 8px calc(6px + env(safe-area-inset-bottom)); }
+  #shop { order:1; flex-basis:100%; overflow-x:auto; padding-bottom:2px; }
+  #shop .card { flex:0 0 auto; min-width:112px; max-width:132px; padding:5px 4px 16px; }
+  #shop .card .art { height:58px; max-height:58px; }
+  #shop .card .cn { font-size:12px; }
+  #shopctlCol { order:2; flex-direction:row; flex:1; align-items:center; min-width:0; }
+  #shopctlCol .btn { min-width:0; flex:1; padding:8px 6px; font-size:12px; }
+  #auxCol { order:2; flex-direction:row; flex:1; align-items:center; min-width:0; }
+  #auxCol .btn { min-width:0; flex:1; padding:8px 6px; font-size:12px; }
+  #fightBox { order:2; }
+  #fightBox .btn { padding:10px 16px; font-size:15px; }
+  #goldChip { display:none !important; }   /* ⑯ 增量块在其后重设 display，此处需 !important 压住 */
+  #playerBox { order:3; flex-basis:100%; width:auto; gap:4px; }
+  #lvlBox { display:flex; align-items:center; gap:8px; padding:3px 8px; }
+  #lvlBox .lvl-row { margin:0; white-space:nowrap; font-size:11px; }
+  #lvlBox .xpbar { flex:1; height:5px; min-width:40px; }
+  #pbtns { grid-template-columns:repeat(4,1fr); gap:5px; }
+  #pbtns .btn { font-size:12px; padding:8px 2px; }
+  body.touch #mShopBtn { order:1; flex:1; padding:10px 1px; font-size:12px; }
+  body.touch #mBondBtn { order:2; flex:1; padding:10px 1px; font-size:12px; }
+  body.touch #mEquipBtn { order:3; flex:1; padding:10px 1px; font-size:12px; }
+  body.touch #mSideBtn { order:4; flex:1; padding:10px 1px; font-size:12px; }
+  body.touch #fightBox { order:5; margin-left:auto; }
+  body.touch #playerBox { order:6; }
+  body.touch #mDrawerBox #shopctlCol { flex-direction:row; }
+  body.touch #mDrawerBox #shopctlCol .btn { flex:1; padding:10px 6px; font-size:13px; }
+  body.touch #mDrawerBox #auxCol { flex-direction:row; }
+  body.touch #mDrawerBox #auxCol .btn { flex:1; padding:10px 6px; font-size:13px; }
+  body.touch #tempBuffBox { flex-direction:row; flex:2; }
+  body.touch #tempBuffBox .btn.tb { flex:1; padding:8px 2px; font-size:10px; }
+  body.touch #mEquipSec .panel { width:100%; }
+  body.touch #mBondSec #synCol { flex-direction:column; width:100%; overflow:visible; }
+  body.touch #mBondSec .syn-head { display:block; font-size:13px; padding:6px 2px 4px; }
+  body.touch #mBondSec .syn-badge { margin:0 0 6px; padding:7px 9px; font-size:13px; }
+  #log { max-height:140px; }
+  #bookModal, #histModal { align-items:flex-end; }
+  #histPanel { width:100vw; max-height:80vh; max-height:80dvh; border-radius:0; padding:12px 14px; }
+  #bookPanel { width:100vw; max-height:88vh; max-height:88dvh; border-radius:0; padding:12px; }
   #bookGrid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); }
   #bookSyn, #bookItems { grid-template-columns:1fr; }
 }
+@media (orientation:landscape) and (max-height:540px){
+  body { --cell:44px;
+    --cell:min(44px, calc((100vw - 330px)/9), calc((100vh - 150px)/9));
+    --cell:min(44px, calc((100vw - 330px)/9), calc((100dvh - 150px)/9)); }
+  #boardwrap { perspective:none; }
+  #board { transform:none; }
+  #main { flex-direction:row; justify-content:center; padding:4px; gap:8px; overflow:hidden; }
+  #boardwrap { flex-direction:row; align-items:flex-start; gap:6px; }
+  #bench > span { display:none; }
+  #oppBar { display:none; }
+  #bench { grid-template-columns:var(--cell); grid-template-rows:repeat(8,var(--cell)); border-top:none; border-left:1px solid var(--line); padding:4px; }
+  #synCol { display:none; }
+  #side { width:262px; flex-shrink:0; overflow-y:auto; }
+  #side .panel { padding:6px 8px; }
+  #topbar { gap:6px; padding:4px 8px; font-size:12px; flex-wrap:nowrap; }
+  #topbar .res .rl { display:none; }
+  #topbar .btn { padding:4px 7px; font-size:11px; }
+  .btn { padding:5px 8px; font-size:12px; }
+  .fight-btn-row { display:flex; flex-wrap:wrap; gap:4px; }
+  #shopbar { flex-wrap:nowrap; padding:4px 6px calc(4px + env(safe-area-inset-bottom)); gap:5px; }
+  #playerBox { order:0; flex:0 0 200px; width:auto; }
+  #lvlBox { display:block; padding:3px 6px; }
+  #lvlBox .lvl-row { font-size:10px; margin:0 0 2px; white-space:nowrap; }
+  #lvlBox .xpbar { height:5px; }
+  #pbtns { grid-template-columns:repeat(2,1fr); gap:3px; }
+  #pbtns .btn { font-size:10px; padding:4px 2px; }
+  #shop { order:0; flex:1; flex-basis:0; min-width:0; overflow-x:auto; }
+  #shop .card { flex:1 1 0; min-width:0; max-width:110px; padding:4px 2px 14px; }
+  #shop .card .art { height:44px; max-height:44px; }
+  #shop .card .cn { font-size:11px; }
+  #shopctlCol { order:0; flex:0 0 auto; flex-direction:column; }
+  #shopctlCol .btn { flex:0 0 auto; min-width:84px; padding:3px 6px; font-size:10px; }
+  #auxCol { order:0; flex:0 0 auto; flex-direction:column; }
+  #auxCol .btn { flex:0 0 auto; min-width:84px; padding:3px 6px; font-size:10px; }
+  #fightBox .btn { padding:6px 10px; font-size:13px; }
+  #log { max-height:110px; }
+  body.touch #mShopBtn { order:1; padding:6px 4px; font-size:11px; }
+  body.touch #mBondBtn { order:2; padding:6px 4px; font-size:11px; }
+  body.touch #mEquipBtn { order:3; padding:6px 4px; font-size:11px; }
+  body.touch #mSideBtn { order:4; padding:6px 4px; font-size:11px; }
+  body.touch #playerBox { order:5; flex:1 1 auto; flex-basis:auto; min-width:0; }
+  body.touch #fightBox { order:6; margin-left:auto; }
+  body.touch #lvlBox { display:none; }
+}
+
+/* ===== ⑮ 无障碍 ===== */
+@media (prefers-reduced-motion: reduce){
+  .tag.pop-warn, #deployBtn.pulse, #endBtn.arm-flash { animation:none; }
+  .unit .pt, .unit.battle-unit.walking .pt, .unit.bv-yemu-fog::before,
+  .unit.hexed::after, .unit.stunned { animation:none; }
+}
+
+/* ===== ⑯ 骨架增量：图标通用化 / 顶栏状态件 ===== */
+.ic::before { content:''; width:13px; height:13px; background:currentColor; flex-shrink:0;
+  mask:var(--ic) center/contain no-repeat; -webkit-mask:var(--ic) center/contain no-repeat; }
+#goldChip { display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+#goldChip::before { content:''; width:13px; height:13px; background:var(--gold); flex-shrink:0;
+  mask:var(--ic) center/contain no-repeat; -webkit-mask:var(--ic) center/contain no-repeat; }
+.spdwrap { display:flex; gap:3px; align-items:center; }
+#curseTag { color:#ee8177; border:1px solid rgba(224,88,76,.5); background:rgba(224,88,76,.08);
+  padding:2px 8px; font-size:12px; max-width:42vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#ticketTag { color:var(--gold-hi); border:1px solid var(--gold-dim); background:rgba(224,169,78,.07);
+  padding:2px 8px; font-size:12px; white-space:nowrap; }
+#endBtn { background:#3d1a1a; color:#ee8177; border-color:rgba(224,88,76,.55); }
+#endBtn:hover { background:#552424; color:#ffb0a8; }
+#sfxBtn { color:var(--tx3); }
+#sfxBtn.on { color:var(--gold-hi); border-color:var(--gold-dim); }
+#resPop.pop-warn { background:rgba(138,101,38,.22); outline:1px solid rgba(224,169,78,.35);
+  animation:resWarn 1.2s ease-in-out infinite; }
+@keyframes resWarn { 0%,100%{ outline-color:rgba(224,169,78,.25); } 50%{ outline-color:var(--gold-hi); } }
+.card .stat.hp i { --ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 21C7.2 16.7 3 13.4 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 4.4-4.2 7.7-9 12z'/%3E%3C/svg%3E"); }
+.card .stat.atk i { --ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M13.5 4.5L20 11l-8 8-3-3zM6.5 17.5L4 20l1-3.5M16 8l-8 8'/%3E%3C/svg%3E"); }
+
+/* ===== ⑰ 战斗渲染增强 + 参考图对齐件 ===== */
+.odds-row { display:flex; gap:3px; margin-top:5px; }
+.odds-row i { flex:1; text-align:center; font-size:10px; padding:1px 0; border:1px solid var(--line);
+  color:var(--tx2); font-style:normal; white-space:nowrap; }
+.odds-row i u { font-size:8px; color:var(--tx3); text-decoration:none; margin-left:1px; }
+.odds-row .oc1 { color:var(--c1); } .odds-row .oc2 { color:var(--c2); } .odds-row .oc3 { color:var(--c3); }
+.odds-row .oc4 { color:var(--c4); } .odds-row .oc5 { color:var(--gold-hi); }
+/* 媒体查询内取消透视时同步 --rx（quake 关键帧引用它），并让备战席用压缩格 */
+@media (max-width:880px){
+  #board { --rx:0deg; }
+  :root { --bcell:calc(var(--cell)*.82); }
+  #bench { align-self:stretch; width:auto; }
+}
+@media (orientation:landscape) and (max-height:540px){
+  #board { --rx:0deg; }
+  #bench { grid-template-columns:var(--bcell); grid-template-rows:repeat(8,var(--bcell)); }
+}
+
 </style>
 </head>
 <body>
 <div id="topbar">
-  <span class="tag">回合 <b id="round">1</b><span id="roundMax">/25</span></span>
-  <span class="tag">❤️ <b id="hp">40</b></span>
-  <span class="tag" title="利息：每10金+1，上限5。下回合利息预览见绿色数字">💰 <b id="gold">10</b><span id="interest" style="font-size:11px;color:#8dff9a;margin-left:3px"></span></span>
-  <span class="tag">人口 <b id="pop">0</b>/<b id="popMax">11</b></span>
-  <span class="tag" title="连胜/连败 3→+1金、5→+2金、7+→+3金">🔥 连胜 <b id="streak">0</b></span>
-  <span class="tag" id="curseTag" style="display:none;color:#ff9a9a;border-color:#ff9a9a66;cursor:help"></span>
-  <span class="tag" id="ticketTag" style="cursor:help" title="升星券：把一名 3★ 棋子升为 4★。来源：守关胜利、挑战规则补偿。用法：点击 3★ 棋子 → 详情面板金色按钮">🎫 ×0</span>
+  <span id="roundBox" title="当前回合 / 本章回合数（红色长格为守关 Boss 回合）">
+    <span class="rn"><b id="round">1</b><span class="rm" id="roundMax">/25</span></span>
+    <span id="roundTicks" aria-hidden="true"></span>
+  </span>
+  <span class="res" id="resHp" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 21C7.2 16.7 3 13.4 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 4.4-4.2 7.7-9 12z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="hp">40</span><span class="rl">生命</span></span>
+  <span class="res" id="resGold" title="利息：每10金+1，上限5。下回合利息预览见绿色数字" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/svg%3E&quot;)"><span class="rv" id="gold">10</span><span class="ri" id="interest"></span><span class="rl">金币</span></span>
+  <span class="res" id="resPop" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Ccircle cx='9' cy='8' r='3.2'/%3E%3Cpath d='M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5z'/%3E%3Ccircle cx='17' cy='9' r='2.5'/%3E%3Cpath d='M15.5 14c2.9.3 5.5 2 5.5 5h-4.6z'/%3E%3C/svg%3E&quot;)"><span class="rv"><span id="pop">0</span>/<span id="popMax">11</span></span><span class="rl">人口</span></span>
+  <span class="res" id="resStreak" title="连胜/连败 3→+1金、5→+2金、7+→+3金" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3c.5 3-4 5.5-4 9.5a4 4 0 0 0 8 0C16 9 13 8 12 3z'/%3E%3Cpath d='M12 17.5a2.5 2.5 0 0 1-2.5-2.5c0-1.4 1.2-2.3 2.5-3.8 1.3 1.5 2.5 2.4 2.5 3.8a2.5 2.5 0 0 1-2.5 2.5z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="streak">0</span><span class="rl">连胜</span></span>
+  <span class="tag" id="curseTag" style="display:none;cursor:help"></span>
+  <span class="tag" id="ticketTag" style="cursor:help" title="升星券：把一名 3★ 棋子升为 4★。来源：守关胜利、挑战规则补偿。用法：点击 3★ 棋子 → 详情面板金色按钮">券 ×0</span>
+  <span class="spacer"></span>
   <div class="fight-btn-row">
-    <button class="btn" id="histBtn" title="战绩记录 · 🏅成就（19 项）· 🏆本地排行 · 🌍全球排行">🏆 荣誉殿堂</button>
-    <button class="btn" id="bookBtn">📖 图鉴</button>
-    <button class="btn" id="autoBtn">🤖 托管</button>
-    <button class="btn" id="helpBtn">❓ 玩法</button>
-    <button class="btn" id="resetBtn" title="放弃当前进度，重新开一局">🔄 重开</button>
-    <button class="btn" id="endBtn" style="display:none;background:#5b1e1e;color:#ffb0b0" title="主动结束本局：记入战绩并查看结算（再来一局保持当前模式）">🏁 结束挑战</button>
-    <button class="btn" id="sfxBtn" title="音效开关">🔊</button>
-    <span class="tag" style="display:flex;gap:4px;align-items:center;padding:3px 8px">⏩
+    <button class="btn ic" id="histBtn" title="战绩记录 · 成就 · 本地排行 · 全球排行" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M8 4h8v5a4 4 0 0 1-8 0z'/%3E%3Cpath d='M8 5H5a3 3 0 0 0 3 3M16 5h3a3 3 0 0 1-3 3M12 13v4M8 20h8'/%3E%3C/svg%3E&quot;)">荣誉殿堂</button>
+    <button class="btn ic" id="bookBtn" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2z'/%3E%3Cpath d='M7 19a2 2 0 0 1 2-2h10'/%3E%3C/svg%3E&quot;)">图鉴</button>
+    <button class="btn ic" id="autoBtn" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Crect x='5' y='9' width='14' height='9' rx='1'/%3E%3Cpath d='M12 9V5M9 13h.01M15 13h.01M9 15.5h6'/%3E%3C/svg%3E&quot;)">托管</button>
+    <button class="btn ic" id="helpBtn" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M9.6 9.3a2.4 2.4 0 1 1 3.4 2.2c-.8.4-1 .9-1 1.6M12 16.5h.01'/%3E%3C/svg%3E&quot;)">玩法</button>
+    <button class="btn ic" id="resetBtn" title="放弃当前进度，重新开一局" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3v8'/%3E%3Cpath d='M6.6 6.6a8 8 0 1 0 10.8 0'/%3E%3C/svg%3E&quot;)">重开</button>
+    <button class="btn ic" id="endBtn" style="display:none;--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M5 21V4M5 5h12l-2.5 3.5L17 12H5'/%3E%3C/svg%3E&quot;)" title="主动结束本局：记入战绩并查看结算（再来一局保持当前模式）">结束挑战</button>
+    <button class="btn ic" id="sfxBtn" title="音效开关" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 9v6h3.5L12 19V5L7.5 9z'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7'/%3E%3C/svg%3E&quot;)"></button>
+    <span class="spdwrap">
       <button class="spd-b on" data-s="1">1×</button>
       <button class="spd-b" data-s="1.5">1.5×</button>
       <button class="spd-b" data-s="2">2×</button>
@@ -904,7 +996,9 @@ body.touch .m-only { display:inline-block; }
 </div>
 <div id="main">
   <div id="synCol">
+    <div class="syn-head">羁绊 <span class="en">BONDS</span><span class="sub">12 阵营 · 10 职业</span></div>
     <div id="synAll"></div>
+    <div class="syn-foot" title="打开图鉴查看全部羁绊说明" onclick="document.getElementById('bookBtn').click()">只列出场上已有的羁绊 · 查看全部</div>
   </div>
   <div id="boardwrap">
     <div id="oppBar"><div id="enemyInfo"></div></div>
@@ -914,43 +1008,44 @@ body.touch .m-only { display:inline-block; }
     <div id="bench"></div>
   </div>
   <div id="side">
-    <div class="panel"><h3>⚔🛡💚 战斗统计</h3><div id="statBar"></div></div>
-    <div class="panel" id="equipPanel"><h3>🎒 装备（点装备→点棋子穿戴；右键棋子卸下全部装备）</h3><div id="equip"></div></div>
-    <div class="panel"><h3>🔍 棋子详情（单击棋子查看）</h3><div id="inspect"><div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div></div></div>
+    <div class="panel"><h3>战斗统计</h3><div id="statBar"></div></div>
+    <div class="panel" id="equipPanel"><h3 title="点装备→点棋子穿戴；右键棋子卸下全部装备">装备</h3><div id="equip"></div></div>
+    <div class="panel"><h3 title="单击棋子查看">棋子详情</h3><div id="inspect"><div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div></div></div>
     <div class="panel"><h3>战报</h3><div id="log"></div></div>
   </div>
 </div>
 <div id="shopbar">
   <div id="playerBox">
     <div id="lvlBox">
-      <div class="lvl-row"><span>Lv.<b id="lvlNum">2</b>（人口 <b id="pop2">0</b>/<b id="popMax2">11</b>）</span><span>💰 <b id="gold2">10</b></span></div>
-      <div class="lvl-row" style="margin-bottom:4px"><span id="xpText">经验 0/6</span><span style="color:#8dff9a;font-size:11px" id="interest2">利息 +1</span></div>
+      <div class="lvl-row"><span class="ln">Lv.<b id="lvlNum">2</b><span class="sub">（人口 <b id="pop2">0</b>/<b id="popMax2">11</b>）</span></span><span class="gd"><b id="gold2">10</b></span></div>
+      <div class="lvl-row"><span id="xpText">经验 0/6</span><span class="it" id="interest2">利息 +1</span></div>
       <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
+      <div class="odds-row" id="oddsRow" title="当前商店各费用棋子出现率"></div>
     </div>
     <div id="pbtns">
-      <button class="btn" id="lvlBtn">买经验 (F) +4经验 -5💰</button>
-      <button class="btn" id="deployBtn" title="自动把最强的棋子按职业梯队布阵（R / A 均可触发；每次布阵在多种列阵型间轮换）">⚡ 一键上阵 (R)</button>
-      <button class="btn" id="tidyBtn" title="整理备战席：把棋子按星级与同名聚拢，空位挪到最后（T）">🧹 整理备战席 (T)</button>
-      <button class="btn" id="sellBtn" title="出售：单击棋子后按 E（或 X / Delete）；也可直接把棋子拖到这里或拖到下方商店卡片区松手（1★原价、合成折价；装备卸回装备栏）" style="background:#5b1e1e;color:#ff9a9a;border-color:#ff9a9a;">💸 出售 (E)</button>
+      <button class="btn" id="lvlBtn">买经验 (F)</button>
+      <button class="btn ic" id="deployBtn" title="自动把最强的棋子按职业梯队布阵（R / A 均可触发；每次布阵在多种列阵型间轮换）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Crect x='4' y='13' width='16' height='7'/%3E%3Cpath d='M12 3v8M8.5 7.5L12 4l3.5 3.5'/%3E%3C/svg%3E&quot;)">一键上阵 (R)</button>
+      <button class="btn ic" id="tidyBtn" title="整理备战席：把棋子按星级与同名聚拢，空位挪到最后（T）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 6h16M4 12h10M4 18h6'/%3E%3C/svg%3E&quot;)">整理 (T)</button>
+      <button class="btn ic" id="sellBtn" title="出售：单击棋子后按 E（或 X / Delete）；也可直接把棋子拖到这里或拖到下方商店卡片区松手（1★原价、合成折价；装备卸回装备栏）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M8 12h7M12.5 9.5L15 12l-2.5 2.5'/%3E%3C/svg%3E&quot;)">出售 (E)</button>
     </div>
   </div>
   <div id="shop"></div>
   <div id="shopctlCol">
-    <div id="goldChip" title="当前金币（利息：每10金+1，上限5）">💰 <b id="goldChipN">0</b><span id="goldChipI"></span></div>
-    <button class="btn shopctl" id="refreshBtn" title="刷新商店（D）">🔄 刷新 (D) -2💰</button>
-    <button class="btn shopctl" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）">🔓 锁定 (L)</button>
+    <div id="goldChip" class="ic" title="当前金币（利息：每10金+1，上限5）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/svg%3E&quot;)"><b id="goldChipN">0</b><span id="goldChipI"></span></div>
+    <button class="btn shopctl ic" id="refreshBtn" title="刷新商店（D）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4'/%3E%3C/svg%3E&quot;)">刷新 (D)</button>
+    <button class="btn shopctl ic" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Crect x='6' y='11' width='12' height='9'/%3E%3Cpath d='M9 11V7a3 3 0 0 1 6 0v4'/%3E%3C/svg%3E&quot;)">锁定 (L)</button>
   </div>
   <div id="auxCol">
     <div id="tempBuffBox"></div>
-    <button class="btn shopctl" id="autoFightBtn" title="自动开战：保持当前阵容连续战斗（每场间隔约 2.5 秒；与托管互斥）。章节结算仍需手动选增强">▶ 自动开战</button>
+    <button class="btn shopctl" id="autoFightBtn" title="自动开战：保持当前阵容连续战斗（每场间隔约 2.5 秒；与托管互斥）。章节结算仍需手动选增强">自动开战</button>
   </div>
   <div id="fightBox">
-    <button class="btn" id="fightBtn" style="background:#1e5b2a;color:#8dff9a;border-color:#8dff9a;">⚔ 开战<br>(空格)</button>
+    <button class="btn" id="fightBtn">开战</button>
   </div>
-  <button id="mShopBtn" class="btn m-only">🏪 商店</button>
-  <button id="mBondBtn" class="btn m-only">🔗 羁绊</button>
-  <button id="mEquipBtn" class="btn m-only">🎒 装备</button>
-  <button id="mSideBtn" class="btn m-only">📋 详情</button>
+  <button id="mShopBtn" class="btn m-only">商店</button>
+  <button id="mBondBtn" class="btn m-only">羁绊</button>
+  <button id="mEquipBtn" class="btn m-only">装备</button>
+  <button id="mSideBtn" class="btn m-only">详情</button>
 </div>
 <div id="dragGhost"></div>
 <div id="sellBanner"></div>
@@ -1036,7 +1131,7 @@ body.touch .m-only { display:inline-block; }
     开局 10 金；每回合收入 1→5 金递增（第 5 回合起固定 5）；胜利 +2 金；利息每 10 金 +1（上限 5，挑战规则可改变）；连胜/连败 3/5/7 → +2/+3/+4 金<br>
     刷新商店 2 金；买经验 5 金 +4 经验（每回合自然 +2）；卖棋 1★ 原价、合成折价（<b style="color:#ffd24a">第 1 回合不可买经验</b>）
     <span class="is-h">🏪 商店与卡池</span>
-    5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）；共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费（挑战规则可改变卡槽数）<br>
+    5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）；共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费（挑战规则可改变卡槽数）；🪑 独木桥下人口封 5，满人口后概率改为随回合自动升档（每 5 回合 +1 级）<br>
     卡片速读：左侧<b>色条</b> = 费用；<span style="color:#ffd24a">金边 = 对子</span>（买到即升星）；徽章并列 <span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span>
     <span class="is-h">🔗 羁绊（12 阵营 + 10 职业）</span>
     按<b>不同棋子</b>计数、达标触发 T1/T2；<b style="color:#8dff9a">首次达成每档 +1 金</b>。左侧竖栏看进度，棋子右上角显示所属羁绊图标，完整效果在<b>图鉴 → 🔗羁绊</b>。
@@ -1374,7 +1469,7 @@ const CURSES=[
   {id:'tinyshop', n:'🛒 紧缩货架', d:'商店只出 3 格（原 5 格）', r:'刷新 1 金'},
   {id:'dreamless',n:'💤 无梦',     d:'不能购买经验（人口只靠每回合自然 +2）', r:'每回合收入 +2 金'},
   {id:'fog',      n:'🌫 战争迷雾', d:'备战期看不到敌方阵容预览', r:'临时增益半价'},
-  {id:'solo',     n:'🪑 独木桥',   d:'人口上限 5（我方与敌方同步受限）', r:'开局 +20 金'},
+  {id:'solo',     n:'🪑 独木桥',   d:'人口上限 5（我方与敌方同步受限）；满人口后商店品质随回合自动提升', r:'开局 +20 金'},
   {id:'glass',    n:'🔮 玻璃大炮', d:'我方全体生命 -30%、攻击 +30%', r:'开局 +5 金'},
   {id:'dry',      n:'💧 干涸',     d:'我方全体技能耗蓝 50 → 75（大招更慢）', r:'开局 +10 金'},
   {id:'hardland', n:'⛰ 硬着陆',   d:'敌方全体强度 +15%', r:'每回合收入 +2 金'},
@@ -1395,6 +1490,18 @@ function shopSize(){ return hasCurse('tinyshop') ? 3 : SHOP_SIZE; }   // 🛒 �
 function refreshCost(){ return hasCurse('inflation') ? 3 : (hasCurse('tinyshop') ? 1 : 2); }  // 刷新价格
 function interestCap(){ return hasCurse('inflation') ? 3 : 5; }  // 利息上限
 function lvlCap(){ return hasCurse('solo') ? 5 : 11; }           // 人口上限
+/* 🪑 独木桥：人口封 5 后商店概率失去等级成长，改随回合自动升档补偿——
+   r6 起每 5 回合 +1 级（r6→6级 … r31→11级封顶）。抽卡、顶栏倒计时、升档战报
+   三处必须同源走 soloShopLvl()，不要另写公式。 */
+function soloShopLvl(){ return Math.min(11, 5 + Math.floor((S.round-1)/5)); }
+function soloShopNextR(){ const q=soloShopLvl(); return q>=11 ? 0 : (q-4)*5+1; }   // 下次升档回合号（0=已满）
+/* 升档战报：只在真正跨档的回合说话（与上一回合的同源公式对比，不引入存档字段） */
+function soloQualityNotice(){
+  if(!hasCurse('solo') || S.lvl<lvlCap()) return;
+  const q=soloShopLvl(), qp=Math.min(11, 5+Math.floor((S.round-2)/5));
+  if(q>qp) log(q>=11 ? `🪑 独木桥：商店品质已达最高 — 11 级概率（4费 ${SHOP_ODDS[11][3]}% / 5费 ${SHOP_ODDS[11][4]}%）`
+                     : `🪑 独木桥：商店品质自动提升 → ${q} 级概率（4费 ${SHOP_ODDS[q][3]}% / 5费 ${SHOP_ODDS[q][4]}%）`);
+}
 function tempBuffCost(b){ return hasCurse('fog') ? Math.ceil(b.cost/2) : b.cost; }
 function baseIncome(){ return Math.min(S.round+1,5) + (hasCurse('allin')?3:0) + (hasCurse('hardland')?2:0) + (hasCurse('dreamless')?2:0); }
 function hpMax(){ return hasCurse('bloodpact') ? 25 : 40; }   // 🩸 生命上限（显示与扣血日志共用）
@@ -1654,7 +1761,7 @@ const BOARD_W=8, BOARD_H=8;                 // 8×8 四边形棋盘（每方 32 
 const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节奏更线性）；蓝量全棋子统一 100、开局清零
 /* 升级人口经验表（多多式）：每回合自然 +2 经验，5 金币固定买 4 经验；2 级起步、11 级封顶；第 1 回合仅禁购买经验（自然积累照常升级） */
 /* 经验表（2026-09-19 重校，参考多多官方曲线：低费快起步、6→7 起陡墙）；11 级档 72 为 +8 顺延 */
-const XP_NEED = {1:1, 2:1, 3:2, 4:4, 5:8, 6:32, 7:48, 8:56, 9:64, 10:72};
+const XP_NEED = {1:1, 2:1, 3:3, 4:4, 5:8, 6:32, 7:48, 8:56, 9:64, 10:72};
 function xpNeed(lvl){ return XP_NEED[lvl]||Infinity; }
 function checkLevel(){ let need=xpNeed(S.lvl);
   while(S.lvl<lvlCap() && S.xp>=need){ S.lvl++; S.xp-=need; sfx('pop'); log('⬆ 人口升级至 '+S.lvl+'（回合经验积累）'); need=xpNeed(S.lvl); } }
@@ -1693,6 +1800,7 @@ function newGame(opts){ opts=opts||{};
       log(`　　（左侧羁绊栏与图鉴中会以 ⛔ 标记；编队/商店高亮也会跳过它们）`);
     }
   }
+  if(hasCurse('solo')) log('🪑 独木桥：人口升满 5 后，商店品质随回合自动提升——第 6 回合起每 5 回合 +1 级，第 31 回合升满 11 级（左下品质条有倒计时）');
   if(S.tickets>0) log(`🎫 当前持有升星券 ×${S.tickets}：点击 3★ 棋子，在详情面板升为 4★（顶栏 🎫 可查余量）`);
   prepEnemy();
   rollShop();   // 开局发牌（含第 1 回合保底 1 费）
@@ -1830,7 +1938,7 @@ if(typeof document!=='undefined' && document.addEventListener){
   document.addEventListener('pointerdown',_sfxUnlock,{passive:true});
   document.addEventListener('keydown',_sfxUnlock,{passive:true});
 }
-function paintSfxBtn(){ const b=$('sfxBtn'); if(!b) return; b.textContent=_sfxOn?'🔊':'🔇'; b.title=_sfxOn?'音效：开（点击静音，状态本地保存）':'音效：关（点击开启，状态本地保存）'; b.classList.toggle('on',_sfxOn); }
+function paintSfxBtn(){ const b=$('sfxBtn'); if(!b) return; b.textContent=''; b.title=_sfxOn?'音效：开（点击静音，状态本地保存）':'音效：关（点击开启，状态本地保存）'; b.classList.toggle('on',_sfxOn); }
 function toggleSfx(){ _sfxOn=!_sfxOn; try{ localStorage.setItem('vc_sfx', _sfxOn?'1':'0'); }catch(e){} paintSfxBtn(); }
 function byId(id){ return UNITS.find(u=>u.id===id); }
 /* 经济分类记账（只增字段）：reason 关键词映射到 goldBy 分类，供战报结算块与一局总结使用 */
@@ -1951,7 +2059,8 @@ const SHOP_ODDS = {1:[100,0,0,0,0], 2:[70,30,0,0,0], 3:[60,35,5,0,0], 4:[50,35,1
   5:[40,35,23,2,0], 6:[33,30,30,7,0], 7:[30,30,28,10,2], 8:[23,29,28,16,4],
   9:[18,26,27,22,7], 10:[15,22,25,27,11], 11:[10,18,24,32,16]};
 function drawFromPool(){ // 按等级概率决定费用档，再从卡池余量中抽取
-  const lv=S.lvl;
+  // 🪑 独木桥：人口未满 5 前照常按真实等级（保留前期 1~5 回合的低费节奏），满 5 后概率改随回合升档
+  const lv = hasCurse('solo') ? (S.lvl>=lvlCap() ? soloShopLvl() : S.lvl) : S.lvl;
   const odds = (SHOP_ODDS[lv]||SHOP_ODDS[11]).map(x=>x/100);
   // 主档按概率掷出；缺货时按概率从高到低顺延到其他档位
   const roll=rand(); let acc=0, primary=5;
@@ -2030,7 +2139,7 @@ function unitInner(u){
   const inBattle = u.side===0||u.side===1;
   const mp = inBattle ? (isPassive(u) ? '<span class="sk">被动</span>'
       : `<div class="mpbar"><div class="mpfill" style="width:${m}%"></div></div>`) : '';
-  return `<i class="pt" style="background-image:url(assets/units/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d,u.side)}
+  return `<i class="pt" style="background-image:url(assets/units_big/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d,u.side)}
     <span class="st">${'★'.repeat(u.star)}</span>
     <span class="nm">${d.name}</span>
     ${u.arcs?`<span class="arcs a${Math.min(3,u.arcs)}"></span>`:''}
@@ -2141,7 +2250,7 @@ function paintEquipDrop(clientX, clientY){
 }
 function renderBench(){
   const b=$('bench');
-  b.innerHTML='<span style="grid-column:1/-1;font-size:11px;color:#6b6288;text-align:left;line-height:1.2">备战席</span>';
+  b.innerHTML='<span style="grid-column:1/-1;font-size:11px;color:var(--tx2);letter-spacing:2px;text-align:left;line-height:1.2">备战席</span>';
   for(let i=0;i<BENCH;i++){
     const s=document.createElement('div'); s.className='bslot'; s.dataset.bi=i;
     const u=S.bench[i];
@@ -2150,6 +2259,26 @@ function renderBench(){
     b.appendChild(s);
   }
   paintMoveSel();
+}
+/* 卡面羁绊胶囊：图标+中文名（三羁绊棋子显示全部 3 个，窄卡自动裁切，悬停右栏详情可见完整信息） */
+function traitIcons(u){
+  const ks=[facLabel(u),jobLabel(u)].flatMap(s=>(s||'').split('/')).filter(k=>SYN_IMG[k]).slice(0,3);
+  return ks.map(k=>`<span class="tb" title="${k}"><i class="ti" style="background-image:url(assets/syn/${SYN_IMG[k]}.png)"></i>${k}</span>`).join('');
+}
+/* 悬停商店卡：右栏详情面板实时预览（只读渲染，不改选中/购买状态） */
+function previewShopInspect(u){
+  const d=byId(u.id);
+  $('inspect').innerHTML=`
+    <div class="in-hd"><b>${d.name}</b><span class="in-star">★</span>
+      <img class="in-pt" src="assets/units_big/${d.id}.png" alt=""></div>
+    <div class="in-tag">${facLabel(d)} · ${jobLabel(d)} ｜ ${d.cost} 费</div>
+    <div class="in-row r-hp"><span>生命</span><div class="bar"><i style="width:${Math.min(100,d.hp/1.5)}%"></i></div><b>${d.hp}</b></div>
+    <div class="in-row r-atk"><span>攻击</span><div class="bar"><i style="width:${Math.min(100,d.atk*4)}%"></i></div><b>${d.atk}</b></div>
+    <div class="in-row r-spd"><span>攻速</span><div class="bar"><i style="width:${Math.min(100,d.spd*60)}%"></i></div><b>${d.spd.toFixed(2)}/s</b></div>
+    <div class="in-row r-rng"><span>射程</span><div class="bar"><i style="width:${Math.min(100,d.rng*18)}%"></i></div><b>${d.rng} 格</b></div>
+    <div class="in-row r-plain"><span>护甲</span><b>${d.ar||0}</b><span>魔抗</span><b>${Math.round((d.mr||0)*100)}%</b><span>形式</span><b>${d.form==='me'?'近战':'远程'} · ${d.dtype==='phys'?'物理':'法术'}</b></div>
+    <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
+    <div class="in-desc">${skillDesc(d)}</div>`;
 }
 function renderShop(){
   const s=$('shop'); s.innerHTML='';
@@ -2173,16 +2302,31 @@ function renderShop(){
       (!trig.length && synNames.length) ? '<span class="bd syn">🔗 '+synNames.join('/')+'</span>' : '',
       (isSolo && !owned2 && !owned3) ? '<span class="bd dim">1/3</span>' : '',
     ].filter(Boolean).join('');
-    if(u) c.innerHTML=`<div class="costbar"></div>`+
-      (bds?`<div class="badges">${bds}</div>`:'')+
-      `<div class="cn"><img class="cnpt" src="assets/units/${u.id}.png" alt="">${u.name}</div><div class="cfj">${u.form==='me'?'⚔':'🏹'} ${facLabel(u)}·${jobLabel(u)} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div><div class="ct">${u.hp}❤ ${u.atk}⚔</div><div class="cs">${u.sk[0]}（${u.sk.length>2?'被动':'主动'}）</div><div class="cd" title="${skillText(u)}">${skillDesc(u).replace('被动：','')}</div><div class="cc">💰${u.cost}费</div>`;
+    if(u){
+      c.innerHTML=`<div class="costbar"></div>`+
+        `<div class="cn">${u.name}</div>`+
+        `<div class="art"><img class="cnpt" src="assets/units_big/${u.id}.png" alt="" draggable="false"></div>`+
+        `<div class="tis">${traitIcons(u)}</div>`+
+        `<div class="stb"><span class="stat hp"><i></i>${u.hp}</span><span class="stat atk"><i></i>${u.atk}</span><b class="cc2">${u.cost}</b></div>`+
+        (bds?`<div class="badges">${bds}</div>`:'');
+      c.onmouseenter=()=>previewShopInspect(u);   // 悬停预览：右栏详情面板实时同步
+    }
     c.onclick=()=>buy(i);
     s.appendChild(c);
   });
 }
 function renderTop(){
-  $('round').textContent=(S.daily?'📅 ':'')+(S.endless ? S.round+' ♾' : S.round);
+  $('round').textContent=(S.daily?'每日 ':'')+(S.endless ? S.round+' 无尽' : S.round);
   $('roundMax').textContent = S.endless ? '' : '/'+chLen();   // ⏱ 短章急行：章节周期 25→15
+  { // 章节刻度条：一眼看到「距守关 Boss 还有几回合」；无尽模式按章节周期取模
+    const rt=$('roundTicks');
+    if(rt){
+      const n=chLen(), cur=S.endless ? (S.round-1)%n : S.round-1;
+      if(rt.childElementCount!==n)
+        rt.innerHTML=Array.from({length:n},(_,i)=>`<i${(i+1)%n===0?' class="boss"':''}></i>`).join('');
+      [...rt.children].forEach((el,i)=>el.classList.toggle('on',i<=cur));
+    }
+  }
   $('hp').textContent=S.hp; $('gold').textContent=S.gold;
   const ig=interestGain(), igTip=hasCurse('allin') ? '孤注一掷：存款不产生利息' : `利息：每10金+1，上限${interestCap()}。下回合利息预览见绿色数字`;
   $('interest').textContent = S.phase==='prep' && S.lvl<lvlCap() && ig ? `+${ig}` : '';
@@ -2199,10 +2343,10 @@ function renderTop(){
       if(!list.length){ ct.style.display='none'; }
       else{
         ct.style.display='';
-        ct.textContent='⚠ '+list.map(id=>{const c=CURSES.find(x=>x.id===id);
+        ct.textContent='诅咒 '+list.map(id=>{const c=CURSES.find(x=>x.id===id);
           const nb=BOND_BAN_IDS.includes(id)?bondBanLabel(id):'';
           return (c?c.n:id)+nb;}).join(' · ')
-          +(S.daily?' ｜ 📅 每日':'');
+          +(S.daily?' ｜ 每日':'');
         ct.title='挑战规则生效中：\n'+list.map(id=>{const c=CURSES.find(x=>x.id===id);
           if(!c) return id;
           if(BOND_BAN_IDS.includes(id)&&nbList().length)
@@ -2215,7 +2359,7 @@ function renderTop(){
     const tt=$('ticketTag');
     if(tt){
       const n=S.tickets||0;
-      tt.textContent=`🎫 ×${n}`;
+      tt.textContent=`券 ×${n}`;
       tt.style.opacity = n>0 ? '1' : '.45';
       tt.title = n>0
         ? `持有升星券 ×${n}：点击任意 3★ 棋子，在详情面板点金色按钮升为 4★`
@@ -2227,7 +2371,7 @@ function renderTop(){
   $('pop').textContent=pop; $('popMax').textContent=S.lvl;
   // 人口未上满提醒：备战阶段若场上人数 < 人口上限，高亮人口标签 + 一键上阵按钮脉冲
   const popLazy = S.phase==='prep' && pop<S.lvl && S.bench.some(Boolean);
-  const popTagEl=$('pop').closest('.tag');
+  const popTagEl=$('pop').closest('.res');
   if(popTagEl) popTagEl.classList.toggle('pop-warn', !!popLazy);
   $('deployBtn').classList.toggle('pulse', !!popLazy);
   $('deployBtn').title = popLazy
@@ -2236,25 +2380,46 @@ function renderTop(){
   $('streak').textContent=S.streak;
   const need=xpNeed(S.lvl);
   $('lvlNum').textContent=S.lvl;
-  $('xpText').textContent = S.lvl>=lvlCap() ? '人口已满' : `经验 ${S.xp}/${need}`;
-  $('xpFill').style.width = S.lvl>=lvlCap() ? '100%' : Math.min(100,S.xp/need*100)+'%';
-  $('lvlBtn').textContent = S.lvl>=lvlCap() ? '人口已满'
-    : (hasCurse('dreamless') ? '💤 无梦：不可买经验' : (S.round===1 ? '首回合不可买经验' : (IS_TOUCH?'⬆️ 买经验 -5💰':'买经验 (F) +4经验 -5💰')));
+  const capped = S.lvl>=lvlCap();
+  if(hasCurse('solo') && capped){   // 🪑 独木桥：经验位换成品质升档倒计时（下一次自动升档还差几个回合）
+    const q=soloShopLvl(), nx=soloShopNextR();
+    $('xpText').textContent = `品质 Lv${q}${nx?` · ${nx-S.round}回合后升 Lv${q+1}`:' · 已达最高'}`;
+    $('xpText').title = '独木桥：人口封顶 5，商店各费用档概率改为随回合自动升档（每 5 回合 +1 级）';
+    $('xpFill').style.width = ((q-5)/6*100)+'%';
+    $('lvlBtn').textContent = '人口已满';
+    $('lvlBtn').title = nx ? `人口封顶 5，无法购买经验；商店品质 Lv${q} 将在第 ${nx} 回合自动升到 Lv${q+1}`
+                           : '人口封顶 5，无法购买经验；商店品质已达最高（11 级概率）';
+  } else {
+    $('xpText').textContent = capped ? '人口已满' : `经验 ${S.xp}/${need}`;
+    $('xpText').title = '';
+    $('xpFill').style.width = capped ? '100%' : Math.min(100,S.xp/need*100)+'%';
+    $('lvlBtn').textContent = capped ? '人口已满'
+      : (hasCurse('dreamless') ? '无梦：不可买经验' : (S.round===1 ? '首回合不可买经验' : (IS_TOUCH?'买经验 -5金':'买经验 (F) +4经验 -5金')));
+    $('lvlBtn').title = '';
+  }
   $('lvlBtn').disabled = S.lvl>=lvlCap() || S.round===1 || hasCurse('dreamless') || S.gold<5;
-  $('refreshBtn').textContent = (IS_TOUCH?'🔄 刷新':'🔄 刷新 (D)')+` -${refreshCost()}💰`;   // 价格随诅咒变化（通胀 3 / 紧缩货架 1）
+  { // 各费用出现率（与真实抽卡同源：独木桥封顶时按品质等级）
+    const orow=$('oddsRow');
+    if(orow){
+      const lv=(hasCurse('solo')&&capped)?soloShopLvl():S.lvl;
+      const od=SHOP_ODDS[lv]||SHOP_ODDS[11];
+      orow.innerHTML=[1,2,3,4,5].map(c=>`<i class="oc${c}" title="${c} 费棋子出现率">${od[c]??0}<u>%</u></i>`).join('');
+    }
+  }
+  $('refreshBtn').textContent = (IS_TOUCH?'刷新':'刷新 (D)')+` -${refreshCost()}金`;   // 价格随诅咒变化（通胀 3 / 紧缩货架 1）
   $('refreshBtn').disabled = S.gold<refreshCost();
   // 出售按钮：选中棋子后解锁，并预览回购价（多多式：1★原价、合成折价）
   const sel = S.selUid!=null ? findUnit(S.selUid) : null;
   if(sel){
     const u=getAt(sel[0],sel[1]);
-    $('sellBtn').textContent=IS_TOUCH?`💸 出售 +${sellRefund(u)}💰`:`💸 出售 +${sellRefund(u)}💰 (E)`;
+    $('sellBtn').textContent=IS_TOUCH?`出售 +${sellRefund(u)}金`:`出售 +${sellRefund(u)}金 (E)`;
     $('sellBtn').disabled=false;
   } else {
-    $('sellBtn').textContent=IS_TOUCH?'💸 出售':'💸 出售 (E)';
+    $('sellBtn').textContent=IS_TOUCH?'出售':'出售 (E)';
     $('sellBtn').disabled=true;
   }
   const c = compForRound(S.round);
-  $('lockBtn').textContent=S.lock?(IS_TOUCH?'🔒 已锁定':'🔒 已锁定 (L)'):(IS_TOUCH?'🔓 锁定':'🔓 锁定 (L)');
+  $('lockBtn').textContent=S.lock?(IS_TOUCH?'已锁定':'已锁定 (L)'):(IS_TOUCH?'锁定':'锁定 (L)');
   $('lockBtn').classList.toggle('on',!!S.lock);
   $('endBtn').style.display = (S.phase==='prep') ? 'inline-block' : 'none';   // 所有模式备战期都可主动收兵
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
@@ -2331,7 +2496,7 @@ function renderTempBuffs(){
     const owned=S.tempBuff===b.id;
     const cost=tempBuffCost(b);
     const dis=!prep || (S.tempBuff&&!owned) || S.gold<cost;
-    return `<button class="btn tb${owned?' on':''}" ${dis?'disabled':''} title="${b.desc}（每回合限购 1 个）" onclick="buyTempBuff('${b.id}')">${b.e}${b.short} ${cost}💰${owned?'✓':''}</button>`;
+    return `<button class="btn tb${owned?' on':''}" ${dis?'disabled':''} title="${b.desc}（每回合限购 1 个）" onclick="buyTempBuff('${b.id}')">${b.short} ${cost}金${owned?' ✓':''}</button>`;
   }).join('');
 }
 /* ⚡ 一键装备：自动合成背包里能凑成的成品 → 把装备按「输出给主C、防御给前排」分配给场上棋子
@@ -2415,10 +2580,10 @@ function renderEquip(){
         u.items.map((k,idx)=>`<span class="in-item-chip worn" data-ii="${idx}" title="拖到下面背包栏卸下；点按也可直接卸下">${ITEMS[k].e} ${ITEMS[k].n} ✕</span>`).join('')+`</div>`;
     }
   }
-  if(!S.items.length){ e.innerHTML=wornHtml+'<span style="color:#6b6288;font-size:12px">暂无装备，战斗胜利后掉落</span>'; bindWornChips(); return; }
+  if(!S.items.length){ e.innerHTML=wornHtml+'<span style="color:#8f88b0;font-size:12px">暂无装备，战斗胜利后掉落</span>'; bindWornChips(); return; }
   // ⚡ 一键装备：自动合成 + 按「输出给主C、防御给前排」穿戴
   const autoBtn=`<div class="auto-equip-row"><button class="btn" id="autoEquipBtn" title="自动合成背包内的成品，并把装备分配给场上棋子：输出装给主C、防御装给前排（备战期可用）"
-    onclick="autoEquipAll()">⚡ 一键装备（${S.items.length} 件）</button><span style="font-size:10px;color:#6b6288">输出→主C · 防御→前排</span></div>`;
+    onclick="autoEquipAll()">⚡ 一键装备（${S.items.length} 件）</button><span style="font-size:10px;color:#8f88b0">输出→主C · 防御→前排</span></div>`;
   // 可合成预览：背包内两件基础装凑成配方时给出合成入口（未定义配方的组合不强凑，保持独立佩戴）
   const pairs=[];
   for(let i=0;i<S.items.length;i++) for(let j=i+1;j<S.items.length;j++){
@@ -2427,7 +2592,7 @@ function renderEquip(){
   }
   // 神器升阶：任意 3 件成品 → 1 件神器（选样式；从背包成品中熔铸）
   const craftN=S.items.filter(k=>ITEMS[k].crafted).length;
-  const artiHtml=`<div class="arti-box"><div class="arti-hd">⚒ 神器升阶 <span style="color:#6b6288;font-size:10px">（背包成品 ${craftN}/3 · 任意 3 件熔铸 1 件）</span></div>`+
+  const artiHtml=`<div class="arti-box"><div class="arti-hd">⚒ 神器升阶 <span style="color:#8f88b0;font-size:10px">（背包成品 ${craftN}/3 · 任意 3 件熔铸 1 件）</span></div>`+
     ARTIFACTS.map(k=>{ const it=ITEMS[k]; const dis=S.phase!=='prep'||craftN<3;
       return `<div class="arti-card" title="${it.desc}"><b>${it.e} ${it.n}</b><div class="ad2">${it.desc}</div><button class="btn" style="padding:1px 8px;font-size:11px" ${dis?'disabled':''} onclick="forgeArtifact('${k}')">⚒ 升阶</button></div>`; }).join('')+`</div>`;
   e.innerHTML=autoBtn+wornHtml+artiHtml+pairs.slice(0,3).map(p=>
@@ -2452,7 +2617,23 @@ function renderEquip(){
     e.appendChild(c);
   });
 }
-function renderAll(){ window.__S=S; renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); saveGame(); }
+function renderAll(){ window.__S=S; renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); saveGame(); fitBoardCell(); }
+/* ===== 棋盘自适应：实测中央区剩余宽高写入 --cell（桌面端替代 CSS 魔法数公式；竖屏/横屏仍走媒体查询） ===== */
+function fitBoardCell(){
+  if(typeof matchMedia!=='function' || typeof document.body.style?.setProperty!=='function') return;   // sim 无头桩环境：跳过
+  const wide=matchMedia('(min-width:881px)').matches && !matchMedia('(orientation:landscape) and (max-height:540px)').matches;
+  if(!wide){ document.body.style.removeProperty('--cell'); return; }   // 竖屏/横屏：清内联值，走 CSS 公式
+  const main=$('main'); if(!main) return;
+  const syn=$('synCol'), side=$('side');
+  const synW=(syn&&syn.offsetParent!==null)?syn.offsetWidth:0;
+  const sideW=(side&&side.offsetParent!==null)?side.offsetWidth:0;
+  const wAv=main.clientWidth-20-synW-sideW-32;    // 20=main 左右 padding，32=两处栏间距
+  const hAv=main.clientHeight-16;                 // 16=main 上下 padding
+  /* 高度约束：棋盘(14+8c) + 间距8 + 备战席(0.82c+29) ⇒ c=(hAv-51)/8.82；宽度约束：棋盘(14+8c) ⇒ c=(wAv-14)/8 */
+  const c=Math.max(40,Math.min(104,(wAv-14)/8,(hAv-62)/8.85));
+  document.body.style.setProperty('--cell',c.toFixed(1)+'px');
+}
+window.addEventListener('resize',()=>{ fitBoardCell(); if(window.__S) renderBoard(); });
 
 /* ================= 交互：点击选择流 ================= */
 function benchClick(i){ clickUnit('bench', i); }
@@ -2574,7 +2755,7 @@ function paintMoveSel(){
     for(let i=BOARD_W*BOARD_H/2;i<BOARD_W*BOARD_H;i++) if(cells[i]) cells[i].classList.add('mv-hl');
   }
   document.querySelectorAll('#bench .bslot').forEach(s=>s.classList.add('mv-hl'));
-  if(hint){ hint.textContent='📌 已选中，点目标格移动/换位（点原棋子取消）'; hint.style.display='block';
+  if(hint){ hint.textContent='已选中，点目标格移动/换位（点原棋子取消）'; hint.style.display='block';
     try{ hint.style.bottom=(($('shopbar')&&$('shopbar').offsetHeight||90)+10)+'px'; }catch(e){} }
 }
 /* ===== 棋子详情面板 ===== */
@@ -2583,16 +2764,18 @@ function showInspect(u){
   const d=byId(u.id);
   const itemChips=(u.items&&u.items.length)
     ? u.items.map((k,idx)=>`<span class="in-item-chip" data-ii="${idx}" title="${ITEMS[k].n}（${ITEMS[k].desc}）：拖到下方装备栏卸下；点按也可卸下">${ITEMS[k].e} ${ITEMS[k].n}</span>`).join('')
-    : '<span style="color:#6b6288">无</span>';
+    : '<span style="color:#8f88b0">无</span>';
   $('inspect').innerHTML=`
     <div class="in-hd"><b>${d.name}</b><span class="in-star">${'★'.repeat(u.star)}</span>
-      <img class="in-pt" src="assets/units/${d.id}.png" alt="">
+      <img class="in-pt" src="assets/units_big/${d.id}.png" alt="">
       <span class="in-close" title="关闭" onclick="hideInspect()">✕</span></div>
     <div class="in-tag">${facLabel(d)} · ${jobLabel(d)} ｜ ${d.cost} 费</div>
-    <div class="in-row"><span>生命</span><b>${u.maxhp}</b><span>攻击</span><b>${u.atk}</b></div>
-    <div class="in-row"><span>护甲</span><b>${d.ar||0}</b><span>魔抗</span><b>${Math.round((d.mr||0)*100)}%</b></div>
-    <div class="in-row"><span>射程</span><b>${d.rng} 格</b><span>攻速</span><b>${d.spd.toFixed(2)}/s</b></div>
-    <div class="in-row"><span>形式</span><b>${d.form==='me'?'近战':'远程'}·${d.dtype==='phys'?'物理':'法术'}</b><span>出售</span><b>${sellRefund(u)}💰</b></div>
+    <div class="in-row r-hp"><span>生命</span><div class="bar"><i style="width:${Math.min(100,u.maxhp/1.5)}%"></i></div><b>${u.maxhp}</b></div>
+    <div class="in-row r-atk"><span>攻击</span><div class="bar"><i style="width:${Math.min(100,u.atk*4)}%"></i></div><b>${u.atk}</b></div>
+    <div class="in-row r-spd"><span>攻速</span><div class="bar"><i style="width:${Math.min(100,d.spd*60)}%"></i></div><b>${d.spd.toFixed(2)}/s</b></div>
+    <div class="in-row r-rng"><span>射程</span><div class="bar"><i style="width:${Math.min(100,d.rng*18)}%"></i></div><b>${d.rng} 格</b></div>
+    <div class="in-row r-plain"><span>护甲</span><b>${d.ar||0}</b><span>魔抗</span><b>${Math.round((d.mr||0)*100)}%</b><span>出售</span><b>${sellRefund(u)}金</b></div>
+    <div class="in-row r-plain"><span>形式</span><b>${d.form==='me'?'近战':'远程'} · ${d.dtype==='phys'?'物理':'法术'}</b></div>
     ${(svOf(d.id).p&&svOf(d.id).p.critPct)?`<div class="in-row"><span>专属暴击</span><b>${Math.round(svOf(d.id).p.critPct*100)}%</b><span>暴伤</span><b>${svOf(d.id).p.critMul}×</b></div>
     <div class="in-tag" style="font-size:10px;color:#8a93c4">叠加规则：与刺客羁绊/装备暴击率相加（封顶 60%），暴伤取最大</div>`:''}
     <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
@@ -2619,13 +2802,15 @@ function showEnemyInspect(u){   // 敌方棋子详情（无出售按钮；数值
   $('inspect').innerHTML=`
     <div class="in-hd"><b>${d.name}</b><span class="in-star">${'★'.repeat(u.star||1)}</span>
       <span class="in-tag" style="margin-left:6px;color:#ff9a9a">敌方</span>
-      <img class="in-pt" src="assets/units/${d.id}.png" alt="">
+      <img class="in-pt" src="assets/units_big/${d.id}.png" alt="">
       <span class="in-close" title="关闭" onclick="hideInspect()">✕</span></div>
     <div class="in-tag">${facLabel(d)} · ${jobLabel(d)} ｜ ${d.cost} 费</div>
-    <div class="in-row"><span>生命</span><b>${u.maxhp}</b><span>攻击</span><b>${u.atk}</b></div>
-    <div class="in-row"><span>护甲</span><b>${d.ar||0}</b><span>魔抗</span><b>${Math.round((d.mr||0)*100)}%</b></div>
-    <div class="in-row"><span>射程</span><b>${d.rng} 格</b><span>攻速</span><b>${d.spd.toFixed(2)}/s</b></div>
-    <div class="in-row"><span>形式</span><b>${d.form==='me'?'近战':'远程'}·${d.dtype==='phys'?'物理':'法术'}</b><span>站位</span><b>${d.job==='刺客'?'切后排':(d.form==='me'?'前排':'后排')}</b></div>
+    <div class="in-row r-hp"><span>生命</span><div class="bar"><i style="width:${Math.min(100,u.maxhp/1.5)}%"></i></div><b>${u.maxhp}</b></div>
+    <div class="in-row r-atk"><span>攻击</span><div class="bar"><i style="width:${Math.min(100,u.atk*4)}%"></i></div><b>${u.atk}</b></div>
+    <div class="in-row r-spd"><span>攻速</span><div class="bar"><i style="width:${Math.min(100,d.spd*60)}%"></i></div><b>${d.spd.toFixed(2)}/s</b></div>
+    <div class="in-row r-rng"><span>射程</span><div class="bar"><i style="width:${Math.min(100,d.rng*18)}%"></i></div><b>${d.rng} 格</b></div>
+    <div class="in-row r-plain"><span>护甲</span><b>${d.ar||0}</b><span>魔抗</span><b>${Math.round((d.mr||0)*100)}%</b><span>站位</span><b>${d.job==='刺客'?'切后排':(d.form==='me'?'前排':'后排')}</b></div>
+    <div class="in-row r-plain"><span>形式</span><b>${d.form==='me'?'近战':'远程'} · ${d.dtype==='phys'?'物理':'法术'}</b></div>
     <div class="in-sk">✦ ${d.sk[0]}（${d.sk.length>2?'被动':'主动'}）</div>
     <div class="in-desc">${skillDesc(u)}</div>`;
   S.inspectUid=null;
@@ -2792,7 +2977,7 @@ document.addEventListener('pointermove', e=>{
     if(inShop){
       const su=getAt(drag.t,drag.i);
       if(su){
-        bn.textContent=`🗑 松手出售 +${sellRefund(su)}💰`;
+        bn.textContent=`松手出售 +${sellRefund(su)}金`;
         bn.style.display='block';
         const r=shopEl.getBoundingClientRect();
         bn.style.left=Math.max(8, Math.min(innerWidth-210, r.left+r.width/2-90))+'px';
@@ -2947,7 +3132,7 @@ $('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<refreshCost())return; 
 /* 商店锁定：下回合自动刷新时保留当前货架 */
 $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
   log(S.lock?'🔒 商店已锁定（仅保留到下回合，之后自动解锁）':'🔓 商店已解锁');
-  $('lockBtn').textContent=S.lock?(IS_TOUCH?'🔒 已锁定':'🔒 已锁定 (L)'):(IS_TOUCH?'🔓 锁定':'🔓 锁定 (L)');
+  $('lockBtn').textContent=S.lock?(IS_TOUCH?'已锁定':'已锁定 (L)'):(IS_TOUCH?'锁定':'锁定 (L)');
   $('lockBtn').classList.toggle('on',S.lock); renderTop(); };
 /* 一键上阵：按战力选主力，坦克前排居中、远程后排，快速完成布阵 */
 /* 队伍羁绊评分：已达成档位大分 + 朝下一档的进度小分（同名棋子按 1 个计，与战斗结算一致） */
@@ -3681,7 +3866,6 @@ function startBattle(){
           const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
           if(ael){ ael.classList.add('dashing'); setTimeout(()=>ael.classList.remove('dashing'), 450/SPEED); }
           u.cd=500;   // 落地小硬直，随后立即投入战斗
-          u.assassinCrit=true;   // 切入后的第一次攻击触发暴击（补足孤军深入的脆皮刺客）
         }
         // 找不到可落位目标就不跳，照常走位
       }
@@ -3708,11 +3892,7 @@ function startBattle(){
           const slow = u.slowT>0 ? u.slowA : 0;
           let dmg = Math.round(eatk(u)*(u.rapid>0?2:1));
           if(u.rapid>0)u.rapid--;
-          if(u.assassinCrit){   // 刺客切入首击暴击 ×1.5（仅一次）
-            dmg=Math.round(dmg*ASSASSIN_CRIT_MULT); u.assassinCrit=false;
-            dmgPopup(u,tgt,'⚡暴击×'+ASSASSIN_CRIT_MULT,'crit'); vfxAt(tgt,'crit',500);
-            fxSparks(tgt,'#c77dff',4,30); boardQuake();
-          } else if(u.crit>0 && rand()<u.crit){   // 常驻暴击：刺客羁绊（紫）/ 专属与装备（金）
+          if(u.crit>0 && rand()<u.crit){   // 常驻暴击：刺客羁绊（紫）/ 专属与装备（金）
             const cm=u.critM||ASSASSIN_CRIT_MULT;
             dmg=Math.round(dmg*cm);
             dmgPopup(u,tgt,'⚡暴击×'+cm,'crit'); vfxAt(tgt, u.ownCrit?'crit gold':'crit', 500);
@@ -3721,13 +3901,13 @@ function startBattle(){
             if(window.__critN!=null) window.__critN++;   // DBG：暴击计数
           }
           // 攻击表现：远程弹道 / 近战斩击 + 突进动作
-          const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
-          if(ael){
-            const g0=boardGeo(), ddx=tgt.x-u.x, ddy=tgt.y-u.y, L=Math.hypot(ddx,ddy)||1, kk=0.24*g0.cw;
-            ael.style.setProperty('--lx',(ddx/L*kk)+'px'); ael.style.setProperty('--ly',(ddy/L*kk)+'px');
-            ael.classList.remove('lunge'); void ael.offsetWidth; ael.classList.add('lunge');
-            setTimeout(()=>ael.classList.remove('lunge'),300/SPEED);
-          }
+            const ael=document.querySelector(`#unitLayer [data-uid="${u.uid}"]`);
+            if(ael){
+              const g0=boardGeo(), ddx=tgt.x-u.x, ddy=tgt.y-u.y, L=Math.hypot(ddx,ddy)||1, kk=0.24*g0.cw;
+              ael.style.setProperty('--lx',(ddx/L*kk)+'px'); ael.style.setProperty('--ly',(ddy/L*kk)+'px');
+              ael.classList.remove('lunge'); void ael.offsetWidth; ael.classList.add('lunge');
+              setTimeout(()=>ael.classList.remove('lunge'),300/SPEED);
+            }
           if(d.form==='rg') fireProjectile(u,tgt, d.dtype==='phys'?'#ffd24a':'#c77dff');
           else hitFx(u,tgt,d.dtype);
           // 闪避（刀塔精灵式）：仅对普攻生效，命中判定失败则本次普攻落空
@@ -4689,8 +4869,8 @@ function chapterSettle(won){
   renderSettle();
   ovMode='chapter'; hideOvClose();
   const b1=$('ovBtn'), b2=$('ovBtn2');
-  b1.textContent='▶ 继续下一章（先选增强）'; b1.disabled=true; b1.style.display='inline-block'; b1.onclick=chapterContinue;
-  b2.textContent='🏁 结束挑战'; b2.disabled=false; b2.style.display='inline-block'; b2.onclick=chapterStop;
+  b1.textContent='继续下一章（先选增强）'; b1.disabled=true; b1.style.display='inline-block'; b1.onclick=chapterContinue;
+  b2.textContent='结束挑战'; b2.disabled=false; b2.style.display='inline-block'; b2.onclick=chapterStop;
   $('overlay').classList.remove('hidden');
   if(S.auto) setTimeout(autoSettle, 1500);
 }
@@ -4735,6 +4915,7 @@ function chapterContinue(){
   $('overlay').classList.add('hidden'); ovMode='start';
   renderAll(); $('fightBtn').disabled=false;
   log(`— 第 ${S.round} 回合备战阶段（第 ${Math.ceil(S.round/chLen())} 章）—`);
+  soloQualityNotice();   // 🪑 独木桥：跨档回合播报品质提升
   autoPilot();
   scheduleAutoFight();   // 玩家选完增强后，自动开战继续循环
 }
@@ -4856,6 +5037,7 @@ function endBattle(alive0,alive1){
   renderAll();
   $('fightBtn').disabled=false;
   log(`— 第 ${S.round} 回合备战阶段 —${S.endless?'（♾ 无限模式）':''}`);
+  soloQualityNotice();   // 🪑 独木桥：跨档回合播报品质提升
   autoPilot();   // 托管开启时：自动运营后开战
   scheduleAutoFight();   // 自动开战：停顿后用当前阵容再开一场
   if(S.round%5===0){   // 野怪回合提醒
@@ -4909,6 +5091,7 @@ function enterEndless(){
   $('fightBtn').disabled=false;
   rollShop(); renderAll();
   log('♾ 进入无限模式：从第 26 回合开始，敌方将无限变强！');
+  soloQualityNotice();   // 🪑 独木桥：跨档回合播报品质提升
   autoPilot();
 }
 function endRunCleanup(){   // 终局统一收尾：托管/自动开战关闭（下一局默认手动），UI 同步
@@ -5061,7 +5244,7 @@ function renderBook(){
       ${passive?`<div class="bp">${skillDesc(u)}</div>`:''}
       <div class="bp" style="color:#a99cd0">${u.hp}❤ ${u.atk}⚔ 射程 ${u.rng} 格</div>
     </div>`;
-  }).join('') || '<div style="color:#6b6288;padding:20px">没有符合条件的棋子</div>';
+  }).join('') || '<div style="color:#8f88b0;padding:20px">没有符合条件的棋子</div>';
 }
 $('bookFilters').addEventListener('click', e=>{
   const c=e.target.closest('.bf-chip'); if(!c) return;
@@ -5182,7 +5365,7 @@ async function renderGlobalBoard(){
       const kills=parseInt(x.kills,10)||0, curses=parseInt(x.curses,10)||0;
       return `<div class="hrow"><span class="lb-rk">${i+1}</span><span>${String(x.name||'?').replace(/[<>&]/g,'')}</span><span>${showCh?(isFinite(ch)?ch+' 章 · ':''):''}第 ${round} 回合</span><span>击杀 ${kills}${curses?` · ⚠×${curses}`:''}</span></div>`; };
     const sec=(t,list,showCh)=>`<div style="margin-bottom:10px"><div style="color:#ffd24a;font-size:12px;margin-bottom:4px">${t}</div>`+
-      (list&&list.length? list.slice(0,15).map((x,i)=>row(x,i,showCh)).join('') : '<div style="color:#6b6288;font-size:12px">暂无记录，点下方「🔄 刷新排名」试试</div>')+'</div>';
+      (list&&list.length? list.slice(0,15).map((x,i)=>row(x,i,showCh)).join('') : '<div style="color:#8f88b0;font-size:12px">暂无记录，点下方「🔄 刷新排名」试试</div>')+'</div>';
     el.innerHTML= sec('📅 每日榜 · 今日（种子 '+seed+'）', dn.list, false) + sec('🏆 普通榜 · 最远章节', nj.list, true)
       +`<div style="text-align:center"><button class="btn" id="lbRefreshBtn" style="padding:4px 14px;font-size:12px;border-color:#4aa8ff66;color:#9dd3e8" onclick="renderGlobalBoard()">🔄 刷新排名</button></div>`;
     /* 数据库读写分离存在秒级同步延迟：刚提交的成绩可能还没出现在榜上，明确告知避免误解 */
@@ -5195,7 +5378,7 @@ async function renderGlobalBoard(){
       }
     }catch(e){}
   }catch(e){
-    el.innerHTML='<div style="color:#6b6288;padding:12px;text-align:center">🌍 全球排行暂不可用（离线或服务未响应）</div>';
+    el.innerHTML='<div style="color:#8f88b0;padding:12px;text-align:center">🌍 全球排行暂不可用（离线或服务未响应）</div>';
   }
 }
 function renderHistory(){
@@ -5205,16 +5388,16 @@ function renderHistory(){
     return `<div class="hrow"><span>${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</span>
       <span>${x.win?'🏅 胜利':'💀 失败'}${x.endless?'（无尽）':''}${x.daily?' 📅':''}${x.curses?` ⚠×${x.curses}`:''}${rankedHist(x)?'':' 🚫不计榜'}</span>
       <span>第 ${x.round} 回合${x.ch>1?` · ${x.ch} 章`:''} · ❤${x.hp} · 最高连胜${x.maxStreak} · 击杀${x.kills}</span></div>`;
-  }).join('') : '<div style="color:#6b6288;padding:14px;text-align:center">暂无历史对局</div>';
+  }).join('') : '<div style="color:#8f88b0;padding:14px;text-align:center">暂无历史对局</div>';
 }
 function lineupIcons(ids){ return (ids||[]).map(id=>`<img class="lb-pt" src="assets/units/${id}.png" alt="" onerror="this.style.display='none'">`).join(''); }
 function renderLeaderboard(){
   let h=[]; try{ h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){}
-  if(!h.length){ $('histList').innerHTML='<div style="color:#6b6288;padding:14px;text-align:center">暂无记录——先打完一局</div>'; return; }
+  if(!h.length){ $('histList').innerHTML='<div style="color:#8f88b0;padding:14px;text-align:center">暂无记录——先打完一局</div>'; return; }
   const rows=[...h].filter(rankedHist).sort((a,b)=> (b.ch||1)-(a.ch||1) || b.round-a.round || (b.kills||0)-(a.kills||0));   // 自定义诅咒局不入榜
   const today=h.filter(x=>x.daily && x.dseed===todaySeed());
   const best=today.length? Math.max(...today.map(x=>x.round)) : 0;
-  const note=`<div style="color:#6b6288;font-size:11px;margin-top:8px">※ 自定义诅咒局不计入排行（自选诅咒自带补偿，成绩不具可比性）——它们仍完整保留在「📜 战绩记录」页</div>`;
+  const note=`<div style="color:#8f88b0;font-size:11px;margin-top:8px">※ 自定义诅咒局不计入排行（自选诅咒自带补偿，成绩不具可比性）——它们仍完整保留在「📜 战绩记录」页</div>`;
   $('histList').innerHTML=(best?`<div style="color:#9dd3e8;font-size:12px;margin-bottom:6px">📅 今日每日挑战最佳：第 ${best} 回合（种子 ${todaySeed()}，挑战码 DC-${todaySeed()}-${best}）</div>`:'')+
     (rows.length? rows.slice(0,20).map((x,i)=>{
     const d=new Date(x.ts), p=n=>String(n).padStart(2,'0');
@@ -5222,7 +5405,7 @@ function renderLeaderboard(){
       <span>${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</span>
       <span>${x.daily?'📅 ':''}${x.ch||1} 章 · 第 ${x.round} 回合${x.curses?` · ⚠诅咒×${x.curses}`:''}</span>
       <span class="lb-team">${lineupIcons(x.lineup)}</span></div>`;
-  }).join('') : '<div style="color:#6b6288;font-size:12px;padding:8px">排行榜只收录普通模式与每日挑战的成绩</div>')+note;
+  }).join('') : '<div style="color:#8f88b0;font-size:12px;padding:8px">排行榜只收录普通模式与每日挑战的成绩</div>')+note;
 }
 function renderAchv(){
   const got=achvGet();
@@ -5344,8 +5527,10 @@ let autoBusy=false;   // 必须声明在 initApp 之前：initApp → newGame �
     if(d && typeof d.round==='number') resumeAvail={label:`▶ 继续每日挑战（第 ${d.round} 回合）`, key:DAILY_KEY};
     else if(n && typeof n.round==='number') resumeAvail={label:`▶ 继续上一局（第 ${n.round} 回合）`, key:SAVE_KEY};
   }catch(e){}
-  /* 桌面端：敌方阵容横幅挪到左侧羁绊栏顶部；触屏保持原位（竖屏仍显示在棋盘上方） */
-  if(!IS_TOUCH){ try{ $('synCol').insertBefore($('oppBar'), $('synCol').firstChild); }catch(e){} }
+  /* 敌方阵容横幅保持原位（棋盘正上方、与棋盘同宽），左栏顶部让给「羁绊 BONDS」标题 */
+  /* 桌面端：敌方阵容横幅放进左栏（羁绊标题之下、列表之上），棋盘上方让位放大棋盘 */
+  if(!IS_TOUCH){ try{ $('synCol').insertBefore($('oppBar'), $('synAll')); }catch(e){} }
+  fitBoardCell();
   newGame(); renderAll();   // 背景先渲染一局（选择模式后真正开新局覆盖）
   showIntro(false);
 })();
