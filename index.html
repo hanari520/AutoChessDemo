@@ -31,9 +31,13 @@
   --c1:#9a9484; --c2:#7fb069; --c3:#5b9fd8; --c4:#a678d8; --c5:#e0a94e;
   --cell:min(104px, calc((100vh - 370px)/9), calc((100vw - 580px)/8)); --gap:2px; --pad:7px; --spd:1;
   /* 桌面端此公式仅为 JS 失效时的兜底：fitBoard() 会按中央区实测宽高覆盖 --cell */
-  --bcell:calc(var(--cell)*.82);   /* 备战席格：棋盘格的 82% */
   --cut:7px;   /* 按钮切角尺寸 */
 }
+/* --bcell 必须挂在 body 上按 body 的 --cell 派生：自定义属性在声明元素处解析，
+   若挂在 :root 会永远按上面的桌面兜底公式取值——手机上 (100vw-580px)/8 为负，
+   备战席 8 列全塌成 0 宽（棋盘因媒体查询/JS 在 body 上覆盖 --cell 而幸免）；
+   桌面上则不跟随 fitBoardCell() 的实测格，比例失真。 */
+body { --bcell:calc(var(--cell)*.82); }   /* 备战席格：棋盘格的 82% */
 
 /* ===== ② 基础 / 舞台底 ===== */
 body { background:
@@ -820,7 +824,8 @@ body.touch .m-only { display:inline-block; }
     --cell:min(56px, calc((100vw - 44px)/8), calc((100dvh - 360px)/8)); }
   #boardwrap { perspective:none; }
   #board { transform:none; }
-  #main { flex-direction:column; align-items:center; overflow-y:auto; padding:6px; padding-bottom:16px; gap:8px; }
+  #main { flex-direction:column; align-items:center; justify-content:flex-start; overflow-y:auto; padding:6px; padding-bottom:16px; gap:8px; }
+  /* justify-content:flex-start 必须显式重置：继承桌面的 center 会在内容超高时把棋盘顶出滚动原点上方（永远滚不回来） */
   #boardwrap { order:0; }
   #synCol { order:1; width:min(96vw,520px); flex-direction:row; flex-wrap:wrap; gap:2px; }
   #synCol .syn-head { display:none; }
@@ -845,7 +850,7 @@ body.touch .m-only { display:inline-block; }
   #fightBox .btn { padding:10px 16px; font-size:15px; }
   #goldChip { display:none !important; }   /* ⑯ 增量块在其后重设 display，此处需 !important 压住 */
   #playerBox { order:3; flex-basis:100%; width:auto; gap:4px; }
-  #lvlBox { display:flex; align-items:center; gap:8px; padding:3px 8px; }
+  #lvlBox { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:3px 8px; }
   #lvlBox .lvl-row { margin:0; white-space:nowrap; font-size:11px; }
   #lvlBox .xpbar { flex:1; height:5px; min-width:40px; }
   #pbtns { grid-template-columns:repeat(4,1fr); gap:5px; }
@@ -879,7 +884,8 @@ body.touch .m-only { display:inline-block; }
     --cell:min(44px, calc((100vw - 330px)/9), calc((100dvh - 150px)/9)); }
   #boardwrap { perspective:none; }
   #board { transform:none; }
-  #main { flex-direction:row; justify-content:center; padding:4px; gap:8px; overflow:hidden; }
+  #main { flex-direction:row; justify-content:center; align-items:flex-start; padding:4px; gap:8px; overflow:hidden; }
+  /* align-items:flex-start：内容偶尔超高时从顶部裁切，而不是上下两端同时裁（棋盘顶行不可见） */
   #boardwrap { flex-direction:row; align-items:flex-start; gap:6px; }
   #bench > span { display:none; }
   #oppBar { display:none; }
@@ -955,10 +961,9 @@ body.touch .m-only { display:inline-block; }
 .odds-row i u { font-size:8px; color:var(--tx3); text-decoration:none; margin-left:1px; }
 .odds-row .oc1 { color:var(--c1); } .odds-row .oc2 { color:var(--c2); } .odds-row .oc3 { color:var(--c3); }
 .odds-row .oc4 { color:var(--c4); } .odds-row .oc5 { color:var(--gold-hi); }
-/* 媒体查询内取消透视时同步 --rx（quake 关键帧引用它），并让备战席用压缩格 */
+/* 媒体查询内取消透视时同步 --rx（quake 关键帧引用它）；--bcell 已统一由 body 基础规则派生 */
 @media (max-width:880px){
   #board { --rx:0deg; }
-  :root { --bcell:calc(var(--cell)*.82); }
   #bench { align-self:stretch; width:auto; }
 }
 @media (orientation:landscape) and (max-height:540px){
