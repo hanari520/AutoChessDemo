@@ -1,6 +1,6 @@
 # 虚拟棋战 · VirtuaReal 自走棋 Demo
 
-多多自走棋式单机自动战斗 Web 游戏（VirtuaReal + P-SP 46 位主播主题），单文件 `index.html`，无构建、无依赖。
+虚拟偶像主题单机闯关自走棋（VirtuaReal + P-SP 角色阵容）。游戏规则与战斗仍由 `index.html` 驱动；界面皮肤、舞台演出和施法表现拆分在 `tools/idol-ui.css`、`tools/idol-redesign.css`、`tools/idol-ui.js` 与 `tools/idol-ui-redesign.js`，无需构建或安装依赖。
 
 ## 本地游玩
 

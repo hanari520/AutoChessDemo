@@ -1,6 +1,6 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v14';   // v14：独木桥提前升档（满人口后可花金币买品质档，排班到点自动追平）
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './tools/bot_strategy.js'];
+const CACHE = 'vcache-v17';   // v17：虚拟偶像全界面改版与角色演出
+const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js', './tools/idol-ui.css?v=1', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=1', './tools/idol-ui-redesign.js?v=1', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

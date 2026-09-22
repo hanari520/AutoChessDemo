@@ -3,22 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#14110d">
+<meta name="theme-color" content="#eaf3ff">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
+<link rel="icon" href="assets/ui/star-stage-icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>虚拟棋战 VirtuaReal Auto Chess</title>
+<title>星域棋战 · VirtuaReal 虚拟偶像自走棋</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
 /* ============================================================================
-   虚拟棋战 · 视觉世界「黑金棋馆」（2026-09-21 重设计，依据 taste-skill + impeccable）
-   Design Read：Operate 模式夜间竞技场 HUD · 暖炭黑舞台 + 焰金贵价色 + 玉/赤对抗色
-   拨盘：VARIANCE 5 / MOTION 4 / DENSITY 7
-   三种形状各司其职：面板=直角+金脊+角饰；按钮=切角铭牌；格子=4px 小圆角
-   分节：①令牌 ②基础/舞台底 ③浏览器表面 ④顶栏 ⑤面板与按钮 ⑥左栏羁绊
-        ⑦棋盘场地 ⑧棋子(引擎层迁移) ⑨商店 ⑩右栏 ⑪弹窗 ⑫战斗特效(引擎迁移)
-        ⑬触屏/抽屉 ⑭移动端 ⑮无障碍
+   旧版基础样式保留游戏布局与交互结构；当前虚拟偶像浅色主题由 tools/idol-redesign.css 统一覆盖。
+   分节：①令牌 ②舞台底 ③浏览器表面 ④顶栏 ⑤面板与按钮 ⑥羁绊
+        ⑦棋盘 ⑧棋子 ⑨商店 ⑩战斗信息 ⑪弹窗 ⑫移动端与触屏
    ============================================================================ */
 
 /* ===== ① 设计令牌 ===== */
@@ -972,6 +969,8 @@ body.touch .m-only { display:inline-block; }
 }
 
 </style>
+<link rel="stylesheet" href="tools/idol-ui.css?v=1">
+<link rel="stylesheet" href="tools/idol-redesign.css?v=1">
 </head>
 <body>
 <div id="topbar">
@@ -2185,6 +2184,11 @@ function unitInner(u){
     ${mp}
     ${inBattle?`<div class="hpbar"><div class="hpfill" style="width:${Math.max(0,w)}%"></div></div>`:''}`;
 }
+function heroHue(id){
+  let h=0x811c9dc5;
+  for(const ch of String(id||'idol')) h=Math.imul(h^ch.charCodeAt(0),0x01000193);
+  return (h>>>0)%360;
+}
 function unitHTML(u,sel){
   const d=byId(u.id);
   const sideCls = u.side===1?'enemy':u.side===0?'ally':'';
@@ -2193,7 +2197,7 @@ function unitHTML(u,sel){
   if(u.star===1){ const n=pairCount(u.id); pairCls = n>=2?'pair':(n===1?'solo':''); }
   const tip = `${d.name} · ${u.star?'★'.repeat(u.star)+' ':''}${facLabel(d)}·${jobLabel(d)}\n攻击方式：${d.form==='me'?'近战':'远程'} · ${d.dtype==='phys'?'物理':'法术'}伤害\n${d.sk[0]}（${isPassive(u)?'被动':'主动'}）\n${skillText(u)}`
     + ((u.items&&u.items.length)?`\n装备：${u.items.map(k=>ITEMS[k].n+'（'+ITEMS[k].desc+'）').join('、')}`:'');
-  return `<div class="unit cost${d.cost} ${sideCls} ${stCls} ${pairCls} ${sel?'sel':''} ${u.shield>0?'shielded':''} ${u.frozen>0?'frozen':''}" data-uid="${u.uid}" title="${tip}">${unitInner(u)}</div>`;
+  return `<div class="unit cost${d.cost} ${sideCls} ${stCls} ${pairCls} ${sel?'sel':''} ${u.shield>0?'shielded':''} ${u.frozen>0?'frozen':''}" data-uid="${u.uid}" data-unit-id="${d.id}" data-archetype="${d.sk[1]}" style="--hero-hue:${heroHue(d.id)}" title="${tip}">${unitInner(u)}</div>`;
 }
 /* 首局欢迎指引：第 1 回合备战且棋盘为空时显示（放上棋子/开战即消失） */
 function renderBoard(){
@@ -5280,7 +5284,7 @@ function renderBook(){
   $('bookGrid').innerHTML=list.map(u=>{
     const passive=u.sk.length>2;
     return `<div class="bcard" style="border-left-color:${COST_BORDER[u.cost]}">
-      <div class="bn"><span><img class="bnpt" src="assets/units/${u.id}.png" alt="">${u.name}</span><span class="bc">💰${u.cost}</span></div>
+      <div class="bn"><span><img class="bnpt" src="assets/units_big/${u.id}.png" alt="">${u.name}</span><span class="bc">💰${u.cost}</span></div>
       <div class="bf2">${facLabel(u)} · ${jobLabel(u)} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div>
       ${(SKILL_VAR[u.id]&&SKILL_VAR[u.id].p&&SKILL_VAR[u.id].p.critPct)?`<div class="bp" style="color:#ffd24a">⚡ 专属暴击 ${Math.round(SKILL_VAR[u.id].p.critPct*100)}% · 暴伤 ${SKILL_VAR[u.id].p.critMul}×（与刺客羁绊/装备相加封顶 60%，暴伤取最大）</div>`:''}
       <div class="bs">${u.sk[0]}（${passive?'被动':'主动'}）${passive?'':skillDesc(u)}</div>
@@ -5544,7 +5548,10 @@ function fitBoard(){
   if(innerWidth>880){ st.transform=''; st.marginBottom=''; return; }   // 桌面端：只清除，不二次缩放
   const landscape = innerWidth>innerHeight;
   const reserved = ($('shopbar').offsetHeight||0) + (landscape?16:24);
-  const availW = landscape ? innerWidth-440 : innerWidth-8;   // --cell 公式已保证 12px 内边距内放得下，此处只兜底
+  const main=$('main')||w.parentElement;
+  const siblingW=main?[...main.children].filter(el=>el!==w&&getComputedStyle(el).display!=='none').reduce((sum,el)=>sum+el.offsetWidth,0):0;
+  // 横屏按主区域中实际可见的兄弟栏扣宽；已移入抽屉的侧栏不应再固定占位。
+  const availW = landscape ? Math.max(0,(main?.clientWidth||innerWidth)-siblingW-12) : innerWidth-8;
   const availH = innerHeight - reserved - (landscape?0:6);
   const s = Math.max(0.35, Math.min(1, availW/w.offsetWidth, availH/w.offsetHeight));
   st.transformOrigin='top center';
@@ -5664,5 +5671,7 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
 };
 </script>
 <script src="tools/bot_strategy.js?v=4"></script>
+<script src="tools/idol-ui.js?v=1"></script>
+<script src="tools/idol-ui-redesign.js?v=1"></script>
 </body>
 </html>

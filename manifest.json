@@ -1,14 +1,15 @@
 {
-  "name": "虚拟棋战 VirtuaReal Auto Chess",
-  "short_name": "虚拟棋战",
-  "description": "VirtuaReal 主题自走棋网页游戏",
+  "name": "星域棋战 · VirtuaReal 虚拟偶像自走棋",
+  "short_name": "星域棋战",
+  "description": "VirtuaReal 虚拟偶像主题单人闯关自走棋",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#12101c",
-  "theme_color": "#1c1830",
+  "background_color": "#eaf3ff",
+  "theme_color": "#eaf3ff",
   "icons": [
+    { "src": "assets/ui/star-stage-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }

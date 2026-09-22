@@ -1,0 +1,28 @@
+# UI improvement review
+
+## Scope
+
+Refresh the complete presentation layer for the existing single-player auto-battler. Keep run progression, economy, unit stats, synergies, shop behavior, and battle resolution intact while making the game feel like a bright virtual-idol concert arena.
+
+## Findings and changes
+
+- **High — the old dark, metal-heavy palette conflicted with the virtual-idol cast.** Replaced the visible interface with a light sky-blue, mint, lilac, and pink stage palette, translucent panels, clear resource chips, and a generated concert-arena backdrop.
+- **High — the board needed a stronger stage presence.** Reorganized play into a three-column desktop view, added a raised perspective board and separate bench, and gave the shop and battle action a clear bottom-row hierarchy.
+- **High — characters were too small to carry their identity.** Kept the existing individual hero portrait assets in the shop, unit book, and inspect panel. Added a hero-specific hue and a short signature-skill cue using the matching portrait and skill glyph.
+- **Medium — the mobile start screen could exceed the viewport.** Made the mode cards stack on narrow screens and constrained the start card to the viewport width. Checked the result at a 390 × 844 emulated viewport.
+- **High — the bench could overlap the shop in short landscape windows.** Compact the header and shop cards, place the eight bench slots beside the board, size the board to the remaining height, and scale touch layouts against the actual main-area width.
+- **Medium — icon-only controls needed accessible names.** Added title and `aria-label` fallbacks to the top-bar icon buttons, plus a reduced-motion rule for the new animations.
+- **Medium — app identity did not match the refreshed game.** Updated the title, browser theme color, install manifest, stage icon, and offline cache version to “星域棋战”.
+
+## Positive observations
+
+- The project already contains 50 individual large hero portraits and 16 skill-effect textures, so the redesigned screens can show distinct performers without substituting generic character art.
+- The existing game is a single-page app with no build step. The presentation layer is split into dedicated CSS and JavaScript files, while the engine and run rules remain in `index.html`.
+- The current board, shop, bonds, player stats, inspect panels, history, and unit book remain available in the single-player flow.
+
+## Verification
+
+- Reviewed the start screen at desktop and 390 × 844 emulated mobile sizes.
+- Started a new run in a local browser and reviewed the battle preparation screen at 1440 × 900.
+- Checked board, bench, and shop separation at 1305 × 318 and 740 × 360 landscape sizes; the bench stays above the shop in both layouts.
+- No automated test suite or build step is configured for this project.
