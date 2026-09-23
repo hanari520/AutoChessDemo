@@ -1041,7 +1041,7 @@ body.touch .m-only { display:inline-block; }
 
 </style>
 <link rel="stylesheet" href="tools/idol-ui.css?v=2">
-<link rel="stylesheet" href="tools/idol-redesign.css?v=2">
+<link rel="stylesheet" href="tools/idol-redesign.css?v=3">
 </head>
 <body>
 <div id="topbar">
@@ -1697,6 +1697,19 @@ function applyV3Attack(u,tgt,p,units,dealt,dmg){
   }
   if(u.tempoHits>0){u.tempoHits--;const near=v3NearestFoes(tgt,units.filter(v=>v.hp>0&&v.side!==u.side),2,2);
     near.forEach(v=>dealDamage(u,v,Math.round(eatk(u)*.42),units,'magic'));if(near.length)dmgPopup(u,near[0],'♥心拍','cast');}
+  u.itemAttackCount=(u.itemAttackCount||0)+1;
+  if(u.itemFirstSnare){u.itemFirstSnare=false;tgt.slowA=Math.max(tgt.slowA||0,.20);tgt.slowT=Math.max(tgt.slowT||0,1200);vfxAt(tgt,'leaves',500);dmgPopup(u,tgt,'🍃先机','cast');}
+  if(u.itemEdgePips){
+    const every=u.itemEdgePips>1?3:4;
+    if(u.itemAttackCount%every===0){
+      const edge=Math.max(1,Math.round(eatk(u)*.28));dealDamage(u,tgt,edge,units,'pure');
+      const near=v3NearestFoes(tgt,units.filter(v=>v.hp>0&&v.side!==u.side&&v!==tgt),1,1)[0];
+      if(near)dealDamage(u,near,Math.max(1,Math.round(edge*.45)),units,'pure');
+      vfxAt(tgt,'tex-slash ring',500);dmgPopup(u,tgt,'✦裂星','cast');
+    }
+  }
+  if(u.itemStormStun&&u.itemAttackCount%3===0&&tgt.hp>0){tgt.stun=Math.max(tgt.stun||0,450);vfxAt(tgt,'ring',420);dmgPopup(u,tgt,'⛈震荡','cast');}
+  if(u.itemPoisonPct&&tgt.hp>0){tgt.poisonT=Math.max(tgt.poisonT||0,3000);tgt.poisonDmg=Math.max(tgt.poisonDmg||0,Math.round(tgt.maxhp*u.itemPoisonPct));dmgPopup(u,tgt,'☠蚀羽','cast');}
 }
 function castV3Skill(u,units,skMul,k){
   if(!u||u.hp<=0)return;
@@ -1792,35 +1805,43 @@ function castV3Skill(u,units,skMul,k){
   if(mark){const offense=hitList.find(f=>f&&f.hp>0);if(offense)placeSigMark(offense,u,mark,false);else placeSigMark(u,u,mark,true);}
   u._casting=false;u._skillArch=null;
 }
-/* 装备：6 件基础装（野怪掉落池）+ 13 件合成成品（两件基础装 → 一件成品，TFT 式）。
-   成品效果 = 两件基础效果并集 + 一条专属新效果（战斗生效见 makeBattleUnit 的 ITEM_FX 表）。
+/* 装备：6 件基础装（野怪掉落池）+ 21 条双件配方 + 4 件路线终点神器。
+   成品保留组件机制，并增加专属词条；数值和触发配置分别见 ITEM_FX / ITEM_SPECIAL。
    crafted 标记：成品只来自合成，绝不进入野怪掉落池（掉落件数/频率不变）。 */
 const ITEMS = {
-  sword:{n:'屠龙大剑', e:'🗡', desc:'+40% 攻击'},
-  staff:{n:'秘法权杖', e:'🪄', desc:'+25% 攻击'},
-  armor:{n:'骑士板甲', e:'🛡', desc:'+30% 生命'},
-  bow:  {n:'疾风反曲弓',e:'🏹', desc:'+35% 攻速'},
-  vamp: {n:'饮血魔剑', e:'🩸', desc:'攻击吸血 20%'},
-  mana: {n:'潮汐法螺', e:'🔮', desc:'攻击/受击回蓝效率 +100%'},
+  sword:{n:'裂星刃', e:'🗡', role:'attack', desc:'+40% 攻击', trait:'破锋：每第 4 次普攻追加真实伤害'},
+  staff:{n:'回响法典', e:'📘', role:'magic', desc:'+25% 攻击', trait:'奥能：技能命中留下易伤印记'},
+  armor:{n:'晨辉胸甲', e:'🛡', role:'guard', desc:'+30% 生命', trait:'护幕：开战时获得最大生命护盾'},
+  bow:  {n:'逐风弓', e:'🏹', role:'attack', desc:'+35% 攻速', trait:'先机：首次普攻令目标减速'},
+  vamp: {n:'猩红獠牙', e:'🩸', role:'attack', desc:'攻击吸血 20%', trait:'收割：击杀回复法力'},
+  mana: {n:'潮汐法螺', e:'🔮', role:'magic', desc:'攻击/受击回蓝效率 +100%', trait:'共鸣：施法为低法力队友充能'},
   /* —— 合成成品 —— */
-  flamejudge:{n:'炽焰裁决剑', e:'⚡', crafted:1, from:['sword','sword'], desc:'+80% 攻击 · 20% 暴击（暴伤 2.5×）'},
-  galehunt:  {n:'疾风猎杀',   e:'🌪', crafted:1, from:['sword','bow'],   desc:'+25% 攻击 · +35% 攻速'},
-  soulblade: {n:'饮魂战刃',   e:'💀', crafted:1, from:['sword','vamp'],  desc:'+40% 攻击 · 吸血 20% · 击杀回复 15% 生命'},
-  sagestaff: {n:'贤者遗杖',   e:'📜', crafted:1, from:['staff','staff'], desc:'+50% 攻击 · 技能伤害 +18%'},
-  hexdrinker:{n:'噬魔之拥',   e:'🪄', crafted:1, from:['staff','vamp'],  desc:'+25% 攻击 · 技能伤害 15% 吸血'},
-  tidejewel: {n:'蓝玉潮涌',   e:'💠', crafted:1, from:['staff','mana'],  desc:'+25% 攻击 · 开局 +20 蓝'},
-  aegis:     {n:'不朽圣盾',   e:'🛡', crafted:1, from:['armor','armor'], desc:'+45% 生命 · 每 3 秒获得 8% 生命护盾'},
-  bramble:   {n:'荆棘反甲',   e:'🌵', crafted:1, from:['armor','vamp'],  desc:'+30% 生命 · 受击反弹 4% 最大生命'},
-  windmail:  {n:'灵风甲胄',   e:'🍃', crafted:1, from:['armor','bow'],   desc:'+30% 生命 · +35% 攻速 · 闪避 12%'},
-  twinbows:  {n:'旋风连弩',   e:'🎯', crafted:1, from:['bow','bow'],     desc:'+70% 攻速 · 普攻 25% 概率弹射'},
-  swiftecho: {n:'迅影回响',   e:'💠', crafted:1, from:['bow','mana'],    desc:'+35% 攻速 · 每秒回 3 蓝'},
-  bloodcore: {n:'血魔之心',   e:'❤', crafted:1, from:['vamp','vamp'],   desc:'吸血 35% · 技能伤害 15% 吸血'},
-  twinshell: {n:'双生海螺',   e:'🐚', crafted:1, from:['mana','mana'],   desc:'攻击/受击回蓝效率 +200%'},
+  flamejudge:{n:'炽焰裁决', e:'⚡', role:'attack', crafted:1, from:['sword','sword'], desc:'+80% 攻击 · 20% 暴击（暴伤 2.5×）', trait:'处决：暴击撕开破绽，队友下一击增伤'},
+  galehunt:  {n:'疾风猎杀', e:'🌪', role:'attack', crafted:1, from:['sword','bow'], desc:'+25% 攻击 · +35% 攻速', trait:'追猎：击杀后攻速提升，可叠 3 层'},
+  soulblade: {n:'饮魂战刃', e:'💀', role:'attack', crafted:1, from:['sword','vamp'], desc:'+40% 攻击 · 吸血 20% · 击杀回复 15% 生命', trait:'噬魂：击杀后额外获得护盾'},
+  sagestaff: {n:'贤者遗杖', e:'📜', role:'magic', crafted:1, from:['staff','staff'], desc:'+50% 攻击 · 技能伤害 +18%', trait:'庇佑：每次施法为自身与低血队友加盾'},
+  hexdrinker:{n:'噬魔之拥', e:'🪄', role:'magic', crafted:1, from:['staff','vamp'], desc:'+25% 攻击 · 技能伤害 15% 吸血', trait:'噬蓝：技能命中削减敌方法力'},
+   tidejewel: {n:'蓝玉潮涌', e:'💠', role:'magic', crafted:1, from:['staff','mana'], desc:'+25% 攻击 · 开局 +20 蓝', trait:'潮汐：施法后压低最近敌人魔抗'},
+  aegis:     {n:'不朽圣盾', e:'🛡', role:'guard', crafted:1, from:['armor','armor'], desc:'+45% 生命 · 每 3 秒获得 8% 生命护盾', trait:'不屈：开战先得护盾，随后周期再生'},
+  bramble:   {n:'荆棘反甲', e:'🌵', role:'guard', crafted:1, from:['armor','vamp'], desc:'+30% 生命 · 受击反弹 4% 最大生命', trait:'荆棘：反弹伤害并为反击者施加减速'},
+  windmail:  {n:'灵风甲胄', e:'🍃', role:'guard', crafted:1, from:['armor','bow'], desc:'+30% 生命 · +35% 攻速 · 闪避 12%', trait:'卸力：闪避后下一次攻击强化'},
+  twinbows:  {n:'旋风连弩', e:'🎯', role:'attack', crafted:1, from:['bow','bow'], desc:'+70% 攻速 · 普攻 25% 概率弹射', trait:'连射：弹射命中会继续传导少量伤害'},
+  swiftecho: {n:'迅影回响', e:'💠', role:'magic', crafted:1, from:['bow','mana'], desc:'+35% 攻速 · 每秒回 3 蓝', trait:'蓄势：施法后下一箭强化'},
+  bloodcore: {n:'血魔之心', e:'❤', role:'attack', crafted:1, from:['vamp','vamp'], desc:'吸血 35% · 技能伤害 15% 吸血', trait:'溢血：过量吸血转化为护盾'},
+   twinshell: {n:'双生海螺', e:'🐚', role:'magic', crafted:1, from:['mana','mana'], desc:'攻击/受击回蓝效率 +200%', trait:'潮声：施法为低蓝队友充能并为全队加盾'},
+  spellblade:{n:'星咏剑', e:'🗡', role:'attack', crafted:1, from:['sword','staff'], desc:'+65% 攻击 · 技能伤害 +12%', trait:'咏刃：奥能印记被引爆时为持有者加盾'},
+  stormbreaker:{n:'雷鸣壁垒', e:'⛈', role:'guard', crafted:1, from:['sword','armor'], desc:'+40% 攻击 · +30% 生命', trait:'震荡：每第 3 次普攻短暂眩晕目标'},
+   soulstring:{n:'灵魂弦刃', e:'🎼', role:'attack', crafted:1, from:['sword','mana'], desc:'+40% 攻击 · 回蓝效率 +100%', trait:'蓄弦：施法后下一击强化并溅射'},
+  runeguard:{n:'秘文壁垒', e:'🔷', role:'guard', crafted:1, from:['staff','armor'], desc:'+25% 攻击 · +30% 生命', trait:'符盾：技能命中印记被引爆时为队友加盾'},
+   astralbow:{n:'星轨长弓', e:'🌌', role:'attack', crafted:1, from:['staff','bow'], desc:'+25% 攻击 · +35% 攻速', trait:'折光：施法后下一箭额外弹射一道星矢'},
+  bastioncoil:{n:'堡垒线圈', e:'🌀', role:'guard', crafted:1, from:['armor','mana'], desc:'+30% 生命 · 回蓝效率 +100%', trait:'过载：护盾破裂时立刻回蓝'},
+  venomshot:{n:'毒羽连弩', e:'☠️', role:'attack', crafted:1, from:['bow','vamp'], desc:'+35% 攻速 · 攻击吸血 20%', trait:'蚀羽：普攻施加持续毒伤'},
+  stormfang:{n:'风暴獠牙', e:'🌩', role:'attack', crafted:1, from:['vamp','mana'], desc:'攻击吸血 20% · 回蓝效率 +100%', trait:'回流：过量吸血凝成护盾'},
   /* —— 神器（3 件成品升阶熔铸，仅 forgeArtifact 获得；占 1 个装备格）—— */
-  godblade: {n:'弑神之刃', e:'⚔', arti:1, desc:'+120% 攻击 · 技能伤害 +25% · 吸血 20% · 15% 暴击'},
-  godarmor: {n:'不灭圣铠', e:'🛡', arti:1, desc:'+90% 生命 · 护甲 +18 · 每 3 秒 10% 生命盾 · 荆棘 6%'},
-  godbow:   {n:'苍穹之弓', e:'🏹', arti:1, desc:'+100% 攻速 · 普攻 40% 弹射 · 闪避 15%'},
-  godorb:   {n:'湮灭宝珠', e:'🔮', arti:1, desc:'开局 +30 蓝 · 回蓝效率 +200% · 技能伤害 +30% · 技能冷却 -25%'},
+  godblade: {n:'弑神之刃', e:'⚔', role:'attack', arti:1, desc:'+120% 攻击 · 技能伤害 +25% · 吸血 20% · 15% 暴击', trait:'神罚：暴击破防；击杀后立即准备下一次技能'},
+  godarmor: {n:'不灭圣铠', e:'🛡', role:'guard', arti:1, desc:'+90% 生命 · 护甲 +18 · 每 3 秒 10% 生命盾 · 荆棘 6%', trait:'不灭：开战护盾；友军倒下时最低血队友获盾'},
+  godbow:   {n:'苍穹之弓', e:'🏹', role:'attack', arti:1, desc:'+100% 攻速 · 普攻 40% 弹射 · 闪避 15%', trait:'星矢：每次施法为下一轮射击蓄力并穿透'},
+  godorb:   {n:'湮灭宝珠', e:'🔮', role:'magic', arti:1, desc:'开局 +30 蓝 · 回蓝效率 +200% · 技能伤害 +30% · 技能冷却 -25%', trait:'湮灭：施法后撕裂最近敌人的魔抗并向队友传能'},
 };
 /* 神器清单（升阶 UI 与判定用） */
 const ARTIFACTS=['godblade','godarmor','godbow','godorb'];
@@ -2043,12 +2064,12 @@ function dailyInfoHTML(){
   return `<b style="color:#9dd3e8">📅 每日挑战</b>：当日种子 <b>${todaySeed()}</b>——所有玩家拿到相同的商店、敌方与增强序列，比谁推得远；失败可重开（同种子同起点）。今日预置挑战规则：${c?c.n+'（'+c.d+' → '+c.r+'）':'无'}`;
 }
 function dailyCodeHTML(){ return `<div style="margin-top:8px;color:#9dd3e8">📅 每日挑战 · 种子 ${S.dseed||todaySeed()} · 挑战码 <b>DC-${S.dseed||todaySeed()}-${S.round}</b>（报给朋友即可对比同一种子下的进度）</div>`; }
-/* 合成配方表：'a|b'（字典序）→ 成品 key。未列出的组合（如 bow+vamp）不开放合成，按原效果独立佩戴 */
+/* 合成配方表：'a|b'（字典序）→ 成品 key。六种基础装的 21 种双件组合均有固定路线。 */
 const COMBOS={};
 Object.keys(ITEMS).forEach(k=>{ const f=ITEMS[k].from; if(f) COMBOS[[...f].sort().join('|')]=k; });
 function comboKey(a,b){ return [a,b].sort().join('|'); }
 /* 输出/防御装备分类（bot 穿戴决策用；成品按其攻向归类） */
-function isDmgItem(k){ return ['sword','staff','bow','vamp','flamejudge','galehunt','soulblade','sagestaff','hexdrinker','tidejewel','twinbows','swiftecho','bloodcore','godblade','godbow','godorb'].includes(k); }
+function isDmgItem(k){ return ITEMS[k]?.role!=='guard'; }
 function comboOf(a,b){ return COMBOS[comboKey(a,b)]||null; }
 /* 背包内合成一对基础装（i/j 为 S.items 下标）；返回成品 key 或 null */
 function combineBagPair(i,j){
@@ -2993,51 +3014,46 @@ function autoEquipAll(){
 }
 function renderEquip(){
   const e=$('equip');
-  // 身上装备条：当前查看的棋子（抽屉化后详情/背包不同屏，装备抽屉里也保留拖卸/点卸入口）
-  let wornHtml='';
-  if(S.inspectUid!=null){
-    const p=findUnit(S.inspectUid);
-    const u=p?getAt(p[0],p[1]):null;
-    if(u&&u.items&&u.items.length){
-      wornHtml=`<div class="worn-strip"><b>身上装备（${byId(u.id).name}）：</b>`+
-        u.items.map((k,idx)=>`<span class="in-item-chip worn" data-ii="${idx}" title="拖到下面背包栏卸下；点按也可直接卸下">${ITEMS[k].e} ${ITEMS[k].n} ✕</span>`).join('')+`</div>`;
-    }
-  }
-  if(!S.items.length){ e.innerHTML=wornHtml+'<span style="color:#8f88b0;font-size:12px">暂无装备，战斗胜利后掉落</span>'; bindWornChips(); return; }
-  // ⚡ 一键装备：自动合成 + 按「输出给主C、防御给前排」穿戴
-  const autoBtn=`<div class="auto-equip-row"><button class="btn" id="autoEquipBtn" title="自动合成背包内的成品，并把装备分配给场上棋子：输出装给主C、防御装给前排（备战期可用）"
-    onclick="autoEquipAll()">⚡ 一键装备（${S.items.length} 件）</button><span style="font-size:10px;color:#8f88b0">输出→主C · 防御→前排</span></div>`;
-  // 可合成预览：背包内两件基础装凑成配方时给出合成入口（未定义配方的组合不强凑，保持独立佩戴）
+  const p=S.inspectUid!=null?findUnit(S.inspectUid):null;
+  const u=p?getAt(p[0],p[1]):null;
+  const worn=u&&u.items||[];
+  const wornHtml=`<section class="gear-worn"><div class="gear-section-head"><div><span class="gear-kicker">CURRENT LOADOUT</span><b>${u?byId(u.id).name+' · 已穿戴':'棋子装备栏'}</b></div><small>${worn.length}/${maxEquip()} 格</small></div>`+
+    (worn.length?`<div class="gear-worn-items">${worn.map((k,idx)=>`<span class="in-item-chip worn" data-ii="${idx}" title="${ITEMS[k].desc}；${ITEMS[k].trait||''}。备战期点按卸下，或拖到背包卸下">${ITEMS[k].e} ${ITEMS[k].n} <i>×</i></span>`).join('')}</div>`:
+      `<div class="gear-worn-empty">${u?'选中的棋子还没有装备':'点选棋子查看穿戴情况，也可把装备直接拖到棋子上'}</div>`)+`</section>`;
   const pairs=[];
-  for(let i=0;i<S.items.length;i++) for(let j=i+1;j<S.items.length;j++){
-    const prod=comboOf(S.items[i],S.items[j]);
-    if(prod) pairs.push({i,j,prod,a:S.items[i],b:S.items[j]});
+  for(let i=0;i<S.items.length;i++)for(let j=i+1;j<S.items.length;j++){
+    const prod=comboOf(S.items[i],S.items[j]);if(prod)pairs.push({i,j,prod,a:S.items[i],b:S.items[j]});
   }
-  // 神器升阶：任意 3 件成品 → 1 件神器（选样式；从背包成品中熔铸）
   const craftN=S.items.filter(k=>ITEMS[k].crafted).length;
-  const artiHtml=`<div class="arti-box"><div class="arti-hd">⚒ 神器升阶 <span style="color:#8f88b0;font-size:10px">（背包成品 ${craftN}/3 · 任意 3 件熔铸 1 件）</span></div>`+
-    ARTIFACTS.map(k=>{ const it=ITEMS[k]; const dis=S.phase!=='prep'||craftN<3;
-      return `<div class="arti-card" title="${it.desc}"><b>${it.e} ${it.n}</b><div class="ad2">${it.desc}</div><button class="btn" style="padding:1px 8px;font-size:11px" ${dis?'disabled':''} onclick="forgeArtifact('${k}')">⚒ 升阶</button></div>`; }).join('')+`</div>`;
-  e.innerHTML=autoBtn+wornHtml+artiHtml+pairs.slice(0,3).map(p=>
-    `<div class="combo-row" title="合成预览：${ITEMS[p.a].n} + ${ITEMS[p.b].n} → ${ITEMS[p.prod].n}（${ITEMS[p.prod].desc}）">⛓ ${ITEMS[p.a].e}+${ITEMS[p.b].e}→${ITEMS[p.prod].e}${ITEMS[p.prod].n}
-      <button class="btn" style="padding:1px 8px;font-size:11px;margin-left:4px" onclick="combineBagPair(${p.i},${p.j})">合成</button></div>`).join('');
+  const itemRoute=k=>{const it=ITEMS[k],from=it.from||[];return `<div class="gear-route"><span class="gear-route-icons">${from.length?from.map(x=>ITEMS[x].e).join(' + '):'✦'}</span><b>${it.e} ${it.n}</b><small>${it.desc}</small><em>${it.trait||''}</em></div>`;};
+  const artifactHtml=`<section class="gear-forge"><div class="gear-section-head"><div><span class="gear-kicker">ARTIFACT FORGE</span><b>神器熔铸</b></div><small>成品 ${craftN}/3</small></div><p>消耗背包内任意 3 件成品，熔铸为一件神器。</p><div class="gear-artifacts">${ARTIFACTS.map(k=>{const it=ITEMS[k],dis=S.phase!=='prep'||craftN<3;
+    return `<article class="gear-artifact-card"><b>${it.e} ${it.n}</b><small>${it.desc}</small><em>${it.trait}</em><button class="btn" ${dis?'disabled':''} onclick="forgeArtifact('${k}')">熔铸神器</button></article>`;}).join('')}</div></section>`;
+  const routeBook=Object.keys(ITEMS).filter(k=>ITEMS[k].crafted);
+  const routeBookHtml=`<details class="gear-routebook"><summary>查看全部 ${routeBook.length} 条合成路线</summary><div class="gear-route-grid">${routeBook.map(itemRoute).join('')}</div></details>`;
+  const autoDisabled=S.phase!=='prep'||!S.items.length;
+  e.innerHTML=`<div class="gear-workshop">
+    <header class="gear-hero"><div><span class="gear-kicker">FIELD ARMORY · 21 RECIPES</span><h3>装备工坊</h3><p>组件会继承到成品，成品再带来一条独有战斗机制。</p></div>
+      <button class="btn gear-auto" id="autoEquipBtn" ${autoDisabled?'disabled':''} title="自动合成可用配方，再按主C与前排分配装备" onclick="autoEquipAll()">⚡ 一键整理</button></header>
+    ${wornHtml}
+    <section class="gear-bag"><div class="gear-section-head"><div><span class="gear-kicker">BACKPACK · ${S.items.length} ITEMS</span><b>背包装备</b></div><small>${pairs.length?`可合成 ${pairs.length} 件`:'拖拽穿戴 · 点选后再点棋子'}</small></div>
+      ${S.items.length?`<div class="gear-inventory" id="gearInventory"></div>`:`<div class="gear-empty"><span>✧</span><b>背包暂时空了</b><small>赢下野怪回合可获得基础装备，三件成品还能继续熔铸神器。</small></div>`}
+      ${pairs.length?`<div class="gear-ready"><div class="gear-subhead">现在可以合成</div><div class="gear-ready-grid">${pairs.slice(0,4).map(p=>`<article class="gear-ready-card"><div class="gear-ready-route">${ITEMS[p.a].e} + ${ITEMS[p.b].e}<span>→</span>${ITEMS[p.prod].e}</div><b>${ITEMS[p.prod].n}</b><em>${ITEMS[p.prod].trait}</em><button class="btn" onclick="combineBagPair(${p.i},${p.j})">合成此装备</button></article>`).join('')}</div>${pairs.length>4?`<small class="gear-more">另有 ${pairs.length-4} 件可合成</small>`:''}</div>`:''}
+    </section>
+    ${artifactHtml}
+    ${routeBookHtml}
+  </div>`;
   bindWornChips();
-  S.items.forEach((k,i)=>{
-    const it=ITEMS[k];
-    const c=document.createElement('div');
-    c.className='item-chip'+(S.selItem===i?' sel':'')+(it.crafted?' crafted':'')+(it.arti?' arti':'');
-    c.title=it.desc+'（拖到棋子上穿戴，或点选后再点棋子）';
-    c.innerHTML=`${it.e} ${it.n}`;
-    c.onclick=()=>{ if(Date.now()<chipClickSuppressedUntil) return;
-      S.selItem = S.selItem===i?null:i; renderEquip();
-      if(IS_TOUCH && S.selItem!=null){ closeDrawer(); log(`🎒 已选 ${it.n}：点要穿戴的棋子（再点该装备取消）`); } };
-    // 拖拽穿戴：按住装备芯片拖到棋子身上松手即可
-    c.addEventListener('pointerdown', ev=>{
-      if(ev.button!==0 || S.phase!=='prep') return;
-      ev.stopPropagation();
-      itemDrag={ i, x0:ev.clientX, y0:ev.clientY, ghost:null };
-    });
-    e.appendChild(c);
+  const inventory=$('gearInventory');
+  if(inventory)S.items.forEach((k,i)=>{
+    const it=ITEMS[k],c=document.createElement('div');
+    c.className='gear-item-card'+(S.selItem===i?' sel':'')+(it.crafted?' crafted':'')+(it.arti?' arti':'');
+    c.setAttribute('role','button');c.setAttribute('aria-pressed',String(S.selItem===i));c.tabIndex=0;
+    c.title=it.desc+' · '+(it.trait||'')+'（拖到棋子上穿戴，或点选后再点棋子）';
+    c.innerHTML=`<div class="item-chip ${S.selItem===i?'sel':''}${it.crafted?' crafted':''}${it.arti?' arti':''}"><span class="gear-item-icon">${it.e}</span><span>${it.n}</span><i>${it.arti?'神器':it.crafted?'成品':'组件'}</i></div><small>${it.desc}</small><em>${it.trait||''}</em>`;
+    c.onclick=()=>{if(Date.now()<chipClickSuppressedUntil)return;S.selItem=S.selItem===i?null:i;renderEquip();if(IS_TOUCH&&S.selItem!=null){closeDrawer();log(`🎒 已选 ${it.n}：点要穿戴的棋子（再点该装备取消）`);}};
+    c.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();c.click();}};
+    c.querySelector('.item-chip').addEventListener('pointerdown',ev=>{if(ev.button!==0||S.phase!=='prep')return;ev.stopPropagation();itemDrag={i,x0:ev.clientX,y0:ev.clientY,ghost:null};});
+    inventory.appendChild(c);
   });
 }
 function renderAll(){ window.__S=S; renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); saveGame(); fitBoardCell(); }
@@ -3186,7 +3202,7 @@ const INSPECT_EMPTY='<div class="in-empty">点击场上 / 备战席的棋子<br>
 function showInspect(u){
   const d=byId(u.id);
   const itemChips=(u.items&&u.items.length)
-    ? u.items.map((k,idx)=>`<span class="in-item-chip" data-ii="${idx}" title="${ITEMS[k].n}（${ITEMS[k].desc}）：拖到下方装备栏卸下；点按也可卸下">${ITEMS[k].e} ${ITEMS[k].n}</span>`).join('')
+    ? u.items.map((k,idx)=>`<span class="in-item-chip" data-ii="${idx}" title="${ITEMS[k].n}（${ITEMS[k].desc}；${ITEMS[k].trait||''}）：拖到下方装备栏卸下；点按也可卸下">${ITEMS[k].e} ${ITEMS[k].n}</span>`).join('')
     : '<span style="color:#8f88b0">无</span>';
   $('inspect').innerHTML=`
     <div class="in-hd"><b>${d.name}</b><span class="in-star">${'★'.repeat(u.star)}</span>
@@ -3918,11 +3934,55 @@ const ITEM_FX={
   swiftecho: b=>{b.spdMul*=1.35; b.manaPerSec=(b.manaPerSec||0)+3;},
   bloodcore: b=>{b.vamp=Math.max(b.vamp,0.35); b.skillVamp=0.15;},
   twinshell: b=>{b.manaRegenMul=Math.max(b.manaRegenMul||1,3);},
+  spellblade:b=>{b.atkMul*=1.65;b.skMul=(b.skMul||1)+.12;},
+  stormbreaker:b=>{b.atkMul*=1.4;b.hpMul*=1.3;},
+  soulstring:b=>{b.atkMul*=1.4;b.manaRegenMul=Math.max(b.manaRegenMul||1,2);},
+  runeguard:b=>{b.atkMul*=1.25;b.hpMul*=1.3;},
+  astralbow:b=>{b.atkMul*=1.25;b.spdMul*=1.35;},
+  bastioncoil:b=>{b.hpMul*=1.3;b.manaRegenMul=Math.max(b.manaRegenMul||1,2);},
+  venomshot:b=>{b.spdMul*=1.35;b.vamp=Math.max(b.vamp,.2);},
+  stormfang:b=>{b.vamp=Math.max(b.vamp,.2);b.manaRegenMul=Math.max(b.manaRegenMul||1,2);},
   /* —— 神器 —— */
   godblade: b=>{b.atkMul*=2.2; b.skMul=(b.skMul||1)+0.25; b.vamp=Math.max(b.vamp,0.2); b.critPct=(b.critPct||0)+0.15; b.critItemM=Math.max(b.critItemM||0,2);},
   godarmor: b=>{b.hpMul*=1.9; b.ar+=18; b.shieldTick=Math.max(b.shieldTick||0,0.10); b.itemShieldCd=3000; b.thorns=Math.max(b.thorns||0,0.06);},
   godbow:   b=>{b.spdMul*=2.0; b.bounceP=Math.max(b.bounceP||0,0.4); b.dodge=Math.max(b.dodge||0,0.15);},
   godorb:   b=>{b.manaStart=(b.manaStart||0)+30; b.manaRegenMul=Math.max(b.manaRegenMul||1,3); b.skMul=(b.skMul||1)+0.30; b.skillHaste=Math.max(b.skillHaste||0,0.25);},
+};
+/* 基础组件的词条会沿合成路线继承；同类组件叠加时有明确上限。 */
+const ITEM_COMPONENT_FX={
+  sword:b=>b.itemEdgePips=Math.min(2,(b.itemEdgePips||0)+1),
+  staff:b=>b.itemArcanePips=Math.min(2,(b.itemArcanePips||0)+1),
+  armor:b=>b.itemStartShield=Math.min(.16,(b.itemStartShield||0)+.08),
+  bow:b=>b.itemFirstSnare=true,
+  vamp:b=>b.itemKillMana=(b.itemKillMana||0)+8,
+  mana:b=>b.itemManaGift=(b.itemManaGift||0)+5,
+};
+/* 成品专属机制。装备与基础组件分开结算，避免把组件的数值词条重复计算。 */
+const ITEM_SPECIAL={
+  flamejudge:b=>b.itemCritExpose=Math.max(b.itemCritExpose||0,.12),
+  galehunt:b=>b.itemKillHaste=Math.max(b.itemKillHaste||0,.10),
+  soulblade:b=>b.itemKillShield=Math.max(b.itemKillShield||0,.08),
+  sagestaff:b=>b.itemCastShield=Math.max(b.itemCastShield||0,.06),
+  hexdrinker:b=>b.itemManaBurn=Math.max(b.itemManaBurn||0,7),
+  tidejewel:b=>b.itemCastSunder=Math.max(b.itemCastSunder||0,.10),
+  bramble:b=>b.itemThornSlow=Math.max(b.itemThornSlow||0,.18),
+  windmail:b=>b.itemDodgeAmp=Math.max(b.itemDodgeAmp||0,.20),
+  twinbows:b=>b.itemBounceEcho=Math.max(b.itemBounceEcho||0,.35),
+  swiftecho:b=>b.itemPrimeAmp=Math.max(b.itemPrimeAmp||0,.20),
+  bloodcore:b=>b.itemVampOverShield=Math.max(b.itemVampOverShield||0,.40),
+  twinshell:b=>b.itemTeamCastShield=Math.max(b.itemTeamCastShield||0,.035),
+  spellblade:b=>b.itemMarkShield=Math.max(b.itemMarkShield||0,.06),
+  stormbreaker:b=>b.itemStormStun=true,
+  soulstring:b=>{b.itemPrimeAmp=Math.max(b.itemPrimeAmp||0,.22);b.itemPrimeSplash=Math.max(b.itemPrimeSplash||0,.32);},
+  runeguard:b=>b.itemMarkShield=Math.max(b.itemMarkShield||0,.08),
+  astralbow:b=>b.itemPrimeBounce=Math.max(b.itemPrimeBounce||0,.35),
+  bastioncoil:b=>b.itemShieldBreakMana=Math.max(b.itemShieldBreakMana||0,12),
+  venomshot:b=>b.itemPoisonPct=Math.max(b.itemPoisonPct||0,.012),
+  stormfang:b=>b.itemVampOverShield=Math.max(b.itemVampOverShield||0,.45),
+  godblade:b=>{b.itemCritExpose=Math.max(b.itemCritExpose||0,.18);b.itemKillReset=true;},
+  godarmor:b=>{b.itemStartShield=Math.max(b.itemStartShield||0,.12);b.itemAllyDeathShield=Math.max(b.itemAllyDeathShield||0,.20);},
+  godbow:b=>{b.itemPrimeAmp=Math.max(b.itemPrimeAmp||0,.28);b.itemPrimeSplash=Math.max(b.itemPrimeSplash||0,.48);},
+  godorb:b=>{b.itemCastSunder=Math.max(b.itemCastSunder||0,.18);b.itemManaGift=(b.itemManaGift||0)+8;b.itemTeamCastShield=Math.max(b.itemTeamCastShield||0,.04);},
 };
 function makeBattleUnit(u, side, x, y){
   const d=byId(u.id);
@@ -3932,7 +3992,12 @@ function makeBattleUnit(u, side, x, y){
     tauntT:0, silenceT:0, blockCt:0, blockDmg:.5, blockT:0, thorns:0, thornsT:0, drBuff:0, drBuffT:0,
     arDown:0, arDownT:0, mrDown:0, mrDownT:0, hexT:0, petrifyT:0, dodge:0, crit:0};   // 破甲/减魔抗/变形/石化/闪避/暴击
   b.ar=d.ar||0; b.mr=d.mr||0;   // 抗性以图鉴数据为唯一来源（敌方镜像同样生效）
-  (u.items||[]).forEach(k=>{ if(ITEM_FX[k]) ITEM_FX[k](b); });   // 装备效果统一生效表
+  (u.items||[]).forEach(k=>{
+    if(ITEM_FX[k]) ITEM_FX[k](b);
+    const parts=ITEMS[k]?.from||[k];
+    parts.forEach(part=>{if(ITEM_COMPONENT_FX[part])ITEM_COMPONENT_FX[part](b);});
+    if(ITEM_SPECIAL[k])ITEM_SPECIAL[k](b);
+  });   // 数值、继承组件词条、成品机制统一从装备 ID 派生
   const pv=svOf(d.id).p;                  // 被动参数（轴伊/雨纪/又一 + 专属暴击组）
   b.svDtype = svOf(d.id).dtype || null;   // 主动技伤害类型覆盖（如纯粹伤害）
   if(pv){
@@ -4177,6 +4242,10 @@ function startBattle(){
         const add=Math.round(u.maxhp*(nt*sp/100)); u.maxhp+=add; u.hp+=add; });
       log(`🌟 羁绊共鸣：${nt} 个激活档位 → 全队攻击/生命 +${nt*sp}%`);
     }
+    units.filter(u=>u.hp>0&&u.itemStartShield&&u.noShieldT<=0).forEach(u=>{
+      u.shield=(u.shield||0)+Math.round(u.maxhp*u.itemStartShield);
+      vfxAt(u,'ring shield',800);dmgPopup(null,u,'🛡开战护幕','cast');
+    });
     const tb=S.tempBuff ? TEMP_BUFFS.find(b=>b.id===S.tempBuff) : null;
     if(tb){
       if(tb.id==='atk') mine0.forEach(u=>{ u.atk=Math.round(u.atk*1.15); });
@@ -4204,7 +4273,7 @@ function startBattle(){
         const hd = u.healDownT>0 ? (1-u.healDownA) : 1;
         if(u.regen && u.hp<u.maxhp){ const rb=u.hp; u.hp=Math.min(u.maxhp,u.hp+u.regen*hd); bsHeal(u,u.hp-rb); }
         if(u.manaPerSec && !isPassive(u) && u.silenceT<=0) u.mana=Math.min(u.maxmana,u.mana+u.manaPerSec);   // 迅影回响
-        if(u.poisonT>0){ u.poisonT-=1000; u.hp-=u.poisonDmg;
+        if(u.poisonT>0){ u.poisonT-=1000; u.hp-=u.poisonDmg;if(u.hp<=0)triggerItemAllyDeath(u,units);
           dmgPopup(null,u,'☠'+u.poisonDmg,'poison'); }
         if(u.thornsT>0){ u.thornsT-=1000; if(u.thornsT<=0){ u.thorns=0; u.thornsT=0; } } // 荆棘增益到期
       }
@@ -4215,6 +4284,10 @@ function startBattle(){
         u.sigMark.left-=TICK;
         if(u.sigMark.left<=0) u.sigMark=null;
       }
+      if(u.itemArcaneT>0){u.itemArcaneT-=TICK;if(u.itemArcaneT<=0)u.itemArcaneMarks=0;}
+      if(u.itemExposeT>0){u.itemExposeT-=TICK;if(u.itemExposeT<=0){u.itemExposeAmp=0;u.itemExposeSide=null;u.itemExposeBy=null;}}
+      if(u.itemKillHasteT>0){u.itemKillHasteT-=TICK;if(u.itemKillHasteT<=0){u.itemKillHasteT=0;u.itemKillHasteStacks=0;u.itemKillHasteBonus=1;}}
+      if(u.itemShieldBreakCd>0)u.itemShieldBreakCd-=TICK;
             if(u.v3LinkT>0){u.v3LinkT-=TICK;if(u.v3LinkT<=0){u.v3LinkTo=null;u.v3LinkShare=0;}}
       if(u.v3AtkBuffT>0){u.v3AtkBuffT-=TICK;if(u.v3AtkBuffT<=0)u.v3AtkMul=1;}
       if(u.v3HasteT>0){u.v3HasteT-=TICK;if(u.v3HasteT<=0)u.v3HasteMul=1;}
@@ -4325,7 +4398,7 @@ function startBattle(){
       else { tgt=null; let bd=1e9;
         for(const f of foes){ const d2=unitDist(f,u); if(d2<bd){bd=d2;tgt=f;} } }
       const d=byId(u.id);
-      const aspd = d.spd*(u.spdMul||1)*(u.v3HasteMul||1);
+      const aspd = d.spd*(u.spdMul||1)*(u.v3HasteMul||1)*(u.itemKillHasteBonus||1);
       if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana && u.skillCd<=0){
         u.mana=0;
         const haste = Math.min(0.6, (u.side===0?augTotal('skillhaste')/100:0) + (u.skillHaste||0));   // ⏱️ 技能急速 + 湮灭宝珠
@@ -4338,10 +4411,12 @@ function startBattle(){
           const slow = u.slowT>0 ? u.slowA : 0;
           const profile=v3AttackOf(u);
           let dmg = Math.round(eatk(u)*(profile.mult||1)*(u.rapid>0?2:1));
+          let itemCritHit=false;
           const hadShield=tgt.shield>0;
           if(profile.onHit==='shieldbreak'&&!hadShield&&u.v3BreakReady){dmg=Math.round(dmg*1.8);u.v3BreakReady=false;}
           if(u.rapid>0)u.rapid--;
           if(u.crit>0 && rand()<u.crit){   // 常驻暴击：刺客羁绊（紫）/ 专属与装备（金）
+            itemCritHit=true;
             const cm=u.critM||ASSASSIN_CRIT_MULT;
             dmg=Math.round(dmg*cm);
             dmgPopup(u,tgt,'⚡暴击×'+cm,'crit'); vfxAt(tgt, u.ownCrit?'crit gold':'crit', 500);
@@ -4363,13 +4438,29 @@ function startBattle(){
           if((tgt.dodge>0 && rand()<tgt.dodge)||(tgt.phaseT>0&&rand()<(tgt.phaseDodge||.5))){
             sfx('dodgeleaf'); vfxAt(tgt,'leaves',550);
             dmgPopup(null,tgt,'闪避','cast');
+            if(tgt.itemDodgeAmp)tgt.itemNextStrikeAmp=Math.max(tgt.itemNextStrikeAmp||0,tgt.itemDodgeAmp);
             if(tgt.id==='yuji')v3RainTrigger(tgt);
             u.cd = 1150/aspd*(1+slow);
             continue;
           }
+          if(u.itemNextStrikeAmp){dmg=Math.round(dmg*(1+u.itemNextStrikeAmp));u.itemNextStrikeAmp=0;dmgPopup(u,u,'✦蓄势','cast');}
           const dealt=dealDamage(u,tgt,dmg,units,d.dtype);
+          if(dealt>0&&itemCritHit&&u.itemCritExpose&&tgt.hp>0){
+            tgt.itemExposeAmp=Math.max(tgt.itemExposeAmp||0,u.itemCritExpose);tgt.itemExposeT=Math.max(tgt.itemExposeT||0,2500);tgt.itemExposeSide=u.side;tgt.itemExposeBy=u.uid;
+            dmgPopup(u,tgt,'✦破绽','cast');
+          }
           if(profile.onHit==='shieldbreak'&&hadShield&&tgt.shield<=0)u.v3BreakReady=true;
           if(dealt>0)applyV3Attack(u,tgt,profile,units,dealt,dmg);
+          if(dealt>0&&u.itemNextStrikeSplashReady){
+            u.itemNextStrikeSplashReady=false;
+            const near=v3NearestFoes(tgt,units.filter(v=>v.hp>0&&v.side!==u.side&&v!==tgt),2,1)[0];
+            if(near){dealDamage(u,near,Math.max(1,Math.round(dmg*(u.itemPrimeSplash||.3))),units,'magic');boltFx(tgt,near,false);dmgPopup(u,near,'✦穿透','cast');}
+          }
+          if(dealt>0&&u.itemNextBounceReady){
+            u.itemNextBounceReady=false;
+            const near=v3NearestFoes(tgt,units.filter(v=>v.hp>0&&v.side!==u.side&&v!==tgt),3,1)[0];
+            if(near){dealDamage(u,near,Math.max(1,Math.round(dmg*(u.itemPrimeBounce||.3))),units,'magic');boltFx(tgt,near,false);dmgPopup(u,near,'🌌折光','cast');}
+          }
           if(dealt>0 && isPassive(u) && tgt.hp>0){
             const pm=svOf(u.id).sigMark;
             if(pm) placeSigMark(tgt,u,pm,false);
@@ -4395,6 +4486,11 @@ function startBattle(){
               dealDamage(u,near,Math.max(1,Math.round(dmg*0.5)),units,d.dtype);
               sfx('bounce');
               dmgPopup(u,near,'⚡弹射','cast');
+              if(u.itemBounceEcho){
+                const echo=units.filter(o=>o!==near&&o!==tgt&&o.side!==u.side&&o.hp>0&&unitDist(o,near)<=2)
+                  .sort((a,b)=>unitDist(a,near)-unitDist(b,near))[0];
+                if(echo){dealDamage(u,echo,Math.max(1,Math.round(dmg*u.itemBounceEcho)),units,d.dtype);dmgPopup(u,echo,'🎯传导','cast');boltFx(near,echo,false);}
+              }
             }
           }
           // 攻击回蓝（多多公式×2 配合快节奏）：按最终实际伤害 ÷1.25，法师/咒术/医者单次上限 30、其余 15
@@ -4444,6 +4540,14 @@ function medEcho(src, healed, units, foes){
   if(!tgt) return;
   dealDamage(src, tgt, Math.max(1, Math.round(healed*src.medEcho)), units, 'magic');
 }
+function triggerItemAllyDeath(dead,units){
+  if(!dead||dead._itemDeathHandled)return;dead._itemDeathHandled=true;
+  const guard=units.find(v=>v.hp>0&&v.side===dead.side&&v.itemAllyDeathShield);
+  if(!guard)return;
+  const mate=units.filter(v=>v.hp>0&&v.side===guard.side&&v!==guard).sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0];
+  const recipient=mate||guard;recipient.shield=(recipient.shield||0)+Math.round(recipient.maxhp*guard.itemAllyDeathShield);
+  vfxAt(recipient,'ring shield',700);dmgPopup(guard,recipient,'🛡守望','cast');
+}
 /* 主动治疗类技能的统一结算（治疗量按攻击/系数/羁绊/减疗折算） */
 function dealDamage(src,tgt,dmg,units,dtype){
   if(!tgt||tgt.hp<=0) return 0;
@@ -4451,6 +4555,20 @@ function dealDamage(src,tgt,dmg,units,dtype){
   if(tel){ tel.classList.remove('hitfx'); void tel.offsetWidth; tel.classList.add('hitfx');
     setTimeout(()=>tel.classList.remove('hitfx'), 200/Math.max(1,SPEED)); }
   const raw=dmg;
+  if(src&&tgt.itemExposeT>0&&src.side===tgt.itemExposeSide&&src.uid!==tgt.itemExposeBy){
+    dmg=Math.round(dmg*(1+(tgt.itemExposeAmp||0)));tgt.itemExposeT=0;tgt.itemExposeAmp=0;tgt.itemExposeSide=null;tgt.itemExposeBy=null;
+    dmgPopup(src,tgt,'✦破绽','cast');
+  }
+  if(src&&src.side!==tgt.side&&tgt.itemArcaneT>0&&(tgt.itemArcaneMarks||0)>0){
+    const stacks=tgt.itemArcaneMarks;dmg=Math.round(dmg*(1+.06*stacks));
+    tgt.itemArcaneMarks=0;tgt.itemArcaneT=0;dmgPopup(src,tgt,'🔮印记引爆','cast');
+    if(src.itemMarkShield){
+      const sh=Math.round(src.maxhp*src.itemMarkShield);src.shield=(src.shield||0)+sh;
+      const mate=units.filter(v=>v.hp>0&&v.side===src.side&&v!==src).sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0];
+      if(mate)mate.shield=(mate.shield||0)+Math.round(mate.maxhp*src.itemMarkShield);
+      vfxAt(src,'ring shield',650);
+    }
+  }
   if(tgt.v3VulnT>0){dmg=Math.round(dmg*(1+(tgt.v3Vuln||0)));tgt.v3VulnT=0;tgt.v3Vuln=0;}
   if(tgt.v3LinkT>0){const guard=units.find(v=>v.uid===tgt.v3LinkTo&&v.hp>0);if(guard&&guard!==tgt){const share=Math.min(.6,tgt.v3LinkShare||0),part=Math.round(dmg*share);dmg-=part;if(part>0)dealDamage(src,guard,part,units,dtype);}}
   /* 技能印记：下一次真实伤害时一次性引爆，过期则自然失效；护盾/减伤仍在后续按正常顺序结算。 */
@@ -4490,10 +4608,21 @@ function dealDamage(src,tgt,dmg,units,dtype){
     const ab=Math.min(tgt.shield,dmg); tgt.shield-=ab; dmg-=ab;
   }
   if(shieldBefore>0&&tgt.shield<=0&&tgt.v3ShieldMana){tgt.mana=Math.min(tgt.maxmana,tgt.mana+tgt.v3ShieldMana);tgt.v3ShieldMana=0;dmgPopup(null,tgt,'+8蓝','cast');}
+  if(shieldBefore>0&&tgt.shield<=0&&tgt.itemShieldBreakMana&&(tgt.itemShieldBreakCd||0)<=0){
+    tgt.mana=Math.min(tgt.maxmana,tgt.mana+tgt.itemShieldBreakMana);tgt.itemShieldBreakCd=4500;
+    dmgPopup(null,tgt,'⚡+'+tgt.itemShieldBreakMana+'蓝','cast');vfxAt(tgt,'ring',420);
+  }
   if(tgt.dmgReduce) dmg=Math.round(dmg*(1-tgt.dmgReduce));
   if(tgt.drBuff && tgt.drBuffT>0) dmg=Math.round(dmg*(1-tgt.drBuff));   // 减伤增益（桃色结界等）
   if(tgt.v3Dr&&tgt.v3DrT>0)dmg=Math.round(dmg*(1-tgt.v3Dr));
   tgt.hp-=dmg;
+  if(src&&src._casting&&src.itemArcanePips&&src.hexT<=0&&tgt.hp>0){
+    tgt.itemArcaneMarks=Math.min(src.itemArcanePips,(tgt.itemArcaneMarks||0)+1);tgt.itemArcaneT=Math.max(tgt.itemArcaneT||0,4000);
+    vfxAt(tgt,'ring',380);
+  }
+  if(src&&src._casting&&src.itemManaBurn&&tgt.hp>0&&!isPassive(tgt)){
+    const burn=Math.min(tgt.mana,src.itemManaBurn);tgt.mana-=burn;if(burn>0)dmgPopup(src,tgt,'-'+burn+'蓝','cast');
+  }
   if(src&&tgt.v3ReflectT>0&&src._casting){const rp=tgt.v3Reflect||0;tgt.v3Reflect=0;tgt.v3ReflectT=0;if(rp>0)dealDamage(tgt,src,Math.max(1,Math.round(dmg*rp)),units,'magic');}
   if(src&&shieldBefore>0&&tgt.shield<=0&&tgt.v3ShieldCounterT>0&&tgt.v3ShieldCounter){const cp=tgt.v3ShieldCounter;tgt.v3ShieldCounter=0;tgt.v3ShieldCounterT=0;dealDamage(tgt,src,Math.max(1,Math.round(dmg*cp)),units,'magic');}
   // 受击回蓝（多多公式×2）：随机回蓝 min(伤害/5,15) ~ min(伤害/2.5,30)
@@ -4501,13 +4630,20 @@ function dealDamage(src,tgt,dmg,units,dtype){
     const lo=Math.min(dmg/5,15), hi=Math.min(dmg/2.5,30);
     tgt.mana=Math.min(tgt.maxmana, tgt.mana+(hi>lo? lo+rand()*(hi-lo): lo)*(tgt.manaRegenMul||1));
   }
-  if(src && src.vamp && src.hexT<=0 && src.hp<src.maxhp && dmg>0){ src.hp=Math.min(src.maxhp, src.hp+Math.round(dmg*src.vamp)); threadFx(src,tgt); sfx('vampbite'); }   // 吸血：普攻与技能伤害均生效（保持既有语义）
+  if(src && src.vamp && src.hexT<=0 && src.hp<src.maxhp && dmg>0){
+    const steal=Math.round(dmg*src.vamp), missing=src.maxhp-src.hp;
+    const real=Math.min(missing,steal);src.hp+=real;bsHeal(src,real);threadFx(src,tgt);sfx('vampbite');
+    const overflow=Math.max(0,steal-real);
+    if(overflow&&src.itemVampOverShield){const sh=Math.round(overflow*src.itemVampOverShield);src.shield=(src.shield||0)+sh;if(sh)dmgPopup(src,src,'🛡溢血','cast');}
+  }   // 吸血：过量治疗可转化为血魔护盾
   if(src && src.skillVamp && src._casting===true && src.hexT<=0 && src.hp<src.maxhp && dmg>0){
     const sv2=Math.round(dmg*src.skillVamp); const real=Math.min(src.maxhp,src.hp+sv2)-src.hp; src.hp+=real; bsHeal(src,real); threadFx(src,tgt);
   }
   if(src && src.poisonAtk && src.hexT<=0 && tgt.hp>0){ tgt.poisonT=3000; tgt.poisonDmg=Math.round(tgt.maxhp*(src.poisonPow||0.02)); }
   if(src && src.pAtkDot && src.hexT<=0 && tgt.hp>0){ tgt.poisonT=3000; tgt.poisonDmg=Math.round(tgt.maxhp*src.pAtkDot); }
-  if(tgt.thorns && src && src.hp>0 && dmg>0){ src.hp-=Math.max(1,Math.round(tgt.maxhp*tgt.thorns)); dmgPopup(null,src,'荆棘','cast'); }
+  if(tgt.thorns && src && src.hp>0 && dmg>0){ src.hp-=Math.max(1,Math.round(tgt.maxhp*tgt.thorns)); dmgPopup(null,src,'荆棘','cast');
+    if(tgt.itemThornSlow){src.slowA=Math.max(src.slowA||0,tgt.itemThornSlow);src.slowT=Math.max(src.slowT||0,1400);vfxAt(src,'leaves',420);}
+    if(src.hp<=0)triggerItemAllyDeath(src,units); }
   dmgPopup(src,tgt,'-'+dmg);
   if(battleStats && dmg>0){                       // 战斗统计（只读插桩）
     const rs=bsRec(src); if(rs){ rs.deal+=dmg;
@@ -4526,6 +4662,14 @@ function dealDamage(src,tgt,dmg,units,dtype){
       const kh=Math.round(src.maxhp*src.killHeal); const real=Math.min(src.maxhp,src.hp+kh)-src.hp; src.hp+=real; bsHeal(src,real);
       dmgPopup(src,src,'+'+real,'heal');
     }
+    if(src&&src.itemKillMana){src.mana=Math.min(src.maxmana,src.mana+src.itemKillMana);dmgPopup(src,src,'+'+src.itemKillMana+'蓝','cast');}
+    if(src&&src.itemKillShield&&src.hp>0){src.shield=(src.shield||0)+Math.round(src.maxhp*src.itemKillShield);vfxAt(src,'ring shield',650);}
+    if(src&&src.itemKillHaste&&src.hp>0){
+      src.itemKillHasteStacks=Math.min(3,(src.itemKillHasteStacks||0)+1);src.itemKillHasteBonus=1+src.itemKillHaste*src.itemKillHasteStacks;
+      src.itemKillHasteT=4000;dmgPopup(src,src,'🌪追猎×'+src.itemKillHasteStacks,'cast');
+    }
+    if(src&&src.itemKillReset&&src.hp>0){src.mana=src.maxmana;src.skillCd=0;vfxAt(src,'ring',650);dmgPopup(src,src,'⚔神罚就绪','cast');}
+    triggerItemAllyDeath(tgt,units);
   }
   return dmg;
 }
@@ -4885,6 +5029,35 @@ function pickFoe(foes,u,sv){
   if(t==='far') return foes.reduce((a,b)=>dist(b)>dist(a)?b:a);
   return foes.reduce((a,b)=>dist(b)<dist(a)?b:a);
 }
+/* 成品装备施法触发器：充能、团队护盾、法力馈赠与减抗都集中在此处。 */
+function itemAfterCast(u,units){
+  if(!u||u.hp<=0)return;
+  const allies=units.filter(v=>v.hp>0&&v.side===u.side);
+  const foes=units.filter(v=>v.hp>0&&v.side!==u.side);
+  if(u.itemManaGift&&!isPassive(u)){
+    const mates=allies.filter(v=>v!==u&&!isPassive(v));
+    const target=(mates.length?mates:(!isPassive(u)?[u]:[])).sort((a,b)=>(a.mana/a.maxmana)-(b.mana/b.maxmana))[0];
+    if(target){target.mana=Math.min(target.maxmana,target.mana+u.itemManaGift);dmgPopup(u,target,'+'+u.itemManaGift+'蓝','cast');}
+  }
+  if(u.itemCastShield){
+    const t=allies.filter(v=>v!==u).sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0];
+    const self=Math.round(u.maxhp*u.itemCastShield);u.shield=(u.shield||0)+self;
+    if(t)t.shield=(t.shield||0)+Math.round(t.maxhp*u.itemCastShield);
+    vfxAt(u,'ring shield',700);dmgPopup(u,u,'✦护盾','cast');
+  }
+  if(u.itemTeamCastShield){
+    allies.forEach(t=>{t.shield=(t.shield||0)+Math.round(t.maxhp*u.itemTeamCastShield);});
+    vfxAt(u,'tex-barrier ring shield',700);
+  }
+  if(u.itemCastSunder&&foes.length){
+    const t=foes.sort((a,b)=>unitDist(a,u)-unitDist(b,u))[0];
+    t.mrDown=Math.max(t.mrDown||0,u.itemCastSunder);t.mrDownT=Math.max(t.mrDownT||0,2500);
+    boltFx(u,t,false);dmgPopup(u,t,'🔯减抗','cast');
+  }
+  if(u.itemPrimeAmp)u.itemNextStrikeAmp=Math.max(u.itemNextStrikeAmp||0,u.itemPrimeAmp);
+  if(u.itemPrimeSplash)u.itemNextStrikeSplashReady=true;
+  if(u.itemPrimeBounce)u.itemNextBounceReady=true;
+}
 /* 范围型 AoE：只命中施法者周围 R 格内的敌人（按占据格集合的最小曼哈顿距离），不再全场生效 */
 function aoeFoes(u,foes,r){ return foes.filter(f=>unitDist(f,u)<=r); }
 /* 技能 AoE 半径（格）；范围越小伤害/控制可给得越强。3 格 ≈ 覆盖半数战场的环形区域 */
@@ -4976,7 +5149,7 @@ function showCutin(u, nm, arch){
 function castSkill(u,tgt,units,skMul){
   if(u.v3CastEcho&&u.v3CastEcho.left>0){const echo=u.v3CastEcho;u.v3CastEcho=null;if(echo.owner&&echo.owner.hp>0){dealDamage(echo.owner,u,Math.max(1,Math.round(eatk(echo.owner)*echo.amp)),units,'magic');dmgPopup(echo.owner,u,'♫回响','cast');}}
   const kit=COMBAT_KITS[u.id];
-  if(kit){castV3Skill(u,units,skMul,kit);return;}
+  if(kit){castV3Skill(u,units,skMul,kit);itemAfterCast(u,units);return;}
   const d=byId(u.id), [nm,arch]=d.sk;
   const sv=svOf(u.id);
   showCutin(u,nm,arch);   // 🎬 大招 Cut-in：仅名单内技能触发（同屏至多 1 个，纯表现层）
@@ -4985,7 +5158,7 @@ function castSkill(u,tgt,units,skMul){
   const allies = units.filter(v=>v.hp>0&&v.side===u.side);
   const foes = units.filter(v=>v.hp>0&&v.side!==u.side);
   const SUPPORT=new Set(['heal','aheal','manafeed','shell','teamshield','guard','bulwark','cleanse','tauntshield']);
-  if(!foes.length && !SUPPORT.has(arch)) return;
+  if(!foes.length && !SUPPORT.has(arch)){u._casting=false;u._skillArch=null;return;}
   u._skillArch=arch;
   const lowest = arr=>arr.reduce((a,b)=>b.hp/b.maxhp<a.hp/a.maxhp?b:a);
   const dist = v=>unitDist(v,u);
@@ -5255,6 +5428,7 @@ function castSkill(u,tgt,units,skMul){
   if(sv.sigMark && !SIG_MARK_ARCH.has(arch)) placeSigMark(u,u,sv.sigMark,true);
   u._casting=false;   // 施法结束：技能吸血通道关闭（castSkill 同步执行完毕，异常路径由下一帧覆盖）
   u._skillArch=null;
+  itemAfterCast(u,units);
 }
 function dmgPopup(src,tgt,text,cls){
   const b=$('board');
@@ -5735,13 +5909,14 @@ function renderBook(){
         `<div class="bsy-mem">现有成员 ${members} 名</div></div>`;
     }).join('');
   $('bookSyn').innerHTML = synRow(FACTIONS,FAC_ICON,'🔗 阵营羁绊（12）') + synRow(CLASSES,JOB_ICON,'⚔ 职业羁绊（10）');
-  // 装备介绍：基础装（掉落）/ 合成成品（配方）/ 神器（升阶）
+  // 装备介绍同时列出数值、机制与配方，帮助玩家在备战前读懂路线收益。
   const itemRow=(keys,title,tagOf)=>`<div class="bsy-title">${title}</div>`+
     keys.map(k=>{
       const it=ITEMS[k];
       const from=it.from?it.from.map(x=>`${ITEMS[x].e}${ITEMS[x].n}`).join(' + '):'';
       return `<div class="bsy-item"><span class="bsy-ico">${it.e}</span><b>${it.n}</b><span class="bsy-need">${tagOf(k)}</span>`+
         `<div class="bsy-desc">${it.desc}</div>`+
+        (it.trait?`<div class="bsy-desc" style="color:#7787bb">机制：${it.trait}</div>`:'')+
         (from?`<div class="bsy-mem">配方：${from}</div>`:'')+`</div>`;
     }).join('');
   $('bookItems').innerHTML =

@@ -2,9 +2,12 @@
 
 ## Scope
 
-Refresh the complete presentation layer for the existing single-player auto-battler. Keep run progression, economy, unit stats, synergies, shop behavior, and battle resolution intact while making the game feel like a bright virtual-idol concert arena.
+Refresh the presentation layer for the existing single-player auto-battler. Keep run progression, economy, unit stats, synergies, shop behavior, and individual unit skills intact while making the game feel like a bright virtual-idol concert arena. Equipment-specific combat triggers and crafting routes may change with an equipment redesign.
 
 ## Findings and changes
+
+- **High — equipment was presented as bare chips and most items were stat sticks.** Reworked the panel into an armory with loadout, inventory, craftable pairs, a forge, and an expandable route catalog. Cards show the item's stat line and combat trait; the unit book now lists traits and recipes too. Mobile uses a compact card grid and collapses routes until requested.
+- **High — recipe discovery did not communicate why a craft mattered.** Added fixed pair recipes for all 21 combinations of the six components. Component mechanics carry into crafted items, then each crafted item adds its own trigger. The forge previews all four artifact choices and their trait text.
 
 - **High — the old dark, metal-heavy palette conflicted with the virtual-idol cast.** Replaced the visible interface with a light sky-blue, mint, lilac, and pink stage palette, translucent panels, clear resource chips, and a generated concert-arena backdrop.
 - **High — the board needed a stronger stage presence.** Reorganized play into a three-column desktop view, added a raised perspective board and separate bench, and gave the shop and battle action a clear bottom-row hierarchy.
