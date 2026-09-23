@@ -1,5 +1,13 @@
 # UI improvement review
 
+## 2026-09-23 对局生命周期审查（待实施）
+
+- Critical：关闭开局弹窗可能创建对局，读档失败仍可能提示成功。应分离导航与对局动作，校验成功后再恢复。
+- High：重开丢失模式/配置、跨模式误删竞技档、固定优先级隐藏存档、结束确认不清晰。按明确生命周期和存档槽规则统一处理。
+- Medium：首页层级混杂、双主按钮及横向滚动。拆为主菜单与新建设置，说明独立只读。
+- 保留：角色美术、现有模式与经济/战斗规则、战报和排行功能。
+- 完整计划见 [GAME-FLOW-REDESIGN.md](GAME-FLOW-REDESIGN.md)，执行提示词见 [GAME-FLOW-AGENT-PROMPT.md](GAME-FLOW-AGENT-PROMPT.md)。本次只做源码与截图审查，尚未实现或运行交互验证。
+
 ## Scope
 
 Refresh the presentation layer for the existing single-player auto-battler. Keep run progression, economy, unit stats, synergies, shop behavior, and individual unit skills intact while making the game feel like a bright virtual-idol concert arena. Equipment-specific combat triggers and crafting routes may change with an equipment redesign.

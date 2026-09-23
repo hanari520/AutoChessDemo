@@ -494,32 +494,8 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .aug-card .ar-tag{ font-size:10px; border:1px solid; border-radius:0; padding:0 6px; margin-left:4px; vertical-align:2px; }
 .aug-card .at{ font-size:10px; color:var(--tx2); }
 
-/* ===== ⑩ 弹窗 ===== */
-#overlay { position:fixed; inset:0; background:rgba(5,4,3,.9); display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:14px; z-index:40; text-align:center; padding:16px; overflow-y:auto; }
-#overlay.hidden { display:none; }
-#ovCard { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:620px;
-  max-height:92vh; background:linear-gradient(180deg,#221c13,#120f0a 70%); border:1px solid var(--line-2); border-radius:0; padding:18px 20px; position:relative; }
-#ovCard::before{ content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid var(--gold); border-left:2px solid var(--gold); }
-#ovCard::after{ content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid var(--gold); border-right:2px solid var(--gold); }
-#ovText { overflow-y:auto; flex:1 1 auto; min-height:0; text-align:left; }
-#ovText .is-h{ display:block; color:var(--gold-hi); font-weight:bold; font-size:14px; margin:9px 0 2px; padding-bottom:2px; border-bottom:1px solid var(--line); }
-#ovClose { position:absolute; top:8px; right:12px; cursor:pointer; color:var(--tx2); font-size:20px; line-height:1; padding:4px 8px; user-select:none; }
-#ovClose:hover { color:var(--tx0); background:rgba(240,234,217,.1); }
-#ovBtns { display:flex; gap:10px; flex-shrink:0; flex-wrap:wrap; justify-content:center; }
-#overlay h1 { font-size:30px; color:var(--gold-hi); flex-shrink:0; letter-spacing:4px; font-weight:bold; }
-#overlay button { padding:12px 40px; font-size:17px; border:1px solid var(--gold); border-radius:0; background:var(--gold); color:#1d1508; font-weight:bold; cursor:pointer;
-  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
-#overlay button:hover { background:var(--gold-hi); }
-#cursePick{ max-width:560px; margin:8px auto 0; text-align:left; }
-#modePick{ max-width:560px; margin:8px auto 2px; display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:8px; }
-.mode-card{ flex:1 1 0; min-width:150px; background:var(--bg2); border:1px solid var(--line); border-radius:0; padding:8px 6px; text-align:center; cursor:pointer; font-size:11px; color:var(--tx2); line-height:1.55; }
-.mode-card b{ display:block; font-size:13px; color:var(--tx0); margin-bottom:3px; }
-.mode-card:hover{ border-color:var(--tx2); transform:translateY(-1px); }
-.mode-card.on{ border-color:var(--gold); background:var(--bg3); color:var(--tx1); }
-.mode-card.on b{ color:var(--gold-hi); }
-#ovResume{ background:#16222e; color:#8fd0e8; border-color:var(--c3); }
-#cursePick .cp-hd{ font-size:12px; color:#ee8177; margin-bottom:4px; }
+/* ===== 自定义模式设置控件 ===== */
+.flow-curse-pick .cp-hd{ font-size:12px; color:#ee8177; margin-bottom:4px; }
 .cp-item{ display:flex; flex-wrap:wrap; gap:6px; align-items:baseline; padding:3px 6px; border-radius:0; cursor:pointer; font-size:12px; color:var(--tx1); }
 .cp-item:hover{ background:var(--bg3); }
 .cp-item.on{ background:var(--bg3); outline:1px solid rgba(238,129,119,.4); }
@@ -530,12 +506,6 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .cp-item b{ color:var(--gold-hi); white-space:nowrap; }
 .cp-item .cp-d{ flex:1; min-width:150px; }
 .cp-item .cp-r{ color:var(--heal); white-space:nowrap; font-size:11px; }
-#resumeOv { position:fixed; inset:0; background:rgba(5,4,3,.94); display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:18px; z-index:60; text-align:center; padding:20px; }
-#resumeOv.hidden { display:none; }
-#resumeOv h1 { font-size:30px; color:var(--gold-hi); letter-spacing:4px; }
-#resumeOv button { padding:12px 32px; font-size:17px; border:1px solid var(--gold); border-radius:0; background:var(--gold); color:#1d1508; font-weight:bold; cursor:pointer; }
-#resumeOv button.ghost { background:var(--bg3); color:var(--tx1); border:1px solid var(--line-2); }
 #histModal { position:fixed; inset:0; background:rgba(5,4,3,.9); display:flex; align-items:center; justify-content:center; z-index:55; }
 #histModal.hidden { display:none; }
 #histPanel { background:linear-gradient(180deg,#221c13,#120f0a 70%); border:1px solid var(--line-2); border-radius:0; padding:18px;
@@ -902,7 +872,6 @@ body.touch .m-only { display:inline-block; }
   #roundTicks { display:none; }
   #topbar .btn { padding:5px 8px; font-size:12px; }
   .fight-btn-row { display:flex; flex-wrap:wrap; gap:6px; }
-  #overlay h1 { font-size:24px; }
   #shopbar { flex-wrap:wrap; gap:6px; padding:6px 8px calc(6px + env(safe-area-inset-bottom)); }
   #shop { order:1; flex-basis:100%; overflow-x:auto; padding-bottom:2px; }
   #shop .card { flex:0 0 auto; min-width:112px; max-width:132px; padding:5px 4px 16px; }
@@ -1038,7 +1007,7 @@ body.touch .m-only { display:inline-block; }
 
 </style>
 <link rel="stylesheet" href="tools/idol-ui.css?v=2">
-<link rel="stylesheet" href="tools/idol-redesign.css?v=8">
+<link rel="stylesheet" href="tools/idol-redesign.css?v=10">
 <link rel="stylesheet" href="tools/mobile-stage.css?v=2">
 <link rel="stylesheet" href="tools/idol-dark.css?v=3">
 <script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#101a36':'#eaf3ff'</script>
@@ -1061,8 +1030,8 @@ body.touch .m-only { display:inline-block; }
     <button class="btn ic" id="bookBtn" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2z'/%3E%3Cpath d='M7 19a2 2 0 0 1 2-2h10'/%3E%3C/svg%3E&quot;)">图鉴</button>
     <button class="btn ic" id="autoBtn" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Crect x='5' y='9' width='14' height='9' rx='1'/%3E%3Cpath d='M12 9V5M9 13h.01M15 13h.01M9 15.5h6'/%3E%3C/svg%3E&quot;)">托管</button>
     <button class="btn ic" id="helpBtn" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M9.6 9.3a2.4 2.4 0 1 1 3.4 2.2c-.8.4-1 .9-1 1.6M12 16.5h.01'/%3E%3C/svg%3E&quot;)">玩法</button>
-    <button class="btn ic" id="resetBtn" title="放弃当前进度，重新开一局" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3v8'/%3E%3Cpath d='M6.6 6.6a8 8 0 1 0 10.8 0'/%3E%3C/svg%3E&quot;)">重开</button>
-    <button class="btn ic" id="endBtn" style="display:none;--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M5 21V4M5 5h12l-2.5 3.5L17 12H5'/%3E%3C/svg%3E&quot;)" title="主动结束本局：记入战绩并查看结算（再来一局保持当前模式）">结束挑战</button>
+    <button class="btn ic" id="resetBtn" title="打开对局菜单" aria-label="打开对局菜单" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3v8'/%3E%3Cpath d='M6.6 6.6a8 8 0 1 0 10.8 0'/%3E%3C/svg%3E&quot;)">对局菜单</button>
+    <button class="btn ic" id="endBtn" style="display:none;--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M5 21V4M5 5h12l-2.5 3.5L17 12H5'/%3E%3C/svg%3E&quot;)" title="提前结束并结算本局">结束本局并结算</button>
     <button class="btn ic" id="sfxBtn" title="音效开关" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 9v6h3.5L12 19V5L7.5 9z'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7'/%3E%3C/svg%3E&quot;)"></button>
     <button class="btn theme-toggle" id="themeBtn" type="button" title="切换暗色模式" aria-label="切换暗色模式">🌙</button>
   </div>
@@ -1085,7 +1054,7 @@ body.touch .m-only { display:inline-block; }
     <div class="panel" id="arenaPanel" style="display:none"><h3>八人竞技 · 对手与名次</h3><div id="arenaInfo"></div></div>
     <div class="panel"><h3>战斗统计</h3><div id="statBar"></div></div>
     <div class="panel" id="equipPanel"><h3 title="点装备→点棋子穿戴；右键棋子卸下全部装备">装备</h3><div id="equip"></div></div>
-    <div class="panel"><h3 title="单击棋子查看">棋子详情</h3><div id="inspect"><div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div></div></div>
+    <div class="panel" id="inspectPanel"><h3 title="单击棋子查看">棋子详情</h3><div id="inspect"><div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div></div></div>
     <div class="panel"><h3>战报</h3><div id="log"></div></div>
   </div>
 </div>
@@ -1180,22 +1149,87 @@ body.touch .m-only { display:inline-block; }
     <div id="bookItems" class="hidden"></div>
   </div>
 </div>
-<div id="resumeOv" class="hidden">
-  <h1>虚拟棋战 🎲</h1>
-  <p id="resumeInfo" style="color:#cdd6f4;line-height:1.8"></p>
-  <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">
-    <button id="resumeYes">▶ 继续上一局</button>
-    <button id="resumeNo" class="ghost">🆕 新开一局</button>
-    <button id="resumeDaily" class="ghost" style="border-color:#4aa8ff66;color:#9dd3e8">📅 每日挑战</button>
-  </div>
+<div id="flowShell" class="flow-shell is-hidden" aria-hidden="true">
+  <section id="flowHome" class="flow-card flow-page" role="dialog" aria-modal="true" aria-labelledby="flowHomeTitle" hidden>
+    <div id="homeArt" aria-hidden="true"></div>
+    <p class="flow-eyebrow">STAR STAGE · VIRTUAL IDOL AUTO BATTLE</p>
+    <h1 id="flowHomeTitle">星域棋战</h1>
+    <p class="flow-lead">收集虚拟偶像，组合专属羁绊，在自动战斗中推进挑战。</p>
+    <div id="homeRecommended" class="flow-recommended"></div>
+    <div id="homeSaves" class="flow-save-list" aria-label="可用对局存档"></div>
+    <p id="homeFeedback" class="flow-feedback" role="status" aria-live="polite"></p>
+    <div class="flow-actions flow-home-actions">
+      <button id="homeContinue" class="flow-primary" type="button" hidden>继续对局</button>
+      <button id="homeNew" class="flow-secondary" type="button">新建对局</button>
+      <button id="homeHelp" class="flow-link" type="button">玩法说明</button>
+      <button id="homeHistory" class="flow-link" type="button">战绩与荣誉</button>
+      <button id="homeTheme" class="flow-link" type="button" aria-label="切换显示主题">切换主题</button>
+    </div>
+  </section>
+  <section id="flowSetup" class="flow-card flow-page" role="dialog" aria-modal="true" aria-labelledby="flowSetupTitle" hidden>
+    <p class="flow-eyebrow">NEW RUN · 设置只影响新对局</p>
+    <h1 id="flowSetupTitle">新建对局</h1>
+    <div id="setupScroll" class="flow-scroll">
+      <div id="setupModes" class="flow-mode-grid" role="radiogroup" aria-label="选择对局模式"></div>
+      <div id="setupModeDetails" class="flow-mode-details"></div>
+      <div id="setupCursePick" class="flow-curse-pick" hidden></div>
+    </div>
+    <p id="setupSlotNote" class="flow-note"></p>
+    <p id="setupFeedback" class="flow-feedback" role="status" aria-live="polite"></p>
+    <div class="flow-actions">
+      <button id="setupStart" class="flow-primary" type="button">开始普通模式</button>
+      <button id="setupBack" class="flow-secondary" type="button">返回主菜单</button>
+    </div>
+  </section>
+  <section id="flowHelp" class="flow-card flow-page" role="dialog" aria-modal="true" aria-labelledby="flowHelpTitle" hidden>
+    <p class="flow-eyebrow">GUIDE · READ ONLY</p>
+    <h1 id="flowHelpTitle">玩法说明</h1>
+    <div id="flowHelpBody" class="flow-scroll"></div>
+    <div class="flow-actions"><button id="flowHelpClose" class="flow-primary" type="button">关闭说明</button></div>
+  </section>
+  <section id="flowGameMenu" class="flow-card flow-page" role="dialog" aria-modal="true" aria-labelledby="flowGameMenuTitle" hidden>
+    <p class="flow-eyebrow">CURRENT RUN · <span id="menuRunPhase"></span></p>
+    <h1 id="flowGameMenuTitle">对局菜单</h1>
+    <p id="menuRunSummary" class="flow-lead"></p>
+    <p id="menuPhaseNotice" class="flow-note"></p>
+    <div class="flow-actions flow-menu-actions">
+      <button id="menuResume" class="flow-primary" type="button">返回对局</button>
+      <button id="menuSaveHome" class="flow-secondary" type="button">保存并返回主菜单</button>
+      <button id="menuHelp" class="flow-link" type="button">玩法说明</button>
+      <button id="menuRestart" class="flow-danger" type="button">重新开始本局</button>
+      <button id="menuEnd" class="flow-danger" type="button">结束本局并结算</button>
+    </div>
+  </section>
+  <section id="flowConfirm" class="flow-card flow-page flow-confirm" role="alertdialog" aria-modal="true" aria-labelledby="flowConfirmTitle" aria-describedby="flowConfirmText" hidden>
+    <p class="flow-eyebrow">PLEASE CONFIRM</p>
+    <h1 id="flowConfirmTitle">确认操作</h1>
+    <p id="flowConfirmText" class="flow-lead"></p>
+    <p id="flowConfirmDetail" class="flow-note"></p>
+    <div class="flow-actions">
+      <button id="flowConfirmCancel" class="flow-secondary" type="button">取消</button>
+      <button id="flowConfirmAccept" class="flow-danger" type="button">确认</button>
+    </div>
+  </section>
+  <section id="flowChapter" class="flow-card flow-page" role="dialog" aria-modal="true" aria-labelledby="chapterTitle" hidden>
+    <p class="flow-eyebrow">CHAPTER REWARD · RUN CONTINUES</p>
+    <h1 id="chapterTitle">章节结算</h1>
+    <div id="chapterBody" class="flow-scroll"></div>
+    <div class="flow-actions"><button id="chapterContinue" class="flow-primary" type="button" disabled>先选择一项增强</button><button id="chapterHelp" class="flow-link" type="button">玩法说明</button><button id="chapterMenu" class="flow-link" type="button">对局菜单</button></div>
+  </section>
+  <section id="flowResult" class="flow-card flow-page" role="dialog" aria-modal="true" aria-labelledby="flowResultTitle" hidden>
+    <p class="flow-eyebrow">RUN COMPLETE · RESULTS</p>
+    <h1 id="flowResultTitle">对局结算</h1>
+    <div id="finalReport" class="flow-scroll"></div>
+    <div class="flow-actions">
+      <button id="resultReplay" class="flow-primary" type="button">再来一局</button>
+      <button id="resultHome" class="flow-secondary" type="button">返回主菜单</button>
+    </div>
+  </section>
+  <button id="flowGlobalClose" class="flow-global-close" type="button" aria-label="关闭当前界面" hidden>×</button>
 </div>
 <div id="inspect" class="hidden"></div>
-<div id="overlay">
- <div id="ovCard">
-  <span id="ovClose" title="关闭（Esc）">✕</span>
-  <button class="theme-toggle" id="ovThemeBtn" type="button" title="切换暗色模式" aria-label="切换暗色模式">🌙</button>
-  <h1 id="ovTitle">虚拟棋战 🎲</h1>
-  <p id="ovText" style="max-width:560px;line-height:1.7;color:#cdd6f4;font-size:14px;text-align:left">
+<div id="helpTemplate" hidden>
+  <div id="helpTemplateContent" style="max-width:560px;line-height:1.7;font-size:14px;text-align:left">
     单机自动战斗棋局 · VirtuaReal + P-SP 50 名主播 · 限量卡池 · 普通模式四章共 100 回合
     <span class="is-h">🎯 目标</span>
     买棋 → 上阵 → 自动战斗。普通模式在第 25、50、75 回合击败章节首领并选择增强，第 100 回合击败最终首领即通关并结算排名。
@@ -1230,20 +1264,10 @@ body.touch .m-only { display:inline-block; }
     单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）<br>
     快捷键：<b>R/A</b> 一键上阵 · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战；点【🏁 结束挑战】收兵结算（需二次确认）
     <span class="is-h">🎮 模式与荣誉</span>
-    开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（自选诅咒换补偿：禁用羁绊、紧缩货架、无梦等 14 种，少数互斥）<br>
+    开局四选一：🎲 普通模式 / 🏟 <b>八人竞技</b>（与 7 名对手比赛，按淘汰次序排名）/ 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（自选诅咒换补偿：禁用羁绊、紧缩货架、无梦等 14 种，少数互斥）<br>
     【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（19 项）· 🏆 本地排行 · 🌍 全球排行<br>
     【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）
-  </p>
-  <div id="modePick" style="display:none"></div>
-  <div id="cursePick" style="display:none"></div>
-  <div id="dailyInfo" style="display:none;max-width:560px;margin:8px auto 0;text-align:left;font-size:12px;line-height:1.7;color:#c8bfe8;background:#1c1830;border:1px solid #4aa8ff44;border-radius:8px;padding:6px 10px"></div>
-  <div id="ovBtns">
-    <button id="ovResume" style="display:none">▶ 继续上一局</button>
-    <button id="ovBtn">开始游戏</button>
-    <button id="ovBtn2" style="display:none;background:#1e5b2a;color:#8dff9a;">继续</button>
-    <button id="ovBtn3" style="display:none;background:#1a2f5b;color:#9dd3e8;border-color:#4aa8ff;">📅 每日挑战</button>
   </div>
- </div>
 </div>
 <script>
 /* ================= 名单：50 人（VirtuaReal 42 + P-SP 8，2026-09-19 费用与名单修订） =================
@@ -1980,50 +2004,8 @@ function initBannedBonds(){
   if(hasCurse('nofac')) ban.push(...Object.keys(FACTIONS));
   S.cursesData.nobond=[...new Set(ban)];
 }
-function toggleCurse(id){ const i=curseSel.indexOf(id);
-  if(i>=0) curseSel.splice(i,1);
-  else { (CURSE_CONFLICT[id]||[]).forEach(x=>{ const j=curseSel.indexOf(x); if(j>=0) curseSel.splice(j,1); });   // 互斥项自动取消勾选
-    curseSel.push(id); }
-  renderCursePick(); }
-function renderCursePick(){
-  const box=$('cursePick'); if(!box) return;
-  box.innerHTML=`<div class="cp-hd">⚠ 挑战规则（勾选诅咒换取补偿，可叠加；结算与排行会计入用诅咒数）</div>`+
-    CURSES.map(c=>{ const on=curseSel.includes(c.id), by=curseBlockedBy(c.id), bc=by?CURSES.find(x=>x.id===by):null;
-      return `<label class="cp-item${on?' on':''}${by?' cp-lock':''}"><input type="checkbox" ${on?'checked':''} ${by?'disabled':''} onchange="toggleCurse('${c.id}')"><b>${c.n}</b><span class="cp-d">${c.d}</span><span class="cp-r">${c.r}</span>${bc?`<span class="cp-lk">⛔ 与「${bc.n}」互斥，只能选其一</span>`:''}</label>`; }).join('');
-}
-/* ===== 三模式选择：普通 / 每日 / 自定义诅咒（开局与重开时询问） ===== */
+/* 新局模式草稿；切换选项只重绘设置页，不触碰活动局、随机数或任何槽位。 */
 let selMode='normal';
-function pickMode(m){ selMode=m; renderModePick(); }
-function renderModePick(){
-  const box=$('modePick'); if(!box) return;
-  const dcid=dailyCursesFor(todaySeed())[0];
-  const dc=CURSES.find(x=>x.id===dcid);
-  const cards=[
-    {m:'normal', t:'🎲 普通模式', d:'四章共 100 回合 · 第 100 回合决战并结算排名'},
-    {m:'arena', t:'🏟 八人竞技', d:'你与 7 名 bot 同场运营 · 每回合 1 对 1 · 淘汰定排名'},
-    {m:'daily',  t:'📅 每日挑战', d:'种子 '+todaySeed()+' · 全体玩家同序列<br>今日诅咒：'+(dc?dc.n:'无')},
-    {m:'custom', t:'⚠ 自定义诅咒', d:'自选诅咒换取补偿<br>可叠加多条（少数互斥）'},
-  ];
-  box.innerHTML=cards.map(c=>`<div class="mode-card${selMode===c.m?' on':''}" onclick="pickMode('${c.m}')"><b>${c.t}</b><div>${c.d}</div></div>`).join('');
-  const cp=$('cursePick'), di=$('dailyInfo');
-  if(cp) cp.style.display = selMode==='custom' ? 'block' : 'none';
-  if(cp && selMode==='custom') renderCursePick();
-  if(di){ di.style.display = selMode==='daily' ? 'block' : 'none'; if(selMode==='daily') di.innerHTML=dailyInfoHTML(); }
-}
-function startSelected(){
-  if(selMode!=='arena')try{localStorage.removeItem(ARENA_SAVE_KEY);}catch(e){}
-  if(selMode==='daily'){ startDaily(); return; }
-  if(selMode==='arena'){
-    $('overlay').classList.add('hidden'); ovMode='start';
-    newGame({arena:true}); renderAll(); $('fightBtn').disabled=false;
-    log('🏟 八人竞技开始：七名对手会独立运营，存活到最后获胜！');
-    return;
-  }
-  const custom=selMode==='custom';
-  $('overlay').classList.add('hidden'); ovMode='start';
-  newGame(custom?{custom:true}:{}); renderAll(); $('fightBtn').disabled=false;
-  log(custom?('⚠ 自定义诅咒挑战开始：'+((S.curses||[]).map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、')||'未选诅咒，等同普通模式')):'🎲 普通模式开始！');
-}
 /* ===== 成就系统：跨局解锁（localStorage vc_achv）；局内里程碑记入 S.ms，endBattle 统一判定 ===== */
 const ACHV=[
   {id:'merge2',  n:'初窥门径',   d:'首次合成 2★ 棋子',            c:()=>S.ms&&S.ms.merged2},
@@ -2226,7 +2208,12 @@ function checkLevel(){ let need=xpNeed(S.lvl);
 
 /* ================= 状态 ================= */
 let S, ARENA=null, ARENA_SILENT=false;
-function newGame(opts){ opts=opts||{}; autoRunId++; autoBusy=false; ARENA=null;
+let runSessionId=0, runIdSequence=0;
+function makeRunId(){ runIdSequence++; return `${Date.now().toString(36)}-${runIdSequence.toString(36)}`; }
+function newGame(opts){ opts=opts||{}; runSessionId++; autoRunId++; autoBusy=false; ARENA=null;
+  flowPausedSchedulers=null;flowBattleAutoIntent=null;
+  stopTickLoop(); cancelAutoFight();
+  if(chapterAutoTimer){clearTimeout(chapterAutoTimer);chapterAutoTimer=null;} chapterAutoPending=false;
   S = { round:1, hp:40, gold:10, lvl:2, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[], augs:[], tickets:0, tempBuff:null,
     ms:{}, curses:[], cursesData:{}, soloBoost:0, daily:false, dseed:0,
     bench:Array(BENCH).fill(null), board:Array(BOARD_H*BOARD_W).fill(null),
@@ -2243,6 +2230,8 @@ function newGame(opts){ opts=opts||{}; autoRunId++; autoBusy=false; ARENA=null;
   applyRNG();
   // 挑战规则：每日=当日预置；自定义诅咒挑战=开局勾选；普通=无
   S.curses = S.daily ? dailyCursesFor(S.dseed) : (opts.custom ? sanitizeCurses(curseSel) : []);
+  S.mode=opts.arena?'arena':(S.daily?'daily':(opts.custom?'custom':'normal'));
+  S.runId=makeRunId(); S.runConfig={mode:S.mode,curses:S.curses.slice(),dailySeed:S.daily?S.dseed:0}; S.finalized=false;
   if(opts.custom) curseSel=S.curses.slice();   // 互斥过滤结果同步回勾选区，弹窗不再残留已剔除项
   initBannedBonds();
   S.hp=hpMax();   // 🩸 血之契约：生命上限 40 → 25
@@ -2267,8 +2256,8 @@ function newGame(opts){ opts=opts||{}; autoRunId++; autoBusy=false; ARENA=null;
   if(opts.arena){ S.arena=true; startArenaMatch(); }
   else { prepEnemy(); rollShop(); }
   if(!opts.menuPreview){
-    if(S.autoFight && S.phase==='prep') scheduleAutoFight();
-    if(S.auto) autoPilot(900);
+    if(S.autoFight && S.phase==='prep' && flowPage==='game') scheduleAutoFight();
+    if(S.auto && flowPage==='game') autoPilot(900);
   }
 }
 function initPool(){ UNITS.forEach(u=>{ S.pool[u.id]=POOL_COPIES[u.cost]; }); }   // 初始化限量卡池（含开局保底 1 费）
@@ -2492,26 +2481,25 @@ function arenaNextRound(){
 }
 function arenaFinish(humanPlace){
   if(!ARENA||ARENA.complete)return;
-  ARENA.complete=true; S.phase='over'; endRunCleanup(); hideOvClose();
+  ARENA.complete=true; S.phase='over'; endRunCleanup();
   const human=ARENA.seats[0];
   const alive=ARENA.seats.filter(p=>p.alive).sort((a,b)=>b.state.hp-a.state.hp);
   if(humanPlace==null){ alive.forEach((p,i)=>{p.place=i+1;}); humanPlace=ARENA.seats[0].place||8; }
   else ARENA.seats[0].place=humanPlace;
   alive.forEach((p,i)=>{if(!p.place)p.place=i+1;});
   ARENA.seats.filter(p=>!p.place).forEach(p=>p.place=alive.length+1);
-  writeRunHistory(humanPlace===1); checkAchievements();
-  try{localStorage.removeItem(saveKey());}catch(e){}
+  const historySaved=writeRunHistory(humanPlace===1); checkAchievements();
+  const saveRemoved=removeRunSave(saveKey());
   const order=ARENA.seats.slice().sort((a,b)=>(a.place||8)-(b.place||8));
-  $('ovTitle').textContent=humanPlace===1?'🏆 八人竞技 · 冠军！':`🏟 八人竞技 · 第 ${humanPlace} 名`;
+  const title=humanPlace===1?'🏆 八人竞技 · 冠军！':`🏟 八人竞技 · 第 ${humanPlace} 名`;
   const exitText=humanPlace===1?`你坚持到第 ${ARENA.round} 回合并夺冠`:
     human.forfeited?`你在第 ${human.eliminatedRound||ARENA.round} 回合主动退赛`:
     `你在第 ${human.eliminatedRound||ARENA.round} 回合出局`;
-  $('ovText').innerHTML=`<div style="text-align:left;max-width:430px;margin:0 auto;line-height:1.9">`+
+  const content=`<div style="text-align:left;max-width:430px;margin:0 auto;line-height:1.9">`+
     `<div style="text-align:center;margin-bottom:8px">赛事进行至第 ${ARENA.round} 回合 · ${exitText} · ${S.stats.wins} 胜 ${S.stats.losses} 负 · 击败 ${S.stats.kills} 枚棋子</div>`+
     order.map(p=>`<div style="display:flex;justify-content:space-between;border-bottom:1px solid #343047;padding:3px 6px;color:${p.human?'#ffd24a':'#dcd6f2'}"><b>${p.place}. ${p.name}</b><span>${p.alive?'存活':'淘汰'} · ❤${p.state.hp} · Lv${p.state.lvl}</span></div>`).join('')+
     `</div>`;
-  $('ovBtn').textContent='再来一局'; $('ovBtn').onclick=()=>{ $('overlay').classList.add('hidden');newGame({arena:true});renderAll(); };
-  $('ovBtn').style.display='inline-block'; $('ovBtn2').style.display='none'; $('overlay').classList.remove('hidden');
+  showFinalResult(title,content,{historySaved,saveRemoved});
 }
 function arenaSettleHuman(won,alive0,alive1){
   if(!ARENA||ARENA.complete)return;
@@ -4181,13 +4169,14 @@ const SKILL_STAGGER = 800;  // 同场相邻技能间隔足够展示一次技能�
 const ASSASSIN_CRIT_MULT = 1.5;   // 刺客切入后首次攻击的暴击倍率
 function startTickLoop(ms){ // 用 Worker 驱动战斗时钟，避免后台标签页被浏览器节流
   stopTickLoop();
+  const session=runSessionId;
   try{
     const blob=new Blob(["let id=null;onmessage=e=>{if(e.data&&e.data.start){clearInterval(id);id=setInterval(()=>postMessage(0),e.data.ms);}};"],{type:'application/javascript'});
     tickWorker=new Worker(URL.createObjectURL(blob));
-    tickWorker.onmessage=()=>{ if(currentTick) currentTick(); };
+    tickWorker.onmessage=()=>{ if(session===runSessionId&&currentTick) currentTick(); };
     tickWorker.postMessage({start:true, ms});
   }catch(err){
-    battleTimer=setInterval(()=>{ if(currentTick) currentTick(); }, ms);
+    battleTimer=setInterval(()=>{ if(session===runSessionId&&currentTick) currentTick(); }, ms);
   }
 }
 function stopTickLoop(){
@@ -4201,7 +4190,7 @@ function paintTheme(){
   const dark=document.documentElement.dataset.theme==='dark';
   const label=dark?'切换浅色模式':'切换暗色模式';
   document.querySelector('meta[name="theme-color"]').content=dark?'#101a36':'#eaf3ff';
-  for(const id of ['themeBtn','ovThemeBtn']){
+  for(const id of ['themeBtn']){
     const b=$(id); if(!b) continue;
     if(id==='themeBtn') b.innerHTML=`${dark?'☀️':'🌙'}<span class="theme-label">${dark?'浅色':'暗色'}</span>`;
     else b.textContent=dark?'☀️':'🌙';
@@ -4215,8 +4204,7 @@ function toggleTheme(){
   try{localStorage.setItem('vc_theme',next)}catch(e){}
   paintTheme();
 }
-$('themeBtn').onclick=toggleTheme;
-$('ovThemeBtn').onclick=toggleTheme;
+{ const b=$('themeBtn'); if(b) b.onclick=toggleTheme; }
 paintTheme();
 /* ===== 战斗统计插桩（纯只读：不改任何伤害公式/判定/数值）。每场战斗一个容器，
    在 dealDamage/治疗结算处聚合 造成伤害/承受伤害/治疗量/击杀；endBattle 消费后置空。
@@ -4422,6 +4410,7 @@ function fillBoardBeforeBattle(){
 }
 function startBattle(){
   if(S.phase!=='prep') return;
+  const session=runSessionId;
   closeDrawer();   // 抽屉（商店/详情）开着时开战：先收起，不挡战斗画面
   const _sl=document.getElementById('synBadgeLayer'); if(_sl) _sl.remove();   // 徽章悬浮层只属于备战棋盘
   stopTickLoop(); // 关闭任何残余的战斗时钟
@@ -4602,7 +4591,7 @@ function startBattle(){
   }
   let t=0, delayLeft=BATTLE_DELAY, released=false, lastCastAt=-SKILL_STAGGER, nextCastSide=rand()<.5?0:1; const TICK=100;
   currentTick=()=>{
-    if(S.phase!=='battle') return;  // 非战斗阶段，任何残余时钟都是空操作
+    if(session!==runSessionId || S.phase!=='battle') return;  // 跨局迟到时钟不得推进新局
     t+=TICK;
     // 开战缓冲：先看清双方站位，之后双方同步开始行动（刺客的切入也在此时发生）
     if(!released){
@@ -4888,7 +4877,7 @@ function startBattle(){
     if(alive0===0||alive1===0||t>60000){
       stopTickLoop();
       if(t>60000&&alive0>0&&alive1>0) log('⏱ 战斗超时，存活多者获胜');
-      showResultBanner(alive0>0&&alive0>=alive1, ()=>endBattle(alive0,alive1));
+      showResultBanner(alive0>0&&alive0>=alive1, ()=>{ if(session===runSessionId) endBattle(alive0,alive1); });
       return;
     }
   };
@@ -5941,14 +5930,20 @@ function chapterSettle(won){
   S.settlePick=null;
   sfx(won?'finalWin':'settle');
   const ch=Math.ceil(S.round/chLen());
-  $('ovTitle').textContent = won? `🏆 第 ${ch} 章结算 · 守关魔王已败！` : `💔 第 ${ch} 章结算 · 惜败守关魔王`;
   renderSettle();
-  ovMode='chapter'; hideOvClose();
-  const b1=$('ovBtn'), b2=$('ovBtn2');
-  b1.textContent='继续下一章（先选增强）'; b1.disabled=true; b1.style.display='inline-block'; b1.onclick=chapterContinue;
-  b2.style.display='none';
-  $('overlay').classList.remove('hidden');
-  if(S.auto) setTimeout(autoSettle, 1500);
+  $('chapterTitle').textContent = won? `🏆 第 ${ch} 章结算 · 守关魔王已败！` : `💔 第 ${ch} 章结算 · 惜败守关魔王`;
+  $('chapterContinue').disabled=true; $('chapterContinue').textContent='先选择一项增强';
+  if(flowPage==='help'){flowDeferredPage='chapter';if(S.auto)chapterAutoPending=true;}
+  else showFlowPage('chapter');
+  if(S.auto&&flowPage==='chapter') scheduleChapterAuto(1500);
+}
+let chapterAutoTimer=null, chapterAutoPending=false;
+function scheduleChapterAuto(delay=1500){
+  if(chapterAutoTimer) clearTimeout(chapterAutoTimer);
+  if(!S||!S.auto||S.phase!=='chapter')return;
+  const session=runSessionId;
+  chapterAutoPending=false;
+  chapterAutoTimer=setTimeout(()=>{chapterAutoTimer=null;if(session===runSessionId&&flowPage==='chapter')autoSettle();},delay);
 }
 function renderSettle(){
   const w=S.settleWon;
@@ -5957,10 +5952,10 @@ function renderSettle(){
     const def=AUGS.find(x=>x.id===a.id); const v=w?def.s:def.w;
     const st = S.settlePick==null?'':(S.settlePick===i?' picked':' dim');
     const rc=AR_COLOR[def.r||1];
-    return `<div class="aug-card r${def.r||1}${st}" style="animation-delay:${i*0.15}s" onclick="pickAug(${i})"><b style="color:${rc}">${def.n}</b><span class="ar-tag" style="color:${rc};border-color:${rc}66">${AUG_RNAME[def.r||1]}</span><div class="ad">${def.d(v)}</div><span class="at">${w?'★ 强效':'☆ 削弱版'}</span></div>`;
+    return `<button type="button" class="aug-card r${def.r||1}${st}" data-aug="${i}" aria-label="选择增强：${def.n}" style="animation-delay:${i*0.15}s"><b style="color:${rc}">${def.n}</b><span class="ar-tag" style="color:${rc};border-color:${rc}66">${AUG_RNAME[def.r||1]}</span><span class="ad">${def.d(v)}</span><span class="at">${w?'★ 强效':'☆ 削弱版'}</span></button>`;
   }).join('');
   const owned=(S.augs||[]).map(a=>{const def=AUGS.find(x=>x.id===a.id);return def?def.n+(a.weak?'(削)':''):'';}).filter(Boolean).join('、')||'无';
-  $('ovText').innerHTML=`
+  $('chapterBody').innerHTML=`
     <div class="settle-hero ${w?'win':'lose'}">${w?'🎉 击败守关魔王，章节推进！':'💚 惜败守关魔王，旅路仍在继续'}</div>
     <div class="settle-row">第 ${Math.ceil(S.round/chLen())} 章 · 第 ${S.round} 回合 · 生命 ${S.hp} · 战绩 ${S.stats.wins} 胜 ${S.stats.losses} 负</div>
     ${(S.curses&&S.curses.length)?`<div class="settle-row" style="color:#ff9a9a">⚠ 挑战规则：${S.curses.map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、')}</div>`:''}
@@ -5968,6 +5963,7 @@ function renderSettle(){
     <div class="settle-ask">👇 选择一项全局${w?'强效':'削弱'}增强（3 选 1）</div>
     <div class="aug-row">${cards}</div>
     <div class="settle-row" style="color:#8a93c4;font-size:11px;margin-top:8px">已有增强：${owned}${goldOwnedNote()}</div>`;
+  $('chapterBody').querySelectorAll('[data-aug]').forEach(button=>button.addEventListener('click',()=>pickAug(Number(button.dataset.aug))));
 }
 function goldOwnedNote(){
   const n=(S.augs||[]).filter(a=>augRarity(a.id)===3).length;
@@ -5979,15 +5975,18 @@ function pickAug(i){
   (S.augs=S.augs||[]).push({id:a.id, weak:!S.settleWon});
   log(`🌟 全局增强（${S.settleWon?'强效':'削弱'}）：${def.n} — ${def.d(v)}`);
   renderSettle();
-  const b=$('ovBtn'); b.disabled=false; b.textContent='▶ 继续下一章';
+  const b=$('chapterContinue'); b.disabled=false; b.textContent='▶ 继续下一章';
 }
 function chapterContinue(){
   if(S.phase!=='chapter'||S.settlePick==null) return;
+  flowBattleAutoIntent=null;flowPausedSchedulers=null;
+  if(chapterAutoTimer){clearTimeout(chapterAutoTimer);chapterAutoTimer=null;}
+  chapterAutoPending=false;
   S.phase='prep'; S.round++;
   if(S.lvl<lvlCap()){ S.xp+=2; checkLevel(); }
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null); prepEnemy(); rollShop();
   if(S.lock) S.lock=false;
-  $('overlay').classList.add('hidden'); ovMode='start';
+  hideFlowForGame(false);
   renderAll(); $('fightBtn').disabled=false;
   log(`— 第 ${S.round} 回合备战阶段（第 ${Math.ceil(S.round/chLen())} 章）—`);
   soloQualityNotice();   // 🪑 独木桥：跨档回合播报品质提升
@@ -5995,12 +5994,13 @@ function chapterContinue(){
   scheduleAutoFight();   // 玩家选完增强后，自动开战继续循环
 }
 function autoSettle(){   // 托管：自动选增强（③ 稀有度>局面适配评分，策略在 bot_strategy.js 单一事实来源）并继续下一章
-  if(!S.auto||S.phase!=='chapter') return;
+  if(!S.auto||S.phase!=='chapter'||flowPage!=='chapter') return;
   if(S.settlePick==null&&S.settleOffer){
     const i=(typeof botAugPick==='function')?botAugPick(S.settleOffer):-1;   // -1=策略未加载，兜底随机
     pickAug(i>=0?i:Math.floor(rand()*S.settleOffer.length));
   }
-  setTimeout(()=>{ if(S.auto&&S.phase==='chapter') chapterContinue(); }, 800);
+  const session=runSessionId;
+  setTimeout(()=>{ if(session===runSessionId&&S.auto&&S.phase==='chapter'&&flowPage==='chapter') chapterContinue(); }, 800);
 }
 function endBattle(alive0,alive1){
   if(S.phase==='over') return;     // 已终局，忽略迟到的结算
@@ -6125,7 +6125,7 @@ function endBattle(alive0,alive1){
   }
 }
 /* 一局总结：分区面板（概览/经济/扣血曲线/最终阵容/全场之最/败局简析）。
-   全部内容都在 ovText 滚动区内，overlay 卡片 max-height:92vh 不会把按钮挤出视口。 */
+   全部内容都在章节页面自己的滚动区内，底部操作始终固定可见。 */
 function reportHTML(kind){
   const st=S.stats;
   const gb=st.goldBy||{};
@@ -6162,127 +6162,271 @@ function reportHTML(kind){
   return html;
 }
 function endRunCleanup(){   // 终局统一收尾：托管/自动开战关闭（下一局默认手动），UI 同步
+  stopTickLoop();
   S.auto=false; autoRunId++; autoBusy=false; autoStoreSet(false); setAutoUI();
   cancelAutoFight(); S.autoFight=false; afStoreSet(false); renderAutoFightBtn();
 }
-function restartGame(){ $('overlay').classList.add('hidden'); if(!S.arena)try{localStorage.removeItem(ARENA_SAVE_KEY);}catch(e){} newGame({daily:!!S.daily,arena:!!S.arena}); }   // 再来一局保持模式
-function gameOver(win){
-  S.finished=!!win;
-  S.phase='over'; ovMode='start'; hideOvClose(); endRunCleanup();
-  writeRunHistory(win); checkAchievements();   // 历史战绩 + 终局成就判定
-  try{ localStorage.removeItem(saveKey()); }catch(e){}   // 顺手修：曾误写死旧键 'vc_save'
-  $('ovTitle').textContent = (S.daily?'📅 ':'')+(win ? '🏅 四章挑战通关！' : '💀 挑战失败');
-  $('ovText').innerHTML = (win?'':`在第 ${S.round} 回合倒下。<br>`)+rankedNoteHTML()+reportHTML(win?'win':'lose')+(S.daily?dailyCodeHTML():'')+globRowHTML();
-  $('ovBtn').textContent='再来一局';
-  $('ovBtn').onclick=restartGame;   // 显式重绑：防止残留上一流程（章节继续）的 onclick 导致按钮失灵
-  $('ovBtn').style.display='inline-block';
-  $('ovBtn2').style.display='none';
-  $('overlay').classList.remove('hidden');
+function showFinalResult(title,content,meta={}){
+  flowPausedSchedulers=null;flowBattleAutoIntent=null;chapterAutoPending=false;
+  const notes=[];
+  if(meta.historySaved===false)notes.push('浏览器未能写入本次战绩；本局已在当前会话结算。');
+  if(meta.saveRemoved==='tombstoned')notes.push('浏览器未能删除续玩文件，已尝试标记为不可继续。');
+  if(meta.saveRemoved==='failed')notes.push('浏览器未能删除或标记续玩文件；主菜单仍可能显示旧存档。');
+  $('flowResultTitle').textContent=title;
+  $('finalReport').innerHTML=content+(notes.length?`<div class="flow-note" role="status" style="color:#a84d61;margin-top:12px">${notes.map(flowEsc).join('<br>')}</div>`:'');
+  const submit=$('globBtn');if(submit)submit.onclick=submitScore;
+  if(flowPage==='help'){flowDeferredPage='result';return;}
+  showFlowPage('result');
 }
-function endRunEarly(){  // 🏁 主动收兵：任意模式备战期均可，记为弃局
+function restartGame(){
+  if(!S||S.phase!=='over')return false;
+  const config=normalizeRunConfig(S.runConfig||{mode:S.mode,curses:S.curses,dailySeed:S.dseed});
+  if(config.mode==='daily'&&config.dailySeed!==todaySeed()){
+    selMode='daily';curseSel=[];openSetup('本局每日挑战日期已结束；已切换为今日种子与规则。确认开始后才会覆盖每日存档。');return false;
+  }
+  startConfiguredRun(config); return true;
+}
+function gameOver(win){
+  if(!S||S.finalized||S.phase==='over')return;
+  S.finished=!!win;
+  S.phase='over'; endRunCleanup();
+  const historySaved=writeRunHistory(win); checkAchievements();
+  const saveRemoved=removeRunSave(saveKey());
+  const title=(S.daily?'📅 ':'')+(win ? '🏅 四章挑战通关！' : '💀 挑战失败');
+  const content=(win?'':`在第 ${S.round} 回合倒下。<br>`)+rankedNoteHTML()+reportHTML(win?'win':'lose')+(S.daily?dailyCodeHTML():'')+globRowHTML();
+  showFinalResult(title,content,{historySaved,saveRemoved});
+}
+function endRunEarly(){  // 🏁 主动收兵：任意模式备战期均可，记为提前结束成绩
   if(S.phase!=='prep') return;
   if(S.arena){
     const me=ARENA&&ARENA.seats[0];
     if(me){me.alive=false;me.state.hp=0;me.eliminatedRound=ARENA.round;me.forfeited=true;arenaReleaseSeatCards(me);}
     arenaMarkEliminations(); arenaFinishBotBracket(); arenaFinish(me&&me.place||8); return;
   }
-  S.phase='over'; endRunCleanup(); hideOvClose();
-  resumeAvail=null;   // 存档已删除，「继续上一局」不再有效
-  S.forfeited=true; writeRunHistory(false); checkAchievements();
-  try{ localStorage.removeItem(saveKey()); }catch(e){}
-  $('ovTitle').textContent=(S.daily?'📅 ':'')+'🏁 提前收兵';
-  $('ovText').innerHTML=`主动结束挑战，安然退场。<br>`+rankedNoteHTML()+reportHTML('endless')+(S.daily?dailyCodeHTML():'')+globRowHTML();
-  $('ovBtn').textContent='再来一局';
-  $('ovBtn').onclick=restartGame;   // 显式重绑（同 gameOver，防 onclick 残留）
-  $('ovBtn').style.display='inline-block';
-  $('ovBtn2').style.display='none';
-  $('overlay').classList.remove('hidden');
+  S.phase='over'; endRunCleanup();
+  S.forfeited=true; const historySaved=writeRunHistory(false); checkAchievements();
+  const saveRemoved=removeRunSave(saveKey());
+  const title=(S.daily?'📅 ':'')+'🏁 提前结束 · 成绩已结算';
+  const content=`主动结束本局。${S.arena?'竞技退赛名次依现有淘汰规则计算。':'本局成绩已保留；符合规则的排行榜入口仍可使用。'}<br>`+rankedNoteHTML()+reportHTML('endless')+(S.daily?dailyCodeHTML():'')+globRowHTML();
+  showFinalResult(title,content,{historySaved,saveRemoved});
 }
-let endArmTimer=null;
-$('endBtn').onclick=()=>{   // 二次确认：第一击武装（3 秒内再点才真正结束），防误触
-  if(!S || S.phase!=='prep') return;
-  const btn=$('endBtn');
-  if(btn.dataset.armed==='1'){
-    clearTimeout(endArmTimer); btn.dataset.armed='0'; btn.classList.remove('arm-flash'); btn.textContent='结束挑战';
-    endRunEarly(); return;
+/* 页面状态与 S.phase 分离；新局配置始终从草稿生成，说明/菜单/确认无权隐式创建对局。 */
+let flowPage='home', flowReturnPage='home', flowDeferredPage=null, flowFocusTarget=null;
+let flowPausedSchedulers=null, flowBattleAutoIntent=null, flowConfirmAction=null, flowBusy=false, setupNotice='', flowHelpReady=false;
+const FLOW_PAGE_IDS=['flowHome','flowSetup','flowHelp','flowGameMenu','flowConfirm','flowChapter','flowResult'];
+function flowIsOpen(){ const shell=$('flowShell'); return !!(shell&&!shell.classList.contains('is-hidden')); }
+function flowFocusPage(id){
+  const page=$(id); if(!page)return;
+  const target=page.querySelector('button:not([disabled]):not([hidden]),input:not([disabled]),[tabindex="0"]')||page;
+  if(target&&target.hasAttribute&&!target.hasAttribute('tabindex') && target===page)target.setAttribute('tabindex','-1');
+  try{target.focus({preventScroll:true});}catch(e){try{target.focus();}catch(_){}}
+}
+function pauseFlowSchedulers(){
+  if(S&&S.phase==='prep'&&!flowPausedSchedulers){
+    flowPausedSchedulers={runId:S.runId,auto:!!S.auto,autoFight:!!S.autoFight,autoFightLeft:afDeadline>0?Math.max(0,afDeadline-Date.now()):AUTO_FIGHT_DELAY};
+    if(S.auto){autoRunId++;autoBusy=false;}
+    if(S.autoFight)cancelAutoFight();
   }
-  btn.dataset.armed='1'; btn.textContent='确认结束'; btn.classList.add('arm-flash');
-  log('⚠ 即将结束本局（3 秒内再点一次确认；不点自动取消）');
-  endArmTimer=setTimeout(()=>{ btn.dataset.armed='0'; btn.classList.remove('arm-flash'); btn.textContent='结束挑战'; },3000);
-};
-/* 玩法介绍弹窗：start=开局 / resume=游戏中查看（按钮变"继续游戏"，不重开） */
-let ovMode='start';
-let resumeAvail=null;   // {label,key}：存在存档时开局弹窗提供「继续上一局」
-function showIntro(resume){
-  ovMode = resume ? 'resume' : 'start';
-  reportCardMode(false);   // 开始/继续菜单恢复「新手指南」包装与菜单装饰
-  $('ovBtn').textContent = resume ? '▶ 继续游戏' : '开始游戏';
-  $('ovBtn2').style.display='none';
-  { const b3=$('ovBtn3'); if(b3) b3.style.display='none'; }   // 每日挑战入口由三模式卡片承担（玩法底部不再单列）
-  { const mp=$('modePick'); if(mp){ mp.style.display = resume ? 'none' : 'flex'; if(!resume) renderModePick(); } }
-  { const cp=$('cursePick'); if(cp){ const show=!resume&&selMode==='custom'; cp.style.display=show?'block':'none'; if(show) renderCursePick(); } }
-  { const di=$('dailyInfo'); if(di){ const show=!resume&&selMode==='daily'; di.style.display=show?'block':'none'; if(show) di.innerHTML=dailyInfoHTML(); } }
-  { const rv=$('ovResume'); if(rv){ const show=!resume&&!!resumeAvail; rv.style.display=show?'inline-block':'none'; if(show) rv.textContent=resumeAvail.label; } }
-  if($('ovClose')) $('ovClose').style.display='block';   // 介绍弹窗可关闭
-  $('overlay').classList.remove('hidden');
+  if(S&&S.phase==='battle'&&!flowBattleAutoIntent)flowBattleAutoIntent={runId:S.runId,auto:!!S.auto,autoFight:!!S.autoFight};
+  if(S&&S.phase==='chapter'&&chapterAutoTimer){clearTimeout(chapterAutoTimer);chapterAutoTimer=null;chapterAutoPending=true;}
 }
-/* 📅 每日挑战：当日种子 + 当日预置诅咒，独立存档 */
-function startDaily(){
-  try{localStorage.removeItem(ARENA_SAVE_KEY);}catch(e){}
-  $('overlay').classList.add('hidden'); ovMode='start';
-  newGame({daily:true}); renderAll(); $('fightBtn').disabled=false;
-  log(`📅 每日挑战开始（种子 ${S.dseed}）：今日挑战规则「${(S.curses||[]).map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、')||'无'}」。全体玩家同一随机序列，比谁推得远！`);
+function showFlowPage(name,options={}){
+  if(['help','gameMenu','confirm'].includes(name))pauseFlowSchedulers();
+  const shell=$('flowShell'); if(!shell)return;
+  FLOW_PAGE_IDS.forEach(id=>{const el=$(id);if(el)el.hidden=id!==({home:'flowHome',setup:'flowSetup',help:'flowHelp',gameMenu:'flowGameMenu',confirm:'flowConfirm',chapter:'flowChapter',result:'flowResult'}[name]);});
+  flowPage=name; shell.classList.remove('is-hidden'); shell.setAttribute('aria-hidden','false');
+  const close=$('flowGlobalClose'); close.hidden=!['setup','help','gameMenu','confirm'].includes(name);
+  flowFocusPage(({home:'flowHome',setup:'flowSetup',help:'flowHelp',gameMenu:'flowGameMenu',confirm:'flowConfirm',chapter:'flowChapter',result:'flowResult'}[name]));
 }
-$('ovBtn3').onclick=()=>{
-  if(ovMode==='resume'){   // 对局中打开「玩法」：按钮=切换到另一模式开局
-    try{localStorage.removeItem(ARENA_SAVE_KEY);}catch(e){}
-    const toDaily=!S.daily;
-    $('overlay').classList.add('hidden'); ovMode='start';
-    newGame({daily:toDaily}); renderAll(); $('fightBtn').disabled=false;
-    log(toDaily?`📅 已切换到每日挑战（种子 ${S.dseed}）`:'🎲 已切换到普通模式（手动勾选的挑战规则生效）');
-  } else startDaily();
-};
-/* 结算/通关画面：隐藏 ✕（那时"关闭"语义是再来一局，由按钮承担）；模式选择/诅咒/每日入口一并隐藏 */
-/* 结算类视图的卡片模式：开始菜单的「新手指南」<details> 包着全局唯一的 #ovText（重设计装饰），
-   终局战报若留在里面会被折叠/压进 250px 小滚动框，全球排行提交行沉在框底不可见。
-   结算时移出折叠框并隐藏菜单装饰（立绘/引导语），回到开始菜单时再包回去。 */
-function reportCardMode(on){
-  const d=$('idolQuickGuide'), t=$('ovText'), art=$('idolMenuArt'), lead=$('ovLead');
-  if(!d||!t||typeof d.appendChild!=='function') return;   // sim 无头桩：跳过卡片模式切换
-  if(on){
-    if(t.parentElement===d) d.parentNode.insertBefore(t,d.nextSibling);
-    if(art) art.style.display='none';
-    if(lead) lead.style.display='none';
-    d.style.display='none';
-    t.style.color='';   // 清掉旧暗色弹窗遗留的近白内联文字色，浅色卡片下交给主题样式保证对比度
-  }else{
-    if(t.parentElement!==d) d.appendChild(t);
-    if(art) art.style.display='';
-    if(lead) lead.style.display='';
-    d.style.display='';
-    d.open=false;
+function resumeFlowSchedulers(){
+  const held=flowPausedSchedulers; flowPausedSchedulers=null;
+  if(held&&S&&held.runId===S.runId&&S.phase==='prep'){
+    if(held.auto)autoPilot(250);
+    else if(held.autoFight)scheduleAutoFight(held.autoFightLeft);
   }
+  const battleIntent=flowBattleAutoIntent;flowBattleAutoIntent=null;
+  if(battleIntent&&S&&battleIntent.runId===S.runId&&S.phase==='prep'){
+    if(battleIntent.auto)autoPilot(250);else if(battleIntent.autoFight)scheduleAutoFight();
+  }
+  if(S&&S.phase==='chapter'&&chapterAutoPending&&flowPage==='chapter')scheduleChapterAuto(250);
 }
-function hideOvClose(){ if($('ovClose')) $('ovClose').style.display='none';
-  reportCardMode(true);
-  { const cp=$('cursePick'); if(cp) cp.style.display='none'; }
-  { const b3=$('ovBtn3'); if(b3) b3.style.display='none'; }
-  { const di=$('dailyInfo'); if(di) di.style.display='none'; }
-  { const mp=$('modePick'); if(mp) mp.style.display='none'; }
-  { const rv=$('ovResume'); if(rv) rv.style.display='none'; } }
-/* 关闭弹窗：对局中(resume)只是收起；开局前(start)=按所选模式开始 */
-let resetPickOpen=false;   // 重开流程中打开的模式选择器：此时 ✕/Esc=取消（回到当前对局），只有点「开始游戏」才真开新局
-function closeIntro(){
-  if(ovMode==='resume'){ $('overlay').classList.add('hidden'); return; }
-  if(resetPickOpen){ resetPickOpen=false; $('overlay').classList.add('hidden'); ovMode='start'; log('已取消重开，留在当前对局'); return; }
-  resumeAvail=null;   // 已开新局，旧存档将被覆盖
-  startSelected();
-  log('新的一局开始！');
+function hideFlowForGame(resume=true){
+  const shell=$('flowShell'); if(shell){shell.classList.add('is-hidden');shell.setAttribute('aria-hidden','true');}
+  flowPage='game'; flowDeferredPage=null; flowConfirmAction=null;
+  if(resume)resumeFlowSchedulers(); else flowPausedSchedulers=null;
+  if(flowFocusTarget&&flowFocusTarget.isConnected){try{flowFocusTarget.focus({preventScroll:true});}catch(e){}}
+  flowFocusTarget=null;
 }
-$('helpBtn').onclick=()=>showIntro(S && S.phase!=='over' ? true : false);
-$('ovClose').onclick=closeIntro;                                  // 右上角 ✕
-document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('overlay').classList.contains('hidden')) closeIntro(); });
-$('ovBtn').onclick=()=>{ resetPickOpen=false; closeIntro(); };   // 「开始游戏」= 真正按所选模式开局（清除重开取消标志）
+function returnToLiveView(){
+  if(S&&S.phase==='chapter'){showFlowPage('chapter');resumeFlowSchedulers();return;}
+  if(S&&S.phase==='over'){showFlowPage('result');return;}
+  hideFlowForGame(true);
+}
+function showHome(){
+  renderHome();
+  flowFocusTarget=document.activeElement;
+  showFlowPage('home');
+}
+function openSetup(notice=''){
+  setupNotice=notice;
+  renderSetup();
+  flowFocusTarget=document.activeElement;
+  showFlowPage('setup');
+}
+function showHelp(){
+  if(flowPage!=='help')flowReturnPage=flowPage;
+  pauseFlowSchedulers();
+  if(!flowHelpReady){
+    const src=$('helpTemplateContent'); if(src)$('flowHelpBody').innerHTML=src.innerHTML;
+    const limitation=document.createElement('p');limitation.className='flow-note';
+    limitation.textContent='存档在备战阶段记录检查点。刷新后会回到本回合开战前；敌方阵容预览会按现有生成逻辑重新构造。';
+    $('flowHelpBody').appendChild(limitation);
+    flowHelpReady=true;
+  }
+  flowFocusTarget=document.activeElement;
+  showFlowPage('help');
+}
+function closeHelp(){
+  const to=flowDeferredPage||flowReturnPage; flowDeferredPage=null;
+  if(to==='chapter'){showFlowPage('chapter');if(chapterAutoPending&&S&&S.auto)scheduleChapterAuto(250);return;}
+  if(to==='result'){showFlowPage('result');return;}
+  if(to==='game'){returnToLiveView();return;}
+  if(to==='gameMenu'){showFlowPage('gameMenu');return;}
+  if(to==='setup'){openSetup(setupNotice);return;}
+  showHome();
+}
+function showGameMenu(){
+  if(!S||S.phase==='over'){if(S&&S.phase==='over')showFlowPage('result');return;}
+  const phase=S.phase, blocked=phase!=='prep';
+  $('menuRunPhase').textContent=phase==='battle'?'本场战斗进行中':phase==='chapter'?'章节奖励选择中':'备战阶段';
+  $('menuRunSummary').textContent=`${modeLabel(runModeOf(S))} · 第 ${S.round} 回合 · 生命 ${S.hp} · 配置与存档保持在本局。`;
+  $('menuPhaseNotice').textContent=phase==='battle'?'本场战斗会继续进行；重开、保存返回与结束将在战斗结束后开放。玩法说明可以查看。'
+    :phase==='chapter'?'请先选择章节增强并继续下一章，再使用保存、重开或结算操作。'
+    :'普通与自定义模式共用存档位；每日挑战与八人竞技各用独立存档位。刷新恢复到备战检查点，敌方预览按现有逻辑重新生成。';
+  for(const id of ['menuSaveHome','menuRestart','menuEnd'])$(id).disabled=blocked;
+  flowFocusTarget=document.activeElement;
+  showFlowPage('gameMenu');
+}
+function openFlowConfirm(kind,extra={}){
+  if(flowBusy)return;
+  flowConfirmAction={kind,...extra};
+  let title='确认操作',text='',detail='',accept='确认';
+  if(kind==='restart'){
+    const cfg=normalizeRunConfig(S.runConfig||{mode:S.mode,curses:S.curses,dailySeed:S.dseed});
+    flowConfirmAction.config=cfg;
+    title=cfg.mode==='daily'&&cfg.dailySeed!==todaySeed()?'每日挑战已跨天':'重新开始本局？';
+    text=cfg.mode==='daily'&&cfg.dailySeed!==todaySeed()
+      ?'本局属于已结束的每日挑战日期，不能用昨天的种子冒充同配置重开。确认后会进入今日每日挑战设置。'
+      :`将放弃当前第 ${S.round} 回合进度，按相同模式和规则从第 1 回合开始。此操作不记录本局战绩。`;
+    detail=cfg.mode==='custom'?`沿用自定义诅咒：${(cfg.curses||[]).map(curseName).join('、')||'未选择诅咒（玩法等同普通模式）'}。普通与自定义共用存档位。`
+      :cfg.mode==='daily'?`沿用今日种子 ${cfg.dailySeed} 与今日规则。`
+      :cfg.mode==='arena'?'沿用八人竞技模式。':'沿用普通模式。';
+    accept=cfg.mode==='daily'&&cfg.dailySeed!==todaySeed()?'前往今日挑战设置':'放弃进度并重开';
+  }else if(kind==='end'){
+    title='结束本局并结算？';
+    text='将记录当前成绩，结束后这局无法继续。';
+    detail=S.arena?'八人竞技将按现有退赛与淘汰规则计算名次。':'符合既有规则的排行榜提交入口会保留。';
+    accept='结束并结算';
+  }else if(kind==='replace'){
+    const info=inspectSave(saveKeyForMode(extra.config.mode));
+    title='覆盖此模式的存档？';
+    text=`开始${modeLabel(extra.config.mode)}将替换对应存档位。${info.exists?`现有存档：${info.summary||info.reason||'无法继续的存档'}`:'该位置有存档数据'}`;
+    detail=extra.config.mode==='custom'||extra.config.mode==='normal'?'普通与自定义共用普通存档位；每日和竞技存档不会被改动。':'只替换当前所选模式的存档位。';
+    accept='覆盖并开始';
+  }
+  $('flowConfirmTitle').textContent=title; $('flowConfirmText').textContent=text;
+  $('flowConfirmDetail').textContent=detail; $('flowConfirmAccept').textContent=accept;
+  flowConfirmReturn=extra.returnPage||flowPage;
+  flowFocusTarget=document.activeElement;
+  showFlowPage('confirm');
+}
+let flowConfirmReturn='gameMenu';
+function cancelFlowConfirm(){
+  const to=flowConfirmReturn; flowConfirmAction=null;
+  if(to==='game'){returnToLiveView();return;}
+  if(to==='setup'){renderSetup();showFlowPage('setup');return;}
+  if(to==='home'){showHome();return;}
+  if(to==='help'){showFlowPage('help');return;}
+  showGameMenu();
+}
+function acceptFlowConfirm(){
+  if(flowBusy||!flowConfirmAction)return;
+  const action=flowConfirmAction; flowConfirmAction=null; flowBusy=true;
+  try{
+    if(action.kind==='restart'){
+      if(action.config.mode==='daily'&&action.config.dailySeed!==todaySeed()){
+        selMode='daily';curseSel=[];openSetup('昨日每日挑战已过期。原存档保留至你确认开始今日挑战；今日种子与规则已更新。');
+      }else{
+        removeRunSave(saveKey()); startConfiguredRun(action.config,{confirmed:true,fromConfirm:true});
+      }
+    }else if(action.kind==='end')endRunEarly();
+    else if(action.kind==='replace')startConfiguredRun(action.config,{confirmed:true,fromConfirm:true});
+  }finally{flowBusy=false;}
+}
+function trapFlowKeys(e){
+  if(!flowIsOpen())return;
+  if(e.key==='Escape'){
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+    if(flowPage==='help')closeHelp();
+    else if(flowPage==='confirm')cancelFlowConfirm();
+    else if(flowPage==='setup')showHome();
+    else if(flowPage==='gameMenu')returnToLiveView();
+    return;
+  }
+  if(e.key==='Tab'){
+    const page=$(FLOW_PAGE_IDS[['home','setup','help','gameMenu','confirm','chapter','result'].indexOf(flowPage)]);
+    if(!page)return;
+    const items=[...page.querySelectorAll('button:not([disabled]):not([hidden]),input:not([disabled]),[href],[tabindex]:not([tabindex="-1"])')].filter(x=>x.offsetParent!==null);
+    const close=$('flowGlobalClose');if(close&&!close.hidden&&close.offsetParent!==null)items.push(close);
+    if(!items.length){e.preventDefault();return;}
+    const first=items[0],last=items[items.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    return;
+  }
+  if(e.target&&e.target.closest&&e.target.closest('input,textarea,select,[contenteditable="true"]')){e.stopImmediatePropagation();return;}
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+}
+document.addEventListener('keydown',trapFlowKeys,true);
+$('homeContinue').onclick=()=>continueRecommendedSave();
+$('homeNew').onclick=()=>{selMode='normal';curseSel=[];openSetup();};
+$('homeHelp').onclick=showHelp;
+$('homeTheme').onclick=toggleTheme;
+$('homeHistory').onclick=()=>{histTab='log';renderHistTab();$('flowShell').classList.add('is-hidden');$('flowShell').setAttribute('aria-hidden','true');$('histModal').classList.remove('hidden');flowPage='home';historyFromHome=true;};
+$('setupBack').onclick=()=>showHome();
+$('setupStart').onclick=()=>requestSetupStart();
+$('menuResume').onclick=returnToLiveView;
+$('menuHelp').onclick=showHelp;
+$('menuSaveHome').onclick=()=>{
+  if(!S||S.phase!=='prep')return;
+  if(!saveGame()){$('menuPhaseNotice').textContent='浏览器没有保存成功；仍留在对局中。请检查设备存储空间或浏览器存储权限。';return;}
+  showHome(); $('homeFeedback').textContent='对局已保存。可从主菜单继续。';
+};
+$('menuRestart').onclick=()=>{if(S&&S.phase==='prep')openFlowConfirm('restart',{returnPage:'game'});};
+$('menuEnd').onclick=()=>{if(S&&S.phase==='prep')openFlowConfirm('end',{returnPage:'game'});};
+$('endBtn').onclick=()=>{if(S&&S.phase==='prep')openFlowConfirm('end',{returnPage:'game'});else showGameMenu();};
+$('flowHelpClose').onclick=closeHelp;
+$('flowConfirmCancel').onclick=cancelFlowConfirm;
+$('flowConfirmAccept').onclick=acceptFlowConfirm;
+$('flowGlobalClose').onclick=()=>{
+  if(flowPage==='confirm')cancelFlowConfirm();
+  else if(flowPage==='help')closeHelp();
+  else if(flowPage==='setup')showHome();
+  else if(flowPage==='gameMenu')returnToLiveView();
+};
+$('flowShell').addEventListener('click',event=>{
+  if(event.target!==$('flowShell'))return;
+  if(flowPage==='confirm')cancelFlowConfirm();
+  else if(flowPage==='help')closeHelp();
+});
+$('chapterContinue').onclick=chapterContinue;
+$('chapterHelp').onclick=showHelp;
+$('chapterMenu').onclick=showGameMenu;
+$('resultReplay').onclick=restartGame;
+$('resultHome').onclick=showHome;
+$('helpBtn').onclick=showHelp;
+$('resetBtn').onclick=showGameMenu;
+/* ================= 棋子图鉴（费用/阵营/职业筛选） ================= */
 /* ================= 棋子图鉴（费用/阵营/职业筛选） ================= */
 const BOOK = { cost:new Set(), fac:new Set(), job:new Set() };
 const COST_BORDER = {1:'#9db',2:'#7fc9a0',3:'#b79ae8',4:'#e6b45a',5:'#ffd24a'};
@@ -6362,11 +6506,145 @@ $('bookClose').onclick=()=>$('bookModal').classList.add('hidden');
 
 /* ================= 存档 / 继续上一局 / 历史战绩 ================= */
 const SAVE_KEY='vc_save4', HIST_KEY='vc_history', DAILY_KEY='vc_daily3', ARENA_SAVE_KEY='vc_arena3';
+const SAVE_SCHEMA_VERSION=2, SAVE_KEYS=[SAVE_KEY,DAILY_KEY,ARENA_SAVE_KEY];
+let lastSaveError='',lastLoadError='';
+function flowEsc(value){return String(value==null?'':value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function modeLabel(mode){return ({normal:'🎲 普通模式',custom:'⚠ 自定义诅咒',daily:'📅 每日挑战',arena:'🏟 八人竞技'})[mode]||'普通模式';}
+function curseName(id){const c=CURSES.find(x=>x.id===id);return c?c.n:id;}
+function runModeOf(state){
+  if(state&&['normal','custom','daily','arena'].includes(state.mode))return state.mode;
+  if(state&&state.arena)return 'arena'; if(state&&state.daily)return 'daily';
+  return state&&Array.isArray(state.curses)&&state.curses.length?'custom':'normal';
+}
+function normalizeRunConfig(config={}){
+  const mode=['normal','custom','daily','arena'].includes(config.mode)?config.mode:'normal';
+  return {mode,curses:mode==='custom'?sanitizeCurses(config.curses||[]):[],dailySeed:mode==='daily'?Number(config.dailySeed)||todaySeed():0};
+}
+function saveKeyForMode(mode){return mode==='arena'?ARENA_SAVE_KEY:mode==='daily'?DAILY_KEY:SAVE_KEY;}
+function inspectSave(key){
+  let raw;
+  try{raw=localStorage.getItem(key);}catch(e){return {key,exists:false,status:'storage-error',reason:'浏览器不允许读取存档'};}
+  if(raw==null)return {key,exists:false,status:'empty'};
+  let data;
+  try{data=JSON.parse(raw);}catch(e){return {key,exists:true,status:'invalid',reason:'存档内容无法解析'};}
+  if(!data||typeof data!=='object'||!Number.isInteger(data.round)||data.round<1||!Array.isArray(data.board)||data.board.length!==BOARD_W*BOARD_H||!Array.isArray(data.bench)||data.bench.length!==BENCH)
+    return {key,exists:true,status:'invalid',reason:'存档缺少有效的回合、棋盘或备战席数据'};
+  const mode=runModeOf(data), expected=key===ARENA_SAVE_KEY?'arena':key===DAILY_KEY?'daily':null;
+  if((expected&&mode!==expected)||(!expected&&(mode==='daily'||mode==='arena')))
+    return {key,exists:true,status:'invalid',reason:'存档模式与槽位不匹配，未尝试恢复'};
+  const unitOkay=u=>!u||(u&&typeof u==='object'&&UNITS.some(d=>d.id===u.id)&&Number.isFinite(u.star||1));
+  if(!data.board.every(unitOkay)||!data.bench.every(unitOkay))return {key,exists:true,status:'invalid',reason:'棋盘中含有无法识别的棋子'};
+  if(mode==='arena'&&(!data.arenaMatch||!Array.isArray(data.arenaMatch.seats)||data.arenaMatch.seats.length!==8||!data.arenaMatch.seats.some(p=>p&&p.human)))
+    return {key,exists:true,status:'invalid',reason:'八人竞技存档缺少完整赛事状态'};
+  const savedDaily=mode==='daily', seed=Number(data.dseed)||todaySeed();
+  if(savedDaily&&(seed!==todaySeed()||(data.curses||[]).join()!==dailyCursesFor(seed).join()))
+    return {key,exists:true,status:'expired',mode,round:data.round,hp:data.hp,ts:Number(data.savedAt||data.ts)||0,dseed:seed,reason:`每日挑战种子 ${seed} 已过期；此存档仍保留，但无法继续。`};
+  const ts=Number(data.savedAt||data.ts)||0;
+  return {key,exists:true,status:data.resumable===false?'finished':'valid',mode,round:data.round,hp:Number(data.hp)||0,ts,dseed:seed,
+    summary:`${modeLabel(mode)} · 第 ${data.round} 回合 · ❤${Number(data.hp)||0}${savedDaily?` · ${seed}`:''}`,
+    reason:data.resumable===false?'此局已结算，不可继续':undefined,data};
+}
+function saveSlotRecords(){return SAVE_KEYS.map(inspectSave).filter(x=>x.exists||x.status==='storage-error');}
+function saveTimeLabel(ts){return ts?new Date(ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'保存时间未知';}
+function saveSummary(info){return info.summary||`${modeLabel(info.mode|| (info.key===DAILY_KEY?'daily':info.key===ARENA_SAVE_KEY?'arena':'normal'))}${info.round?` · 第 ${info.round} 回合`:''}${info.reason?` · ${info.reason}`:''}`;}
+function renderHome(){
+  const records=saveSlotRecords(), valid=records.filter(x=>x.status==='valid').sort((a,b)=>b.ts-a.ts), recommended=valid[0]||null;
+  const rec=$('homeRecommended'), list=$('homeSaves'), cont=$('homeContinue');
+  if(recommended){
+    rec.innerHTML=`<div class="flow-save-card recommended"><div class="flow-save-meta"><strong>为你推荐 · ${flowEsc(modeLabel(recommended.mode))}</strong><span>第 ${recommended.round} 回合 · ❤${recommended.hp}${recommended.mode==='daily'?` · ${recommended.dseed}`:''}</span><span>保存于 ${flowEsc(saveTimeLabel(recommended.ts))}</span></div></div>`;
+    cont.hidden=false;cont.dataset.saveKey=recommended.key;
+  }else{rec.innerHTML='<p class="flow-note">当前没有可继续的对局存档。</p>';cont.hidden=true;cont.removeAttribute('data-save-key');}
+  const rest=records.filter(x=>x!==recommended);
+  list.innerHTML=rest.length?'<p class="flow-note">其他存档</p>'+rest.map(info=>{
+    const resumable=info.status==='valid';
+    const action=resumable?`<button type="button" data-continue-key="${flowEsc(info.key)}" aria-label="继续${flowEsc(modeLabel(info.mode))}，第 ${info.round} 回合">继续</button>`:'';
+    return `<div class="flow-save-card"><div class="flow-save-meta"><strong>${flowEsc(modeLabel(info.mode||(info.key===DAILY_KEY?'daily':info.key===ARENA_SAVE_KEY?'arena':'normal')))}</strong><span>${flowEsc(saveSummary(info))}</span>${info.ts?`<span>保存于 ${flowEsc(saveTimeLabel(info.ts))}</span>`:''}</div>${action}</div>`;
+  }).join(''):'';
+  list.querySelectorAll('[data-continue-key]').forEach(button=>button.addEventListener('click',()=>continueSave(button.dataset.continueKey)));
+  if(!recommended&&records.every(x=>x.status==='empty'))$('homeFeedback').textContent='';
+}
+function continueRecommendedSave(){const key=$('homeContinue').dataset.saveKey;if(key)continueSave(key);}
+function continueSave(key){
+  if(flowBusy)return;flowBusy=true;
+  try{
+    const info=inspectSave(key);
+    if(info.status!=='valid'){$('homeFeedback').textContent=info.reason||'此存档无法继续。';renderHome();return false;}
+    if(!loadGame(key)){$('homeFeedback').textContent=`读取失败：${lastLoadError||'存档未应用，当前画面与存档均保持原样。'}`;return false;}
+    S.menuPreview=false;renderAll();$('fightBtn').disabled=false;
+    log(`📂 已恢复${modeLabel(runModeOf(S))} · 第 ${S.round} 回合（托管与自动开战已暂停）`);
+    hideFlowForGame(false);flowFocusTarget=$('fightBtn');try{$('fightBtn').focus({preventScroll:true});}catch(e){}
+    return true;
+  }finally{flowBusy=false;}
+}
+function renderSetup(){
+  const modes=[
+    {id:'normal',title:'🎲 普通模式',desc:'四章共 100 回合；第 25、50、75 回合选择章节增强，第 100 回合结算。'},
+    {id:'arena',title:'🏟 八人竞技',desc:'与 7 名对手比赛；每回合 1 对 1，按淘汰顺序决定名次。'},
+    {id:'daily',title:'📅 每日挑战',desc:`${todaySeed()} · 今日同种子与预置诅咒，全体玩家使用同一随机序列。`},
+    {id:'custom',title:'⚠ 自定义诅咒',desc:'勾选挑战规则并获得对应补偿；少数规则互斥。与普通模式共享存档位。'},
+  ];
+  $('setupModes').innerHTML=modes.map(m=>`<button type="button" class="flow-mode-card" role="radio" aria-checked="${selMode===m.id}" data-mode="${m.id}"><strong>${m.title}</strong><span>${m.desc}</span></button>`).join('');
+  $('setupModes').querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{
+    selMode=button.dataset.mode;renderSetup();
+  }));
+  const info=modes.find(m=>m.id===selMode)||modes[0];
+  let details=info.desc;
+  if(selMode==='daily')details+=`<br>${dailyInfoHTML()}`;
+  $('setupModeDetails').innerHTML=details;
+  const curses=$('setupCursePick');curses.hidden=selMode!=='custom';
+  if(selMode==='custom'){
+    curses.innerHTML=`<div class="cp-hd">选择诅咒以换取补偿，可组合（互斥规则自动取消冲突项）。普通与自定义共享 vc_save4。</div>`+
+      CURSES.map(c=>{const on=curseSel.includes(c.id),by=curseBlockedBy(c.id),bc=by&&CURSES.find(x=>x.id===by);
+        return `<label class="cp-item${on?' on':''}${by?' cp-lock':''}"><input type="checkbox" data-curse="${flowEsc(c.id)}" ${on?'checked':''} ${by?'disabled':''}><b>${flowEsc(c.n)}</b><span class="cp-d">${flowEsc(c.d)}</span><span class="cp-r">${flowEsc(c.r)}</span>${bc?`<span class="cp-lk">⛔ 与「${flowEsc(bc.n)}」互斥</span>`:''}</label>`;}).join('');
+    curses.querySelectorAll('[data-curse]').forEach(input=>input.addEventListener('change',()=>{
+      const id=input.dataset.curse,index=curseSel.indexOf(id);
+      if(index>=0)curseSel.splice(index,1);
+      else{(CURSE_CONFLICT[id]||[]).forEach(x=>{const at=curseSel.indexOf(x);if(at>=0)curseSel.splice(at,1);});curseSel.push(id);}
+      renderSetup();
+    }));
+  }
+  $('setupSlotNote').textContent=selMode==='normal'||selMode==='custom'?'普通与自定义共用存档位 vc_save4。开始前会确认覆盖；每日与八人竞技存档互不影响。':`本模式使用独立存档位 ${selMode==='daily'?'vc_daily3':'vc_arena3'}；开始前会确认覆盖。`;
+  $('setupFeedback').textContent=setupNotice;
+  $('setupStart').textContent=`开始${modeLabel(selMode).replace(/^\S+\s*/,'')}`;
+}
+function requestSetupStart(){
+  if(flowBusy)return;
+  const config=normalizeRunConfig({mode:selMode,curses:curseSel,dailySeed:todaySeed()});
+  const target=inspectSave(saveKeyForMode(config.mode));
+  if(target.status==='storage-error'){$('setupFeedback').textContent='无法检查目标存档槽；为避免覆盖数据，暂时不能开始。';return;}
+  if(target.exists){openFlowConfirm('replace',{config,returnPage:'setup'});return;}
+  startConfiguredRun(config,{confirmed:true});
+}
+function startConfiguredRun(config,options={}){
+  if(flowBusy&&!options.fromConfirm)return false;
+  const cfg=normalizeRunConfig(config);
+  if(cfg.mode==='daily')cfg.dailySeed=todaySeed();
+  const key=saveKeyForMode(cfg.mode), previous=inspectSave(key);
+  if(previous.status==='storage-error'){$('setupFeedback').textContent='无法检查目标存档槽；为避免覆盖数据，暂时不能开始。';showFlowPage('setup');return false;}
+  if(previous.exists&&!options.confirmed){openFlowConfirm('replace',{config:cfg,returnPage:flowPage});return false;}
+  const wasBusy=flowBusy;flowBusy=true;
+  try{
+    flowPausedSchedulers=null;chapterAutoPending=false;if(chapterAutoTimer){clearTimeout(chapterAutoTimer);chapterAutoTimer=null;}
+    selMode=cfg.mode;curseSel=cfg.mode==='custom'?cfg.curses.slice():[];
+    newGame({daily:cfg.mode==='daily',arena:cfg.mode==='arena',custom:cfg.mode==='custom'});
+    S.runConfig=cfg;S.mode=cfg.mode;S.menuPreview=false;
+    renderAll();$('fightBtn').disabled=false;
+    hideFlowForGame(false);
+    if(S.autoFight&&S.phase==='prep')scheduleAutoFight();else if(S.auto&&S.phase==='prep')autoPilot(300);
+    log(cfg.mode==='arena'?'🏟 八人竞技开始：七名对手会独立运营，存活到最后获胜！'
+      :cfg.mode==='daily'?`📅 每日挑战开始（种子 ${S.dseed}）：使用今日预置规则。`
+      :cfg.mode==='custom'?`⚠ 自定义诅咒挑战开始：${(S.curses||[]).map(curseName).join('、')||'未选诅咒，玩法等同普通模式'}`:'🎲 普通模式开始！');
+    return true;
+  }catch(error){
+    $('setupFeedback').textContent=`无法创建对局：${error&&error.message||'初始化失败'}`;
+    showFlowPage('setup');return false;
+  }finally{flowBusy=wasBusy;}
+}
 /* 🌍 全球排行（腾讯云 CloudBase 云函数网关，国内直连；数据存 PG 表 lb_entries） */
 const LB_API='https://hanari-d6gjqwx683f6c455d.service.tcloudbase.com';
 function lbHeaders(){ return {'Content-Type':'application/json'}; }
 async function lbFetch(path){ const r=await fetch(LB_API+path,{headers:lbHeaders(),cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }   // no-store：榜单必须实时，禁止 HTTP 层缓存
-function saveKey(){ return S&&S.arena?ARENA_SAVE_KEY:((S && S.daily) ? DAILY_KEY : SAVE_KEY); }   // 模式分别保存
+function saveKey(){ return saveKeyForMode(S?runModeOf(S):'normal'); }
 function arenaSnapshot(){
   if(!ARENA)return null;
   return {round:ARENA.round,eliminated:ARENA.eliminated||[],startedAt:ARENA.startedAt,
@@ -6385,43 +6663,80 @@ function restoreArenaSnapshot(data){
   arenaSetOpponent(S,seats[0],arenaOpponent(seats[0]));
   return true;
 }
-function saveGame(){ // 仅备战阶段保存（战斗中刷新不损失进度：回到该回合开打前）
-  if(S.phase!=='prep') return;
-  const KEY=saveKey();
-  try{ localStorage.setItem(KEY,JSON.stringify({round:S.round,hp:S.hp,gold:S.gold,lvl:S.lvl,xp:S.xp,
-    streak:S.streak,lossStreak:S.lossStreak,endless:S.endless,challengeRound:S.challengeRound||0,lock:!!S.lock,synDone:S.synDone||[],augs:S.augs||[],tickets:S.tickets||0,tempBuff:S.tempBuff||null,
-    ms:S.ms||{},curses:S.curses||[],cursesData:S.cursesData||{},soloBoost:S.soloBoost||0,daily:!!S.daily,dseed:S.dseed||0,bench:S.bench,board:S.board,shop:S.shop,
-    uid:S.uid,log:S.log,items:S.items,pool:S.pool,stats:S.stats,arena:!!S.arena,arenaMatch:S.arena?arenaSnapshot():null,ts:Date.now()})); }catch(e){}
+function saveSnapshot(){
+  if(!S.runId)S.runId=makeRunId();
+  const mode=runModeOf(S),config=normalizeRunConfig(S.runConfig||{mode,curses:S.curses,dailySeed:S.dseed});
+  config.mode=mode;if(mode!=='custom')config.curses=[];
+  return {schemaVersion:SAVE_SCHEMA_VERSION,runId:S.runId,mode,runConfig:config,
+    resumable:true,recoverablePhase:'prep',savedAt:Date.now(),
+    round:S.round,hp:S.hp,gold:S.gold,lvl:S.lvl,xp:S.xp,streak:S.streak,lossStreak:S.lossStreak,endless:S.endless,
+    challengeRound:S.challengeRound||0,lock:!!S.lock,synDone:S.synDone||[],augs:S.augs||[],tickets:S.tickets||0,tempBuff:S.tempBuff||null,
+    ms:S.ms||{},curses:S.curses||[],cursesData:S.cursesData||{},soloBoost:S.soloBoost||0,daily:!!S.daily,dseed:S.dseed||0,
+    bench:S.bench,board:S.board,shop:S.shop,uid:S.uid,log:S.log,items:S.items,pool:S.pool,stats:S.stats,
+    arena:!!S.arena,arenaMatch:S.arena?arenaSnapshot():null,ts:Date.now()};
 }
-function loadGame(key){ key=key||SAVE_KEY;
+function saveGame(){ // 仅备战检查点可恢复；失败会明确返回 false
+  if(!S||S.phase!=='prep'||S.menuPreview)return false;
+  const key=saveKey(),snapshot=saveSnapshot();
   try{
-    const o=JSON.parse(localStorage.getItem(key)||'null');
-    if(!o||typeof o.round!=='number'||!Array.isArray(o.board)||!Array.isArray(o.bench)) return false;
-    if(!S) S={}; // 直接从存档启动时 S 尚未初始化
-    ARENA=null; Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
-    delete S.arenaMatch;
-    S.tickets=S.tickets||0; S.tempBuff=S.tempBuff||null; S.soloBoost=S.soloBoost||0;   // 旧存档兼容
-    S.ms=S.ms||{}; S.curses=sanitizeCurses(S.curses); S.cursesData=S.cursesData||{};   // 旧存档可能同时存有互斥项
-    S.daily=(key===DAILY_KEY)||!!S.daily; S.dseed=S.dseed||todaySeed();
-    applyRNG();
-    S.auto = autoStoreGet(); setAutoUI();
-    S.autoFight = afStoreGet();   // 自动开战恢复（与托管互斥）
-    if(S.autoFight){ S.auto=false; autoStoreSet(false); setAutoUI(); renderAutoFightBtn(); }
-    if(S.auto) autoPilot(900);
-    else if(S.autoFight) scheduleAutoFight();
-    if(S.arena&&o.arenaMatch){ if(!restoreArenaSnapshot(o.arenaMatch))return false; }
-    else { S.arena=false; prepEnemy(); }   // 读档后立即生成可观察的敌方阵容
-    return true;
-  }catch(e){ return false; }
+    localStorage.setItem(key,JSON.stringify(snapshot));
+    const check=JSON.parse(localStorage.getItem(key)||'null');
+    if(!check||check.runId!==snapshot.runId||check.round!==snapshot.round)throw new Error('存档回读校验失败');
+    lastSaveError=''; S.savedAt=snapshot.savedAt; return true;
+  }catch(e){lastSaveError=e&&e.message||'浏览器存储不可用';return false;}
 }
-function writeRunHistory(win){   // 终局统一写入（战绩/成就/排行共用数据源）
-  try{ const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
-    h.unshift({ts:Date.now(),win,forfeited:!!S.forfeited,rules:normalCampaign()?'campaign100':'classic',arena:!!S.arena,place:S.arena&&ARENA?ARENA.seats[0].place:null,round:S.round,hp:S.hp,endless:!!S.endless,ch:Math.ceil(S.round/chLen()),
-      daily:!!S.daily,dseed:S.dseed||0,curses:(S.curses||[]).length,
-      lineup:S.board.filter(Boolean).slice(0,6).map(u=>u.id),
-      wins:S.stats.wins,losses:S.stats.losses,kills:S.stats.kills,maxStreak:S.stats.maxStreak});
-    localStorage.setItem('vc_history',JSON.stringify(h.slice(0,50)));
+function removeRunSave(key){
+  try{localStorage.removeItem(key);if(localStorage.getItem(key)==null)return 'removed';}catch(e){}
+  try{
+    const old=JSON.parse(localStorage.getItem(key)||'null');
+    if(old&&typeof old==='object'){old.resumable=false;old.finishedAt=Date.now();localStorage.setItem(key,JSON.stringify(old));return 'tombstoned';}
   }catch(e){}
+  return 'failed';
+}
+function loadGame(key){
+  key=key||SAVE_KEY;
+  lastLoadError='';const info=inspectSave(key); if(info.status!=='valid'){lastLoadError=info.reason||'存档无效';return false;}
+  const original=info.data, mode=info.mode||runModeOf(original), curses=sanitizeCurses(original.curses||[]);
+  const previousS=S,previousArena=ARENA,previousRng=RND;
+  try{
+    const state=Object.assign({},original);
+    state.mode=mode;state.runId=original.runId||`legacy-${key}-${Number(original.savedAt||original.ts)||Date.now()}`;
+    state.runConfig=normalizeRunConfig(original.runConfig||{mode,curses,dailySeed:original.dseed});
+    state.runConfig.mode=mode;if(mode!=='custom')state.runConfig.curses=[];
+    state.phase='prep';state.menuPreview=false;state.enemyBoard=[];state.selUid=null;state.selItem=null;
+    state.arena=mode==='arena';state.daily=mode==='daily';state.dseed=state.daily?(Number(state.dseed)||todaySeed()):0;
+    state.curses=curses;state.tickets=state.tickets||0;state.tempBuff=state.tempBuff||null;state.soloBoost=state.soloBoost||0;
+    state.ms=state.ms||{};state.cursesData=state.cursesData||{};state.pool=state.pool||{};state.stats=state.stats||{};
+    state.log=Array.isArray(state.log)?state.log:[];state.items=Array.isArray(state.items)?state.items:[];state.shop=Array.isArray(state.shop)?state.shop:[];
+    state.finalized=false;state.auto=false;state.autoFight=false;
+    S=state;ARENA=null;
+    if(!Object.keys(S.pool).length)initPool();
+    applyRNG();
+    if(S.arena){if(!restoreArenaSnapshot(original.arenaMatch))throw new Error('竞技赛事状态校验失败');}
+    else prepEnemy();
+    /* 先完成数据重建，再切换运行会话；旧战斗时钟/自动操作不能落到恢复后的状态上。 */
+    runSessionId++;autoRunId++;autoBusy=false;stopTickLoop();cancelAutoFight();
+    if(chapterAutoTimer){clearTimeout(chapterAutoTimer);chapterAutoTimer=null;}chapterAutoPending=false;
+    flowPausedSchedulers=null;flowBattleAutoIntent=null;
+    autoStoreSet(false);afStoreSet(false);setAutoUI();renderAutoFightBtn();
+    return true;
+  }catch(e){S=previousS;ARENA=previousArena;RND=previousRng;lastLoadError=e&&e.message||'恢复校验失败';return false;}
+}
+function historyHasRun(runId){
+  if(!runId)return false;
+  try{const history=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');return Array.isArray(history)&&history.some(row=>row&&row.runId===runId);}catch(e){return false;}
+}
+function writeRunHistory(win){   // runId 作为结算幂等键，战绩与排行共享同一结算
+  if(!S||S.finalized)return false;
+  S.finalized=true;
+  try{
+    const h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');if(!Array.isArray(h))throw new Error('历史战绩格式无效');
+    if(h.some(row=>row&&row.runId===S.runId))return true;
+    h.unshift({runId:S.runId,ts:Date.now(),win,forfeited:!!S.forfeited,rules:normalCampaign()?'campaign100':'classic',arena:!!S.arena,place:S.arena&&ARENA?ARENA.seats[0].place:null,round:S.round,hp:S.hp,endless:!!S.endless,ch:Math.ceil(S.round/chLen()),
+      daily:!!S.daily,dseed:S.dseed||0,curses:(S.curses||[]).length,lineup:S.board.filter(Boolean).slice(0,6).map(u=>u.id),
+      wins:S.stats.wins||0,losses:S.stats.losses||0,kills:S.stats.kills||0,maxStreak:S.stats.maxStreak||0});
+    localStorage.setItem(HIST_KEY,JSON.stringify(h.slice(0,50)));return true;
+  }catch(e){return false;}
 }
 let histTab='log';   // 战绩弹窗页签：log=战绩 achv=成就 lb=排行
 function histH2(){ return histTab==='log'?'📜 历史战绩（最近 50 局）':histTab==='achv'?'🏅 成就':histTab==='gl'?'🌍 全球排行':'🏆 排行榜'; }
@@ -6444,7 +6759,7 @@ function globRowHTML(){   // 终局结算里的提交行（离线时不显示；
   return `<div id="globRow" style="margin-top:10px;display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap">
     <input id="nickIn" maxlength="12" placeholder="昵称（12 字内）" value="${lbNick().replace(/"/g,'&quot;')}"
       style="background:#241e3e;border:1px solid #4a3d6e;border-radius:8px;color:#dcd6f2;padding:6px 10px;font-size:13px;outline:none">
-    <button class="btn" id="globBtn" onclick="submitScore()" style="border-color:#4aa8ff;color:#9dd3e8">🌍 提交全球排行</button></div>
+    <button class="btn" id="globBtn" type="button" style="border-color:#4aa8ff;color:#9dd3e8">🌍 提交全球排行</button></div>
     <div id="globMsg" style="text-align:center;font-size:11px;color:#8a93c4;margin-top:3px"></div>`;
 }
 async function submitScore(){
@@ -6554,14 +6869,9 @@ function renderHistTab(){
   const h2=document.querySelector('#histPanel h2'); if(h2) h2.textContent=histTitle();
   document.querySelectorAll('#histTabs .tab').forEach(b=>b.classList.toggle('on', b.dataset.t===histTab));
 }
-$('histBtn').onclick=()=>{ renderHistTab(); $('histModal').classList.remove('hidden'); };
-$('histClose').onclick=()=>$('histModal').classList.add('hidden');
+$('histBtn').onclick=()=>{ historyFromHome=false;renderHistTab(); $('histModal').classList.remove('hidden'); };
+$('histClose').onclick=()=>{ $('histModal').classList.add('hidden');if(historyFromHome){historyFromHome=false;showHome();} };
 document.querySelectorAll('#histTabs .tab').forEach(b=>b.onclick=()=>{ histTab=b.dataset.t; renderHistTab(); });
-$('resetBtn').onclick=()=>{ if(S && S.phase==='battle'){ if(!confirm('战斗进行中，重开将放弃本局。确定？')) return; }
-  resumeAvail=null;
-  selMode=(S&&S.daily)?'daily':((S&&S.curses&&S.curses.length)?'custom':'normal');   // 默认选中当前模式
-  showIntro(false); resetPickOpen=true;
-  log('🔄 重开：请选择模式（右上角 ✕ / Esc = 取消，留在当前对局）'); };
 /* ================= 移动端触屏适配 =================
    主输入为粗指针（手机/平板）时启用：body.touch 样式钩子 + 点选移动模式 + 按钮去键位提示 +
    商店/详情抽屉化。桌面（含带触屏的笔记本，主指针仍是鼠标）完全不受影响；
@@ -6616,7 +6926,7 @@ if(IS_TOUCH && typeof document!=='undefined' && document.body){
   document.getElementById('mEquipSec').appendChild(document.getElementById('equipPanel'));
   document.getElementById('mSideSec').appendChild(document.getElementById('side'));
   const menu=$('mMenuSec');
-  [['图鉴','bookBtn'],['荣誉殿堂','histBtn'],['托管','autoBtn'],['玩法说明','helpBtn'],['音效','sfxBtn'],['主题','themeBtn'],['重开','resetBtn'],['结束挑战','endBtn']].forEach(([label,id])=>{
+  [['图鉴','bookBtn'],['荣誉殿堂','histBtn'],['托管','autoBtn'],['玩法说明','helpBtn'],['音效','sfxBtn'],['主题','themeBtn'],['对局菜单','resetBtn'],['结束挑战','endBtn']].forEach(([label,id])=>{
     const b=document.createElement('button'); b.className='btn'; b.textContent=label; b.dataset.target=id;
     if(id==='themeBtn') b.id='mThemeBtn';
     b.onclick=()=>{ closeDrawer(); $(id)?.click(); }; menu.appendChild(b);
@@ -6657,42 +6967,19 @@ function fitBoard(){
   st.marginBottom = s<1 ? (-w.offsetHeight*(1-s))+'px' : '';
 }
 addEventListener('resize',fitBoard); fitBoard();
-/* 启动：开局即询问模式（三选一）；有存档时提供「继续上一局」按钮（优先今日每日） */
-let autoBusy=false, autoRunId=0;   // 必须声明在 initApp 之前：initApp → newGame 在"上次开着托管"时会直接调 autoPilot，
-                      // 声明晚于此处会撞 TDZ 抛错，把后面的 renderAll()/showIntro() 一起打断
+/* 启动为主菜单；预览状态不写入任何存档。每个旧槽独立校验并保留不可继续的每日档说明。 */
+let autoBusy=false, autoRunId=0, afTimer=null, afGen=0, afDeadline=0;   // initApp/newGame 与托管调度共用的生命周期状态
+let historyFromHome=false;
 (function initApp(){
-  try{
-    const d=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');
-    /* 每日存档作废的两种情形：① 昨天的存档；② 存档里的诅咒与当前当日诅咒不符——当日规则表改过
-       （如修「近期重复」后今日诅咒由短章急行变硬着陆），两套规则同种子同榜不可比，必须重开；
-       重开成本为零：同种子同起点。 */
-    if(d && (d.dseed!==todaySeed() || (d.curses||[]).join()!==dailyCursesFor(d.dseed||todaySeed()).join()))
-      localStorage.removeItem(DAILY_KEY);
-  }catch(e){}
-  try{
-    const d=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');
-    const n=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
-    const a=JSON.parse(localStorage.getItem(ARENA_SAVE_KEY)||'null');
-    if(d && typeof d.round==='number') resumeAvail={label:`▶ 继续每日挑战（第 ${d.round} 回合）`, key:DAILY_KEY};
-    else if(a && a.arena && typeof a.round==='number') resumeAvail={label:`▶ 继续八人竞技（第 ${a.round} 回合）`, key:ARENA_SAVE_KEY};
-    else if(n && typeof n.round==='number') resumeAvail={label:`▶ 继续上一局（第 ${n.round} 回合）`, key:SAVE_KEY};
-  }catch(e){}
   /* 敌方阵容横幅保持原位（棋盘正上方、与棋盘同宽），左栏顶部让给「羁绊 BONDS」标题 */
   /* 桌面端：敌方阵容横幅放进左栏（羁绊标题之下、列表之上），棋盘上方让位放大棋盘 */
   if(!IS_TOUCH){ try{ $('synCol').insertBefore($('oppBar'), $('synAll')); }catch(e){} }
+  /* 桌面端：棋子详情面板移到左栏顶部（羁绊上方）；触屏端保持在详情抽屉里不动 */
+  if(!IS_TOUCH){ try{ const ip=document.getElementById('inspectPanel'), sc=document.getElementById('synCol'); if(ip&&sc) sc.insertBefore(ip, sc.firstChild); }catch(e){} }
   fitBoardCell();
   newGame({menuPreview:true}); renderAll(); fitBoard();   // 仅渲染预览，不让已保存的托管偏好提前开战
-  showIntro(false);
+  showHome();
 })();
-$('ovResume').onclick=()=>{ if(!resumeAvail) return;
-  $('overlay').classList.add('hidden'); ovMode='start';
-  loadGame(resumeAvail.key); renderAll(); $('fightBtn').disabled=false; resumeAvail=null;
-  log('📂 已恢复上一局进度'); };
-$('resumeYes').onclick=()=>{ if(!loadGame()) newGame();
-  $('resumeOv').classList.add('hidden'); renderAll(); $('fightBtn').disabled=false; log('📂 已恢复上一局进度'); };
-$('resumeNo').onclick=()=>{ localStorage.removeItem(SAVE_KEY);localStorage.removeItem(ARENA_SAVE_KEY);
-  $('resumeOv').classList.add('hidden'); newGame(); renderAll(); $('fightBtn').disabled=false; };
-$('resumeDaily').onclick=()=>{ $('resumeOv').classList.add('hidden'); startDaily(); };   // 从恢复弹窗直接进每日挑战
 /* PWA：Service Worker 注册（离线可玩，安卓可添加到主屏幕） */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 /* 旧版全球排行接口（Cloudflare KV 版，autochesslb.hanari520.cn）已下线并清空数据：
@@ -6705,26 +6992,25 @@ function autoStoreSet(v){ try{ localStorage.setItem('vc_auto', v?'1':'0') }catch
 function afStoreGet(){ try{ return localStorage.getItem('vc_autofight')==='1' }catch(e){ return false } }
 function afStoreSet(v){ try{ localStorage.setItem('vc_autofight', v?'1':'0') }catch(e){} }
 const AUTO_FIGHT_DELAY=2500;   // 每场战斗结束后的停顿（肉眼可读结算，再进下一场）
-let afTimer=null, afGen=0;
 function setAutoFight(v){
   S.autoFight=!!v; afStoreSet(S.autoFight);
   if(S.autoFight && S.auto){ S.auto=false; autoRunId++; autoBusy=false; autoStoreSet(false); setAutoUI(); log('🤖 托管已关闭（与自动开战互斥）'); }
   cancelAutoFight(); renderAutoFightBtn();
-  if(S.autoFight && S.phase==='prep') scheduleAutoFight();
+  if(S.autoFight && S.phase==='prep' && flowPage==='game') scheduleAutoFight();
 }
-function scheduleAutoFight(){
+function scheduleAutoFight(delay=AUTO_FIGHT_DELAY){
   cancelAutoFight();
-  if(!S.autoFight || S.phase!=='prep') return;
-  const gen=++afGen, end=Date.now()+AUTO_FIGHT_DELAY;
+  if(!S.autoFight || S.phase!=='prep'||flowPage!=='game') return;
+  const gen=++afGen, end=Date.now()+Math.max(0,delay); afDeadline=end;
   afTimer=setInterval(()=>{
     if(gen!==afGen) return;
-    if(!S.autoFight || S.phase!=='prep'){ cancelAutoFight(); return; }   // 手动开战/进章节结算即停
+    if(!S.autoFight || S.phase!=='prep'||flowPage!=='game'){ cancelAutoFight(); return; }   // 菜单/帮助/章节阶段不叠加调度
     const left=end-Date.now();
     if(left<=0){ cancelAutoFight(); startBattle(); return; }
     const b=$('autoFightBtn'); if(b) b.textContent=`⏳ 自动开战 ${Math.ceil(left/1000)}s`;
   }, 200);
 }
-function cancelAutoFight(){ afGen++; if(afTimer){ clearInterval(afTimer); afTimer=null; } }
+function cancelAutoFight(){ afGen++; if(afTimer){ clearInterval(afTimer); afTimer=null; } afDeadline=0; }
 function renderAutoFightBtn(){
   const b=$('autoFightBtn'); if(!b) return;
   b.textContent = S.autoFight ? '⏸ 停止自动' : '▶ 自动开战';
@@ -6734,10 +7020,10 @@ function renderAutoFightBtn(){
 $('autoFightBtn').onclick=()=>{ if(!S||S.phase==='over') return; setAutoFight(!S.autoFight);
   log(S.autoFight?'▶ 自动开战开启：保持当前阵容连续战斗':'⏸ 自动开战关闭'); };
 function autoPilot(delay=900){
-  if(!S||!S.auto||S.phase!=='prep'||S.hp<=0)return;
+  if(!S||!S.auto||S.phase!=='prep'||S.hp<=0||flowPage!=='game')return;
   const run=++autoRunId, round=S.round;
   autoBusy=true;
-  const active=()=>run===autoRunId&&S&&S.auto&&S.phase==='prep'&&S.round===round;
+  const active=()=>run===autoRunId&&S&&S.auto&&S.phase==='prep'&&S.round===round&&flowPage==='game';
   const release=()=>{if(run===autoRunId)autoBusy=false;};
   const finish=()=>{
     if(!active()){release();return;}
@@ -6778,6 +7064,6 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
 </script>
 <script src="tools/bot_strategy.js?v=7"></script>
 <script src="tools/idol-ui.js?v=1"></script>
-<script src="tools/idol-ui-redesign.js?v=3"></script>
+<script src="tools/idol-ui-redesign.js?v=4"></script>
 </body>
 </html>

@@ -12,10 +12,8 @@
   }
 
   function buildTitleCard() {
-    const card = $('ovCard'), title = $('ovTitle'), guide = $('ovText');
-    if (!card || !title || !guide || $('idolMenuArt')) return;
-    const art = document.createElement('div');
-    art.id = 'idolMenuArt';
+    const art = $('homeArt'), title = $('flowHomeTitle');
+    if (!art || !title || art.childElementCount) return;
     art.setAttribute('aria-label', '虚拟偶像角色展示');
     const featured = UNITS.filter((u) => u.cost >= 3).filter((u, i, all) => all.findIndex((v) => v.fac === u.fac) === i).slice(0, 3);
     featured.forEach((unit) => {
@@ -25,20 +23,7 @@
       img.draggable = false;
       art.appendChild(img);
     });
-    card.insertBefore(art, title);
-    if (title.textContent.includes('虚拟棋战')) title.textContent = '星域棋战';
-
-    const lead = document.createElement('p');
-    lead.id = 'ovLead';
-    lead.textContent = '收集虚拟偶像，组合专属羁绊，在自动战斗中挑战不断升级的关卡。';
-    title.insertAdjacentElement('afterend', lead);
-
-    const details = document.createElement('details');
-    details.id = 'idolQuickGuide';
-    const summary = document.createElement('summary');
-    summary.textContent = '✦ 新手指南 · 经济、羁绊与挑战规则';
-    details.append(summary, guide);
-    lead.insertAdjacentElement('afterend', details);
+    title.textContent = '星域棋战';
 
     document.querySelectorAll('#topbar .btn.ic').forEach((button) => {
       const label = button.textContent.trim();

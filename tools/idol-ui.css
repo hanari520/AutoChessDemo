@@ -302,24 +302,7 @@ body[data-phase="chapter"] #idolPhase { color:#986d22; border-color:rgba(230,177
 @keyframes deployPulseIdol { 50% { box-shadow:0 0 0 3px rgba(91,208,179,.25),0 0 17px rgba(91,208,179,.28); } }
 #sellBtn:not(:disabled) { color:#c15e77; background:linear-gradient(140deg,#fff0f4,#fff); }
 
-/* Talent overlays, collection and results */
-#overlay { background:radial-gradient(ellipse at 50% 34%,rgba(255,255,255,.53),rgba(210,222,252,.72) 70%),url('../assets/ui/idol-sky-stage.png') center/cover fixed; backdrop-filter:blur(4px); }
-#overlay::before { content:"✦  STAR STAGE  ✦"; position:fixed; top:10vh; color:rgba(255,255,255,.95); font-size:12px; font-weight:900; letter-spacing:7px; text-shadow:0 1px 10px #958fe3; }
-#ovCard {
-  color:#465777; max-width:670px; border:1px solid rgba(255,255,255,.94); border-radius:25px; padding:23px 25px;
-  background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(247,249,255,.94) 68%,rgba(255,242,250,.93));
-  box-shadow:0 28px 70px rgba(64,79,140,.28),inset 0 1px 0 white; backdrop-filter:blur(20px);
-}
-#ovCard::before, #ovCard::after { width:27px; height:27px; border-color:#8b9af1; border-radius:8px 0 0 0; }
-#ovCard::after { border-radius:0 0 8px 0; border-color:#e78db5; }
-#ovCard h1, #ovCard h2, #ovTitle { color:#596ab0; text-shadow:0 2px 12px rgba(155,150,233,.18); }
-#ovText { color:#657491; }
-#ovText .is-h { color:#7770c5; border-color:rgba(146,143,220,.23); }
-#ovClose { color:#8793af; border-radius:10px; }
-#ovClose:hover { color:#625ca6; background:#f0efff; }
-.mode-card { color:#61718e !important; border:1px solid rgba(131,151,207,.28) !important; border-radius:14px !important; background:linear-gradient(145deg,#fff,#f1f5ff) !important; box-shadow:0 3px 10px rgba(77,96,151,.09); transition:transform .15s,box-shadow .15s; }
-.mode-card:hover { transform:translateY(-2px); box-shadow:0 7px 16px rgba(91,108,173,.16); }
-.mode-card.on { color:#5c5dae !important; border-color:#a5a5ee !important; background:linear-gradient(135deg,#e9f8ff,#f2eaff) !important; box-shadow:0 0 0 2px rgba(141,145,236,.1),0 7px 16px rgba(112,120,197,.16); }
+/* Results and chapter reward cards use their own flow pages. */
 .settle-hero.win { color:#309f83; } .settle-hero.lose { color:#d26888; }
 .settle-row { color:#667794; } .settle-ask { color:#7d6dc2; }
 .aug-card { color:#4f5f83; border:1px solid rgba(130,149,203,.26); border-radius:15px; background:linear-gradient(145deg,#fff,#f0f4ff); box-shadow:0 5px 14px rgba(70,91,148,.1); }

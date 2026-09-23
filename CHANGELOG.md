@@ -1,5 +1,12 @@
 # 更新日志
 
+## 2026-09-23 · 对局入口与生命周期重写、暗色主题与左栏遮挡修复
+
+- 对局入口与生命周期按 specs/general/GAME-FLOW-REDESIGN.md 重写：主菜单改为完整页面（存档卡片 / 继续对局 / 新建对局，×/Esc 不再隐式开局），模式选择、章节结算、终局确认各自独立页面，结束挑战有明确确认界面；新增 tools/lifecycle_test.py 浏览器回归（存档槽/模式草稿/每日过期/章节/托管/重开幂等/提前结算/竞技名次）。
+- 新增暗色/浅色主题切换（localStorage vc_theme，夜间舞台背景图 idol-arena-night.png），index.html 顶部 themeBoot 消除主题闪烁。
+- 修复桌面窄窗口（≤960px）左栏（棋子详情/羁绊）被棋盘遮挡：根因是三列 grid 在窄窗未被回退、棋盘中列被挤扁后溢出盖住左右栏，且 #synCol 定宽 250px 超出轨道。现 ≤880px 非触屏回退上下堆叠并禁止 flex 挤压棋盘容器，#main 左列轨道与 #synCol 宽度对齐（minmax(200px,252px)，881-1280 为 minmax(180px,224px)、#synCol width:auto）。
+- Service Worker 缓存升至 v44（idol-redesign.css v10）。
+
 ## 2026-09-23 · 棋子立绘高清化（256→512px）
 
 - 棋盘/商店/详情等处使用的立绘 assets/units_big 从 256px 重制为 512px：按现有构图以 2× 主题尺寸从 assets/units_redraw（1254px 源图）Lanczos 重采样，取景与缩放和旧版完全一致、仅提升清晰度（高 DPI 屏与 Windows 125%/150% 缩放下不再发糊）。

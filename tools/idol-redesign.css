@@ -68,9 +68,11 @@ button { -webkit-tap-highlight-color: transparent; }
 #idolBrand .brand-mark { border-radius: 12px; background: linear-gradient(145deg,#55ddc8,#8298ff 58%,#eb8fca); }
 #idolBrand .brand-name { color: #44527f; }
 
-/* Main stage: three clear columns around a deep perspective board. */
+/* Main stage: three clear columns around a deep perspective board.
+   左栏轨道必须与 #synCol 实际内容宽一致：栏宽超出轨道会侵入棋盘带，
+   881-960px 窗口下与居中棋盘相撞（棋盘 z-index 更高，直接盖住左栏）。 */
 #main {
-  display: grid; grid-template-columns: minmax(156px, 194px) minmax(0, 1fr) minmax(238px, 286px);
+  display: grid; grid-template-columns: minmax(200px, 252px) minmax(0, 1fr) minmax(238px, 286px);
   grid-template-rows: minmax(0, 1fr);
   align-items: stretch; justify-content: stretch; gap: clamp(8px, 1vw, 15px);
   min-height: 0; padding: 10px 12px 8px; isolation: isolate;
@@ -89,7 +91,98 @@ button { -webkit-tap-highlight-color: transparent; }
 .panel::before { width: 18px; height: 9px; border-color: #77d9ca; border-radius: 9px 0 0; }
 .panel h3 { color: #68789b; border-color: rgba(119,145,206,.2); letter-spacing: 1.8px; }
 .panel h3::before { width: 7px; border-radius: 6px; background: linear-gradient(#58d8c2,#8c9bff); }
-#synCol { width: auto; min-width: 0; padding: 10px 9px; gap: 6px; }
+#synCol { width: auto; min-width: 0; padding: 10px 9px; gap: 6px; }   /* 宽度跟随 #main 左列轨道（200-252px）：容纳桌面端移入的棋子详情面板，且不超出轨道 */
+/* 左栏（窄栏）内的棋子详情：紧凑适配，避免「出售 1 金」「1 格」等折行 */
+#synCol #inspectPanel #inspect { font-size: 12px; }
+#synCol #inspectPanel .in-row { gap: 5px; }
+#synCol #inspectPanel .in-row > span { width: 24px; font-size: 10px; letter-spacing: 1px; }
+#synCol #inspectPanel .in-hd { min-height: 98px; padding: 10px 94px 8px 10px; }
+#synCol #inspectPanel .in-hd .in-pt { width: 92px; height: 102px; }
+#synCol #inspectPanel .in-hd b { font-size: 16px; }
+
+/* 对局生命周期页面：每页有独立内容节点，页面打开时拦截游戏快捷键。 */
+.flow-shell { position:fixed; inset:0; z-index:120; display:flex; align-items:center; justify-content:center; padding:16px; overflow-y:auto; overflow-x:hidden;
+  background:linear-gradient(135deg,rgba(211,239,255,.77),rgba(236,225,255,.82) 52%,rgba(255,224,239,.78)),url('../assets/ui/idol-arena-v2.png') center/cover fixed; backdrop-filter:blur(9px); }
+.flow-shell.is-hidden { display:none; }
+.flow-card { position:relative; display:flex; flex-direction:column; align-items:stretch; gap:10px; width:min(720px,100%); max-height:calc(100dvh - 32px); padding:clamp(18px,4vw,30px); overflow:hidden;
+  color:#465578; border:1px solid rgba(255,255,255,.9); border-radius:24px; background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(242,247,255,.98)); box-shadow:0 24px 70px rgba(59,76,136,.3); }
+.flow-card[hidden] { display:none !important; }
+.flow-card h1 { margin:0; color:#6674b8; text-align:center; font-size:clamp(24px,5vw,36px); letter-spacing:.04em; }
+.flow-eyebrow { margin:0; color:#957ec5; text-align:center; font-size:10px; font-weight:800; letter-spacing:.16em; }
+.flow-lead { margin:0; color:#69799d; text-align:center; line-height:1.65; }
+#homeArt { display:flex; justify-content:center; align-items:flex-end; height:112px; margin:-8px 0 -3px; pointer-events:none; }
+#homeArt img { height:100%; max-width:32%; object-fit:contain; filter:drop-shadow(0 8px 12px rgba(80,90,150,.2)); }
+.flow-recommended { width:100%; }
+.flow-save-card { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid rgba(119,145,206,.24); border-radius:14px; background:rgba(247,250,255,.86); }
+.flow-save-card + .flow-save-card { margin-top:7px; }
+.flow-save-card.recommended { border-color:#7bcfc0; box-shadow:0 0 0 2px rgba(73,205,184,.12); }
+.flow-save-meta { min-width:0; display:flex; flex-direction:column; gap:3px; color:#637394; font-size:12px; }
+.flow-save-meta strong { color:#4e5e88; font-size:14px; }
+.flow-save-meta span { overflow-wrap:anywhere; }
+.flow-actions { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:9px; flex-shrink:0; padding-top:4px; }
+.flow-actions button { min-height:42px; padding:10px 18px; border:1px solid transparent; border-radius:13px; font:inherit; font-size:14px; font-weight:750; cursor:pointer; transition:transform .16s ease,box-shadow .16s ease,background .16s ease; }
+.flow-actions button:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 5px 14px rgba(71,91,151,.14); }
+.flow-actions button:focus-visible,.flow-save-card button:focus-visible { outline:3px solid #56bfae; outline-offset:2px; }
+.flow-actions button:disabled { cursor:not-allowed; opacity:.48; }
+.flow-primary { color:white; background:linear-gradient(110deg,#63cbbb,#8498ed 60%,#cd88d1); box-shadow:0 5px 14px rgba(126,122,199,.22); }
+.flow-secondary,.flow-save-card button { color:#596d97; border-color:rgba(119,145,206,.3) !important; background:#f0f4fd; }
+.flow-link { color:#7a80ae; background:transparent; }
+.flow-danger { color:#b54660; border-color:rgba(225,108,132,.28) !important; background:#fff0f2; }
+.flow-home-actions { margin-top:3px; }
+.flow-home-actions #homeContinue,.flow-home-actions #homeNew { min-width:min(220px,100%); font-size:16px; }
+.flow-home-actions #homeHelp,.flow-home-actions #homeHistory { min-height:34px; padding:5px 12px; }
+.flow-save-list { width:100%; }
+.flow-note,.flow-feedback { margin:0; color:#7785a3; text-align:center; font-size:12px; line-height:1.65; }
+.flow-feedback { color:#a84d61; min-height:1.3em; }
+.flow-mode-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.flow-mode-card { min-width:0; padding:12px; text-align:left; color:#637394; border:1px solid rgba(119,145,206,.24); border-radius:15px; background:#f7f9ff; cursor:pointer; }
+.flow-mode-card[aria-checked="true"] { border-color:#64c6b5; background:#ecfbf8; box-shadow:0 0 0 2px rgba(73,205,184,.12); }
+.flow-mode-card strong { display:block; margin-bottom:4px; color:#51638e; }
+.flow-mode-card span { font-size:12px; line-height:1.5; }
+.flow-mode-details { padding:9px 12px; color:#667798; border-radius:12px; background:#f3f6fc; font-size:12px; line-height:1.65; }
+.flow-curse-pick { display:grid; gap:3px; padding:5px; border:1px solid rgba(220,135,151,.22); border-radius:12px; background:#fff8f8; }
+.flow-curse-pick[hidden] { display:none; }
+.flow-curse-pick .cp-item { min-width:0; }
+.flow-scroll { min-height:0; overflow:auto; overscroll-behavior:contain; padding:2px 5px 2px 1px; color:#5e6e91; font-size:13px; line-height:1.7; scrollbar-width:thin; }
+.flow-scroll .is-h { color:#6674b8; border-color:rgba(119,145,206,.22); }
+.flow-confirm { width:min(530px,100%); }
+.flow-confirm h1 { color:#ad596e; }
+.flow-menu-actions { flex-direction:column; align-items:stretch; }
+.flow-menu-actions button { width:100%; }
+.flow-global-close { position:fixed; top:calc(12px + env(safe-area-inset-top)); right:calc(12px + env(safe-area-inset-right)); z-index:1; width:42px; height:42px; color:#677699; border:1px solid rgba(255,255,255,.8); border-radius:50%; background:rgba(255,255,255,.8); font-size:26px; cursor:pointer; }
+.flow-global-close[hidden] { display:none; }
+html[data-theme="dark"] .flow-shell { background:linear-gradient(135deg,rgba(4,9,28,.78),rgba(13,16,42,.76) 52%,rgba(23,12,39,.78)),url('../assets/ui/idol-arena-night.png') center/cover fixed; }
+html[data-theme="dark"] .flow-card { color:#d6def2; border-color:rgba(149,171,227,.3); background:linear-gradient(145deg,rgba(26,38,70,.98),rgba(19,26,51,.98)); }
+html[data-theme="dark"] .flow-card h1 { color:#c3c9ff; }
+html[data-theme="dark"] .flow-eyebrow { color:#c3a9f0; }
+html[data-theme="dark"] .flow-lead,html[data-theme="dark"] .flow-note { color:#adbbda; }
+html[data-theme="dark"] .flow-save-card,html[data-theme="dark"] .flow-mode-card,html[data-theme="dark"] .flow-mode-details { color:#b8c5e1; border-color:rgba(149,171,227,.22); background:rgba(35,49,83,.8); }
+html[data-theme="dark"] .flow-save-meta strong,html[data-theme="dark"] .flow-mode-card strong { color:#e0e6fa; }
+html[data-theme="dark"] .flow-mode-card[aria-checked="true"] { background:rgba(38,86,91,.8); }
+html[data-theme="dark"] .flow-scroll { color:#ced7ef; }
+html[data-theme="dark"] .flow-scroll .is-h { color:#c3c9ff; }
+html[data-theme="dark"] .flow-confirm h1 { color:#f0a1b2; }
+html[data-theme="dark"] .flow-danger { color:#ffb4c2; background:rgba(117,48,67,.3); }
+@media (max-width:600px) {
+  .flow-shell { align-items:flex-start; padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)); }
+  .flow-card { width:100%; max-height:calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding:18px 14px; gap:8px; border-radius:20px; }
+  #homeArt { height:85px; }
+  .flow-mode-grid { grid-template-columns:1fr; }
+  .flow-mode-card { padding:9px 11px; }
+  .flow-actions { gap:7px; }
+  .flow-actions button { min-height:44px; }
+}
+@media (max-height:420px) and (orientation:landscape) {
+  .flow-shell { padding:5px 12px; }
+  .flow-card { width:min(760px,100%); max-height:calc(100dvh - 10px); padding:11px 17px; gap:5px; border-radius:15px; }
+  #homeArt { height:48px; margin:0; }
+  .flow-card h1 { font-size:22px; }
+  .flow-lead { font-size:12px; }
+  .flow-mode-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
+  .flow-mode-card { padding:6px; }
+  .flow-mode-card span { font-size:10px; }
+  .flow-actions button { min-height:36px; padding:7px 13px; }
+}
 .syn-head { color: #495b82; border-color: rgba(119,145,206,.18); }
 .syn-head .en { color: #9b80d6; }
 .syn-head .sub, .syn-foot { color: #8795b1; }
@@ -228,34 +321,8 @@ button { -webkit-tap-highlight-color: transparent; }
 #log { color: #687693; } #log b { color: #4a5a7f; }
 #log .battle-result, #log .important { color: #7861bc; }
 
-/* Title, run guide, rewards and every collection modal use the same stage language. */
-#overlay { background: linear-gradient(135deg,rgba(218,244,255,.68),rgba(245,231,255,.72) 50%,rgba(255,225,239,.7)),url('../assets/ui/idol-arena-v2.png') center/cover fixed; backdrop-filter: blur(5px); }
-#overlay::before { content: "✦  VIRTUAL IDOL TACTICS  ✦"; position: fixed; top: 4vh; color: rgba(255,255,255,.98); font-size: 12px; font-weight: 900; letter-spacing: 6px; text-shadow: 0 2px 12px #7487d8; }
-#ovCard { position: relative; width: min(760px,94vw); max-width: 760px; max-height: 91dvh; overflow-y: auto; gap: 10px; padding: 20px 24px 22px; color: #465777; border: 1px solid rgba(255,255,255,.96); border-radius: 26px; background: linear-gradient(145deg,rgba(255,255,255,.97),rgba(247,249,255,.96) 65%,rgba(255,242,250,.95)); box-shadow: 0 28px 75px rgba(64,79,140,.28),inset 0 1px 0 white; backdrop-filter: blur(20px); }
-#ovCard::before, #ovCard::after { width: 27px; height: 27px; border-color: #8b9af1; border-radius: 8px 0 0; }
-#ovCard::after { border-radius: 0 0 8px; border-color: #e78db5; }
-#ovCard h1, #ovCard h2, #ovTitle { color: #5266ad; text-shadow: 0 2px 12px rgba(155,150,233,.18); }
-#ovCard h1 { margin: 0; font-size: clamp(24px,3vw,34px); letter-spacing: 3px; }
-#ovClose { color: #8793af; border-radius: 10px; }
-#ovClose:hover { color: #625ca6; background: #f0efff; }
-#ovLead { margin: -3px 0 2px; color: #7381a0; text-align: center; font-size: 13px; }
-#idolMenuArt { height: 135px; display: flex; justify-content: center; align-items: flex-end; position: relative; margin: -5px 0 -1px; overflow: hidden; border-radius: 19px; background: linear-gradient(100deg,rgba(111,224,216,.28),rgba(161,166,255,.24) 52%,rgba(246,150,191,.27)); }
-#idolMenuArt::before { content: ""; position: absolute; width: 55%; height: 45px; bottom: -26px; border-radius: 50%; background: #fff; box-shadow: 0 0 38px 22px rgba(255,255,255,.68); }
-#idolMenuArt img { height: 148px; width: 120px; object-fit: contain; object-position: bottom; margin: 0 -12px; position: relative; filter: drop-shadow(0 4px 7px rgba(73,84,130,.18)); animation: idolFloat 3.2s ease-in-out infinite alternate; }
-#idolMenuArt img:nth-child(2) { height: 163px; animation-delay: -.9s; }
-#idolMenuArt img:nth-child(3) { animation-delay: -1.7s; }
-@keyframes idolFloat { to { transform: translateY(-7px) rotate(1.2deg); } }
-#idolQuickGuide { width: 100%; border: 1px solid rgba(131,151,207,.22); border-radius: 14px; background: rgba(241,246,255,.75); }
-#idolQuickGuide summary { padding: 9px 12px; color: #7470bb; font-weight: 800; cursor: pointer; }
-#idolQuickGuide[open] { padding-bottom: 9px; }
-#idolQuickGuide #ovText { max-width: none !important; max-height: min(31vh,250px); overflow: auto; margin: 0 11px; padding: 10px 12px; border-top: 1px solid rgba(131,151,207,.18); color: #657491 !important; font-size: 12px !important; }
-#ovText .is-h { color: #7770c5; border-color: rgba(146,143,220,.23); }
-#overlay button { border-radius: 13px; }
-#overlay #ovBtn, #overlay #ovResume { color: #fff; border: 0; background: linear-gradient(110deg,#f088b2,#988cf1 58%,#67cfce); box-shadow: 0 7px 18px rgba(133,115,211,.28); }
-#overlay #ovBtn:hover, #overlay #ovResume:hover { filter: brightness(1.05); }
-#overlay #ovBtn2, #overlay #ovBtn3 { color: #fff !important; border: 0 !important; background: linear-gradient(110deg,#70cdbd,#8c9bf0 58%,#d58bd1) !important; box-shadow: 0 6px 16px rgba(126,122,199,.2); }
-#dailyInfo { color: #63728e !important; border: 1px solid rgba(131,151,207,.24) !important; border-radius: 13px !important; background: linear-gradient(120deg,#effaff,#f3efff 58%,#fff2f8) !important; box-shadow: 0 4px 12px rgba(88,105,160,.08); }
-#cursePick .cp-hd { color: #c86b93; }
+/* 独立的奖励选择卡片在章节页中使用。 */
+.aug-card { font: inherit; cursor: pointer; }
 .cp-item { color: #61718e; border: 1px solid transparent; border-radius: 10px; }
 .cp-item:hover, .cp-item.on { background: linear-gradient(100deg,#edf8ff,#f5efff); }
 .cp-item.on { outline: 1px solid rgba(146,137,220,.36); }
@@ -263,9 +330,6 @@ button { -webkit-tap-highlight-color: transparent; }
 .cp-item b { color: #6e64b5; }
 .cp-item .cp-d { color: #697895; }
 .cp-item .cp-r { color: #309f83; }
-.mode-card { color: #61718e !important; border: 1px solid rgba(131,151,207,.3) !important; border-radius: 14px !important; background: linear-gradient(145deg,#fff,#f1f5ff) !important; box-shadow: 0 3px 10px rgba(77,96,151,.09); }
-.mode-card:hover { transform: translateY(-2px); }
-.mode-card.on { color: #5c5dae !important; border-color: #a5a5ee !important; background: linear-gradient(135deg,#e9f8ff,#f2eaff) !important; }
 .settle-hero.win { color: #309f83; } .settle-hero.lose { color: #d26888; }
 .settle-row { color: #667794; } .settle-ask { color: #7d6dc2; }
 .aug-card { color: #4f5f83; border: 1px solid rgba(130,149,203,.28); border-radius: 17px; background: linear-gradient(145deg,#fff,#f0f4ff); box-shadow: 0 5px 14px rgba(70,91,148,.1); }
@@ -273,8 +337,6 @@ button { -webkit-tap-highlight-color: transparent; }
 .aug-card .ad { color: #5e6e8a; }
 .aug-card.r2 { border-color: #93c8ed; background: linear-gradient(145deg,#fff,#eaf6ff); }
 .aug-card.r3 { border-color: #ebc66b; background: linear-gradient(145deg,#fffdf3,#fff4d7); }
-#resumeOv { color: #4e5e80 !important; border: 1px solid rgba(255,255,255,.95) !important; border-radius: 22px !important; background: linear-gradient(145deg,rgba(255,255,255,.98),rgba(243,247,255,.98)) !important; box-shadow: var(--idol-shadow-deep); }
-#resumeOv h1 { color: #6674b8; }
 
 #mDrawer { background: rgba(93,112,168,.2); backdrop-filter: blur(8px); }
 #mDrawerBox { color: #4e5e80; background: linear-gradient(150deg,rgba(255,255,255,.99),rgba(243,247,255,.98)); border: 1px solid rgba(255,255,255,.96); border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px rgba(67,85,149,.24); }
@@ -339,10 +401,9 @@ button { -webkit-tap-highlight-color: transparent; }
 /* Match the end-run action to the live, friendly stage palette. */
 #topbar #endBtn { color: #b75c78; border-color: rgba(231,139,167,.58); background: linear-gradient(145deg,#fff7fb,#ffe7ef); box-shadow: 0 3px 10px rgba(218,119,157,.14); }
 #topbar #endBtn:hover { color: #994461; background: linear-gradient(145deg,#fff,#ffdce8); }
-#topbar #endBtn.arm-flash { color: #fff; border-color: #ee829e; background: linear-gradient(135deg,#f28ba9,#f6a8bd); }
 
 @media (max-width: 1280px) and (min-width: 881px) {
-  #main { grid-template-columns: minmax(142px,168px) minmax(0,1fr) minmax(205px,236px); gap: 8px; padding-inline: 8px; }
+  #main { grid-template-columns: minmax(180px,224px) minmax(0,1fr) minmax(205px,236px); gap: 8px; padding-inline: 8px; }
   #synCol { padding: 8px 6px; } #side { gap: 6px; }
   #shopbar { gap: 6px; padding-inline: 8px; }
   #playerBox { min-width: 196px; }
@@ -353,9 +414,6 @@ button { -webkit-tap-highlight-color: transparent; }
   #topbar .btn.ic { flex-basis: 31px; width: 31px; height: 31px; }
 }
 @media (max-width: 880px) {
-  #ovCard { width: calc(100vw - 20px) !important; max-width: calc(100vw - 20px) !important; min-width: 0 !important; }
-  #modePick { width: 100%; max-width: none; display: grid !important; grid-template-columns: 1fr; gap: 7px; }
-  #modePick .mode-card { width: 100%; min-width: 0; }
   #topbar { min-height: 48px; height: 48px; gap: 5px; padding: 4px 7px; overflow: hidden; }
   #idolBrand { min-width: 34px; margin-right: 2px; }
   #idolBrand > span:last-child, #roundTicks, #idolPhase, #resStreak, #ticketTag, #curseTag,
@@ -368,6 +426,14 @@ button { -webkit-tap-highlight-color: transparent; }
   #topbar .res { gap: 3px; padding: 3px 5px; }
   #topbar .res .rl { display: none; }
   body { background-attachment: scroll; }
+  /* 非触屏窄窗（桌面浏览器窗口拉窄）：与触屏一致落回上下堆叠。
+     缺了这条 #main 会保持三列 grid，中列被左右栏挤扁后棋盘溢出，
+     直接画到左栏（棋子详情/羁绊）与右栏上。 */
+  body:not(.touch) #main { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; padding: 8px 6px 14px; overflow-y: auto; }
+  body:not(.touch) #synCol, body:not(.touch) #side { width: min(96vw, 520px); }
+  /* 堆叠布局禁止 flex 挤压：棋盘容器被压扁会让 rotateX 后的棋盘溢出容器、
+     盖住下方左栏；高度交给 fitBoard() 的整体 scale 收缩 */
+  #main > #boardwrap, #main > #synCol, #main > #side { flex-shrink: 0; }
   body.touch #main { display: flex; gap: 6px; padding: 5px 5px 7px; }
   body.touch #main::before { inset: 3px 1px; border-radius: 18px; }
   body.touch #boardwrap { perspective: 950px; perspective-origin: 50% 35%; padding: 7px 6px 9px; border-radius: 19px; }
@@ -425,13 +491,6 @@ button { -webkit-tap-highlight-color: transparent; }
   #castFeed { display: none; }
 }
 @media (max-width: 600px) {
-  #ovCard { width: calc(100vw - 20px) !important; max-width: calc(100vw - 20px) !important; min-width: 0 !important; padding: 15px 13px 17px; border-radius: 20px; }
-  #modePick { width: 100%; max-width: none; display: grid !important; grid-template-columns: 1fr; gap: 7px; }
-  #modePick .mode-card { width: 100%; min-width: 0; }
-  #idolMenuArt { height: 112px; } #idolMenuArt img { height: 122px; width: 100px; }
-  #idolMenuArt img:nth-child(2) { height: 135px; }
-  #overlay::before { top: 2vh; font-size: 9px; letter-spacing: 3px; }
-  #idolQuickGuide #ovText { max-height: 28vh; }
   #bookPanel, #histPanel { width: 96vw !important; max-height: 94dvh !important; padding: 13px !important; }
   #bookGrid { grid-template-columns: 1fr !important; }
   #mDrawerBox { max-height: 83dvh; }
@@ -477,7 +536,7 @@ button { -webkit-tap-highlight-color: transparent; }
   body.touch #pbtns .btn { min-width: 0; min-height: 36px; padding: 5px 2px; font-size: 10px; line-height: 1.15; }
 }
 @media (prefers-reduced-motion: reduce) {
-  #idolMenuArt img, .idol-sigil, .cf-item { animation: none !important; }
+  #homeArt img, .idol-sigil, .cf-item { animation: none !important; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
 

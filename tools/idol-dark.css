@@ -37,8 +37,6 @@ html[data-theme="dark"] ::selection { color: #fff; background: rgba(138, 121, 24
 }
 #topbar .fight-btn-row { flex-wrap: nowrap; }
 #topbar .res .rl { display: none; }
-#ovCard #ovThemeBtn { position: absolute; z-index: 2; top: 12px; left: 13px; width: 32px; height: 32px; min-width: 0; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; border: 1px solid rgba(134,153,208,.35); border-radius: 10px; background: rgba(242,246,255,.88); color: #475b91; }
-html[data-theme="dark"] #ovCard #ovThemeBtn { color: #f5d999; border-color: rgba(156,180,244,.34); background: rgba(29,41,76,.9); }
 @media (max-width: 880px) { #topbar #themeBtn { display: none; } }
 @media (min-width: 881px) and (max-width: 1350px) { #roundTicks { display: none; } }
 
@@ -164,31 +162,12 @@ html[data-theme="dark"] #castFeed .cf-item { border-color: rgba(146,169,230,.3);
 html[data-theme="dark"] #castFeed .cf-item b { color: #c6d4f2; }
 html[data-theme="dark"] #castFeed .cf-item span { color: color-mix(in srgb,var(--hero-color,#8f9bff),#c6d4f2 55%); }
 
-html[data-theme="dark"] #overlay { background: linear-gradient(135deg,rgba(4,9,28,.69),rgba(13,16,42,.63) 52%,rgba(23,12,39,.68)),url('../assets/ui/idol-arena-night.png') center/cover fixed; }
-html[data-theme="dark"] #ovCard,
-html[data-theme="dark"] #resumeOv,
 html[data-theme="dark"] #histPanel,
 html[data-theme="dark"] #bookPanel,
 html[data-theme="dark"] #mDrawerBox { color: #d2ddfa !important; border-color: rgba(157,180,242,.36) !important; background: linear-gradient(145deg,rgba(27,39,73,.98),rgba(17,28,56,.98) 68%,rgba(42,29,68,.98)) !important; box-shadow: 0 22px 65px rgba(0,0,0,.55); }
-html[data-theme="dark"] #ovCard h1,
-html[data-theme="dark"] #ovCard h2,
-html[data-theme="dark"] #ovTitle,
-html[data-theme="dark"] #resumeOv h1,
 html[data-theme="dark"] #histPanel h2,
 html[data-theme="dark"] #bookPanel h2 { color: #c5c8ff; }
-html[data-theme="dark"] #ovLead,
-html[data-theme="dark"] #ovText { color: #b8c7e8 !important; }
-html[data-theme="dark"] #ovText .is-h { color: #c6afff; border-color: rgba(169,146,230,.33); }
-html[data-theme="dark"] #ovClose { color: #d0dafa; }
-html[data-theme="dark"] #ovClose:hover { color: #fff; background: #3a4779; }
-html[data-theme="dark"] #idolMenuArt { background: linear-gradient(100deg,rgba(43,103,117,.4),rgba(66,59,131,.43) 52%,rgba(115,52,98,.4)); }
-html[data-theme="dark"] #idolMenuArt::before { background: #43538b; box-shadow: 0 0 37px 20px rgba(115,132,222,.3); }
-html[data-theme="dark"] #idolQuickGuide { border-color: rgba(146,169,230,.31); background: rgba(28,42,76,.83); }
-html[data-theme="dark"] #idolQuickGuide summary { color: #d0bbff; }
-html[data-theme="dark"] #idolQuickGuide #ovText { color: #b9c9ea !important; border-color: rgba(146,169,230,.28); }
-html[data-theme="dark"] .mode-card,
 html[data-theme="dark"] .aug-card { color: #d3dffc !important; border-color: rgba(156,179,237,.37) !important; background: linear-gradient(145deg,#2d406d,#202f56) !important; box-shadow: 0 4px 12px rgba(0,0,0,.26); }
-html[data-theme="dark"] .mode-card.on { color: #f1eaff !important; border-color: #a899f1 !important; background: linear-gradient(135deg,#245772,#4d3c82) !important; }
 html[data-theme="dark"] .aug-card.r2 { border-color: #679fcb !important; background: linear-gradient(145deg,#244a69,#26395f) !important; }
 html[data-theme="dark"] .aug-card.r3 { border-color: #c59b52 !important; background: linear-gradient(145deg,#57482d,#34365c) !important; }
 html[data-theme="dark"] .aug-card .ad,
@@ -199,7 +178,6 @@ html[data-theme="dark"] .cp-item:hover,
 html[data-theme="dark"] .cp-item.on { background: linear-gradient(100deg,#294965,#3c366a); }
 html[data-theme="dark"] .cp-item b,
 html[data-theme="dark"] .settle-ask { color: #c8b9ff; }
-html[data-theme="dark"] #dailyInfo { color: #c0d0ef !important; border-color: rgba(157,179,235,.33) !important; background: linear-gradient(120deg,#203b5a,#34315f 58%,#493051) !important; }
 html[data-theme="dark"] #mDrawer { background: rgba(2,5,19,.68); }
 html[data-theme="dark"] #mDrawerHead { border-color: rgba(146,169,230,.27); }
 html[data-theme="dark"] #mDrawerTitle { color: #d0c4ff; }

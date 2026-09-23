@@ -12,13 +12,9 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('http://127.0.0.1:8081/index.html')
     pg.wait_for_timeout(800)
-    # 新开一局（若有存档弹窗）
-    pg.evaluate("""() => {
-      const r = document.getElementById('resumeOv');
-      if (r && !r.classList.contains('hidden')) document.getElementById('resumeNo').click();
-      const o = document.getElementById('overlay');
-      if (o && !o.classList.contains('hidden')) document.getElementById('ovBtn').click();
-    }""")
+    # 新开一局只由设置页的显式按钮确认。
+    pg.locator('#homeNew').click()
+    pg.locator('#setupStart').click()
     pg.wait_for_timeout(300)
     pg.evaluate(BOT_JS)
     pg.set_viewport_size({'width': 1400, 'height': 900})
@@ -28,6 +24,11 @@ with sync_playwright() as p:
         state = pg.evaluate("""() => ({phase:S.phase, round:S.round, hp:S.hp, gold:S.gold, lvl:S.lvl, endless:!!S.endless})""")
         if state['phase'] == 'over':
             print('GAME OVER:', state); break
+        if state['phase'] == 'chapter':
+            cards = pg.locator('#chapterBody [data-aug]')
+            if cards.count(): cards.first.click()
+            pg.locator('#chapterContinue').click()
+            continue
         # 备战阶段：机器人操作 + 截图关键回合
         r = state['round']
         pg.evaluate("() => botPrep()")
@@ -46,7 +47,7 @@ with sync_playwright() as p:
         hp_log.append((st['round'], st['hp']))
         print(f"battle {battle_no+1}: round={st['round']} phase={st['phase']} hp={st['hp']} gold={st['gold']} lvl={st['lvl']} streak={st['streak']}")
         if st['phase'] == 'over':
-            ov = pg.evaluate("() => document.getElementById('ovTitle').textContent")
+            ov = pg.evaluate("() => document.getElementById('flowResultTitle').textContent")
             win = '通关' in (ov or '')
             print('RESULT:', 'WIN' if win else 'LOSE', ov, st)
             pg.screenshot(path='out/end_screen.png')

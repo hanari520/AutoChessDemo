@@ -5,6 +5,12 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 
 ;globalThis.API = { get S(){return S}, setS:v=>{S=v},
+  get flowPage(){return flowPage}, get runSessionId(){return runSessionId}, get afDeadline(){return afDeadline},
+  get lastSaveError(){return lastSaveError}, get lastLoadError(){return lastLoadError},
+  get SAVE_KEY(){return SAVE_KEY}, get DAILY_KEY(){return DAILY_KEY}, get ARENA_SAVE_KEY(){return ARENA_SAVE_KEY},
+  newGame, saveGame, loadGame, inspectSave, saveKey, saveKeyForMode, startConfiguredRun,
+  showHome, openSetup, showHelp, closeHelp, showGameMenu, openFlowConfirm, cancelFlowConfirm, acceptFlowConfirm,
+  restartGame, endRunEarly, gameOver, chapterSettle, chapterContinue, pickAug, scheduleAutoFight, cancelAutoFight, todaySeed,
   get currentTick(){return currentTick},
   byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy, autoDeployBest,
   /* 诊断插桩（DBG/T1 测试用，只读导出，不影响游戏逻辑） */
@@ -26,7 +32,7 @@ function makeEl() {
     removeChild(){}, remove(){},
     querySelector() { return makeEl(); },
     querySelectorAll() { return []; },
-    addEventListener(){}, setAttribute(){},
+    addEventListener(){}, setAttribute(k,v){ this[k]=String(v); }, removeAttribute(k){ delete this[k]; }, hasAttribute(k){ return Object.prototype.hasOwnProperty.call(this,k); }, focus(){},
     getBoundingClientRect() { return { left: 0, top: 0, width: 58, height: 58 }; },
     closest() { return null; },
   };
