@@ -1042,6 +1042,7 @@ body.touch .m-only { display:inline-block; }
 </style>
 <link rel="stylesheet" href="tools/idol-ui.css?v=2">
 <link rel="stylesheet" href="tools/idol-redesign.css?v=3">
+<link rel="stylesheet" href="tools/mobile-stage.css?v=1">
 </head>
 <body>
 <div id="topbar">
@@ -1070,6 +1071,7 @@ body.touch .m-only { display:inline-block; }
       <button class="spd-b" data-s="2">2×</button>
     </span>
   </div>
+  <button id="mMenuBtn" class="btn m-only" aria-label="更多功能">更多</button>
 </div>
 <div id="main">
   <div id="synCol">
@@ -1141,6 +1143,7 @@ body.touch .m-only { display:inline-block; }
       <div id="mBondSec" class="m-sec hidden"></div>
       <div id="mEquipSec" class="m-sec hidden"></div>
       <div id="mSideSec" class="m-sec hidden"></div>
+      <div id="mMenuSec" class="m-sec hidden"></div>
     </div>
   </div>
 </div>
@@ -6493,9 +6496,14 @@ function openDrawer(mode){
   $('mBondSec').classList.toggle('hidden', mode!=='bond');
   $('mEquipSec').classList.toggle('hidden', mode!=='equip');
   $('mSideSec').classList.toggle('hidden', mode!=='side');
+  $('mMenuSec').classList.toggle('hidden', mode!=='menu');
+  if(mode==='menu') $('mMenuSec').querySelectorAll('[data-target="endBtn"]').forEach(b=>{
+    b.style.display=$('endBtn').style.display==='none'?'none':'';
+  });
   $('mDrawerTitle').textContent = mode==='shop' ? '🏪 商店（买牌 / 刷新 / 锁定）'
     : mode==='bond' ? '🔗 羁绊（阵营 / 职业 · 档位效果）'
     : mode==='equip' ? '🎒 装备（拖到棋子身上穿；点身上的装备卸下）'
+    : mode==='menu' ? '更多功能'
     : '📋 棋子详情 · 战报';
   try{ $('mDrawerBox').style.marginBottom = (($('shopbar')&&$('shopbar').offsetHeight)||0)+'px'; }catch(e){}
   d.classList.remove('hidden');
@@ -6506,6 +6514,7 @@ function drawerMode(){ const d=$('mDrawer');
   if($('mShopSec')&&!$('mShopSec').classList.contains('hidden')) return 'shop';
   if($('mBondSec')&&!$('mBondSec').classList.contains('hidden')) return 'bond';
   if($('mEquipSec')&&!$('mEquipSec').classList.contains('hidden')) return 'equip';
+  if($('mMenuSec')&&!$('mMenuSec').classList.contains('hidden')) return 'menu';
   return 'side';
 }
 /* 「详情直开」开关：开=单击棋子直接弹详情抽屉；关（默认）=单击优先进入点选移动，详情走 📋 按钮。跨局记忆 */
@@ -6522,16 +6531,28 @@ if(IS_TOUCH && typeof document!=='undefined' && document.body){
   document.getElementById('mShopSec').appendChild(document.getElementById('shop'));
   document.getElementById('mShopSec').appendChild(document.getElementById('auxCol'));   // 强化+自动开战随商店抽屉
   document.getElementById('mShopSec').appendChild(document.getElementById('shopctlCol'));
+  document.getElementById('mShopSec').appendChild(document.getElementById('pbtns'));
   document.getElementById('mBondSec').appendChild(document.getElementById('synCol'));
   document.getElementById('mEquipSec').appendChild(document.getElementById('equipPanel'));
   document.getElementById('mSideSec').appendChild(document.getElementById('side'));
+  const menu=$('mMenuSec');
+  [['图鉴','bookBtn'],['荣誉殿堂','histBtn'],['托管','autoBtn'],['玩法说明','helpBtn'],['音效','sfxBtn'],['重开','resetBtn'],['结束挑战','endBtn']].forEach(([label,id])=>{
+    const b=document.createElement('button'); b.className='btn'; b.textContent=label; b.dataset.target=id;
+    b.onclick=()=>{ closeDrawer(); $(id)?.click(); }; menu.appendChild(b);
+  });
+  const speed=document.createElement('div'); speed.className='mobile-speed'; speed.innerHTML='<span>战斗速度</span>';
+  [['1×','1'],['1.5×','1.5'],['2×','2']].forEach(([label,value])=>{
+    const b=document.createElement('button'); b.className='btn'; b.textContent=label;
+    b.onclick=()=>{ document.querySelector(`.spd-b[data-s="${value}"]`)?.click(); }; speed.appendChild(b);
+  }); menu.appendChild(speed);
   const mdraw=(id,mode)=>{ document.getElementById(id).onclick=()=>{ 
     if(S.phase!=='prep'){ closeDrawer(); return; }   // 战斗/结算中：商店装备等都是备战操作，抽屉只收不开、不挡棋盘
     drawerMode()===mode ? closeDrawer() : openDrawer(mode); }; };
   mdraw('mShopBtn','shop'); mdraw('mBondBtn','bond'); mdraw('mEquipBtn','equip'); mdraw('mSideBtn','side');
+  $('mMenuBtn').onclick=()=>{ drawerMode()==='menu' ? closeDrawer() : openDrawer('menu'); };
   document.getElementById('mDrawerClose').onclick=closeDrawer;
   const aib=document.getElementById('mAutoInspectBtn');
-  if(aib){ aib.onclick=()=>{ autoInspect=!autoInspect;
+  if(aib){ $('mSideSec').insertBefore(aib,$('side')); aib.onclick=()=>{ autoInspect=!autoInspect;
     try{ localStorage.setItem(AUTO_INSPECT_KEY, autoInspect?'1':'0') }catch(e){}
     paintAutoInspect();
     log(autoInspect?'📋 详情直开：开（单击棋子直接看详情）':'📋 详情直开：关（单击棋子优先点选移动，详情走 📋 按钮）');

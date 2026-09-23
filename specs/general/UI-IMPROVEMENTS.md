@@ -6,6 +6,9 @@ Refresh the presentation layer for the existing single-player auto-battler. Keep
 
 ## Findings and changes
 
+- **High — the portrait phone game screen was visually crowded.** Replaced the stacked toolbar, shop preview, level controls, and repeated action rows with a compact resource header, a centered board and bench, and one bottom action row. Population and experience remain visible in a small strip. Shop operations, deployment, upgrade, equipment, bonds, details, and other settings are available from focused sheets.
+- **High — the board could extend beyond a narrow phone viewport.** Sized the grid from the actual phone width, reduced its inner gap and padding, and checked that all eight columns fit at 390, 360, 375, and 320 pixel widths.
+- **Medium — mobile utility actions were scattered through the header.** Added a More sheet for the unit book, history, autoplay, help, sound, restart, challenge end, and battle speed. The shop sheet now contains its related economy and deployment actions.
 - **High — equipment was presented as bare chips and most items were stat sticks.** Reworked the panel into an armory with loadout, inventory, craftable pairs, a forge, and an expandable route catalog. Cards show the item's stat line and combat trait; the unit book now lists traits and recipes too. Mobile uses a compact card grid and collapses routes until requested.
 - **High — recipe discovery did not communicate why a craft mattered.** Added fixed pair recipes for all 21 combinations of the six components. Component mechanics carry into crafted items, then each crafted item adds its own trigger. The forge previews all four artifact choices and their trait text.
 
@@ -27,6 +30,8 @@ Refresh the presentation layer for the existing single-player auto-battler. Keep
 
 ## Verification
 
+- Checked the redesigned preparation screen at 390 × 844, 360 × 740, 375 × 667, and 320 × 568 touch viewports. The board and bench fit horizontally, and the bottom action row stays within the viewport.
+- Opened the shop and More sheets; all five shop cards rendered, purchase reduced gold and added a bench unit, and no page errors occurred in those viewports. Also reviewed 740 × 360 touch landscape and 1280 × 800 desktop layouts.
 - Reviewed the start screen at desktop and 390 × 844 emulated mobile sizes.
 - Started a new run in a local browser and reviewed the battle preparation screen at 1440 × 900.
 - Checked board, bench, and shop separation at 1305 × 318 and 740 × 360 landscape sizes; the bench stays above the shop in both layouts.

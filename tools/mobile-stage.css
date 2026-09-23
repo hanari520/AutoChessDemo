@@ -1,0 +1,121 @@
+/* Phone play screen: let the board carry the page; keep secondary tools in sheets. */
+@media (max-width: 600px) and (orientation: portrait) {
+  body.touch {
+    --cell: min(53px, calc((100vw - 50px) / 8), calc((100dvh - 224px) / 9));
+    background: linear-gradient(180deg,#eff7ff 0%,#dcecf8 51%,#e9e8fa 100%);
+  }
+  body.touch::before { background: radial-gradient(circle at 50% 42%,rgba(255,255,255,.7),transparent 62%); }
+
+  body.touch #topbar {
+    min-height: calc(54px + env(safe-area-inset-top));
+    height: calc(54px + env(safe-area-inset-top));
+    padding: calc(5px + env(safe-area-inset-top)) 10px 5px;
+    gap: 6px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 4px 16px rgba(73,96,163,.09);
+  }
+  body.touch #roundBox { padding: 4px 6px; margin-right: auto; border: 0; background: transparent; }
+  body.touch #roundBox .rn { font-size: 19px; }
+  body.touch #topbar .res { border: 0; background: transparent; padding: 4px 3px; }
+  body.touch #topbar .res .rv { font-size: 15px; }
+  body.touch #topbar .res::before { width: 14px; height: 14px; }
+  body.touch #topbar #resPop { display: none; }
+  body.touch #topbar .fight-btn-row { display: none; }
+  body.touch #mMenuBtn {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 auto; min-width: 48px; min-height: 38px;
+    padding: 6px 9px; margin-left: 2px;
+    border: 1px solid #d7e3f2; border-radius: 11px;
+    color: #536588; background: #f4f7ff; font-size: 12px; font-weight: 800;
+  }
+
+  body.touch #main {
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    padding: 10px 8px; gap: 0;
+  }
+  body.touch #main::before { display: none; }
+  body.touch #boardwrap {
+    width: 100%; flex: 0 0 auto; max-width: 460px;
+    gap: 10px; padding: 10px 4px 13px;
+    border: 1px solid rgba(255,255,255,.95); border-radius: 22px;
+    background: linear-gradient(155deg,rgba(255,255,255,.8),rgba(233,242,255,.66));
+    box-shadow: 0 18px 36px rgba(78,104,171,.15), inset 0 1px 0 #fff;
+    perspective: none;
+  }
+  body.touch #boardwrap::before { inset: 4px; border-radius: 18px; background: rgba(255,255,255,.16); }
+  body.touch #boardwrap::after { display: none; }
+  body.touch #board { transform: none; gap: 2px; padding: 4px; border-width: 1px; border-radius: 14px; box-shadow: 0 9px 20px rgba(72,101,163,.16),0 0 0 3px rgba(255,255,255,.5); }
+  body.touch .cell { border-radius: 5px; }
+  body.touch #oppBar { margin-bottom: 1px; min-height: 30px; }
+  body.touch #bench { padding: 7px 5px; gap: 3px; border-radius: 12px; }
+  body.touch #bench > span { display: none; }
+
+  body.touch #shopbar {
+    display: grid; grid-template-columns: repeat(4,minmax(0,1fr)) minmax(76px,1.2fr);
+    grid-template-rows: 34px 52px; gap: 7px 5px;
+    align-items: stretch; flex: 0 0 auto;
+    padding: 8px 8px max(9px,env(safe-area-inset-bottom));
+    background: rgba(255,255,255,.97);
+    box-shadow: 0 -7px 22px rgba(68,96,160,.12);
+  }
+  body.touch #shopbar::before { opacity: .55; }
+  body.touch #playerBox {
+    display: block; grid-column: 1 / -1; grid-row: 1;
+    min-width: 0; padding: 0 10px; border-radius: 9px;
+    background: #f3f7ff; border-color: #e2eafa; box-shadow: none;
+  }
+  body.touch #lvlBox { height: 100%; padding: 0; display: flex; align-items: center; gap: 8px; }
+  body.touch #lvlBox .lvl-row { margin: 0; font-size: 11px; }
+  body.touch #lvlBox .lvl-row:first-child { display: flex; align-items: center; gap: 8px; }
+  body.touch #lvlBox .lvl-row .gd,
+  body.touch #lvlBox .odds-row, body.touch #lvlBox .it { display: none; }
+  body.touch #lvlBox .lvl-row .sub { display: inline; font-size: 10px; }
+  body.touch #lvlBox .xpbar { flex: 1; min-width: 32px; height: 6px; }
+  body.touch #shopbar > .m-only, body.touch #fightBox { order: 0; min-width: 0; margin: 0; grid-row: 2; }
+  body.touch #mShopBtn { grid-column: 1; }
+  body.touch #mBondBtn { grid-column: 2; }
+  body.touch #mEquipBtn { grid-column: 3; }
+  body.touch #mSideBtn { grid-column: 4; }
+  body.touch #fightBox { grid-column: 5; }
+  body.touch #shopbar > .m-only {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 100%; min-height: 52px; padding: 4px 1px;
+    border: 1px solid #dce6f4; border-radius: 12px;
+    color: #51658a; background: #f4f8ff; font-size: 12px; font-weight: 800;
+  }
+  body.touch #shopbar > .m-only:active { background: #e5f5f6; }
+  body.touch #fightBtn {
+    min-width: 0; width: 100%; min-height: 52px; height: 52px;
+    padding: 4px; border-radius: 12px; font-size: 14px;
+  }
+  body.touch #fightBox .btn::after { display: none; }
+
+  body.touch #mDrawer { background: rgba(34,51,92,.16); }
+  body.touch #mDrawerBox {
+    max-height: min(77dvh,690px); margin-bottom: 0 !important;
+    border-radius: 22px 22px 0 0;
+  }
+  body.touch #mDrawerHead { gap: 8px; padding: 12px 14px 9px; }
+  body.touch #mDrawerTitle { min-width: 0; font-size: 14px; letter-spacing: 0; line-height: 1.35; }
+  body.touch #mDrawerClose { min-height: 38px; white-space: nowrap; }
+  body.touch #mAutoInspectBtn { display: none; }
+  body.touch #mSideSec #mAutoInspectBtn { display: block; min-height: 40px; margin: 0 0 10px; padding: 7px 10px; font-size: 12px; }
+  body.touch #mDrawerBody { padding: 11px 13px max(18px,env(safe-area-inset-bottom)); }
+  body.touch #mShopSec { display: flex; flex-direction: column; gap: 12px; }
+  body.touch #mShopSec.hidden { display: none; }
+  body.touch #mShopSec #shop { order: 0; min-height: 155px; gap: 8px; }
+  body.touch #mShopSec #shop .card { flex: 0 0 126px; min-width: 126px; max-width: 126px; }
+  body.touch #mShopSec #shop .card .art { height: 84px; max-height: 84px; }
+  body.touch #mShopSec #shopctlCol { order: 1; gap: 8px; }
+  body.touch #mShopSec #auxCol { order: 2; gap: 8px; }
+  body.touch #mShopSec #pbtns { order: 3; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  body.touch #mShopSec #pbtns .btn, body.touch #mShopSec #shopctlCol .btn,
+  body.touch #mShopSec #auxCol .btn { min-height: 44px; padding: 8px; font-size: 12px; }
+  body.touch #mMenuSec { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+  body.touch #mMenuSec.hidden { display: none; }
+  body.touch #mMenuSec > .btn { min-height: 48px; font-size: 13px; }
+  body.touch #mMenuSec .mobile-speed { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; padding-top: 8px; border-top: 1px solid #e3eafa; }
+  body.touch #mMenuSec .mobile-speed span { margin-right: auto; color: #637495; font-size: 12px; }
+  body.touch #mMenuSec .mobile-speed .btn { min-width: 50px; min-height: 38px; }
+}
