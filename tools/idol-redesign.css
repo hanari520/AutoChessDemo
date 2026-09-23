@@ -54,12 +54,15 @@ button { -webkit-tap-highlight-color: transparent; }
 #topbar .spacer { flex: 1 1 8px; min-width: 8px; }
 #topbar .btn.ic { flex: 0 0 34px; width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; font-size: 0; }
 #topbar .btn.ic::before { flex: none; width: 16px; height: 16px; margin: 0; }
-/* Keep the two primary destinations readable on desktop; secondary HUD actions stay icon-only. */
-#topbar #bookBtn, #topbar #endBtn {
-  flex: 0 0 auto; width: auto; min-width: max-content; height: 34px; padding: 0 10px; gap: 6px;
-  overflow: visible; font-size: 12px; line-height: 1; white-space: nowrap;
+/* The whole action group switches together between labeled and compact buttons. */
+@media (min-width: 1480px) {
+  #topbar .fight-btn-row .btn.ic {
+    flex: 0 0 auto; width: auto; min-width: max-content; height: 34px;
+    padding: 0 10px; gap: 6px; overflow: visible;
+    font-size: 12px; line-height: 1; white-space: nowrap;
+  }
+  #topbar .fight-btn-row .btn.ic::before { width: 14px; height: 14px; }
 }
-#topbar #bookBtn::before, #topbar #endBtn::before { width: 14px; height: 14px; }
 #topbar .spdwrap { display: inline-flex; flex: 0 0 auto; gap: 2px; }
 #topbar .spd-b { padding: 4px 6px; font-size: 11px; }
 #idolBrand .brand-mark { border-radius: 12px; background: linear-gradient(145deg,#55ddc8,#8298ff 58%,#eb8fca); }
@@ -114,10 +117,9 @@ button { -webkit-tap-highlight-color: transparent; }
   background: linear-gradient(145deg,rgba(119,216,226,.13),rgba(164,156,244,.11) 52%,rgba(247,163,195,.13));
   box-shadow: inset 0 0 35px rgba(131,162,230,.13);
 }
-#boardwrap::after {
-  content: "✦  STAR STAGE  ✦"; position: absolute; z-index: 0; left: 50%; bottom: 3px;
-  transform: translateX(-50%); color: rgba(99,115,177,.56); font-size: 8px; font-weight: 900; letter-spacing: 4px; pointer-events: none;
-}
+/* 板上 STAR STAGE 字样已按需求移除：idol-ui.css 的同名 ::after 残留 top:2px 定位，
+   必须 content:none 显式关闭，否则会回退显示成 sparkles 且钉在棋盘顶沿 */
+#boardwrap::after { content: none; }
 #board {
   position: relative; z-index: 1; transform: rotateX(16deg); transform-origin: 50% 52%; transform-style: preserve-3d;
   border: 2px solid rgba(255,255,255,.82); border-radius: 15px;
@@ -297,22 +299,42 @@ button { -webkit-tap-highlight-color: transparent; }
 /* Every hero keeps their own portrait, palette and signature skill flourish. */
 .unit[data-unit-id] { --hero-color: hsl(var(--hero-hue, 220) 78% 66%); }
 .unit.battle-unit.idol-casting .pt { filter: drop-shadow(0 0 8px var(--hero-color)) drop-shadow(0 5px 8px rgba(73,84,145,.24)); }
+.unit.battle-unit.enemy .pt {
+  filter: drop-shadow(1px 0 0 #ffb3bd) drop-shadow(-1px 0 0 #ffb3bd)
+    drop-shadow(0 1px 0 #ffb3bd) drop-shadow(0 -1px 0 #ffb3bd)
+    drop-shadow(0 0 5px rgba(255,124,151,.42)) drop-shadow(0 5px 5px rgba(73,84,145,.24));
+}
+.unit.battle-unit.enemy.idol-casting .pt {
+  filter: drop-shadow(1px 0 0 #ffb3bd) drop-shadow(-1px 0 0 #ffb3bd)
+    drop-shadow(0 1px 0 #ffb3bd) drop-shadow(0 -1px 0 #ffb3bd)
+    drop-shadow(0 0 8px var(--hero-color)) drop-shadow(0 5px 8px rgba(73,84,145,.24));
+}
 .idol-sigil { position: absolute; z-index: 6; left: 50%; top: 44%; width: 74%; aspect-ratio: 1; transform: translate(-50%,-50%); pointer-events: none; border: 2px solid color-mix(in srgb,var(--hero-color),white 24%); border-radius: 50%; box-shadow: 0 0 11px var(--hero-color),inset 0 0 13px color-mix(in srgb,var(--hero-color),transparent 45%); animation: idolSigil .62s ease-out forwards; }
 .idol-sigil::before, .idol-sigil::after { content: ""; position: absolute; inset: 13%; border: 1px dashed rgba(255,255,255,.86); border-radius: 30%; transform: rotate(45deg); }
 .idol-sigil::after { inset: 28%; border-style: solid; border-radius: 50%; transform: rotate(-25deg); }
 .idol-sigil b { position: absolute; inset: 0; display: grid; place-items: center; color: white; font-size: 24px; text-shadow: 0 0 9px var(--hero-color); }
 @keyframes idolSigil { 0% { opacity: 0; scale: .35; rotate: -38deg; } 24% { opacity: 1; } 100% { opacity: 0; scale: 1.3; rotate: 52deg; } }
-#idolSkillCue { position: absolute; z-index: 88; top: 20%; right: 14px; width: min(280px,45%); min-height: 88px; display: flex; align-items: center; gap: 9px; padding: 8px 13px 8px 5px; opacity: 0; pointer-events: none; overflow: hidden; border: 1px solid color-mix(in srgb,var(--hero-color,#8f9bff),white 35%); border-radius: 17px; background: linear-gradient(100deg,rgba(255,255,255,.96),rgba(243,247,255,.92) 62%,rgba(255,245,251,.93)); box-shadow: 0 9px 24px color-mix(in srgb,var(--hero-color,#8f9bff),transparent 72%),inset 0 1px 0 white; backdrop-filter: blur(12px); }
-#idolSkillCue.show { animation: idolCueIn .86s cubic-bezier(.2,.8,.2,1) both; }
-#idolSkillCue img { align-self: flex-end; width: 72px; height: 94px; margin: -10px 0 -12px -8px; object-fit: contain; object-position: bottom; filter: drop-shadow(0 3px 5px rgba(68,80,145,.2)); }
-#idolSkillCue .cue-copy { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-#idolSkillCue small { color: #8994b2; font-size: 8px; font-weight: 900; letter-spacing: 1.6px; }
-#idolSkillCue strong { color: #5365aa; font-size: 15px; line-height: 1.15; }
-#idolSkillCue span { color: #7c89a5; font-size: 10px; }
-#idolSkillCue .cue-star { position: absolute; right: 8px; top: 5px; color: var(--hero-color); font-size: 17px; animation: cueTwinkle .5s ease-out both; }
-#idolSkillCue.enemy { right: auto; left: 14px; }
-@keyframes idolCueIn { 0% { opacity: 0; transform: translateY(-12px) scale(.94); } 15%,75% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-5px) scale(.98); } }
-@keyframes cueTwinkle { from { transform: rotate(-50deg) scale(.2); opacity: 0; } to { transform: rotate(0) scale(1); opacity: 1; } }
+/* ===== 施法播报条（双槽单行，每槽最多 2 条并排）：棋盘外顶沿，左=我方 / 右=对手；
+   宽度与棋盘同宽对齐；条目约 1.1s 转旧、1.75s 退场，永不覆盖棋盘格。
+   单行布局把预留高度压到一枚条目高（30px），尽量把空间让给棋盘 ===== */
+#castFeed { width: calc(8*var(--cell) + 7*var(--gap) + 2*var(--pad) + 4px); max-width: 100%; min-height: 30px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; }
+#castFeed .cf-slot { display: flex; flex-direction: row; gap: 5px; min-width: 0; max-width: 49%; }
+#castFeed .cf-slot.foe { flex-direction: row-reverse; }
+.cf-item { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; padding: 2px 10px 2px 3px;
+  border: 1px solid color-mix(in srgb,var(--hero-color,#8f9bff),white 40%); border-left: 3px solid #58d1bb; border-radius: 20px;
+  background: linear-gradient(100deg,rgba(255,255,255,.95),rgba(243,247,255,.9));
+  box-shadow: 0 3px 10px color-mix(in srgb,var(--hero-color,#8f9bff),transparent 75%),inset 0 1px 0 white;
+  animation: cfIn .3s cubic-bezier(.2,.8,.2,1) both; transition: opacity .35s; }
+#castFeed .cf-slot.foe .cf-item { flex-direction: row-reverse; padding: 2px 3px 2px 10px; border-left: 1px solid color-mix(in srgb,var(--hero-color,#8f9bff),white 40%); border-right: 3px solid #f18bb3; }
+.cf-item img { width: 22px; height: 22px; flex: none; object-fit: contain; object-position: center bottom; border-radius: 50%;
+  background: color-mix(in srgb,var(--hero-color,#8f9bff),white 72%); box-shadow: 0 0 0 1.5px color-mix(in srgb,var(--hero-color,#8f9bff),white 20%); }
+.cf-item b { font-size: 11px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #4d5d87; }
+.cf-item span { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; color: color-mix(in srgb,var(--hero-color,#8f9bff),#5365aa 52%); }
+.cf-item.old { opacity: .55; }
+.cf-item.bye { animation: cfOut .3s ease both; }
+@keyframes cfIn { from { opacity: 0; transform: translateY(-7px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes cfOut { to { opacity: 0; transform: translateY(-5px) scale(.95); } }
 
 /* Match the end-run action to the live, friendly stage palette. */
 #topbar #endBtn { color: #b75c78; border-color: rgba(231,139,167,.58); background: linear-gradient(145deg,#fff7fb,#ffe7ef); box-shadow: 0 3px 10px rgba(218,119,157,.14); }
@@ -358,8 +380,10 @@ button { -webkit-tap-highlight-color: transparent; }
   body.touch #shop .card .art { height: 58px; }
   body.touch #shop .card .cn { font-size: 11px; }
   body.touch #bench { border-radius: 10px; }
-  #idolSkillCue { top: 13%; width: min(240px,60%); min-height: 70px; }
-  #idolSkillCue img { width: 58px; height: 78px; }
+  #castFeed { width: 100%; min-height: 26px; }
+  #castFeed .cf-slot { max-width: 49%; }
+  .cf-item b { max-width: 58px; }
+  .cf-item span { max-width: 66px; }
 }
 @media (orientation: landscape) and (max-height: 540px) {
   body:not(.touch) { --cell: min(44px,max(12px,calc((100dvh - 180px)/10)),calc((100vw - 330px)/9)); }
@@ -397,7 +421,8 @@ button { -webkit-tap-highlight-color: transparent; }
   body.touch #fightBox { order: 0; margin-left: 0; }
   body.touch #mShopBtn, body.touch #mBondBtn, body.touch #mEquipBtn, body.touch #mSideBtn { padding: 4px 2px; font-size: 9px; }
   body.touch #board { transform: rotateX(5deg); }
-  #idolSkillCue { top: 10%; }
+  /* 横屏矮屏空间紧张：隐藏播报条，施法提示只留棋子本体的 idol-sigil */
+  #castFeed { display: none; }
 }
 @media (max-width: 600px) {
   #ovCard { width: calc(100vw - 20px) !important; max-width: calc(100vw - 20px) !important; min-width: 0 !important; padding: 15px 13px 17px; border-radius: 20px; }
@@ -432,7 +457,6 @@ button { -webkit-tap-highlight-color: transparent; }
   body.touch #main { min-height: 0; padding: 4px 4px 5px; gap: 5px; overflow-y: auto; overscroll-behavior: contain; }
   body.touch #boardwrap { flex: 0 0 auto; width: 100%; max-width: 100%; gap: 5px; padding: 6px 5px 8px; border-radius: 17px; }
   body.touch #boardwrap::before { inset: 2px; border-radius: 15px; }
-  body.touch #boardwrap::after { bottom: 1px; font-size: 7px; letter-spacing: 2px; }
   body.touch #boardwrap > div:has(> #board) { width: 100%; min-height: 0; flex: 0 0 auto; }
   body.touch #oppBar { width: 100%; max-width: 100%; padding: 5px 7px; border-radius: 10px; font-size: 10px; }
   body.touch #oppBar #enemyInfo { font-size: 11px; line-height: 1.35; }
@@ -453,7 +477,7 @@ button { -webkit-tap-highlight-color: transparent; }
   body.touch #pbtns .btn { min-width: 0; min-height: 36px; padding: 5px 2px; font-size: 10px; line-height: 1.15; }
 }
 @media (prefers-reduced-motion: reduce) {
-  #idolMenuArt img, #idolSkillCue, .idol-sigil { animation: none !important; }
+  #idolMenuArt img, .idol-sigil, .cf-item { animation: none !important; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
 

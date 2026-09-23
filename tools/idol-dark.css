@@ -1,0 +1,265 @@
+/* Night stage theme. Loaded after the desktop and phone presentation layers. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  background: #090f22;
+  scrollbar-color: #405078 #111a32;
+  --bg0: #0c142b;
+  --bg1: #131c37;
+  --bg2: rgba(22, 32, 59, .94);
+  --bg3: #1a2646;
+  --bg4: #243456;
+  --line: rgba(142, 166, 227, .2);
+  --line-2: rgba(157, 182, 243, .38);
+  --tx0: #edf2ff;
+  --tx1: #c9d5f4;
+  --tx2: #9eafd4;
+  --tx3: #8396be;
+  --idol-ink: #edf2ff;
+  --idol-muted: #a5b4d5;
+  --idol-line: rgba(150, 176, 238, .24);
+  --idol-glass: rgba(21, 32, 60, .9);
+  --idol-shadow: 0 12px 32px rgba(2, 5, 19, .42);
+  --idol-shadow-deep: 0 22px 55px rgba(0, 2, 13, .6);
+}
+html[data-theme="dark"] body {
+  color: var(--tx0);
+  background: linear-gradient(180deg,rgba(5,10,29,.4),rgba(8,13,35,.6)),url('../assets/ui/idol-arena-night.png') center 47% / cover fixed,#090f22;
+}
+html[data-theme="dark"] body::before { background: linear-gradient(90deg,rgba(7,11,30,.33),transparent 28%,transparent 72%,rgba(7,11,30,.33)); }
+html[data-theme="dark"] ::selection { color: #fff; background: rgba(138, 121, 246, .5); }
+
+/* The toggle sits beside the other top-bar controls and remains available on the title screen. */
+#topbar .theme-toggle { flex: 0 0 34px; width: 34px; height: 34px; padding: 0; display: inline-grid; place-items: center; font-size: 17px; line-height: 1; }
+#topbar .theme-toggle .theme-label { display: none; }
+@media (min-width: 1480px) {
+  #topbar .theme-toggle { flex: 0 0 auto; width: auto; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+  #topbar .theme-toggle .theme-label { display: inline; }
+}
+#topbar .fight-btn-row { flex-wrap: nowrap; }
+#topbar .res .rl { display: none; }
+#ovCard #ovThemeBtn { position: absolute; z-index: 2; top: 12px; left: 13px; width: 32px; height: 32px; min-width: 0; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; border: 1px solid rgba(134,153,208,.35); border-radius: 10px; background: rgba(242,246,255,.88); color: #475b91; }
+html[data-theme="dark"] #ovCard #ovThemeBtn { color: #f5d999; border-color: rgba(156,180,244,.34); background: rgba(29,41,76,.9); }
+@media (max-width: 880px) { #topbar #themeBtn { display: none; } }
+@media (min-width: 881px) and (max-width: 1350px) { #roundTicks { display: none; } }
+
+html[data-theme="dark"] #topbar,
+html[data-theme="dark"] body.touch #topbar {
+  color: #dae4ff; border-color: rgba(134,158,224,.25);
+  background: linear-gradient(105deg,rgba(14,24,49,.97),rgba(20,30,60,.94) 55%,rgba(31,24,57,.95));
+  box-shadow: 0 5px 25px rgba(0,0,0,.35);
+}
+html[data-theme="dark"] #idolBrand .brand-name,
+html[data-theme="dark"] #roundBox .rn,
+html[data-theme="dark"] .res .rv { color: #edf2ff; }
+html[data-theme="dark"] #roundBox,
+html[data-theme="dark"] .res { color: #acbfe9; border-color: rgba(143,170,239,.22); background: rgba(36,49,88,.7); }
+html[data-theme="dark"] #roundBox .rn .rm,
+html[data-theme="dark"] .res .rl { color: #9badd2; }
+html[data-theme="dark"] #roundTicks i { background: #425477; }
+html[data-theme="dark"] #roundTicks i.boss { background: #6d3f68; }
+html[data-theme="dark"] #idolPhase { color: #87e5d6; border-color: rgba(105,211,198,.38); background: rgba(22,65,74,.7); box-shadow: none; }
+html[data-theme="dark"] #idolPhase small { color: #a5b6d6; }
+html[data-theme="dark"] body[data-phase="battle"] #idolPhase { color: #ffb1cd; background: rgba(89,38,79,.75); }
+html[data-theme="dark"] body[data-phase="chapter"] #idolPhase { color: #f8d78c; background: rgba(91,68,35,.75); }
+html[data-theme="dark"] #main::before { border-color: rgba(146,174,238,.17); background: linear-gradient(120deg,rgba(16,27,55,.38),rgba(9,16,37,.24),rgba(24,28,58,.4)); box-shadow: 0 20px 55px rgba(0,0,0,.26); }
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] #synCol {
+  color: #c6d4f3; border-color: rgba(155,179,240,.25);
+  background: linear-gradient(155deg,rgba(21,32,62,.94),rgba(14,24,48,.9));
+  box-shadow: 0 12px 32px rgba(1,4,17,.36),inset 0 1px 0 rgba(193,209,255,.08);
+}
+html[data-theme="dark"] .panel h3,
+html[data-theme="dark"] .syn-head { color: #d9e3ff; border-color: rgba(145,168,227,.22); }
+html[data-theme="dark"] .syn-head .sub,
+html[data-theme="dark"] .syn-foot,
+html[data-theme="dark"] .syn-empty { color: #9eafd3; }
+html[data-theme="dark"] .syn-badge { color: #a7b7d9; border-color: rgba(142,163,218,.22); border-left-color: #69799d; background: rgba(30,43,75,.86); box-shadow: none; }
+html[data-theme="dark"] .syn-badge.on { color: #e7f2ff; border-left-color: #64d9cc; background: linear-gradient(100deg,rgba(31,72,91,.95),rgba(30,42,77,.95)); }
+html[data-theme="dark"] .syn-badge.t2 { color: #dcc5ff; border-left-color: #ad91f1; background: linear-gradient(100deg,rgba(67,45,103,.95),rgba(31,40,76,.95)); }
+html[data-theme="dark"] .syn-eff { color: #b3c2e0; border-color: rgba(142,163,218,.2); }
+html[data-theme="dark"] .syn-badge .pips i { background: #52607e; }
+
+html[data-theme="dark"] #boardwrap,
+html[data-theme="dark"] body.touch #boardwrap { border-color: rgba(149,173,238,.38); background: linear-gradient(145deg,rgba(20,31,61,.78),rgba(13,24,52,.72) 55%,rgba(27,28,61,.77)); box-shadow: 0 18px 46px rgba(0,0,0,.43),inset 0 1px 0 rgba(207,219,255,.13); }
+html[data-theme="dark"] #boardwrap::before,
+html[data-theme="dark"] body.touch #boardwrap::before { border-color: rgba(145,170,238,.27); background: linear-gradient(145deg,rgba(28,46,83,.84),rgba(16,29,58,.75) 53%,rgba(49,31,73,.8)); box-shadow: inset 0 0 29px rgba(82,107,181,.16); }
+html[data-theme="dark"] #boardwrap::after { color: rgba(174,192,255,.55); text-shadow: 0 0 8px rgba(129,150,244,.55); }
+html[data-theme="dark"] #board,
+html[data-theme="dark"] body.touch #board { border-color: rgba(160,189,255,.57); background: radial-gradient(75% 35% at 50% 50%,rgba(93,104,163,.17),transparent 83%),linear-gradient(180deg,rgba(26,48,81,.95),rgba(20,37,72,.96) 48%,rgba(43,31,76,.95)); box-shadow: inset 0 0 0 1px rgba(185,203,255,.21),0 15px 30px rgba(0,0,0,.36),0 0 0 4px rgba(114,140,215,.11); }
+html[data-theme="dark"] .cell { background: linear-gradient(145deg,rgba(39,112,119,.49),rgba(33,84,112,.43)); box-shadow: inset 0 0 0 1px rgba(105,221,220,.24),inset 0 1px 0 rgba(208,255,249,.08); }
+html[data-theme="dark"] .cell.enemy-side { background: linear-gradient(145deg,rgba(119,47,93,.53),rgba(93,45,94,.4)); box-shadow: inset 0 0 0 1px rgba(248,139,187,.25),inset 0 1px 0 rgba(255,214,234,.08); }
+html[data-theme="dark"] .cell.drop-hl { background: rgba(219,164,57,.68); }
+html[data-theme="dark"] .cell.rng-hl { background: rgba(90,141,238,.55); }
+html[data-theme="dark"] .cell.rng-src { background: rgba(222,176,77,.61); }
+html[data-theme="dark"] #bench { border-color: rgba(142,166,225,.28); background: linear-gradient(100deg,rgba(29,41,72,.94),rgba(21,32,61,.94),rgba(29,41,72,.94)); box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+html[data-theme="dark"] #bench > span { color: #b8c9ed !important; }
+html[data-theme="dark"] #bench .bslot { border-color: rgba(157,183,246,.34); background: rgba(77,99,157,.13); }
+html[data-theme="dark"] #bench .bslot:hover { background: rgba(58,117,125,.48); border-color: #71dec8; }
+
+html[data-theme="dark"] #oppBar { color: #e4c3d8; border-color: rgba(235,134,177,.38); background: linear-gradient(110deg,rgba(65,34,66,.94),rgba(30,32,67,.9)); box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+html[data-theme="dark"] #oppBar b { color: #ffb4cf; }
+html[data-theme="dark"] #aliveBar { color: #cbd8f7; border-color: rgba(145,168,227,.28); background: rgba(22,35,66,.94); }
+html[data-theme="dark"] #aliveBar .ab-me { color: #77e0c7; }
+html[data-theme="dark"] #aliveBar .ab-foe { color: #ff9ab9; }
+html[data-theme="dark"] #shopbar,
+html[data-theme="dark"] body.touch #shopbar { border-color: rgba(144,168,228,.28); background: linear-gradient(180deg,rgba(20,30,59,.93),rgba(13,23,48,.98) 28%); box-shadow: 0 -9px 27px rgba(0,0,0,.38); }
+html[data-theme="dark"] #playerBox,
+html[data-theme="dark"] body.touch #playerBox { color: #c4d2ef; border-color: rgba(145,168,227,.25); background: linear-gradient(145deg,rgba(30,43,76,.96),rgba(23,34,65,.96)); box-shadow: none; }
+html[data-theme="dark"] #lvlBox,
+html[data-theme="dark"] #lvlBox .ln { color: #c0cfed; }
+html[data-theme="dark"] #lvlBox .ln b { color: #c1aaff; }
+html[data-theme="dark"] #lvlBox .gd { color: #f2cc7e; }
+html[data-theme="dark"] #lvlBox .xpbar,
+html[data-theme="dark"] #statBar .stb-bar { background: #354263; }
+html[data-theme="dark"] #lvlBox .odds-row { background: #243353; }
+html[data-theme="dark"] #goldChip { color: #f4d083; border-color: rgba(230,187,101,.5); background: linear-gradient(145deg,#534326,#302d35); box-shadow: none; }
+html[data-theme="dark"] #goldChip b { color: #ffe3a1; }
+html[data-theme="dark"] #shop .card { color: #dbe5ff; border-color: rgba(153,177,233,.34); background: linear-gradient(155deg,rgba(34,48,82,.98),rgba(22,33,65,.97) 72%,rgba(45,32,69,.95)); box-shadow: 0 6px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(214,226,255,.1); }
+html[data-theme="dark"] #shop .card:hover:not(.sold) { border-color: #a9b3ff; box-shadow: 0 12px 25px rgba(0,0,0,.42),0 0 0 2px rgba(155,167,255,.14); }
+html[data-theme="dark"] #shop .card .cn { color: #f2f5ff; }
+html[data-theme="dark"] #shop .card .tis .tb { color: #c4d2ef; border-color: rgba(148,175,239,.3); background: rgba(56,70,114,.8); }
+html[data-theme="dark"] #shop .card .stb { border-color: rgba(148,175,239,.25); background: linear-gradient(90deg,rgba(28,40,72,.98),rgba(37,43,79,.98)); }
+html[data-theme="dark"] #shop .card .stat { color: #afbfdf; }
+html[data-theme="dark"] #shop .card .stat.hp { color: #ff9fba; }
+html[data-theme="dark"] #shop .card .stat.atk { color: #f5c780; }
+html[data-theme="dark"] #shop .bd { color: #c8d7f5; border-color: rgba(148,175,239,.35); background: #324362; }
+html[data-theme="dark"] #shop .bd.pair { color: #ffdf8a; border-color: #a88846; background: #55452a; }
+html[data-theme="dark"] #shop .bd.trig { color: #9ff2d7; border-color: #498a7b; background: #254b4b; }
+html[data-theme="dark"] #shop .bd.syn { color: #d3c4ff; border-color: #7369a6; background: #39365f; }
+
+html[data-theme="dark"] .btn,
+html[data-theme="dark"] body.touch #mMenuBtn,
+html[data-theme="dark"] body.touch #shopbar > .m-only { color: #d6e2ff; border-color: rgba(154,178,237,.35); background: linear-gradient(180deg,#2a3c66,#202f55); box-shadow: 0 3px 10px rgba(0,0,0,.22),inset 0 1px 0 rgba(219,230,255,.1); }
+html[data-theme="dark"] .btn:hover:not(:disabled) { color: #fff; border-color: #aebdff; box-shadow: 0 6px 16px rgba(4,8,30,.4); }
+html[data-theme="dark"] .btn.on,
+html[data-theme="dark"] .btn.auto-on { color: #c9d5ff; border-color: #869cf0; background: linear-gradient(135deg,#374d80,#493b75); }
+html[data-theme="dark"] .btn:disabled { color: #8696b6; border-color: #394766; background: #222e4c; box-shadow: none; }
+html[data-theme="dark"] #fightBtn { color: #fff; border: 0; background: linear-gradient(135deg,#a84d9c,#6652ae 58%,#337e9b); box-shadow: 0 7px 20px rgba(61,51,129,.45); }
+html[data-theme="dark"] #fightBtn:disabled { color: #9caccb; background: #34405d; }
+html[data-theme="dark"] #deployBtn { color: #a5f0d7; background: linear-gradient(140deg,#24595d,#25395b); }
+html[data-theme="dark"] #sellBtn:not(:disabled) { color: #ffb9ce; background: linear-gradient(140deg,#61364d,#352e51); }
+html[data-theme="dark"] #refreshBtn { color: #bed1ff; }
+html[data-theme="dark"] #lockBtn.on { color: #f8d782; border-color: #9b7e42; background: #4c402d; }
+html[data-theme="dark"] #topbar #endBtn { color: #ffb8ca; border-color: rgba(230,133,165,.56); background: linear-gradient(145deg,#54314f,#382b53); }
+
+html[data-theme="dark"] #inspect { color: #cad6f1; }
+html[data-theme="dark"] #inspect .in-hd { background: linear-gradient(115deg,#1d455b,#302e60 68%,#54304f); }
+html[data-theme="dark"] #inspect .in-hd b,
+html[data-theme="dark"] #inspect .in-row b { color: #eef3ff; }
+html[data-theme="dark"] #inspect .in-tag,
+html[data-theme="dark"] #inspect .in-desc,
+html[data-theme="dark"] #inspect .in-row { color: #b3c2e3; }
+html[data-theme="dark"] #inspect .in-sk { color: #d5baff; }
+html[data-theme="dark"] #inspect .in-ticket { color: #ffe0a0; border-color: #b18c49; background: #514027; }
+html[data-theme="dark"] .worn-strip { color: #a0ead8; border-color: #4c8c85; background: #234446; }
+html[data-theme="dark"] .worn-strip .in-item-chip { color: #d2e1fa; border-color: #7085b2; background: #304366; }
+html[data-theme="dark"] #statBar { color: #b4c5e6; border-color: rgba(145,168,227,.23); }
+html[data-theme="dark"] #statBar .stb-tab { color: #9db1d8; }
+html[data-theme="dark"] #statBar .stb-tab.on { color: #d2ccff; border-color: #7979c2; background: #363b70; }
+html[data-theme="dark"] #log { color: #a9badb; }
+html[data-theme="dark"] #log b { color: #e1e9ff; }
+html[data-theme="dark"] #log .battle-result,
+html[data-theme="dark"] #log .important { color: #cbb6ff; }
+html[data-theme="dark"] #castFeed .cf-item { border-color: rgba(146,169,230,.3); background: linear-gradient(100deg,rgba(34,44,76,.96),rgba(25,35,67,.94)); box-shadow: 0 3px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(207,219,255,.1); }
+html[data-theme="dark"] #castFeed .cf-item b { color: #c6d4f2; }
+html[data-theme="dark"] #castFeed .cf-item span { color: color-mix(in srgb,var(--hero-color,#8f9bff),#c6d4f2 55%); }
+
+html[data-theme="dark"] #overlay { background: linear-gradient(135deg,rgba(4,9,28,.69),rgba(13,16,42,.63) 52%,rgba(23,12,39,.68)),url('../assets/ui/idol-arena-night.png') center/cover fixed; }
+html[data-theme="dark"] #ovCard,
+html[data-theme="dark"] #resumeOv,
+html[data-theme="dark"] #histPanel,
+html[data-theme="dark"] #bookPanel,
+html[data-theme="dark"] #mDrawerBox { color: #d2ddfa !important; border-color: rgba(157,180,242,.36) !important; background: linear-gradient(145deg,rgba(27,39,73,.98),rgba(17,28,56,.98) 68%,rgba(42,29,68,.98)) !important; box-shadow: 0 22px 65px rgba(0,0,0,.55); }
+html[data-theme="dark"] #ovCard h1,
+html[data-theme="dark"] #ovCard h2,
+html[data-theme="dark"] #ovTitle,
+html[data-theme="dark"] #resumeOv h1,
+html[data-theme="dark"] #histPanel h2,
+html[data-theme="dark"] #bookPanel h2 { color: #c5c8ff; }
+html[data-theme="dark"] #ovLead,
+html[data-theme="dark"] #ovText { color: #b8c7e8 !important; }
+html[data-theme="dark"] #ovText .is-h { color: #c6afff; border-color: rgba(169,146,230,.33); }
+html[data-theme="dark"] #ovClose { color: #d0dafa; }
+html[data-theme="dark"] #ovClose:hover { color: #fff; background: #3a4779; }
+html[data-theme="dark"] #idolMenuArt { background: linear-gradient(100deg,rgba(43,103,117,.4),rgba(66,59,131,.43) 52%,rgba(115,52,98,.4)); }
+html[data-theme="dark"] #idolMenuArt::before { background: #43538b; box-shadow: 0 0 37px 20px rgba(115,132,222,.3); }
+html[data-theme="dark"] #idolQuickGuide { border-color: rgba(146,169,230,.31); background: rgba(28,42,76,.83); }
+html[data-theme="dark"] #idolQuickGuide summary { color: #d0bbff; }
+html[data-theme="dark"] #idolQuickGuide #ovText { color: #b9c9ea !important; border-color: rgba(146,169,230,.28); }
+html[data-theme="dark"] .mode-card,
+html[data-theme="dark"] .aug-card { color: #d3dffc !important; border-color: rgba(156,179,237,.37) !important; background: linear-gradient(145deg,#2d406d,#202f56) !important; box-shadow: 0 4px 12px rgba(0,0,0,.26); }
+html[data-theme="dark"] .mode-card.on { color: #f1eaff !important; border-color: #a899f1 !important; background: linear-gradient(135deg,#245772,#4d3c82) !important; }
+html[data-theme="dark"] .aug-card.r2 { border-color: #679fcb !important; background: linear-gradient(145deg,#244a69,#26395f) !important; }
+html[data-theme="dark"] .aug-card.r3 { border-color: #c59b52 !important; background: linear-gradient(145deg,#57482d,#34365c) !important; }
+html[data-theme="dark"] .aug-card .ad,
+html[data-theme="dark"] .settle-row,
+html[data-theme="dark"] .cp-item,
+html[data-theme="dark"] .cp-item .cp-d { color: #b4c5e6; }
+html[data-theme="dark"] .cp-item:hover,
+html[data-theme="dark"] .cp-item.on { background: linear-gradient(100deg,#294965,#3c366a); }
+html[data-theme="dark"] .cp-item b,
+html[data-theme="dark"] .settle-ask { color: #c8b9ff; }
+html[data-theme="dark"] #dailyInfo { color: #c0d0ef !important; border-color: rgba(157,179,235,.33) !important; background: linear-gradient(120deg,#203b5a,#34315f 58%,#493051) !important; }
+html[data-theme="dark"] #mDrawer { background: rgba(2,5,19,.68); }
+html[data-theme="dark"] #mDrawerHead { border-color: rgba(146,169,230,.27); }
+html[data-theme="dark"] #mDrawerTitle { color: #d0c4ff; }
+html[data-theme="dark"] #histModal,
+html[data-theme="dark"] #bookModal { background: rgba(2,5,19,.72); }
+html[data-theme="dark"] #histList { color: #b7c7e7; }
+html[data-theme="dark"] .hrow { border-color: rgba(145,168,227,.29) !important; }
+html[data-theme="dark"] #bookGrid .bcard { color: #d0ddf8; border-color: rgba(145,168,227,.29); background: linear-gradient(145deg,#2b3d69,#1d2d53); box-shadow: 0 5px 13px rgba(0,0,0,.23); }
+html[data-theme="dark"] #bookGrid .bn { color: #f0f3ff; }
+html[data-theme="dark"] #bookGrid .bf2,
+html[data-theme="dark"] #bookGrid .bs,
+html[data-theme="dark"] #bookGrid .bp { color: #b6c7e9; }
+html[data-theme="dark"] .gear-workshop { color: #c6d4f3; }
+html[data-theme="dark"] .gear-hero { border-color: rgba(148,172,235,.32); background: linear-gradient(130deg,#234762,#393367 62%,#513453); box-shadow: none; }
+html[data-theme="dark"] .gear-hero h3,
+html[data-theme="dark"] .gear-section-head b,
+html[data-theme="dark"] .gear-empty b { color: #ecf2ff; }
+html[data-theme="dark"] .gear-hero p,
+html[data-theme="dark"] .gear-section-head small,
+html[data-theme="dark"] .gear-kicker,
+html[data-theme="dark"] .gear-empty small,
+html[data-theme="dark"] .gear-forge > p { color: #acbedf; }
+html[data-theme="dark"] .gear-worn,
+html[data-theme="dark"] .gear-bag,
+html[data-theme="dark"] .gear-forge,
+html[data-theme="dark"] .gear-routebook { border-color: rgba(148,172,235,.26); background: linear-gradient(145deg,#26395f,#1e2d52); box-shadow: 0 4px 12px rgba(0,0,0,.22); }
+html[data-theme="dark"] .gear-worn { background: linear-gradient(130deg,#214752,#233c61); }
+html[data-theme="dark"] .gear-forge { background: linear-gradient(140deg,#483d38,#352c4e); }
+html[data-theme="dark"] .gear-worn-empty,
+html[data-theme="dark"] .gear-empty { color: #aebedd; border-color: rgba(158,183,239,.3); }
+html[data-theme="dark"] .gear-item-card,
+html[data-theme="dark"] .gear-ready-card,
+html[data-theme="dark"] .gear-artifact-card,
+html[data-theme="dark"] .gear-route { color: #d5e1fb; border-color: rgba(156,180,239,.31); background: linear-gradient(130deg,#30446e,#26385f); }
+html[data-theme="dark"] .gear-item-card.sel { border-color: #a69df5; background: linear-gradient(135deg,#423f78,#503b72); }
+html[data-theme="dark"] .gear-item-card.crafted,
+html[data-theme="dark"] .gear-ready-card { border-color: #a28a58; background: linear-gradient(130deg,#50462f,#343956); }
+html[data-theme="dark"] .gear-item-card.arti { border-color: #a876a6; background: linear-gradient(130deg,#513954,#34335d); }
+html[data-theme="dark"] .gear-item-card .item-chip,
+html[data-theme="dark"] .gear-ready-card > b,
+html[data-theme="dark"] .gear-artifact-card > b,
+html[data-theme="dark"] .gear-route b { color: #edf2ff; }
+html[data-theme="dark"] .gear-item-card > small,
+html[data-theme="dark"] .gear-item-card > em,
+html[data-theme="dark"] .gear-ready-card > em,
+html[data-theme="dark"] .gear-artifact-card > em,
+html[data-theme="dark"] .gear-artifact-card > small,
+html[data-theme="dark"] .gear-route small,
+html[data-theme="dark"] .gear-route em { color: #b8c8e7; }
+html[data-theme="dark"] .gear-item-card .item-chip i { color: #cad8f8; background: #42547d; }
+html[data-theme="dark"] .gear-item-icon { background: linear-gradient(145deg,#3a5c7d,#4a427b); }
+html[data-theme="dark"] .gear-ready { border-color: rgba(152,176,231,.3); }
+html[data-theme="dark"] .gear-subhead,
+html[data-theme="dark"] .gear-routebook summary { color: #d1defa; }
+html[data-theme="dark"] .gear-ready-route { color: #ffe0a4; }
+html[data-theme="dark"] .gear-ready-card > .btn,
+html[data-theme="dark"] .gear-artifact-card > .btn { color: #ffe0a4; border-color: #9a7c4c; background: #53442e; }
+html[data-theme="dark"] .gear-route-icons { color: #c3b4ff; }
+html[data-theme="dark"] .gear-more { color: #aebfe3; }
+@media (max-width: 600px) and (orientation: portrait) {
+  html[data-theme="dark"] body.touch { background: linear-gradient(180deg,rgba(6,12,32,.38),rgba(8,14,35,.65)),url('../assets/ui/idol-arena-night.png') center/cover scroll,#090f22; }
+  html[data-theme="dark"] body.touch::before { background: radial-gradient(circle at 50% 44%,rgba(29,43,83,.15),transparent 62%); }
+}

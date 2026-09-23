@@ -13,7 +13,7 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
 /* ============================================================================
-   旧版基础样式保留游戏布局与交互结构；当前虚拟偶像浅色主题由 tools/idol-redesign.css 统一覆盖。
+   旧版基础样式保留游戏布局与交互结构；浅色样式由 tools/idol-redesign.css 覆盖，暗色样式由 tools/idol-dark.css 覆盖。
    分节：①令牌 ②舞台底 ③浏览器表面 ④顶栏 ⑤面板与按钮 ⑥羁绊
         ⑦棋盘 ⑧棋子 ⑨商店 ⑩战斗信息 ⑪弹窗 ⑫移动端与触屏
    ============================================================================ */
@@ -691,11 +691,12 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .vfx.signature[data-shape="ribbon"] { border-radius:50%; border-width:3px; border-left-color:transparent; border-right-color:transparent; }
 .vfx.signature[data-shape="gear"] { clip-path:polygon(50% 0,60% 16%,79% 8%,80% 27%,100% 36%,84% 50%,100% 64%,80% 73%,79% 92%,60% 84%,50% 100%,40% 84%,21% 92%,20% 73%,0 64%,16% 50%,0 36%,20% 27%,21% 8%,40% 16%); }
 .vfx.signature[data-art="combat"] { width:138%;height:138%;border:0;border-radius:0;clip-path:none!important;background-color:transparent;background-size:contain;background-position:center;background-repeat:no-repeat;box-shadow:none;filter:drop-shadow(0 0 9px color-mix(in srgb,var(--sig-color,#fff) 80%,transparent)); }
-.vfx.signature-hit[data-art="combat"] { width:145%;height:145%;border:0;clip-path:none!important;background-size:contain;background-position:center;background-repeat:no-repeat;box-shadow:none;filter:drop-shadow(0 0 9px color-mix(in srgb,var(--sig-color,#fff) 88%,transparent)); }
+.vfx.signature-hit[data-art="combat"] { width:calc(var(--cell)*1.45);height:calc(var(--cell)*1.45);border:0;clip-path:none!important;background-size:contain;background-position:center;background-repeat:no-repeat;box-shadow:none;filter:drop-shadow(0 0 9px color-mix(in srgb,var(--sig-color,#fff) 88%,transparent));animation:sigHitV2 calc(var(--sig-hit-dur,.58s)/var(--spd)) ease-out forwards; }
 .vfx.signature.kit-art::after { font-size:calc(var(--cell)*.2);opacity:.95; }
-.vfx.signature-hit { width:calc(var(--cell)*.86); height:calc(var(--cell)*.86); position:absolute; transform:translate(-50%,-50%); animation:sigHit calc(.54s/var(--spd)) ease-out forwards; }
+.vfx.signature-hit { width:calc(var(--cell)*.86); height:calc(var(--cell)*.86); position:absolute; z-index:45; transform:translate(-50%,-50%); animation:sigHit calc(.54s/var(--spd)) ease-out forwards; }
 @keyframes sigBurst { 0%{transform:scale(.22) rotate(-18deg);opacity:0} 24%{opacity:1} 100%{transform:scale(1.35) rotate(24deg);opacity:0} }
 @keyframes sigHit { 0%{transform:translate(-50%,-50%) scale(.2);opacity:0} 32%{opacity:1} 100%{transform:translate(-50%,-50%) scale(1.45) rotate(35deg);opacity:0} }
+.vfx.attached.signature, .unit.battle-unit.big .vfx.attached.signature, #board .unit.preview.big .vfx.attached.signature { left:50% !important; top:50% !important; }
 .vfx.signature { --sig-rot:0deg; --sig-scale:1; --sig-dur:.82s; transform-origin:center; animation:sigBurstV2 calc(var(--sig-dur)/var(--spd)) cubic-bezier(.18,.82,.2,1) forwards; }
 .vfx.signature::before { content:""; position:absolute; inset:-9%; border:1px solid color-mix(in srgb,var(--sig-color,#fff) 70%,transparent);
   border-radius:50%; opacity:.76; transform:rotate(var(--sig-rot)); animation:sigOrbitV2 calc(var(--sig-dur)/var(--spd)) linear forwards; }
@@ -716,7 +717,7 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
   width:calc(var(--cell)*1.25); height:calc(var(--cell)*1.25); border:0; clip-path:none !important; background-size:contain; background-position:center; background-repeat:no-repeat;
   box-shadow:none; filter:drop-shadow(0 0 7px color-mix(in srgb,var(--sig-color,#fff) 80%,transparent)); animation:sigHitV2 calc(var(--sig-hit-dur,.58s)/var(--spd)) ease-out forwards;
 }
-@keyframes sigBurstV2 { 0%{transform:scale(calc(.22 * var(--sig-scale))) rotate(calc(var(--sig-rot) - 18deg));opacity:0} 22%{opacity:1} 100%{transform:scale(calc(1.3 * var(--sig-scale))) rotate(calc(var(--sig-rot) + 24deg));opacity:0} }
+@keyframes sigBurstV2 { 0%{transform:translate(-50%,-50%) scale(calc(.22 * var(--sig-scale))) rotate(calc(var(--sig-rot) - 18deg));opacity:0} 22%{opacity:1} 100%{transform:translate(-50%,-50%) scale(calc(1.3 * var(--sig-scale))) rotate(calc(var(--sig-rot) + 24deg));opacity:0} }
 @keyframes sigOrbitV2 { from{opacity:.05;transform:rotate(var(--sig-rot)) scale(.62)} 35%{opacity:.95} to{opacity:0;transform:rotate(calc(var(--sig-rot) + 220deg)) scale(1.32)} }
 @keyframes sigHitV2 { 0%{transform:translate(-50%,-50%) scale(.18) rotate(var(--sig-rot));opacity:0} 26%{opacity:1} 100%{transform:translate(-50%,-50%) scale(1.42) rotate(calc(var(--sig-rot) + 38deg));opacity:0} }
 .vfx.markburst { width:calc(var(--cell)*.62); height:calc(var(--cell)*.62); border:2px solid var(--mark-color,#fff); border-radius:50%;
@@ -724,11 +725,11 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
   box-shadow:0 0 12px color-mix(in srgb,var(--mark-color,#fff) 78%,transparent), inset 0 0 8px color-mix(in srgb,var(--mark-color,#fff) 38%,transparent);
   animation:markBurstV2 calc(.64s/var(--spd)) cubic-bezier(.15,.8,.25,1) forwards; z-index:44; }
 .vfx.markburst::after { content:attr(data-label); color:var(--mark-color,#fff); font-size:calc(var(--cell)*.15); font-weight:900; letter-spacing:1px; text-shadow:0 0 7px #fff,0 0 14px var(--mark-color,#fff); }
-.vfx.markburst[data-kind="skate"] { border-radius:18% 82% 30% 70%; transform:rotate(-28deg); }
+.vfx.markburst[data-kind="skate"] { border-radius:18% 82% 30% 70%; transform:translate(-50%,-50%) rotate(-28deg); }
 .vfx.markburst[data-kind="prism"] { clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%); }
 .vfx.markburst[data-kind="lotus"] { border-radius:50% 38% 58% 42%; }
 .vfx.markburst[data-kind="ink"] { border-style:dotted; border-radius:28% 72% 32% 68%; }
-@keyframes markBurstV2 { 0%{transform:scale(.22) rotate(-20deg);opacity:0} 25%{opacity:1} 100%{transform:scale(1.6) rotate(35deg);opacity:0} }
+@keyframes markBurstV2 { 0%{transform:translate(-50%,-50%) scale(.22) rotate(-20deg);opacity:0} 25%{opacity:1} 100%{transform:translate(-50%,-50%) scale(1.6) rotate(35deg);opacity:0} }
 .vfx.s3 { zoom:1.25; filter:drop-shadow(0 0 5px rgba(224,169,78,.73)); }
 .vfx.crit { border-radius:50%; background:radial-gradient(circle,rgba(166,120,216,.67) 15%,rgba(122,63,212,.33) 50%,transparent 72%);
   animation:boom calc(.5s/var(--spd)) ease-out forwards; }
@@ -1037,8 +1038,10 @@ body.touch .m-only { display:inline-block; }
 
 </style>
 <link rel="stylesheet" href="tools/idol-ui.css?v=2">
-<link rel="stylesheet" href="tools/idol-redesign.css?v=3">
+<link rel="stylesheet" href="tools/idol-redesign.css?v=8">
 <link rel="stylesheet" href="tools/mobile-stage.css?v=2">
+<link rel="stylesheet" href="tools/idol-dark.css?v=3">
+<script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#101a36':'#eaf3ff'</script>
 </head>
 <body>
 <div id="topbar">
@@ -1061,6 +1064,7 @@ body.touch .m-only { display:inline-block; }
     <button class="btn ic" id="resetBtn" title="放弃当前进度，重新开一局" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3v8'/%3E%3Cpath d='M6.6 6.6a8 8 0 1 0 10.8 0'/%3E%3C/svg%3E&quot;)">重开</button>
     <button class="btn ic" id="endBtn" style="display:none;--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M5 21V4M5 5h12l-2.5 3.5L17 12H5'/%3E%3C/svg%3E&quot;)" title="主动结束本局：记入战绩并查看结算（再来一局保持当前模式）">结束挑战</button>
     <button class="btn ic" id="sfxBtn" title="音效开关" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 9v6h3.5L12 19V5L7.5 9z'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7'/%3E%3C/svg%3E&quot;)"></button>
+    <button class="btn theme-toggle" id="themeBtn" type="button" title="切换暗色模式" aria-label="切换暗色模式">🌙</button>
   </div>
   <button id="mMenuBtn" class="btn m-only" aria-label="更多功能">更多</button>
 </div>
@@ -1189,6 +1193,7 @@ body.touch .m-only { display:inline-block; }
 <div id="overlay">
  <div id="ovCard">
   <span id="ovClose" title="关闭（Esc）">✕</span>
+  <button class="theme-toggle" id="ovThemeBtn" type="button" title="切换暗色模式" aria-label="切换暗色模式">🌙</button>
   <h1 id="ovTitle">虚拟棋战 🎲</h1>
   <p id="ovText" style="max-width:560px;line-height:1.7;color:#cdd6f4;font-size:14px;text-align:left">
     单机自动战斗棋局 · VirtuaReal + P-SP 50 名主播 · 限量卡池 · 普通模式四章共 100 回合
@@ -2662,7 +2667,7 @@ if(typeof document!=='undefined' && document.addEventListener){
   document.addEventListener('pointerdown',_sfxUnlock,{passive:true});
   document.addEventListener('keydown',_sfxUnlock,{passive:true});
 }
-function paintSfxBtn(){ const b=$('sfxBtn'); if(!b) return; b.textContent=''; b.title=_sfxOn?'音效：开（点击静音，状态本地保存）':'音效：关（点击开启，状态本地保存）'; b.classList.toggle('on',_sfxOn); }
+function paintSfxBtn(){ const b=$('sfxBtn'); if(!b) return; b.textContent='音效'; b.title=_sfxOn?'音效：开（点击静音，状态本地保存）':'音效：关（点击开启，状态本地保存）'; b.setAttribute('aria-label',b.title); b.classList.toggle('on',_sfxOn); }
 function toggleSfx(){ _sfxOn=!_sfxOn; try{ localStorage.setItem('vc_sfx', _sfxOn?'1':'0'); }catch(e){} paintSfxBtn(); }
 function byId(id){ return UNITS.find(u=>u.id===id); }
 /* 经济分类记账（只增字段）：reason 关键词映射到 goldBy 分类，供战报结算块与一局总结使用 */
@@ -3377,8 +3382,9 @@ function fitBoardCell(){
   const sideW=(side&&side.offsetParent!==null)?side.offsetWidth:0;
   const wAv=main.clientWidth-20-synW-sideW-32;    // 20=main 左右 padding，32=两处栏间距
   const hAv=main.clientHeight-16;                 // 16=main 上下 padding
+  const cf=$('castFeed'); const feedH=(cf&&cf.offsetParent!==null)?cf.offsetHeight+7:0;   // 播报条占位（含 boardwrap 间距）
   /* 高度约束：棋盘(14+8c) + 间距8 + 备战席(0.82c+29) ⇒ c=(hAv-51)/8.82；宽度约束：棋盘(14+8c) ⇒ c=(wAv-14)/8 */
-  const c=Math.max(40,Math.min(104,(wAv-14)/8,(hAv-62)/8.85));
+  const c=Math.max(40,Math.min(104,(wAv-14)/8,(hAv-62-feedH)/8.85));
   document.body.style.setProperty('--cell',c.toFixed(1)+'px');
 }
 window.addEventListener('resize',()=>{ fitBoardCell(); if(window.__S) renderBoard(); });
@@ -4190,6 +4196,28 @@ function stopTickLoop(){
 }
 $('sfxBtn').onclick=toggleSfx;
 paintSfxBtn();
+function paintTheme(){
+  if(typeof document==='undefined' || !document.documentElement) return;   // sim 无头桩：跳过主题渲染
+  const dark=document.documentElement.dataset.theme==='dark';
+  const label=dark?'切换浅色模式':'切换暗色模式';
+  document.querySelector('meta[name="theme-color"]').content=dark?'#101a36':'#eaf3ff';
+  for(const id of ['themeBtn','ovThemeBtn']){
+    const b=$(id); if(!b) continue;
+    if(id==='themeBtn') b.innerHTML=`${dark?'☀️':'🌙'}<span class="theme-label">${dark?'浅色':'暗色'}</span>`;
+    else b.textContent=dark?'☀️':'🌙';
+    b.title=label; b.setAttribute('aria-label',label);
+  }
+  const mobile=$('mThemeBtn'); if(mobile){ mobile.textContent=dark?'☀️ 浅色模式':'🌙 暗色模式'; mobile.setAttribute('aria-label',label); }
+}
+function toggleTheme(){
+  const next=document.documentElement.dataset.theme==='dark'?'light':'dark';
+  document.documentElement.dataset.theme=next;
+  try{localStorage.setItem('vc_theme',next)}catch(e){}
+  paintTheme();
+}
+$('themeBtn').onclick=toggleTheme;
+$('ovThemeBtn').onclick=toggleTheme;
+paintTheme();
 /* ===== 战斗统计插桩（纯只读：不改任何伤害公式/判定/数值）。每场战斗一个容器，
    在 dealDamage/治疗结算处聚合 造成伤害/承受伤害/治疗量/击杀；endBattle 消费后置空。
    红线：绝不写入棋子持久状态，绝不触碰 S.stats 既有字段 ===== */
@@ -6175,18 +6203,19 @@ $('endBtn').onclick=()=>{   // 二次确认：第一击武装（3 秒内再点�
   if(!S || S.phase!=='prep') return;
   const btn=$('endBtn');
   if(btn.dataset.armed==='1'){
-    clearTimeout(endArmTimer); btn.dataset.armed='0'; btn.classList.remove('arm-flash'); btn.textContent='🏁 结束挑战';
+    clearTimeout(endArmTimer); btn.dataset.armed='0'; btn.classList.remove('arm-flash'); btn.textContent='结束挑战';
     endRunEarly(); return;
   }
-  btn.dataset.armed='1'; btn.textContent='⚠ 再点一次确认结束'; btn.classList.add('arm-flash');
+  btn.dataset.armed='1'; btn.textContent='确认结束'; btn.classList.add('arm-flash');
   log('⚠ 即将结束本局（3 秒内再点一次确认；不点自动取消）');
-  endArmTimer=setTimeout(()=>{ btn.dataset.armed='0'; btn.classList.remove('arm-flash'); btn.textContent='🏁 结束挑战'; },3000);
+  endArmTimer=setTimeout(()=>{ btn.dataset.armed='0'; btn.classList.remove('arm-flash'); btn.textContent='结束挑战'; },3000);
 };
 /* 玩法介绍弹窗：start=开局 / resume=游戏中查看（按钮变"继续游戏"，不重开） */
 let ovMode='start';
 let resumeAvail=null;   // {label,key}：存在存档时开局弹窗提供「继续上一局」
 function showIntro(resume){
   ovMode = resume ? 'resume' : 'start';
+  reportCardMode(false);   // 开始/继续菜单恢复「新手指南」包装与菜单装饰
   $('ovBtn').textContent = resume ? '▶ 继续游戏' : '开始游戏';
   $('ovBtn2').style.display='none';
   { const b3=$('ovBtn3'); if(b3) b3.style.display='none'; }   // 每日挑战入口由三模式卡片承担（玩法底部不再单列）
@@ -6214,7 +6243,28 @@ $('ovBtn3').onclick=()=>{
   } else startDaily();
 };
 /* 结算/通关画面：隐藏 ✕（那时"关闭"语义是再来一局，由按钮承担）；模式选择/诅咒/每日入口一并隐藏 */
+/* 结算类视图的卡片模式：开始菜单的「新手指南」<details> 包着全局唯一的 #ovText（重设计装饰），
+   终局战报若留在里面会被折叠/压进 250px 小滚动框，全球排行提交行沉在框底不可见。
+   结算时移出折叠框并隐藏菜单装饰（立绘/引导语），回到开始菜单时再包回去。 */
+function reportCardMode(on){
+  const d=$('idolQuickGuide'), t=$('ovText'), art=$('idolMenuArt'), lead=$('ovLead');
+  if(!d||!t||typeof d.appendChild!=='function') return;   // sim 无头桩：跳过卡片模式切换
+  if(on){
+    if(t.parentElement===d) d.parentNode.insertBefore(t,d.nextSibling);
+    if(art) art.style.display='none';
+    if(lead) lead.style.display='none';
+    d.style.display='none';
+    t.style.color='';   // 清掉旧暗色弹窗遗留的近白内联文字色，浅色卡片下交给主题样式保证对比度
+  }else{
+    if(t.parentElement!==d) d.appendChild(t);
+    if(art) art.style.display='';
+    if(lead) lead.style.display='';
+    d.style.display='';
+    d.open=false;
+  }
+}
 function hideOvClose(){ if($('ovClose')) $('ovClose').style.display='none';
+  reportCardMode(true);
   { const cp=$('cursePick'); if(cp) cp.style.display='none'; }
   { const b3=$('ovBtn3'); if(b3) b3.style.display='none'; }
   { const di=$('dailyInfo'); if(di) di.style.display='none'; }
@@ -6380,10 +6430,11 @@ function histTitle(){ return histTab==='log'?'🏆 荣誉殿堂 · 战绩记录'
 function lbNick(){ try{ return localStorage.getItem('vc_nick')||''; }catch(e){ return ''; } }
 /* 自定义诅咒局不计入排行榜：自选诅咒自带补偿（+金/半价/发券）且组合由玩家自定，
    成绩与其他玩家不可比；每日挑战是全体同种子+同预置诅咒，照常入榜。
-   判定只看"是否诅咒局"，所以自定义模式但一条没勾（等同普通模式）仍然入榜。 */
-function rankedRun(){ return !S.arena && !S.forfeited && (!!S.daily || !(S.curses||[]).length); }
-function rankedHist(x){ return !x.arena && !x.forfeited && (x.rules==='campaign100' || !!x.daily); }
-function rankedNoteHTML(){   // 不计榜说明：放在结算屏【顶部】做横幅，避免压在底部按钮/备战席那条带上
+   判定只看"是否诅咒局"，所以自定义模式但一条没勾（等同普通模式）仍然入榜。
+   提前收兵（2026-09-23 拍板）不再视为弃局排除，照常可提交。 */
+function rankedRun(){ return !S.arena && (!!S.daily || !(S.curses||[]).length); }
+function rankedHist(x){ return !x.arena && (x.rules==='campaign100' || !!x.daily); }
+function rankedNoteHTML(){   // 不计榜说明：放在结算屏【顶部】做横幅，写明具体原因（自定义诅咒），避免"按钮怎么没了"的困惑
   if(rankedRun()) return '';
   return `<div style="margin:4px 0 10px;font-size:12px;color:#ff9a9a">⚠ 自定义诅咒局不计入排行榜（成绩已记入 📜 战绩记录）</div>`;
 }
@@ -6471,7 +6522,7 @@ function lineupIcons(ids){ return (ids||[]).map(id=>`<img class="lb-pt" src="ass
 function renderLeaderboard(){
   let h=[]; try{ h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){}
   if(!h.length){ $('histList').innerHTML='<div style="color:#8f88b0;padding:14px;text-align:center">暂无记录——先打完一局</div>'; return; }
-  const rows=[...h].filter(x=>x.rules==='campaign100'&&!x.forfeited).sort((a,b)=> Number(b.win)-Number(a.win) || b.round-a.round || b.hp-a.hp || (b.kills||0)-(a.kills||0));
+  const rows=[...h].filter(x=>x.rules==='campaign100').sort((a,b)=> Number(b.win)-Number(a.win) || b.round-a.round || b.hp-a.hp || (b.kills||0)-(a.kills||0));
   const today=h.filter(x=>x.daily && x.dseed===todaySeed());
   const best=today.length? Math.max(...today.map(x=>x.round)) : 0;
   const note=`<div style="color:#8f88b0;font-size:11px;margin-top:8px">※ 自定义诅咒局不计入排行（自选诅咒自带补偿，成绩不具可比性）——它们仍完整保留在「📜 战绩记录」页</div>`;
@@ -6565,10 +6616,12 @@ if(IS_TOUCH && typeof document!=='undefined' && document.body){
   document.getElementById('mEquipSec').appendChild(document.getElementById('equipPanel'));
   document.getElementById('mSideSec').appendChild(document.getElementById('side'));
   const menu=$('mMenuSec');
-  [['图鉴','bookBtn'],['荣誉殿堂','histBtn'],['托管','autoBtn'],['玩法说明','helpBtn'],['音效','sfxBtn'],['重开','resetBtn'],['结束挑战','endBtn']].forEach(([label,id])=>{
+  [['图鉴','bookBtn'],['荣誉殿堂','histBtn'],['托管','autoBtn'],['玩法说明','helpBtn'],['音效','sfxBtn'],['主题','themeBtn'],['重开','resetBtn'],['结束挑战','endBtn']].forEach(([label,id])=>{
     const b=document.createElement('button'); b.className='btn'; b.textContent=label; b.dataset.target=id;
+    if(id==='themeBtn') b.id='mThemeBtn';
     b.onclick=()=>{ closeDrawer(); $(id)?.click(); }; menu.appendChild(b);
   });
+  paintTheme();
   const mdraw=(id,mode)=>{ document.getElementById(id).onclick=()=>{ 
     if(S.phase!=='prep'){ closeDrawer(); return; }   // 战斗/结算中：商店装备等都是备战操作，抽屉只收不开、不挡棋盘
     drawerMode()===mode ? closeDrawer() : openDrawer(mode); }; };
@@ -6725,6 +6778,6 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
 </script>
 <script src="tools/bot_strategy.js?v=7"></script>
 <script src="tools/idol-ui.js?v=1"></script>
-<script src="tools/idol-ui-redesign.js?v=1"></script>
+<script src="tools/idol-ui-redesign.js?v=3"></script>
 </body>
 </html>

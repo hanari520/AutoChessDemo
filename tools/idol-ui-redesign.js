@@ -47,15 +47,24 @@
     });
   }
 
-  function buildSkillCue() {
+  /* ===== 施法播报（双槽迷你堆叠）：棋盘外顶沿固定条——我方居左、对手居右，
+     每槽保留最近 2 条，新条插入顶部、约 1.7s 转旧、2.1s 退场，超出即逐出最旧。
+     不再悬浮棋盘遮挡棋子；「谁在哪施法」由棋子本体的 idol-sigil / idol-casting 负责。 ===== */
+  function buildCastFeed() {
     const host = $('boardwrap');
-    if (!host || $('idolSkillCue')) return $('idolSkillCue');
-    const cue = document.createElement('div');
-    cue.id = 'idolSkillCue';
-    cue.setAttribute('role', 'status');
-    cue.setAttribute('aria-live', 'polite');
-    host.appendChild(cue);
-    return cue;
+    if (!host) return null;
+    if ($('castFeed')) return $('castFeed');
+    const feed = document.createElement('div');
+    feed.id = 'castFeed';
+    feed.setAttribute('role', 'status');
+    feed.setAttribute('aria-live', 'polite');
+    const ally = document.createElement('div');
+    ally.className = 'cf-slot ally';
+    const foe = document.createElement('div');
+    foe.className = 'cf-slot foe';
+    feed.append(ally, foe);
+    host.insertBefore(feed, host.firstChild);
+    return feed;
   }
 
   const glyphs = {
@@ -63,7 +72,29 @@
     chain: 'ϟ', frost: '❄', fireball: '☼', slam: '✹', hex: '◇', heal: '♡', aheal: '♫',
     teamshield: '✧', bulwark: '⬡', guard: '♡', poison: '❋', starfall: '✦', time: '◷',
   };
-  let cueRevision = 0;
+  function castFeedPush(unit) {
+    const feed = buildCastFeed();
+    if (!feed) return;
+    const slot = feed.querySelector(unit.side === 1 ? '.cf-slot.foe' : '.cf-slot.ally');
+    if (!slot) return;
+    const hue = hueOf(unit.id);
+    const def = UNITS.find((candidate) => candidate.id === unit.id);
+    if (!def) return;
+    const arch = String(def.sk[1] || 'magic').replace(/[^a-z0-9-]/gi, '').toLowerCase();
+    const item = document.createElement('div');
+    item.className = `cf-item arch-${arch}`;
+    item.style.setProperty('--hero-color', `hsl(${hue} 78% 66%)`);
+    item.innerHTML = `<img src="assets/units_big/${unit.id}.png" alt="${esc(def.name)}" draggable="false">`
+      + `<b>${esc(def.name)}</b><span>${glyphs[arch] || '✦'} ${esc(def.sk[0])}</span>`;
+    slot.prepend(item);
+    const speed = Math.max(1, window.SPEED || 1);
+    window.setTimeout(() => item.classList.add('old'), 1150 / speed);
+    window.setTimeout(() => item.classList.add('bye'), 1750 / speed);
+    window.setTimeout(() => item.remove(), 2100 / speed);
+    slot.querySelectorAll('.cf-item:not(.bye)').forEach((stale, idx) => {
+      if (idx >= 2) { stale.classList.add('bye'); window.setTimeout(() => stale.remove(), 300 / speed); }
+    });
+  }
 
   function cueSkill(unit) {
     if (!unit || unit.uid == null) return;
@@ -82,20 +113,7 @@
       node.appendChild(sigil);
       window.setTimeout(() => { sigil.remove(); node.classList.remove('idol-casting'); }, 680 / Math.max(1, window.SPEED || 1));
     }
-
-    const cue = buildSkillCue();
-    if (!cue) return;
-    cue.style.setProperty('--hero-color', `hsl(${hue} 78% 66%)`);
-    cue.className = `idol-cast-cue ${unit.side === 1 ? 'enemy' : 'ally'} arch-${arch}`;
-    cue.innerHTML = `<img src="assets/units_big/${unit.id}.png" alt="${esc(def.name)}">
-      <div class="cue-copy"><small>${unit.side === 1 ? 'RIVAL STAGE' : 'STAR STAGE'} · SKILL</small>
-      <strong>${esc(def.sk[0])}</strong><span>${esc(def.name)} · ${unit.side === 1 ? '对手发动技能' : '专属技能发动'}</span></div>
-      <b class="cue-star" aria-hidden="true">${glyphs[arch] || '✦'}</b>`;
-    cue.classList.remove('show');
-    void cue.offsetWidth;
-    cue.classList.add('show');
-    const revision = ++cueRevision;
-    window.setTimeout(() => { if (revision === cueRevision) cue.classList.remove('show'); }, 900 / Math.max(1, window.SPEED || 1));
+    castFeedPush(unit);
   }
 
   function hookSkillCues() {
@@ -110,6 +128,6 @@
   }
 
   buildTitleCard();
-  buildSkillCue();
+  buildCastFeed();
   hookSkillCues();
 })();
