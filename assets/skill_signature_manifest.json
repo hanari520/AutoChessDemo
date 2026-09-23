@@ -1,44 +1,72 @@
 {
-  "version": "signature-v2",
-  "description": "Per-unit signature glyph, shape, faction accent, AI-painted VFX family and stable burst timing used by castSkill",
+  "version": "combat-v3",
+  "description": "Runtime-linked signature and combat manifest for all 50 unique unit kits. Each unit has a bespoke skill resolver, attack profile, glyph, silhouette, accent colour, and AI-painted VFX family.",
   "aiAssets": [
     "assets/fx/skill-prism.png",
     "assets/fx/skill-skate-trail.png",
     "assets/fx/skill-lotus-heal.png",
-    "assets/fx/skill-ink-dragon.png"
+    "assets/fx/skill-ink-dragon.png",
+    "assets/fx/v3-blade.png",
+    "assets/fx/v3-arc.png",
+    "assets/fx/v3-ward.png",
+    "assets/fx/v3-void.png"
   ],
   "units": [
     {
       "id": "ein",
       "name": "艾因",
-      "skill": "魔导结界",
+      "skill": "棱镜守夜",
       "glyph": "✿",
       "shape": "seal",
-      "color": "#b06bff"
+      "color": "#78efff",
+      "skillMode": "guard",
+      "description": "展开棱镜壁垒，获得 34% 最大生命护盾并嘲讽 2.2 秒；护盾被击破时反射一次 24% 伤害。",
+      "attackStyle": "blade",
+      "attackEffect": "mana",
+      "attackMultiplier": 0.93,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "kouichi",
       "name": "光一",
-      "skill": "滑板切入",
+      "skill": "霓虹轮刃",
       "glyph": "⌁",
       "shape": "leaf",
-      "color": "#d9b26a"
+      "color": "#ff7bd4",
+      "skillMode": "dash",
+      "description": "滑向最远敌人，造成 215% 攻击伤害并波及相邻目标；每命中一人回复 18% 伤害生命。",
+      "attackStyle": "blade",
+      "attackEffect": "bleed",
+      "attackMultiplier": 1.005,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "yua",
       "name": "悠亚",
-      "skill": "记忆篡改",
+      "skill": "记忆回收站",
       "glyph": "◈",
       "shape": "gear",
-      "color": "#7fd4ff"
+      "color": "#b989ff",
+      "skillMode": "single",
+      "description": "向最远敌人发射记忆碎片，造成 225% 法术伤害，烧毁 45% 当前法力并沉默 1.8 秒。",
+      "attackStyle": "arc",
+      "attackEffect": "spark",
+      "attackMultiplier": 1.03,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "goutan",
       "name": "勾檀",
-      "skill": "忠犬护主",
+      "skill": "忠犬拦截",
       "glyph": "❖",
       "shape": "gear",
-      "color": "#ff9a6b"
+      "color": "#ffb36b",
+      "skillMode": "guardLink",
+      "description": "给生命最低的队友与自身各套上护盾，并建立拦截链接：队友下一次受击由勾檀分担 30%。",
+      "attackStyle": "blade",
+      "attackEffect": "slow",
+      "attackMultiplier": 1.055,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "yujiu",
@@ -46,47 +74,83 @@
       "skill": "天线锁定",
       "glyph": "☄",
       "shape": "ribbon",
-      "color": "#ff9a6b"
+      "color": "#8fe8ff",
+      "skillMode": "single",
+      "description": "锁定最远敌人，造成 180% 远程伤害并削减 24 点护甲；命中后下一枚普攻自动弹向附近敌人。",
+      "attackStyle": "shot",
+      "attackEffect": "mana",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "songlv",
       "name": "小松绿",
-      "skill": "盘根重锤",
+      "skill": "根系重击",
       "glyph": "♣",
       "shape": "star",
-      "color": "#6bffab"
+      "color": "#9be36a",
+      "skillMode": "burst",
+      "description": "以根锤震击周围敌人，造成 150% 伤害、眩晕 0.8 秒并回复自身 20% 造成伤害的生命。",
+      "attackStyle": "blade",
+      "attackEffect": "spark",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "likou",
       "name": "莉蔻",
-      "skill": "救急手册",
+      "skill": "急救快闪",
       "glyph": "✚",
       "shape": "seal",
-      "color": "#8dff9a"
+      "color": "#ff9ab6",
+      "skillMode": "heal",
+      "description": "治疗生命比例最低的队友 210% 攻击生命，同时附加 10% 最大生命护盾并净化其控制。",
+      "attackStyle": "arc",
+      "attackEffect": "bleed",
+      "attackMultiplier": 0.955,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "agari",
       "name": "东爱璃",
-      "skill": "四十八人应援",
+      "skill": "应援心拍",
       "glyph": "✦",
       "shape": "orbit",
-      "color": "#ff5f5f"
+      "color": "#ff6fae",
+      "skillMode": "team",
+      "description": "全队回复 90% 攻击生命并获得 8% 最大生命护盾；3 秒内首次普攻额外产生一次心拍爆发。",
+      "attackStyle": "pulse",
+      "attackEffect": "mana",
+      "attackMultiplier": 0.98,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "hoshimi",
       "name": "希侑",
-      "skill": "猫爪突袭",
+      "skill": "月猫跃迁",
       "glyph": "☾",
       "shape": "orbit",
-      "color": "#6b5bd6"
+      "color": "#dca3ff",
+      "skillMode": "dash",
+      "description": "扑向生命比例最低的敌人，造成 235% 伤害并施加 2 秒流血；击杀后立刻刷新一次位移。",
+      "attackStyle": "blade",
+      "attackEffect": "slow",
+      "attackMultiplier": 1.005,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "chiharu",
       "name": "初濑",
-      "skill": "夜岚斩",
+      "skill": "夜岚折返",
       "glyph": "〰",
       "shape": "orbit",
-      "color": "#6bffab"
+      "color": "#8fbcff",
+      "skillMode": "cleave",
+      "description": "向前方扇区斩出两道夜岚，造成 165% 伤害并使命中者受到的下一次普攻伤害提高 25%。",
+      "attackStyle": "blade",
+      "attackEffect": "none",
+      "attackMultiplier": 1.08,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "suiji",
@@ -94,119 +158,209 @@
       "skill": "十小时续航",
       "glyph": "❀",
       "shape": "petal",
-      "color": "#6bffab"
+      "color": "#8ddc9b",
+      "skillMode": "support",
+      "description": "为除自身外的队友回复 28 点法力并治疗 60% 攻击生命；同时获得 18% 攻速，持续 4 秒。",
+      "attackStyle": "pulse",
+      "attackEffect": "bleed",
+      "attackMultiplier": 1.03,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "kanban",
       "name": "栞栞",
-      "skill": "海獭硬壳",
+      "skill": "海獭缓冲层",
       "glyph": "⌂",
       "shape": "seal",
-      "color": "#ff9a6b"
+      "color": "#7ed7d9",
+      "skillMode": "guard",
+      "description": "吸收 45% 最大生命伤害，获得 35% 格挡，持续 4 秒；格挡成功时向攻击者喷出水花减速。",
+      "attackStyle": "blade",
+      "attackEffect": "slow",
+      "attackMultiplier": 1.08,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "zhouyi",
       "name": "轴伊",
-      "skill": "破盾之刃",
+      "skill": "破盾读秒",
       "glyph": "◉",
       "shape": "petal",
-      "color": "#6b5bd6"
+      "color": "#c77dff",
+      "skillMode": "passive",
+      "description": "被动：普通攻击优先拆除护盾；目标无护盾时，下一次攻击造成额外 80% 破防伤害。",
+      "attackStyle": "blade",
+      "attackEffect": "shieldbreak",
+      "attackMultiplier": 1.03,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "yuji",
       "name": "雨纪",
-      "skill": "雨幕庇护",
+      "skill": "雨幕偏航",
       "glyph": "◇",
       "shape": "petal",
-      "color": "#4aa8ff"
+      "color": "#72c9ff",
+      "skillMode": "passive",
+      "description": "被动：每次闪避或格挡后召唤雨幕，获得 8% 最大生命护盾并让下一次攻击附带减速。",
+      "attackStyle": "shot",
+      "attackEffect": "rainveil",
+      "attackMultiplier": 1.03,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "tiandou",
       "name": "恬豆",
-      "skill": "点心投喂",
+      "skill": "点心补给线",
       "glyph": "☂",
       "shape": "ribbon",
-      "color": "#ff6b81"
+      "color": "#ffc56d",
+      "skillMode": "heal",
+      "description": "把点心投向两名最需要治疗的队友，各回复 145% 攻击生命并获得 8% 护盾；护盾破裂时回复 8 点法力。",
+      "attackStyle": "arc",
+      "attackEffect": "slow",
+      "attackMultiplier": 1.08,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "aza",
       "name": "AZA",
-      "skill": "节拍堡垒",
+      "skill": "节拍装甲",
       "glyph": "♪",
       "shape": "gear",
-      "color": "#ffd24a"
+      "color": "#ff8b8b",
+      "skillMode": "team",
+      "description": "以鼓点强化全队：回复 70% 攻击生命、攻击 +12%，并在施法者脚下留下 2 秒震荡圈。",
+      "attackStyle": "pulse",
+      "attackEffect": "mana",
+      "attackMultiplier": 0.93,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "pako",
       "name": "帕可",
-      "skill": "善意收集",
+      "skill": "善意溢出",
       "glyph": "✧",
       "shape": "leaf",
-      "color": "#4aa8ff"
+      "color": "#73d6e8",
+      "skillMode": "heal",
+      "description": "治疗生命最低的队友 230% 攻击生命，溢出治疗转化为 18% 最大生命护盾，并压低其受到的治疗削减。",
+      "attackStyle": "arc",
+      "attackEffect": "none",
+      "attackMultiplier": 0.93,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "zhijin",
       "name": "枝堇",
-      "skill": "紫藤突刺",
+      "skill": "紫藤追迹",
       "glyph": "⚙",
       "shape": "leaf",
-      "color": "#ff8ad8"
+      "color": "#e69bff",
+      "skillMode": "dash",
+      "description": "沿紫藤轨迹突进最远敌人，造成 240% 伤害并窃取 18% 伤害生命；命中后目标 2 秒内无法获得护盾。",
+      "attackStyle": "blade",
+      "attackEffect": "none",
+      "attackMultiplier": 1.08,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "sishi",
       "name": "四时小路",
-      "skill": "四季轮舞",
+      "skill": "四季转盘",
       "glyph": "☁",
       "shape": "petal",
-      "color": "#ffd24a"
+      "color": "#ffd27d",
+      "skillMode": "chain",
+      "description": "向最多 4 个敌人发射季节弹：春减速、夏烧蓝、秋流血、冬冻结，每跳伤害递减。",
+      "attackStyle": "shot",
+      "attackEffect": "slow",
+      "attackMultiplier": 0.93,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "sumi",
       "name": "礼墨",
-      "skill": "墨龙结界",
+      "skill": "墨龙入砚",
       "glyph": "✜",
       "shape": "orbit",
-      "color": "#ff5f5f"
+      "color": "#a58bff",
+      "skillMode": "teamShield",
+      "description": "为全队附加 18% 最大生命护盾并获得 10% 减伤；墨龙会优先吞掉一次控制效果。",
+      "attackStyle": "arc",
+      "attackEffect": "mana",
+      "attackMultiplier": 0.955,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "yukie",
       "name": "桃濑雪绘",
-      "skill": "上勾拳连段",
+      "skill": "上勾拳三连",
       "glyph": "♢",
       "shape": "gear",
-      "color": "#d9b26a"
+      "color": "#ff9b7b",
+      "skillMode": "combo",
+      "description": "连续三段锁定同一目标：100%／110%／160% 伤害，第三段击飞并附加 1.5 秒流血。",
+      "attackStyle": "blade",
+      "attackEffect": "mana",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "miting",
       "name": "米汀",
-      "skill": "侦探的看破",
+      "skill": "看破真相",
       "glyph": "❋",
       "shape": "gear",
-      "color": "#b06bff"
+      "color": "#ffe49b",
+      "skillMode": "single",
+      "description": "揭开攻击最高敌人的弱点，造成 205% 法术伤害并削减 35% 魔抗；其下一次技能伤害反噬自身。",
+      "attackStyle": "arc",
+      "attackEffect": "bleed",
+      "attackMultiplier": 1.13,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "xuezhu",
       "name": "雪烛",
-      "skill": "奇门冰封",
+      "skill": "冰烛禁区",
       "glyph": "✤",
       "shape": "leaf",
-      "color": "#6b5bd6"
+      "color": "#9fe8ff",
+      "skillMode": "zone",
+      "description": "冻结最远敌人 2 秒并造成 170% 伤害，在脚下生成 2.7 秒冰封禁区。",
+      "attackStyle": "arc",
+      "attackEffect": "mana",
+      "attackMultiplier": 0.98,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "zeyin",
       "name": "泽音",
-      "skill": "泽畔歌声",
+      "skill": "泽畔回声",
       "glyph": "◌",
       "shape": "seal",
-      "color": "#4aa8ff"
+      "color": "#79e6d5",
+      "skillMode": "team",
+      "description": "治疗全队 100% 攻击生命，并让敌方全体受到的治疗降低 25%，持续 4 秒；每个受伤队友回响一次水波。",
+      "attackStyle": "pulse",
+      "attackEffect": "slow",
+      "attackMultiplier": 1.005,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "sanli",
       "name": "三理",
-      "skill": "梦境三重奏",
+      "skill": "梦境三拍",
       "glyph": "✺",
       "shape": "leaf",
-      "color": "#ffd24a"
+      "color": "#f29eff",
+      "skillMode": "chain",
+      "description": "对 3 名敌人进行梦境连锁，造成 160%／120%／90% 法术伤害；最后一跳使目标沉睡 0.6 秒。",
+      "attackStyle": "pulse",
+      "attackEffect": "spark",
+      "attackMultiplier": 0.93,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "diansu",
@@ -214,7 +368,13 @@
       "skill": "邪修石符",
       "glyph": "♧",
       "shape": "leaf",
-      "color": "#b06bff"
+      "color": "#d9c8a6",
+      "skillMode": "single",
+      "description": "在攻击最高敌人身上刻下石符，造成 200% 伤害并石化 2.2 秒；若目标有护盾则额外碎盾。",
+      "attackStyle": "arc",
+      "attackEffect": "slow",
+      "attackMultiplier": 1.03,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "lianshiye",
@@ -222,7 +382,13 @@
       "skill": "失忆挽歌",
       "glyph": "♠",
       "shape": "petal",
-      "color": "#6b5bd6"
+      "color": "#c99dff",
+      "skillMode": "single",
+      "description": "对最近敌人造成 180% 伤害、沉默 3 秒并烧毁 40% 当前法力；目标每次施法都会再受一次回响伤害。",
+      "attackStyle": "blade",
+      "attackEffect": "none",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "huize",
@@ -230,23 +396,41 @@
       "skill": "果冻封印",
       "glyph": "✷",
       "shape": "seal",
-      "color": "#8dff9a"
+      "color": "#ff83cf",
+      "skillMode": "single",
+      "description": "用果冻领域束缚最近敌人，造成 160% 伤害、减速 40% 并附加 3 秒毒伤，同时禁止其获得治疗。",
+      "attackStyle": "arc",
+      "attackEffect": "slow",
+      "attackMultiplier": 0.98,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "shengge",
       "name": "笙歌",
-      "skill": "笙歌净化",
+      "skill": "净音祷歌",
       "glyph": "✹",
       "shape": "wave",
-      "color": "#ff5f5f"
+      "color": "#fff2a6",
+      "skillMode": "team",
+      "description": "治疗全队 95% 攻击生命并净化控制；净化成功的队友获得 15% 攻速，持续 3 秒。",
+      "attackStyle": "pulse",
+      "attackEffect": "spark",
+      "attackMultiplier": 1.055,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "shadow",
       "name": "李豆沙",
-      "skill": "熊猫跃袭",
+      "skill": "熊跃终点",
       "glyph": "⚡",
       "shape": "leaf",
-      "color": "#ff5f5f"
+      "color": "#ffad66",
+      "skillMode": "dash",
+      "description": "跳向生命最低的敌人，造成 280% 伤害；目标生命低于 40% 时追加 45% 斩杀伤害。",
+      "attackStyle": "blade",
+      "attackEffect": "mana",
+      "attackMultiplier": 1.005,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "nox",
@@ -254,47 +438,83 @@
       "skill": "夜莺回响",
       "glyph": "✣",
       "shape": "leaf",
-      "color": "#ff9a6b"
+      "color": "#ad8dff",
+      "skillMode": "dash",
+      "description": "突进最远敌人造成 240% 伤害，留下一个 2 秒后爆裂的残影；残影爆炸会沉默周围敌人。",
+      "attackStyle": "blade",
+      "attackEffect": "mana",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "miyue",
       "name": "弥月",
-      "skill": "月影斩",
+      "skill": "月影留痕",
       "glyph": "◍",
       "shape": "star",
-      "color": "#6b5bd6"
+      "color": "#c39bff",
+      "skillMode": "dashCleave",
+      "description": "切入目标后回旋斩击周围敌人，造成 185% 伤害并施加 2 秒流血；每命中一人获得 5% 吸血。",
+      "attackStyle": "blade",
+      "attackEffect": "bleed",
+      "attackMultiplier": 1.005,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "huali",
       "name": "花礼",
-      "skill": "小花的祝福",
+      "skill": "花礼绽放",
       "glyph": "❂",
       "shape": "orbit",
-      "color": "#ff8ad8"
+      "color": "#ffb7d0",
+      "skillMode": "heal",
+      "description": "治疗两名队友各 160% 攻击生命并回复 18 点法力；受疗者生命越低，治疗越高。",
+      "attackStyle": "arc",
+      "attackEffect": "mana",
+      "attackMultiplier": 0.98,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "youyu",
       "name": "柚雨",
-      "skill": "幽魂斩",
+      "skill": "幽魂相位",
       "glyph": "✥",
       "shape": "star",
-      "color": "#4aa8ff"
+      "color": "#78d9ff",
+      "skillMode": "dash",
+      "description": "化为幽魂穿过敌阵，对最近敌人造成 220% 纯粹伤害并获得 1.5 秒相位闪避。",
+      "attackStyle": "blade",
+      "attackEffect": "none",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "quanrong",
       "name": "犬绒",
-      "skill": "小狗硬壳",
+      "skill": "小狗反甲",
       "glyph": "✪",
       "shape": "orbit",
-      "color": "#ff9a6b"
+      "color": "#d7a76b",
+      "skillMode": "guard",
+      "description": "获得 50% 最大生命护盾并嘲讽 2.5 秒；护盾期间每次受击反弹 8% 最大生命。",
+      "attackStyle": "blade",
+      "attackEffect": "mana",
+      "attackMultiplier": 1.08,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "ruiya",
       "name": "瑞娅",
-      "skill": "时空禁锢",
+      "skill": "时空封存",
       "glyph": "✽",
       "shape": "orbit",
-      "color": "#7fd4ff"
+      "color": "#a8b9ff",
+      "skillMode": "zone",
+      "description": "冻结最远敌人 2.4 秒并造成 200% 伤害；生成时空区，区域内敌人攻速降低 60%。",
+      "attackStyle": "arc",
+      "attackEffect": "slow",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "mumu",
@@ -302,7 +522,13 @@
       "skill": "东风润物",
       "glyph": "✶",
       "shape": "star",
-      "color": "#ff6b81"
+      "color": "#9cffb4",
+      "skillMode": "team",
+      "description": "全队回复 105% 攻击生命并获得 20% 攻速，持续 4 秒；生命满的队友改为获得 10% 护盾。",
+      "attackStyle": "pulse",
+      "attackEffect": "none",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "kroya",
@@ -310,7 +536,13 @@
       "skill": "混沌裂界",
       "glyph": "❁",
       "shape": "leaf",
-      "color": "#8dff9a"
+      "color": "#ff8dce",
+      "skillMode": "chaos",
+      "description": "对攻击最高敌人造成 260% 法术伤害并裂变一次：随机附加冻结、沉默或烧蓝。",
+      "attackStyle": "arc",
+      "attackEffect": "spark",
+      "attackMultiplier": 0.93,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "shiliu",
@@ -318,7 +550,13 @@
       "skill": "浣熊洗劫",
       "glyph": "⬡",
       "shape": "seal",
-      "color": "#6bffab"
+      "color": "#f5b46b",
+      "skillMode": "single",
+      "description": "偷走最近敌人的全部护盾并造成 215% 伤害；若偷到护盾，额外眩晕 0.6 秒。",
+      "attackStyle": "blade",
+      "attackEffect": "slow",
+      "attackMultiplier": 1.055,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "seki",
@@ -326,7 +564,13 @@
       "skill": "星蚀低语",
       "glyph": "☼",
       "shape": "gear",
-      "color": "#ff5f5f"
+      "color": "#7e75ff",
+      "skillMode": "field",
+      "description": "在自身周围展开星蚀领域，对范围内敌人造成 150% 伤害、沉默 2.6 秒并持续烧蓝。",
+      "attackStyle": "pulse",
+      "attackEffect": "bleed",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "haruka",
@@ -334,7 +578,13 @@
       "skill": "白刃拍击",
       "glyph": "❉",
       "shape": "seal",
-      "color": "#ff5f5f"
+      "color": "#f6f3ff",
+      "skillMode": "cleave",
+      "description": "以白刃拍击周围敌人，造成 180% 伤害并削减 25% 攻击；被削弱者攻击会给白神遥回 4 点法力。",
+      "attackStyle": "blade",
+      "attackEffect": "mana",
+      "attackMultiplier": 1.055,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "mahiru",
@@ -342,15 +592,27 @@
       "skill": "绯红旋风",
       "glyph": "☯",
       "shape": "orbit",
-      "color": "#ff9a6b"
+      "color": "#ff6b75",
+      "skillMode": "cleave",
+      "description": "旋转三圈，每圈对周围敌人造成 90% 伤害并回复 25% 伤害生命；第三圈附加流血。",
+      "attackStyle": "blade",
+      "attackEffect": "mana",
+      "attackMultiplier": 1.005,
+      "aiVfx": "assets/fx/v3-blade.png"
     },
     {
       "id": "nana7mi",
       "name": "七海",
-      "skill": "鲨皇旋流",
+      "skill": "鲨皇潮",
       "glyph": "✵",
       "shape": "gear",
-      "color": "#4aa8ff"
+      "color": "#67d4e8",
+      "skillMode": "burst",
+      "description": "召唤鲨潮冲撞前方，造成 210% 伤害、拉近敌人并减速 35%；血量越低伤害越高。",
+      "attackStyle": "blade",
+      "attackEffect": "none",
+      "attackMultiplier": 1.005,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "liAn",
@@ -358,7 +620,13 @@
       "skill": "晨露凝霜",
       "glyph": "✸",
       "shape": "leaf",
-      "color": "#ff6b81"
+      "color": "#e6fbff",
+      "skillMode": "field",
+      "description": "将全场最危险的敌人群体冻结 1.4 秒并造成 125% 伤害；冻结结束后目标获得易伤。",
+      "attackStyle": "arc",
+      "attackEffect": "bleed",
+      "attackMultiplier": 0.93,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "youyi",
@@ -366,7 +634,13 @@
       "skill": "一心同体",
       "glyph": "✼",
       "shape": "wave",
-      "color": "#ff6b81"
+      "color": "#ff9f9f",
+      "skillMode": "passive",
+      "description": "被动：每次普通攻击为自身与生命最低的队友各回复 3% 最大生命；任意一方濒死时共享 20% 护盾。",
+      "attackStyle": "blade",
+      "attackEffect": "soulmate",
+      "attackMultiplier": 1.03,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "azi",
@@ -374,7 +648,13 @@
       "skill": "高音震魂",
       "glyph": "✧",
       "shape": "leaf",
-      "color": "#d9b26a"
+      "color": "#ffbd6a",
+      "skillMode": "field",
+      "description": "释放高音震魂波，范围内敌人受到 130% 伤害并眩晕 1.5 秒；每命中一人，阿梓获得 6 点法力。",
+      "attackStyle": "pulse",
+      "attackEffect": "slow",
+      "attackMultiplier": 1.13,
+      "aiVfx": "assets/fx/v3-arc.png"
     },
     {
       "id": "taodai",
@@ -382,7 +662,13 @@
       "skill": "桃香结界",
       "glyph": "❦",
       "shape": "petal",
-      "color": "#ff8ad8"
+      "color": "#ffb1c9",
+      "skillMode": "teamShield",
+      "description": "全队获得 22% 最大生命护盾；桃香结界持续 4 秒，期间全队减伤 20%，桃代嘲讽 2.7 秒。",
+      "attackStyle": "blade",
+      "attackEffect": "mana",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "miki",
@@ -390,7 +676,13 @@
       "skill": "星海庇护",
       "glyph": "⟡",
       "shape": "orbit",
-      "color": "#7fd4ff"
+      "color": "#8fd9ff",
+      "skillMode": "heal",
+      "description": "治疗 3 名队友各 150% 攻击生命，附加 12% 护盾并回复 12 点法力；优先濒危单位。",
+      "attackStyle": "arc",
+      "attackEffect": "mana",
+      "attackMultiplier": 0.98,
+      "aiVfx": "assets/fx/v3-ward.png"
     },
     {
       "id": "rei",
@@ -398,15 +690,56 @@
       "skill": "灵界之门",
       "glyph": "✴",
       "shape": "ribbon",
-      "color": "#ff5f5f"
+      "color": "#b78cff",
+      "skillMode": "field",
+      "description": "开启灵界之门，范围敌人受到 135% 伤害并沉默 2.4 秒；门会把其中一次治疗转成伤害。",
+      "attackStyle": "pulse",
+      "attackEffect": "spark",
+      "attackMultiplier": 1.105,
+      "aiVfx": "assets/fx/v3-void.png"
     },
     {
       "id": "rinco",
       "name": "秋凛子",
-      "skill": "神社拉闸",
+      "skill": "十二点拉闸",
       "glyph": "♢",
       "shape": "star",
-      "color": "#ff5f5f"
+      "color": "#ff5f70",
+      "skillMode": "cleave",
+      "description": "拉下总闸，对周围敌人造成 210% 伤害并沉默 1.8 秒；自身获得 25% 吸血，直到战斗结束。",
+      "attackStyle": "blade",
+      "attackEffect": "slow",
+      "attackMultiplier": 0.955,
+      "aiVfx": "assets/fx/v3-void.png"
     }
-  ]
+  ],
+  "combatSystems": {
+    "basicAttackStyles": [
+      "blade",
+      "shot",
+      "arc",
+      "pulse",
+      "burst"
+    ],
+    "signatureMarks": 50,
+    "skillModes": [
+      "guard",
+      "dash",
+      "single",
+      "guardLink",
+      "burst",
+      "heal",
+      "team",
+      "cleave",
+      "support",
+      "passive",
+      "chain",
+      "teamShield",
+      "combo",
+      "zone",
+      "dashCleave",
+      "chaos",
+      "field"
+    ]
+  }
 }
