@@ -1040,8 +1040,8 @@ body.touch .m-only { display:inline-block; }
 }
 
 </style>
-<link rel="stylesheet" href="tools/idol-ui.css?v=1">
-<link rel="stylesheet" href="tools/idol-redesign.css?v=1">
+<link rel="stylesheet" href="tools/idol-ui.css?v=2">
+<link rel="stylesheet" href="tools/idol-redesign.css?v=2">
 </head>
 <body>
 <div id="topbar">
@@ -2837,7 +2837,7 @@ function renderTop(){
   const c = compForRound(S.round);
   $('lockBtn').textContent=S.lock?(IS_TOUCH?'已锁定':'已锁定 (L)'):(IS_TOUCH?'锁定':'锁定 (L)');
   $('lockBtn').classList.toggle('on',!!S.lock);
-  $('endBtn').style.display = (S.phase==='prep') ? 'inline-block' : 'none';   // 所有模式备战期都可主动收兵
+  $('endBtn').style.display = (S.phase==='prep') ? 'inline-flex' : 'none';   // 所有模式备战期都可主动收兵
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
     : S.streak>=4 ? `难度 ⬆（连胜 ${S.streak}，敌方增强 +${Math.min(4, S.streak-3)}%）` : '难度 ➖ 标准';
   $('enemyInfo').innerHTML = c.boss
@@ -6037,7 +6037,9 @@ function fitBoard(){
   const siblingW=main?[...main.children].filter(el=>el!==w&&getComputedStyle(el).display!=='none').reduce((sum,el)=>sum+el.offsetWidth,0):0;
   // 横屏按主区域中实际可见的兄弟栏扣宽；已移入抽屉的侧栏不应再固定占位。
   const availW = landscape ? Math.max(0,(main?.clientWidth||innerWidth)-siblingW-12) : innerWidth-8;
-  const availH = innerHeight - reserved - (landscape?0:6);
+  const availH = landscape
+    ? innerHeight - reserved
+    : Math.max(0, (main?.clientHeight || innerHeight - reserved) - 14);
   const s = Math.max(0.35, Math.min(1, availW/w.offsetWidth, availH/w.offsetHeight));
   st.transformOrigin='top center';
   st.transform = s<1 ? `scale(${s})` : '';
@@ -6066,7 +6068,7 @@ let autoBusy=false;   // 必须声明在 initApp 之前：initApp → newGame �
   /* 桌面端：敌方阵容横幅放进左栏（羁绊标题之下、列表之上），棋盘上方让位放大棋盘 */
   if(!IS_TOUCH){ try{ $('synCol').insertBefore($('oppBar'), $('synAll')); }catch(e){} }
   fitBoardCell();
-  newGame(); renderAll();   // 背景先渲染一局（选择模式后真正开新局覆盖）
+  newGame(); renderAll(); fitBoard();   // 背景先渲染一局（选择模式后真正开新局覆盖）；棋盘先渲染，再按手机可用高度缩放
   showIntro(false);
 })();
 $('ovResume').onclick=()=>{ if(!resumeAvail) return;

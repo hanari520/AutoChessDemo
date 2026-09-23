@@ -54,6 +54,12 @@ button { -webkit-tap-highlight-color: transparent; }
 #topbar .spacer { flex: 1 1 8px; min-width: 8px; }
 #topbar .btn.ic { flex: 0 0 34px; width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; font-size: 0; }
 #topbar .btn.ic::before { flex: none; width: 16px; height: 16px; margin: 0; }
+/* Keep the two primary destinations readable on desktop; secondary HUD actions stay icon-only. */
+#topbar #bookBtn, #topbar #endBtn {
+  flex: 0 0 auto; width: auto; min-width: max-content; height: 34px; padding: 0 10px; gap: 6px;
+  overflow: visible; font-size: 12px; line-height: 1; white-space: nowrap;
+}
+#topbar #bookBtn::before, #topbar #endBtn::before { width: 14px; height: 14px; }
 #topbar .spdwrap { display: inline-flex; flex: 0 0 auto; gap: 2px; }
 #topbar .spd-b { padding: 4px 6px; font-size: 11px; }
 #idolBrand .brand-mark { border-radius: 12px; background: linear-gradient(145deg,#55ddc8,#8298ff 58%,#eb8fca); }
@@ -334,6 +340,7 @@ button { -webkit-tap-highlight-color: transparent; }
   #topbar #autoBtn, #topbar #helpBtn, #topbar #resetBtn, #topbar #endBtn, #topbar #sfxBtn,
   #topbar .spdwrap { display: none !important; }
   #topbar .btn.ic { flex: 0 0 30px; width: 30px; height: 30px; }
+  #topbar #bookBtn { flex: 0 0 30px; width: 30px; min-width: 30px; height: 30px; padding: 0; gap: 0; overflow: hidden; font-size: 0; }
   #topbar #histBtn, #topbar #bookBtn { display: inline-flex !important; }
   #topbar #roundBox { margin-right: auto; }
   #topbar .res { gap: 3px; padding: 3px 5px; }
@@ -403,6 +410,47 @@ button { -webkit-tap-highlight-color: transparent; }
   #bookPanel, #histPanel { width: 96vw !important; max-height: 94dvh !important; padding: 13px !important; }
   #bookGrid { grid-template-columns: 1fr !important; }
   #mDrawerBox { max-height: 83dvh; }
+}
+/* Portrait phone: a compact status strip, a centered full-width board and a thumb-sized action dock. */
+@media (max-width: 600px) and (orientation: portrait) {
+  #topbar {
+    min-height: calc(46px + env(safe-area-inset-top)); height: auto;
+    padding: calc(4px + env(safe-area-inset-top)) 6px 4px; gap: 4px; overflow: hidden;
+  }
+  #idolBrand, #idolPhase { display: none !important; }
+  #roundBox { flex: 0 0 auto; gap: 3px; padding: 3px 5px; border-radius: 10px; }
+  #roundBox .rn { font-size: 15px; }
+  #topbar .res { flex: 0 1 auto; min-width: 0; gap: 3px; padding: 3px 4px; border-radius: 9px; }
+  #topbar .res::before { width: 11px; height: 11px; }
+  #topbar .res .rv { font-size: 12px; }
+  #topbar .res .rl { display: none; }
+  #topbar .spacer { flex: 1 1 2px; min-width: 2px; }
+  .fight-btn-row { flex: 0 0 auto; flex-wrap: nowrap; gap: 4px; }
+  #topbar .btn.ic { flex: 0 0 30px; width: 30px; height: 30px; }
+  #topbar #bookBtn { flex: 0 0 30px; width: 30px; min-width: 30px; height: 30px; }
+
+  body.touch #main { min-height: 0; padding: 4px 4px 5px; gap: 5px; overflow-y: auto; overscroll-behavior: contain; }
+  body.touch #boardwrap { flex: 0 0 auto; width: 100%; max-width: 100%; gap: 5px; padding: 6px 5px 8px; border-radius: 17px; }
+  body.touch #boardwrap::before { inset: 2px; border-radius: 15px; }
+  body.touch #boardwrap::after { bottom: 1px; font-size: 7px; letter-spacing: 2px; }
+  body.touch #boardwrap > div:has(> #board) { width: 100%; min-height: 0; flex: 0 0 auto; }
+  body.touch #oppBar { width: 100%; max-width: 100%; padding: 5px 7px; border-radius: 10px; font-size: 10px; }
+  body.touch #oppBar #enemyInfo { font-size: 11px; line-height: 1.35; }
+  body.touch #bench { width: auto; align-self: stretch; gap: 3px; padding: 5px 4px 7px; }
+  body.touch #bench > span { font-size: 10px; }
+
+  body.touch #shopbar { row-gap: 5px; column-gap: 5px; padding: 5px 6px max(6px,env(safe-area-inset-bottom)); }
+  /* Their contents live in the mobile drawer; keep the empty desktop flex columns out of the dock. */
+  body.touch #shopbar > #shopctlCol, body.touch #shopbar > #auxCol { display: none; }
+  body.touch #mShopBtn, body.touch #mBondBtn, body.touch #mEquipBtn, body.touch #mSideBtn {
+    min-width: 0; min-height: 44px; padding: 7px 2px; border-radius: 10px; font-size: 11px; line-height: 1.1;
+  }
+  body.touch #fightBox { flex: 0 0 78px; }
+  body.touch #fightBtn { width: 100%; min-width: 76px; min-height: 46px; padding: 5px 3px; font-size: 13px; }
+  body.touch #playerBox { min-width: 0; padding: 4px; gap: 3px; border-radius: 12px; }
+  body.touch #lvlBox { padding: 3px 6px; gap: 5px; }
+  body.touch #pbtns { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 3px; }
+  body.touch #pbtns .btn { min-width: 0; min-height: 36px; padding: 5px 2px; font-size: 10px; line-height: 1.15; }
 }
 @media (prefers-reduced-motion: reduce) {
   #idolMenuArt img, #idolSkillCue, .idol-sigil { animation: none !important; }
