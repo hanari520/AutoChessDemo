@@ -30,7 +30,7 @@ python -m http.server 8081
 - 等级=人口（1 级起步，最高 10）；买经验 5 金 +5 经验，每回合自然 +2
 - 商店 5 卡槽独立按等级概率表抽取，共享卡池 50/40/30/20/10 张
 - 战斗：全棋子统一 100 蓝，攻击回蓝 = 伤害÷2.5（法师系上限 20、其余 10），受击回蓝 10%~20%；护甲边际递减、魔抗百分比乘算、5% 伤害保底
-- 46 名主播各有专属技能（破甲/减抗/变形/石化/纯粹伤害/斩杀/烧蓝/沉默等克制体系）
+- 50 枚棋子各有专属技能（破甲/减抗/变形/石化/纯粹伤害/斩杀/烧蓝/沉默等克制体系）
 
 ## 开发工具（tools/）
 
@@ -38,3 +38,8 @@ python -m http.server 8081
 - `bot_strategy.js`：普通玩家机器人策略（sim 与浏览器共用）
 - `accept25.py`：浏览器连打 25 局验收：`python tools/accept25.py`
 - `duoduo_doc.txt`：数值设计参考文档提取版
+
+## 2026-09-23 立绘与技能签名重制
+- 50 枚棋子统一为 hand-painted 二头身棋盘立绘，源文件在 ssets/units_redraw/，生产尺寸同步到 ssets/units_big/ 与 ssets/units/；清单见 ssets/redraw_manifest.json。
+- 每名棋子施法时使用独立图腾、形状、色彩与命中印记（ssets/skill_signature_manifest.json），由 signatureFx() 驱动。
+

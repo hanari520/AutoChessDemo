@@ -1,0 +1,412 @@
+{
+  "version": "signature-v2",
+  "description": "Per-unit signature glyph, shape, faction accent, AI-painted VFX family and stable burst timing used by castSkill",
+  "aiAssets": [
+    "assets/fx/skill-prism.png",
+    "assets/fx/skill-skate-trail.png",
+    "assets/fx/skill-lotus-heal.png",
+    "assets/fx/skill-ink-dragon.png"
+  ],
+  "units": [
+    {
+      "id": "ein",
+      "name": "艾因",
+      "skill": "魔导结界",
+      "glyph": "✿",
+      "shape": "seal",
+      "color": "#b06bff"
+    },
+    {
+      "id": "kouichi",
+      "name": "光一",
+      "skill": "滑板切入",
+      "glyph": "⌁",
+      "shape": "leaf",
+      "color": "#d9b26a"
+    },
+    {
+      "id": "yua",
+      "name": "悠亚",
+      "skill": "记忆篡改",
+      "glyph": "◈",
+      "shape": "gear",
+      "color": "#7fd4ff"
+    },
+    {
+      "id": "goutan",
+      "name": "勾檀",
+      "skill": "忠犬护主",
+      "glyph": "❖",
+      "shape": "gear",
+      "color": "#ff9a6b"
+    },
+    {
+      "id": "yujiu",
+      "name": "羽啾",
+      "skill": "天线锁定",
+      "glyph": "☄",
+      "shape": "ribbon",
+      "color": "#ff9a6b"
+    },
+    {
+      "id": "songlv",
+      "name": "小松绿",
+      "skill": "盘根重锤",
+      "glyph": "♣",
+      "shape": "star",
+      "color": "#6bffab"
+    },
+    {
+      "id": "likou",
+      "name": "莉蔻",
+      "skill": "救急手册",
+      "glyph": "✚",
+      "shape": "seal",
+      "color": "#8dff9a"
+    },
+    {
+      "id": "agari",
+      "name": "东爱璃",
+      "skill": "四十八人应援",
+      "glyph": "✦",
+      "shape": "orbit",
+      "color": "#ff5f5f"
+    },
+    {
+      "id": "hoshimi",
+      "name": "希侑",
+      "skill": "猫爪突袭",
+      "glyph": "☾",
+      "shape": "orbit",
+      "color": "#6b5bd6"
+    },
+    {
+      "id": "chiharu",
+      "name": "初濑",
+      "skill": "夜岚斩",
+      "glyph": "〰",
+      "shape": "orbit",
+      "color": "#6bffab"
+    },
+    {
+      "id": "suiji",
+      "name": "岁己",
+      "skill": "十小时续航",
+      "glyph": "❀",
+      "shape": "petal",
+      "color": "#6bffab"
+    },
+    {
+      "id": "kanban",
+      "name": "栞栞",
+      "skill": "海獭硬壳",
+      "glyph": "⌂",
+      "shape": "seal",
+      "color": "#ff9a6b"
+    },
+    {
+      "id": "zhouyi",
+      "name": "轴伊",
+      "skill": "破盾之刃",
+      "glyph": "◉",
+      "shape": "petal",
+      "color": "#6b5bd6"
+    },
+    {
+      "id": "yuji",
+      "name": "雨纪",
+      "skill": "雨幕庇护",
+      "glyph": "◇",
+      "shape": "petal",
+      "color": "#4aa8ff"
+    },
+    {
+      "id": "tiandou",
+      "name": "恬豆",
+      "skill": "点心投喂",
+      "glyph": "☂",
+      "shape": "ribbon",
+      "color": "#ff6b81"
+    },
+    {
+      "id": "aza",
+      "name": "AZA",
+      "skill": "节拍堡垒",
+      "glyph": "♪",
+      "shape": "gear",
+      "color": "#ffd24a"
+    },
+    {
+      "id": "pako",
+      "name": "帕可",
+      "skill": "善意收集",
+      "glyph": "✧",
+      "shape": "leaf",
+      "color": "#4aa8ff"
+    },
+    {
+      "id": "zhijin",
+      "name": "枝堇",
+      "skill": "紫藤突刺",
+      "glyph": "⚙",
+      "shape": "leaf",
+      "color": "#ff8ad8"
+    },
+    {
+      "id": "sishi",
+      "name": "四时小路",
+      "skill": "四季轮舞",
+      "glyph": "☁",
+      "shape": "petal",
+      "color": "#ffd24a"
+    },
+    {
+      "id": "sumi",
+      "name": "礼墨",
+      "skill": "墨龙结界",
+      "glyph": "✜",
+      "shape": "orbit",
+      "color": "#ff5f5f"
+    },
+    {
+      "id": "yukie",
+      "name": "桃濑雪绘",
+      "skill": "上勾拳连段",
+      "glyph": "♢",
+      "shape": "gear",
+      "color": "#d9b26a"
+    },
+    {
+      "id": "miting",
+      "name": "米汀",
+      "skill": "侦探的看破",
+      "glyph": "❋",
+      "shape": "gear",
+      "color": "#b06bff"
+    },
+    {
+      "id": "xuezhu",
+      "name": "雪烛",
+      "skill": "奇门冰封",
+      "glyph": "✤",
+      "shape": "leaf",
+      "color": "#6b5bd6"
+    },
+    {
+      "id": "zeyin",
+      "name": "泽音",
+      "skill": "泽畔歌声",
+      "glyph": "◌",
+      "shape": "seal",
+      "color": "#4aa8ff"
+    },
+    {
+      "id": "sanli",
+      "name": "三理",
+      "skill": "梦境三重奏",
+      "glyph": "✺",
+      "shape": "leaf",
+      "color": "#ffd24a"
+    },
+    {
+      "id": "diansu",
+      "name": "点酥",
+      "skill": "邪修石符",
+      "glyph": "♧",
+      "shape": "leaf",
+      "color": "#b06bff"
+    },
+    {
+      "id": "lianshiye",
+      "name": "恋诗夜",
+      "skill": "失忆挽歌",
+      "glyph": "♠",
+      "shape": "petal",
+      "color": "#6b5bd6"
+    },
+    {
+      "id": "huize",
+      "name": "灰泽满",
+      "skill": "果冻封印",
+      "glyph": "✷",
+      "shape": "seal",
+      "color": "#8dff9a"
+    },
+    {
+      "id": "shengge",
+      "name": "笙歌",
+      "skill": "笙歌净化",
+      "glyph": "✹",
+      "shape": "wave",
+      "color": "#ff5f5f"
+    },
+    {
+      "id": "shadow",
+      "name": "李豆沙",
+      "skill": "熊猫跃袭",
+      "glyph": "⚡",
+      "shape": "leaf",
+      "color": "#ff5f5f"
+    },
+    {
+      "id": "nox",
+      "name": "诺莺",
+      "skill": "夜莺回响",
+      "glyph": "✣",
+      "shape": "leaf",
+      "color": "#ff9a6b"
+    },
+    {
+      "id": "miyue",
+      "name": "弥月",
+      "skill": "月影斩",
+      "glyph": "◍",
+      "shape": "star",
+      "color": "#6b5bd6"
+    },
+    {
+      "id": "huali",
+      "name": "花礼",
+      "skill": "小花的祝福",
+      "glyph": "❂",
+      "shape": "orbit",
+      "color": "#ff8ad8"
+    },
+    {
+      "id": "youyu",
+      "name": "柚雨",
+      "skill": "幽魂斩",
+      "glyph": "✥",
+      "shape": "star",
+      "color": "#4aa8ff"
+    },
+    {
+      "id": "quanrong",
+      "name": "犬绒",
+      "skill": "小狗硬壳",
+      "glyph": "✪",
+      "shape": "orbit",
+      "color": "#ff9a6b"
+    },
+    {
+      "id": "ruiya",
+      "name": "瑞娅",
+      "skill": "时空禁锢",
+      "glyph": "✽",
+      "shape": "orbit",
+      "color": "#7fd4ff"
+    },
+    {
+      "id": "mumu",
+      "name": "沐霂",
+      "skill": "东风润物",
+      "glyph": "✶",
+      "shape": "star",
+      "color": "#ff6b81"
+    },
+    {
+      "id": "kroya",
+      "name": "克罗雅",
+      "skill": "混沌裂界",
+      "glyph": "❁",
+      "shape": "leaf",
+      "color": "#8dff9a"
+    },
+    {
+      "id": "shiliu",
+      "name": "十六萤",
+      "skill": "浣熊洗劫",
+      "glyph": "⬡",
+      "shape": "seal",
+      "color": "#6bffab"
+    },
+    {
+      "id": "seki",
+      "name": "星汐",
+      "skill": "星蚀低语",
+      "glyph": "☼",
+      "shape": "gear",
+      "color": "#ff5f5f"
+    },
+    {
+      "id": "haruka",
+      "name": "白神遥",
+      "skill": "白刃拍击",
+      "glyph": "❉",
+      "shape": "seal",
+      "color": "#ff5f5f"
+    },
+    {
+      "id": "mahiru",
+      "name": "真绯瑠",
+      "skill": "绯红旋风",
+      "glyph": "☯",
+      "shape": "orbit",
+      "color": "#ff9a6b"
+    },
+    {
+      "id": "nana7mi",
+      "name": "七海",
+      "skill": "鲨皇旋流",
+      "glyph": "✵",
+      "shape": "gear",
+      "color": "#4aa8ff"
+    },
+    {
+      "id": "liAn",
+      "name": "梨安",
+      "skill": "晨露凝霜",
+      "glyph": "✸",
+      "shape": "leaf",
+      "color": "#ff6b81"
+    },
+    {
+      "id": "youyi",
+      "name": "又一",
+      "skill": "一心同体",
+      "glyph": "✼",
+      "shape": "wave",
+      "color": "#ff6b81"
+    },
+    {
+      "id": "azi",
+      "name": "阿梓",
+      "skill": "高音震魂",
+      "glyph": "✧",
+      "shape": "leaf",
+      "color": "#d9b26a"
+    },
+    {
+      "id": "taodai",
+      "name": "桃代",
+      "skill": "桃香结界",
+      "glyph": "❦",
+      "shape": "petal",
+      "color": "#ff8ad8"
+    },
+    {
+      "id": "miki",
+      "name": "弥希",
+      "skill": "星海庇护",
+      "glyph": "⟡",
+      "shape": "orbit",
+      "color": "#7fd4ff"
+    },
+    {
+      "id": "rei",
+      "name": "病院坂灵",
+      "skill": "灵界之门",
+      "glyph": "✴",
+      "shape": "ribbon",
+      "color": "#ff5f5f"
+    },
+    {
+      "id": "rinco",
+      "name": "秋凛子",
+      "skill": "神社拉闸",
+      "glyph": "♢",
+      "shape": "star",
+      "color": "#ff5f5f"
+    }
+  ]
+}

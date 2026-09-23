@@ -672,6 +672,48 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .vfx.charge { border:2px solid #fff; border-radius:50%; box-shadow:0 0 12px rgba(255,255,255,.4), inset 0 0 8px rgba(255,255,255,.27); opacity:0;
   animation:chargeIn calc(.26s/var(--spd)) ease-in forwards; }
 @keyframes chargeIn { 0%{transform:scale(1.8);opacity:0} 55%{opacity:.95} 100%{transform:scale(.5);opacity:0} }
+.vfx.signature { width:82%; height:82%; border:2px solid var(--sig-color,#fff); border-radius:46% 54% 52% 48%;
+  background:radial-gradient(circle, var(--sig-color,#fff) 0%, transparent 70%);
+  background:radial-gradient(circle, color-mix(in srgb,var(--sig-color,#fff) 58%,transparent) 0%, color-mix(in srgb,var(--sig-color,#fff) 18%,transparent) 45%, transparent 72%);
+  box-shadow:0 0 10px var(--sig-color,#fff);
+  box-shadow:0 0 10px color-mix(in srgb,var(--sig-color,#fff) 82%,transparent), inset 0 0 8px color-mix(in srgb,var(--sig-color,#fff) 35%,transparent);
+  animation:sigBurst calc(.82s/var(--spd)) cubic-bezier(.2,.8,.25,1) forwards; z-index:3; }
+.vfx.signature::after { content:attr(data-glyph); color:var(--sig-color,#fff); font-size:calc(var(--cell)*.3); line-height:1; font-weight:900;
+  text-shadow:0 0 7px #fff,0 0 14px var(--sig-color,#fff); transform:rotate(-8deg); }
+.vfx.signature[data-shape="petal"] { border-radius:50% 35% 62% 38%; clip-path:polygon(50% 0,64% 34%,100% 20%,72% 52%,93% 88%,52% 68%,17% 100%,29% 60%,0 38%,38% 35%); }
+.vfx.signature[data-shape="orbit"] { border-style:dashed; border-radius:50%; transform:rotate(-18deg); }
+.vfx.signature[data-shape="seal"] { border-radius:18%; clip-path:polygon(50% 0,100% 25%,86% 86%,50% 100%,14% 86%,0 25%); }
+.vfx.signature[data-shape="wave"] { border-radius:50% 50% 18% 18%; clip-path:polygon(0 58%,18% 36%,36% 56%,54% 30%,72% 51%,100% 22%,100% 100%,0 100%); }
+.vfx.signature[data-shape="star"] { clip-path:polygon(50% 0,61% 34%,98% 35%,69% 56%,80% 94%,50% 70%,20% 94%,31% 56%,2% 35%,39% 34%); }
+.vfx.signature[data-shape="leaf"] { border-radius:10% 90% 10% 90%; transform:rotate(-28deg); }
+.vfx.signature[data-shape="ribbon"] { border-radius:50%; border-width:3px; border-left-color:transparent; border-right-color:transparent; }
+.vfx.signature[data-shape="gear"] { clip-path:polygon(50% 0,60% 16%,79% 8%,80% 27%,100% 36%,84% 50%,100% 64%,80% 73%,79% 92%,60% 84%,50% 100%,40% 84%,21% 92%,20% 73%,0 64%,16% 50%,0 36%,20% 27%,21% 8%,40% 16%); }
+.vfx.signature-hit { width:calc(var(--cell)*.86); height:calc(var(--cell)*.86); position:absolute; transform:translate(-50%,-50%); animation:sigHit calc(.54s/var(--spd)) ease-out forwards; }
+@keyframes sigBurst { 0%{transform:scale(.22) rotate(-18deg);opacity:0} 24%{opacity:1} 100%{transform:scale(1.35) rotate(24deg);opacity:0} }
+@keyframes sigHit { 0%{transform:translate(-50%,-50%) scale(.2);opacity:0} 32%{opacity:1} 100%{transform:translate(-50%,-50%) scale(1.45) rotate(35deg);opacity:0} }
+.vfx.signature { --sig-rot:0deg; --sig-scale:1; --sig-dur:.82s; transform-origin:center; animation:sigBurstV2 calc(var(--sig-dur)/var(--spd)) cubic-bezier(.18,.82,.2,1) forwards; }
+.vfx.signature::before { content:""; position:absolute; inset:-9%; border:1px solid color-mix(in srgb,var(--sig-color,#fff) 70%,transparent);
+  border-radius:50%; opacity:.76; transform:rotate(var(--sig-rot)); animation:sigOrbitV2 calc(var(--sig-dur)/var(--spd)) linear forwards; }
+.vfx.signature[data-art="prism"], .vfx.signature[data-art="skate"], .vfx.signature[data-art="lotus"], .vfx.signature[data-art="ink"] {
+  width:118%; height:118%; border:0; border-radius:0; clip-path:none !important; background-size:contain; background-position:center; background-repeat:no-repeat;
+  background-color:transparent; box-shadow:none; filter:drop-shadow(0 0 8px color-mix(in srgb,var(--sig-color,#fff) 74%,transparent));
+}
+.vfx.signature[data-art="prism"] { background-image:url(assets/fx/skill-prism.png); }
+.vfx.signature[data-art="skate"] { background-image:url(assets/fx/skill-skate-trail.png); }
+.vfx.signature[data-art="lotus"] { background-image:url(assets/fx/skill-lotus-heal.png); }
+.vfx.signature[data-art="ink"] { background-image:url(assets/fx/skill-ink-dragon.png); }
+.vfx.signature[data-art="prism"]::after, .vfx.signature[data-art="skate"]::after, .vfx.signature[data-art="lotus"]::after, .vfx.signature[data-art="ink"]::after { font-size:calc(var(--cell)*.18); opacity:.82; }
+.vfx.signature[data-art="skate"]::before { border-style:dashed; transform:rotate(-22deg) scaleX(1.25); }
+.vfx.signature[data-art="lotus"]::before { border-radius:48% 52% 40% 60%; transform:rotate(18deg) scale(.92); }
+.vfx.signature[data-art="ink"]::before { border-style:dotted; transform:rotate(-12deg) scale(1.1); }
+.vfx.signature[data-art="prism"]::before { border-width:2px; transform:rotate(45deg) scale(.9); }
+.vfx.signature-hit[data-art="prism"], .vfx.signature-hit[data-art="skate"], .vfx.signature-hit[data-art="lotus"], .vfx.signature-hit[data-art="ink"] {
+  width:calc(var(--cell)*1.25); height:calc(var(--cell)*1.25); border:0; clip-path:none !important; background-size:contain; background-position:center; background-repeat:no-repeat;
+  box-shadow:none; filter:drop-shadow(0 0 7px color-mix(in srgb,var(--sig-color,#fff) 80%,transparent)); animation:sigHitV2 calc(var(--sig-hit-dur,.58s)/var(--spd)) ease-out forwards;
+}
+@keyframes sigBurstV2 { 0%{transform:scale(calc(.22 * var(--sig-scale))) rotate(calc(var(--sig-rot) - 18deg));opacity:0} 22%{opacity:1} 100%{transform:scale(calc(1.3 * var(--sig-scale))) rotate(calc(var(--sig-rot) + 24deg));opacity:0} }
+@keyframes sigOrbitV2 { from{opacity:.05;transform:rotate(var(--sig-rot)) scale(.62)} 35%{opacity:.95} to{opacity:0;transform:rotate(calc(var(--sig-rot) + 220deg)) scale(1.32)} }
+@keyframes sigHitV2 { 0%{transform:translate(-50%,-50%) scale(.18) rotate(var(--sig-rot));opacity:0} 26%{opacity:1} 100%{transform:translate(-50%,-50%) scale(1.42) rotate(calc(var(--sig-rot) + 38deg));opacity:0} }
 .vfx.s3 { zoom:1.25; filter:drop-shadow(0 0 5px rgba(224,169,78,.73)); }
 .vfx.crit { border-radius:50%; background:radial-gradient(circle,rgba(166,120,216,.67) 15%,rgba(122,63,212,.33) 50%,transparent 72%);
   animation:boom calc(.5s/var(--spd)) ease-out forwards; }
@@ -4162,6 +4204,37 @@ function unitVisual(u){
 const FAC_TINT={'深海':'#4aa8ff','星际':'#7fd4ff','毛茸乐园':'#ff9a6b','音律':'#ffd24a','四禧丸子':'#ff6b81',
   '学园':'#8dff9a','夜幕':'#6b5bd6','花语':'#ff8ad8','魔道':'#b06bff','森之国':'#6bffab','工造':'#d9b26a','P-SP':'#ff5f5f'};
 function facTint(u){ const d=byId(u.id); return FAC_TINT[d.fac]||'#c77dff'; }
+/* 每枚棋子的签名演出：按棋子 ID 固定选取图腾、形状和阵营色。
+   这层只读战斗坐标，不改数值，让同一职业也拥有不同的施法轮廓。 */
+const SIG_GLYPHS=['✿','⌁','◈','❖','☄','♣','✚','✦','☾','〰','❀','⌂','◉','◇','☂','♪','✧','⚙','☁','✜','♢','❋','✤','◌','✺','♧','♠','✷','✹','⚡','✣','◍','❂','✥','✪','✽','✶','❁','⬡','☼','❉','☯','✵','✸','✼','✧','❦','⟡','✴','♢'];
+const SIG_SHAPES=['petal','orbit','seal','wave','star','leaf','ribbon','gear'];
+/* signature-v2：技能机制不再只共享原型纹理；每枚棋子有独立的美术载体、旋转、节奏和命中爆发。
+   四张 AI 重绘透明纹理作为高辨识度母题，其余差异由每个 ID 的图腾、形状、阵营色和稳定参数叠加完成。 */
+const SIG_ART={
+  ein:'ink', kouichi:'skate', yua:'prism', goutan:'ink', yujiu:'prism', songlv:'ink', likou:'lotus', agari:'lotus', hoshimi:'skate', chiharu:'skate',
+  suiji:'lotus', kanban:'ink', zhouyi:'prism', yuji:'lotus', tiandou:'lotus', aza:'prism', pako:'lotus', zhijin:'skate', sishi:'prism', sumi:'ink',
+  yukie:'skate', miting:'prism', xuezhu:'prism', zeyin:'lotus', sanli:'prism', diansu:'ink', lianshiye:'prism', huize:'prism', shengge:'lotus', shadow:'skate', nox:'skate',
+  miyue:'skate', huali:'lotus', youyu:'ink', quanrong:'ink', ruiya:'prism', mumu:'lotus', kroya:'prism', shiliu:'skate', seki:'prism', haruka:'skate', mahiru:'skate',
+  nana7mi:'ink', liAn:'prism', youyi:'ink', azi:'prism', taodai:'ink', miki:'lotus', rei:'prism', rinco:'ink'
+};
+function sigFor(u){
+  const id=String(u&&u.id||''); let h=0;
+  for(const c of id) h=(h*31+c.charCodeAt(0))>>>0;
+  const i=UNITS.findIndex(v=>v.id===id); const n=i<0?(h%SIG_GLYPHS.length):i;
+  return {glyph:SIG_GLYPHS[n%SIG_GLYPHS.length], shape:SIG_SHAPES[(n+h)%SIG_SHAPES.length], color:facTint(u), art:SIG_ART[id]||'prism',
+    rot:((h%37)-18), scale:(.88+(h%17)/100).toFixed(2), dur:(.66+(h%5)*.07).toFixed(2), hitDur:(.48+(h%4)*.07).toFixed(2)};
+}
+function signatureFx(u,tgt){
+  const s=sigFor(u), el=vfxAt(u,'signature',850);
+  if(el){ el.dataset.glyph=s.glyph; el.dataset.shape=s.shape; el.dataset.art=s.art; el.dataset.unit=u.id;
+    el.style.setProperty('--sig-color',s.color); el.style.setProperty('--sig-rot',s.rot+'deg'); el.style.setProperty('--sig-scale',s.scale); el.style.setProperty('--sig-dur',s.dur+'s'); }
+  if(tgt && tgt.hp>0){ const p=unitVisual(tgt), hit=fxNode('signature',p.x,p.y,560);
+    if(hit){ hit.classList.add('signature-hit'); hit.dataset.glyph=s.glyph; hit.dataset.shape=s.shape; hit.dataset.art=s.art; hit.dataset.unit=u.id;
+      hit.style.setProperty('--sig-color',s.color); hit.style.setProperty('--sig-rot',s.rot+'deg'); hit.style.setProperty('--sig-scale',s.scale); hit.style.setProperty('--sig-hit-dur',s.hitDur+'s'); }
+  }
+  const pulseSeed=Math.abs(Number(s.rot)||0);
+  fxSparks(u,s.color,3+(pulseSeed%2),20+(pulseSeed%14));
+}
 function vfxAt(u,cls,dur=900){
   // 特效直接挂到棋子元素上，跟随其移动（同样受 _vfxN≤40 预算约束）
   if(_vfxN>=40) return;
@@ -4172,6 +4245,7 @@ function vfxAt(u,cls,dur=900){
   _vfxN++;
   host.appendChild(v);
   setTimeout(()=>{ v.remove(); _vfxN--; },dur/SPEED);
+  return v;
 }
 /* AoE 范围圈：画在棋子图层，以施法者方块中心为圆心覆盖 (2R+1) 格的方形区域（视觉上标出技能范围） */
 function vfxAoe(u,R,colorCls='',dur=700){
@@ -4510,6 +4584,7 @@ function castSkill(u,tgt,units,skMul){
   const dist = v=>unitDist(v,u);
   dmgPopup(u,u,'✦'+nm,'cast');
   vfxAt(u,'charge',260);   // 施法蓄力预兆：起手 0.26s 收束环（纯视觉，预算内复用 vfxAt 通道）
+  signatureFx(u,tgt);      // 每枚棋子独有的图腾/轮廓/命中印记
   sfx(SFX_SKILL[arch]||'spellDark');   // 技能分组音色（斩击/法术/治疗/护盾/控制）
   log(`✨ ${u.side===0?'我方':'敌方'}${d.name} 释放【${nm}】！`);
   shakeCell(u.x,u.y);

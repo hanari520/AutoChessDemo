@@ -1,0 +1,457 @@
+{
+  "version": "redraw-v1",
+  "style": "hand-painted chibi game miniature",
+  "count": 50,
+  "units": [
+    {
+      "id": "agari",
+      "source": "assets/units_redraw/agari.png",
+      "production": [
+        "assets/units_big/agari.png",
+        "assets/units/agari.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "aza",
+      "source": "assets/units_redraw/aza.png",
+      "production": [
+        "assets/units_big/aza.png",
+        "assets/units/aza.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "azi",
+      "source": "assets/units_redraw/azi.png",
+      "production": [
+        "assets/units_big/azi.png",
+        "assets/units/azi.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "chiharu",
+      "source": "assets/units_redraw/chiharu.png",
+      "production": [
+        "assets/units_big/chiharu.png",
+        "assets/units/chiharu.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "diansu",
+      "source": "assets/units_redraw/diansu.png",
+      "production": [
+        "assets/units_big/diansu.png",
+        "assets/units/diansu.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "ein",
+      "source": "assets/units_redraw/ein.png",
+      "production": [
+        "assets/units_big/ein.png",
+        "assets/units/ein.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "goutan",
+      "source": "assets/units_redraw/goutan.png",
+      "production": [
+        "assets/units_big/goutan.png",
+        "assets/units/goutan.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "haruka",
+      "source": "assets/units_redraw/haruka.png",
+      "production": [
+        "assets/units_big/haruka.png",
+        "assets/units/haruka.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "hoshimi",
+      "source": "assets/units_redraw/hoshimi.png",
+      "production": [
+        "assets/units_big/hoshimi.png",
+        "assets/units/hoshimi.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "huali",
+      "source": "assets/units_redraw/huali.png",
+      "production": [
+        "assets/units_big/huali.png",
+        "assets/units/huali.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "huize",
+      "source": "assets/units_redraw/huize.png",
+      "production": [
+        "assets/units_big/huize.png",
+        "assets/units/huize.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "kanban",
+      "source": "assets/units_redraw/kanban.png",
+      "production": [
+        "assets/units_big/kanban.png",
+        "assets/units/kanban.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "kouichi",
+      "source": "assets/units_redraw/kouichi.png",
+      "production": [
+        "assets/units_big/kouichi.png",
+        "assets/units/kouichi.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "kroya",
+      "source": "assets/units_redraw/kroya.png",
+      "production": [
+        "assets/units_big/kroya.png",
+        "assets/units/kroya.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "liAn",
+      "source": "assets/units_redraw/liAn.png",
+      "production": [
+        "assets/units_big/liAn.png",
+        "assets/units/liAn.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "lianshiye",
+      "source": "assets/units_redraw/lianshiye.png",
+      "production": [
+        "assets/units_big/lianshiye.png",
+        "assets/units/lianshiye.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "likou",
+      "source": "assets/units_redraw/likou.png",
+      "production": [
+        "assets/units_big/likou.png",
+        "assets/units/likou.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "mahiru",
+      "source": "assets/units_redraw/mahiru.png",
+      "production": [
+        "assets/units_big/mahiru.png",
+        "assets/units/mahiru.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "miki",
+      "source": "assets/units_redraw/miki.png",
+      "production": [
+        "assets/units_big/miki.png",
+        "assets/units/miki.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "miting",
+      "source": "assets/units_redraw/miting.png",
+      "production": [
+        "assets/units_big/miting.png",
+        "assets/units/miting.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "miyue",
+      "source": "assets/units_redraw/miyue.png",
+      "production": [
+        "assets/units_big/miyue.png",
+        "assets/units/miyue.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "mumu",
+      "source": "assets/units_redraw/mumu.png",
+      "production": [
+        "assets/units_big/mumu.png",
+        "assets/units/mumu.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "nana7mi",
+      "source": "assets/units_redraw/nana7mi.png",
+      "production": [
+        "assets/units_big/nana7mi.png",
+        "assets/units/nana7mi.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "nox",
+      "source": "assets/units_redraw/nox.png",
+      "production": [
+        "assets/units_big/nox.png",
+        "assets/units/nox.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "pako",
+      "source": "assets/units_redraw/pako.png",
+      "production": [
+        "assets/units_big/pako.png",
+        "assets/units/pako.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "quanrong",
+      "source": "assets/units_redraw/quanrong.png",
+      "production": [
+        "assets/units_big/quanrong.png",
+        "assets/units/quanrong.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "rei",
+      "source": "assets/units_redraw/rei.png",
+      "production": [
+        "assets/units_big/rei.png",
+        "assets/units/rei.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "rinco",
+      "source": "assets/units_redraw/rinco.png",
+      "production": [
+        "assets/units_big/rinco.png",
+        "assets/units/rinco.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "ruiya",
+      "source": "assets/units_redraw/ruiya.png",
+      "production": [
+        "assets/units_big/ruiya.png",
+        "assets/units/ruiya.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "sanli",
+      "source": "assets/units_redraw/sanli.png",
+      "production": [
+        "assets/units_big/sanli.png",
+        "assets/units/sanli.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "seki",
+      "source": "assets/units_redraw/seki.png",
+      "production": [
+        "assets/units_big/seki.png",
+        "assets/units/seki.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "shadow",
+      "source": "assets/units_redraw/shadow.png",
+      "production": [
+        "assets/units_big/shadow.png",
+        "assets/units/shadow.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "shengge",
+      "source": "assets/units_redraw/shengge.png",
+      "production": [
+        "assets/units_big/shengge.png",
+        "assets/units/shengge.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "shiliu",
+      "source": "assets/units_redraw/shiliu.png",
+      "production": [
+        "assets/units_big/shiliu.png",
+        "assets/units/shiliu.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "sishi",
+      "source": "assets/units_redraw/sishi.png",
+      "production": [
+        "assets/units_big/sishi.png",
+        "assets/units/sishi.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "songlv",
+      "source": "assets/units_redraw/songlv.png",
+      "production": [
+        "assets/units_big/songlv.png",
+        "assets/units/songlv.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "suiji",
+      "source": "assets/units_redraw/suiji.png",
+      "production": [
+        "assets/units_big/suiji.png",
+        "assets/units/suiji.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "sumi",
+      "source": "assets/units_redraw/sumi.png",
+      "production": [
+        "assets/units_big/sumi.png",
+        "assets/units/sumi.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "taodai",
+      "source": "assets/units_redraw/taodai.png",
+      "production": [
+        "assets/units_big/taodai.png",
+        "assets/units/taodai.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "tiandou",
+      "source": "assets/units_redraw/tiandou.png",
+      "production": [
+        "assets/units_big/tiandou.png",
+        "assets/units/tiandou.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "xuezhu",
+      "source": "assets/units_redraw/xuezhu.png",
+      "production": [
+        "assets/units_big/xuezhu.png",
+        "assets/units/xuezhu.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "youyi",
+      "source": "assets/units_redraw/youyi.png",
+      "production": [
+        "assets/units_big/youyi.png",
+        "assets/units/youyi.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "youyu",
+      "source": "assets/units_redraw/youyu.png",
+      "production": [
+        "assets/units_big/youyu.png",
+        "assets/units/youyu.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "yua",
+      "source": "assets/units_redraw/yua.png",
+      "production": [
+        "assets/units_big/yua.png",
+        "assets/units/yua.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "yuji",
+      "source": "assets/units_redraw/yuji.png",
+      "production": [
+        "assets/units_big/yuji.png",
+        "assets/units/yuji.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "yujiu",
+      "source": "assets/units_redraw/yujiu.png",
+      "production": [
+        "assets/units_big/yujiu.png",
+        "assets/units/yujiu.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "yukie",
+      "source": "assets/units_redraw/yukie.png",
+      "production": [
+        "assets/units_big/yukie.png",
+        "assets/units/yukie.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "zeyin",
+      "source": "assets/units_redraw/zeyin.png",
+      "production": [
+        "assets/units_big/zeyin.png",
+        "assets/units/zeyin.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "zhijin",
+      "source": "assets/units_redraw/zhijin.png",
+      "production": [
+        "assets/units_big/zhijin.png",
+        "assets/units/zhijin.png"
+      ],
+      "status": "redrawn-v1"
+    },
+    {
+      "id": "zhouyi",
+      "source": "assets/units_redraw/zhouyi.png",
+      "production": [
+        "assets/units_big/zhouyi.png",
+        "assets/units/zhouyi.png"
+      ],
+      "status": "redrawn-v1"
+    }
+  ]
+}

@@ -4,3 +4,4 @@ __pycache__/
 *.log
 tools/_*.png
 tools/_*.py.bak
+assets/units_redraw/

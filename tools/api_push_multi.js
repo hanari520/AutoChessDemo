@@ -14,8 +14,8 @@ function cred() {
   return (out.match(/password=(\S+)/) || [])[1];
 }
 
-function api(method, apiPath, body, token) {
-  return new Promise((resolve, reject) => {
+function api(method, apiPath, body, token, retries = 2) {
+  const once = () => new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
     const req = https.request({
       hostname: 'api.github.com', path: `/repos/${REPO}${apiPath}`, method,
@@ -31,10 +31,15 @@ function api(method, apiPath, body, token) {
       });
     });
     req.on('error', reject);
-    req.setTimeout(60000, () => req.destroy(new Error('timeout')));
+    req.setTimeout(300000, () => req.destroy(new Error('timeout')));
     if (data) req.write(data);
     req.end();
   });
+  const attempt = (left) => once().catch(e => {
+    if ((e.message === 'timeout' || /ECONNRESET|socket hang up/.test(e.message)) && left > 0) return attempt(left - 1);
+    throw e;
+  });
+  return attempt(retries);
 }
 
 (async () => {
