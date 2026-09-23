@@ -1,7 +1,5 @@
-/* 无头模拟器：加载 index.html 的游戏脚本，用 DOM 桩跑真实战斗逻辑，
-   由"普通玩家"机器人代打，统计各章守关通过率（r25/50/75/100 魔王战胜负；守关失败不终局，
-   对局按普通回合扣血死亡结束）。用法：node tools/sim.js [局数]；MAXR=100 环境变量可在
-   打完 r100 章节结算后截断（只测前四章时省算力，章节统计不受影响） */
+/* 无头模拟器：加载 index.html 的游戏脚本，用 DOM 桩跑真实战斗逻辑。
+   普通模式四章各在 r25/50/75/100 守关，败亡即终局；MAXR 可提前截断采样。 */
 const fs = require('fs'), path = require('path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
@@ -24,7 +22,7 @@ function makeEl() {
     classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } },
     appendChild(c) { if(this.children.length>200) this.children.shift(); this.children.push(c); return c; },
     removeChild(){}, remove(){},
-    querySelector() { return null; },
+    querySelector() { return makeEl(); },
     querySelectorAll() { return []; },
     addEventListener(){}, setAttribute(){},
     getBoundingClientRect() { return { left: 0, top: 0, width: 58, height: 58 }; },
@@ -68,6 +66,44 @@ if (process.env.SEED) {
 
 (0, eval)(code);
 const A = globalThis.API;
+if (process.env.CAMPAIGN_TEST) {
+  const assert = require('node:assert/strict');
+  const reset = r => { globalThis.newGame(); A.S.round=r; A.S.phase='battle'; };
+  reset(25);
+  assert.equal(globalThis.runLimit(), 100);
+  globalThis.endBattle(1, 0);
+  assert.equal(A.S.phase, 'chapter');
+  assert.equal(A.S.tickets, 0);
+  globalThis.pickAug(0); globalThis.chapterContinue();
+  assert.equal(A.S.round, 26);
+  reset(25); globalThis.endBattle(0, 1);
+  assert.equal(A.S.phase, 'over');
+  assert.equal(A.S.finished, false);
+  reset(50); globalThis.endBattle(1, 0);
+  assert.equal(A.S.tickets, 1);
+  reset(100); globalThis.endBattle(1, 0);
+  assert.equal(A.S.phase, 'over');
+  assert.equal(A.S.finished, true);
+  assert.equal(A.S.round, 100);
+  reset(100); globalThis.endBattle(0, 1);
+  assert.equal(A.S.finished, false);
+  reset(82); globalThis.prepEnemy();
+  assert.equal(A.S.enemyBoard.filter(u=>u&&u.star===2).length, 1);
+  reset(72); globalThis.prepEnemy();
+  assert.equal(A.S.enemyBoard.filter(u=>u&&u.star===2).length, 0);
+  globalThis.newGame(); A.S.round=10; A.S.phase='prep'; globalThis.prepEnemy();
+  const before=A.S.enemyBoard.filter(Boolean)[0].maxhp;
+  globalThis.chooseChallenge();
+  assert.equal(A.S.challengeRound, 10);
+  assert.ok(A.S.enemyBoard.filter(Boolean)[0].maxhp>before);
+  A.S.phase='battle'; globalThis.endBattle(1, 0);
+  assert.equal(A.S.items.length, 4);
+  globalThis.newGame(); A.S.round=10; A.S.phase='prep'; globalThis.prepEnemy(); globalThis.chooseChallenge();
+  A.S.phase='battle'; globalThis.endBattle(0, 1);
+  assert.equal(A.S.hp, 37);
+  console.log('✅ 四章边界、守关胜负、升星券、100 回合终局通过');
+  process.exit(0);
+}
 
 /* ---------- 普通玩家机器人：直接加载页内版 bot_strategy.js（单一事实来源）。
    仅做符号改写：经 globalThis.API 访问游戏作用域（indirect eval 顶层 let 不可直接引用） ---------- */
@@ -140,28 +176,24 @@ for (let g = 0; g < N; g++) {
   let chapters = 0, ch1 = false;
   for (let guard = 0; guard < 400; guard++) {
     const preWins = A.S.stats.wins, curRound = A.S.round, hpBefore = A.S.hp, preStreak = A.S.streak;
-    if (A.S.phase === 'chapter') {   // 章节结算：记录守关胜负 → 选增强 → 继续下一章（败亡即终局）
-      const won = !!A.S.settleWon;
-      const ci = Math.min(3, chapters);
-      chReached[ci]++; if (won) chWins[ci]++;
-      if (won && chapters === 0) ch1Wins++;
-      chapters++;
+    if (A.S.phase === 'chapter') {
       if (typeof globalThis.pickAug === 'function' && A.S.settleOffer && A.S.settlePick == null) {
         // ③ 增强选择走 bot_strategy.js 的 botAugPick（与浏览器 autoSettle 同一份策略）；缺省兜底选第 0 张
         const ai = (typeof globalThis.botAugPick === 'function') ? globalThis.botAugPick(A.S.settleOffer) : 0;
         globalThis.pickAug(ai >= 0 ? ai : 0);
       }
       globalThis.chapterContinue();
-      if (MAXR > 0 && A.S.round > MAXR) {
-        outcome = { win: chapters > 0, chapters, round: A.S.round, hp: A.S.hp, streak: A.S.stats.maxStreak, kills: A.S.stats.kills, truncated: true };
-        break;
-      }
       continue;
     }
     botPrep();
     (0, eval)('startBattle')();
     driveBattle();
     const S = A.S;
+    if (curRound % 25 === 0) {
+      const ci = Math.min(3, curRound / 25 - 1);
+      chReached[ci]++;
+      if (S.stats.wins > preWins) { chWins[ci]++; chapters++; if (ci === 0) ch1Wins++; }
+    }
     if (curRound % 5 === 0) {  // 野怪回合战果（含第二~四章 r30+）：以胜负统计增量为准
       (globalThis.creepWR[curRound] = globalThis.creepWR[curRound] || []).push(S.stats.wins > preWins ? 1 : 0);
     }
@@ -181,16 +213,23 @@ for (let g = 0; g < N; g++) {
       (globalThis.streakWR = globalThis.streakWR || {})[sk] = (globalThis.streakWR[sk] || []).concat(lost ? 0 : 1);
     }
     if (S.phase === 'over') {
-      outcome = { win: chapters > 0, chapters, round: S.round, hp: S.hp, streak: S.stats.maxStreak, kills: S.stats.kills };
+      outcome = { win: !!S.finished, chapters, round: S.round, hp: S.hp, streak: S.stats.maxStreak, kills: S.stats.kills };
+      break;
+    }
+    if (MAXR > 0 && curRound >= MAXR) {
+      outcome = { win: false, chapters, round: curRound, hp: S.hp, streak: S.stats.maxStreak, kills: S.stats.kills, truncated: true };
       break;
     }
   }
-  if (!outcome) outcome = { win: chapters > 0, chapters, round: A.S.round, hp: A.S.hp, streak: A.S.stats.maxStreak, kills: A.S.stats.kills };
+  if (!outcome) outcome = { win: !!A.S.finished, chapters, round: A.S.round, hp: A.S.hp, streak: A.S.stats.maxStreak, kills: A.S.stats.kills };
+  outcome.star4=!!(A.S.ms&&A.S.ms.star4);
+  outcome.elites=A.S.botElites||0;
   results.push(outcome);
 }
 const wins = results.filter(r => r.chapters >= 1);
 const fmtPct = (a, b) => b ? (a / b * 100).toFixed(1) + '%' : '—';
 console.log(`局数=${N}${MAXR ? `（r${MAXR} 截断）` : ''}  平均推进章节数=${(results.reduce((s,r)=>s+r.chapters,0)/N).toFixed(2)}  平均最终回合=${(results.reduce((s,r)=>s+r.round,0)/N).toFixed(1)}  到达结算=${wins.length}`);
+console.log(`托管决策：使用升星券 ${results.filter(r=>r.star4).length}/${N} 局，精英挑战共 ${results.reduce((n,r)=>n+r.elites,0)} 次；100 回合通关 ${results.filter(r=>r.win).length}/${N}`);
 console.log('章节守关通过率（累计，占全部局数）: ' + chWins.map((w, i) => `第${i + 1}章 ${w}/${N}=${fmtPct(w, N)}`).join('  '));
 console.log('章节守关通过率（条件，占打到该章的局数）: ' + chWins.map((w, i) => `第${i + 1}章 ${fmtPct(w, chReached[i])}(${chReached[i]})`).join('  '));
 const lossRounds = results.filter(r => !r.win).map(r => r.round);

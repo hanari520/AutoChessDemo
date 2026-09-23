@@ -103,8 +103,7 @@ module.exports.run = function (A, driveBattle) {
     ok(htmlLose.includes('败局简析'), '败局面板含 败局简析');
     const htmlWin = globalThis.reportHTML('win');
     ok(!htmlWin.includes('败局简析'), '胜局面板无败局简析');
-    // 阶段扣血三段
-    ok(/第11-20回合/.test(htmlLose) && /第21-25回合/.test(htmlLose), '阶段扣血分三段展示');
+    ok(/第1章/.test(htmlLose) && /第4章/.test(htmlLose), '普通模式扣血按四章展示');
   }
 
   /* ---------- d. 一整局 bot 冒烟（面板数据贯通） ---------- */
@@ -113,12 +112,13 @@ module.exports.run = function (A, driveBattle) {
     globalThis.newGame(); globalThis.renderAll();
     let settled = false;
     for (let k = 0; k < 40 && A.S.phase !== 'over'; k++) {
-      if (A.S.phase === 'chapter') {   // 章节结算：验证 3 选 1 与增强入账，然后收兵结束
+      if (A.S.phase === 'chapter') {   // 章节结算：验证 3 选 1 与增强入账，然后在下一章备战期收兵
         settled = true;
         ok(Array.isArray(A.S.settleOffer) && A.S.settleOffer.length === 3, '章节结算提供 3 选 1 全局增强');
         if (typeof globalThis.pickAug === 'function') globalThis.pickAug(0);
         ok((A.S.augs || []).length === 1, '选择后增强已入账（augs=' + (A.S.augs || []).length + '）');
-        globalThis.chapterStop();
+        globalThis.chapterContinue();
+        globalThis.endRunEarly();
         break;
       }
       globalThis.botPrep();

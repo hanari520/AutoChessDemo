@@ -129,10 +129,10 @@ module.exports.run = function (A, driveBattle) {
     const p = globalThis.combineBagPair(0, 1);
     ok(p === 'flamejudge' && A.S.items.includes('flamejudge') && A.S.items.filter(x => x === 'sword').length === 0,
       '背包合成 sword+sword → 炽焰裁决剑');
-    // 未定义配方：bow+vamp 不合成
-    ok(!globalThis.comboOf('bow', 'vamp'), 'bow+vamp 无配方（不强凑）');
+    // 所有基础装两两组合已有配方；成品与基础装不直接合成
+    ok(!globalThis.comboOf('flamejudge', 'vamp'), '成品+基础装无直接配方');
     const len = A.S.items.length;
-    const p2 = globalThis.combineBagPair(A.S.items.indexOf('bow'), A.S.items.indexOf('vamp'));
+    const p2 = globalThis.combineBagPair(A.S.items.indexOf('flamejudge'), A.S.items.indexOf('vamp'));
     ok(p2 === null && A.S.items.length === len, '无配方组合合成返回 null、物品不动');
     // 就地合成（佩戴中）
     const u = { uid: A.S.uid++, id: 'ein', star: 1, sks: 1, hp: 500, maxhp: 500, atk: 20, items: ['staff', 'mana'] };

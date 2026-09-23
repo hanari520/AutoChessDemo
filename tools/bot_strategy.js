@@ -4,7 +4,7 @@
  * economy, upgrades, pair progress, board strength, synergies, equipment and
  * the currently scouted opponent instead of replaying a fixed shopping script.
  */
-const BOT_VER='Adaptive v3.1 · arena economy / interest timing / pressure';
+const BOT_VER='Adaptive v3.2 · campaign survival / ticket / elite choice';
 
 function botMembers(){ return [...(S.board||[]),...(S.bench||[])].filter(Boolean); }
 function botBoard(){ return (S.board||[]).filter(Boolean); }
@@ -26,8 +26,17 @@ function botPressure(){
   return foe>0 ? (foe-own)/Math.max(1,foe) : 0;
 }
 function botProfile(){ return S.botProfile||'balanced'; }
+function botCampaign(){ return !S.arena && !S.daily && !(S.curses||[]).length; }
+function botRecentDamage(){
+  return (S.stats&&S.stats.hpLog||[]).filter(x=>x.r>=S.round-5).reduce((n,x)=>n+x.d,0);
+}
 function botUrgency(){
   const gap=botPressure();
+  if(botCampaign() && S.round>=16){
+    const damage=botRecentDamage();
+    if(S.hp<=16 || (S.hp<=24 && damage>=6)) return 'survive';
+    if(S.hp<=30 || damage>=5) return 'stabilize';
+  }
   if(S.hp<=10 || (S.hp<=18 && gap>.22)) return 'survive';
   if(S.lossStreak>=2 || gap>.30 || botBoard().length<Math.min(S.lvl,4)) return 'stabilize';
   if(S.gold>=50 && S.lvl>=7) return 'strengthen';
@@ -116,6 +125,11 @@ function botEconFloor(mode){
   // Do not bank the opening hand while the starting board is empty: deploy two
   // affordable units first, then switch back to the profile's savings plan.
   if(S.round<=2&&botBoard().length<Math.min(S.lvl,2))return 0;
+  if(botCampaign() && S.round>=16){
+    if(mode==='survive') return S.hp<=8?0:5;
+    if(mode==='stabilize') return S.hp<=22?10:25;
+    if(S.hp<35) return 35;
+  }
   if(mode==='survive') return profile==='economy'?12:4;
   if(mode==='stabilize') return S.arena?(profile==='economy'?20:12):22;
   if(mode==='strengthen') return S.arena
@@ -267,11 +281,11 @@ function botSearch(done){
   let budget=mode==='survive'?12:mode==='stabilize'?7:mode==='strengthen'?5:(pairTargets?3:0);
   if(profile==='reroll')budget=Math.max(Math.ceil(budget*1.5),mode==='survive'?12:mode==='stabilize'?9:S.round<=6?5:3);
   if(S.arena&&mode==='economy'){
-    if(profile==='economy')budget=Math.max(budget,S.round<=4?2:0);
+    if(profile==='economy')budget=pairTargets?Math.min(Math.max(budget,3),3):(S.round<=3?1:0);
     else if(profile==='tempo'||profile==='aggressive')budget=Math.max(budget,S.round<=5?2:1);
     else if(profile==='flexible'||profile==='synergy')budget=Math.max(budget,S.round<=3?1:0);
   }
-  if(profile==='economy'&&mode==='economy')budget=0;
+  if(profile==='economy'&&mode==='economy'&&!S.arena)budget=0;
   const floor=botEconFloor(mode);
   let rolls=0;
   const shouldStop=()=>rolls>=budget||S.gold<floor+refreshCost();
@@ -316,14 +330,34 @@ function botAugPick(offer){
   (offer||[]).forEach((x,i)=>{const value=botAugScore(x);if(value>score){score=value;best=i;}});
   return best;
 }
+function botUseTicket(){
+  if(!S.tickets || typeof applyTicket!=='function') return false;
+  if(botCampaign() && botMembers().some(u=>u.star===4)) return false;
+  const target=botMembers().filter(u=>u.star===3).sort((a,b)=>{
+    const score=u=>botPower(u)+(u.items||[]).length*35+(botBoard().includes(u)?100:0);
+    return score(b)-score(a);
+  })[0];
+  if(!target) return false;
+  const before=S.tickets;
+  applyTicket(target.uid);
+  return S.tickets<before;
+}
+function botChooseChallenge(){
+  if(typeof challengeAvailable!=='function'||typeof chooseChallenge!=='function'||!challengeAvailable())return false;
+  if(S.round<30 || S.hp<34 || S.lossStreak || botRecentDamage()>=2 || botPressure()>-.45)return false;
+  chooseChallenge();
+  S.botElites=(S.botElites||0)+1;
+  return S.challengeRound===S.round;
+}
 function botPrepSteps(){
   if(S.phase!=='prep')return [];
   return [
-    {n:'观察对手与定阵容',fn(){botPlan();S.botDecision={urgency:botUrgency(),gap:botPressure(),round:S.round};}},
+    {n:'观察对手与定阵容',fn(){botPlan();S.botDecision={urgency:botUrgency(),gap:botPressure(),round:S.round};botChooseChallenge();}},
     {n:'购买与合成',fn(){botChooseSpend();}},
     {n:'搜牌与追星',fn(done){botSearch(done);}},
     {n:'调整人口与经济',fn(){botLevel();botBuyAvailable(botPlan(),3);}},
     {n:'整理备战席',fn(){botCleanupBench();}},
+    {n:'使用升星券',fn(){botUseTicket();}},
     {n:'针对对手布阵',fn(){botFormation();}},
     {n:'合成与分配装备',fn(){botEquipGear();}},
     {n:'保留关键商店',fn(){botLockShop();}}
