@@ -1,6 +1,6 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v20';   // v20：全 50 枚棋子战斗重制 + AI 战斗纹理离线缓存
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './assets/redraw_manifest.json', './assets/skill_signature_manifest.json', './assets/fx/v3-blade.png', './assets/fx/v3-arc.png', './assets/fx/v3-ward.png', './assets/fx/v3-void.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js', './tools/idol-ui.css?v=1', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=1', './tools/idol-ui-redesign.js?v=1', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png'];
+const CACHE = 'vcache-v21';   // v21：新增 AI 羁绊图标图集
+const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './assets/redraw_manifest.json', './assets/skill_signature_manifest.json', './assets/syn/synergy-atlas.png', './assets/fx/v3-blade.png', './assets/fx/v3-arc.png', './assets/fx/v3-ward.png', './assets/fx/v3-void.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js', './tools/idol-ui.css?v=1', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=1', './tools/idol-ui-redesign.js?v=1', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

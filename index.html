@@ -137,7 +137,7 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .syn-badge { display:block; background:rgba(24,20,14,.85); border:1px solid var(--line); border-left:2px solid #3d362a;
   border-radius:0; padding:5px 8px; margin:0 2px 4px; font-size:13px; color:var(--tx2); cursor:default; }
 .syn-badge .syn-top { display:flex; align-items:center; gap:6px; }
-.syn-badge .ico { font-size:15px; filter:grayscale(1); opacity:.5; }
+.syn-badge .ico { display:inline-block; flex:none; width:20px; height:20px; border-radius:5px; filter:grayscale(1); opacity:.5; }
 .syn-badge .cnt { margin-left:auto; font-weight:bold; font-size:12px; white-space:nowrap; }
 .syn-badge.on { color:var(--tx0); border-color:var(--line-2); }
 .syn-badge.on .ico { filter:none; opacity:1; }
@@ -251,15 +251,15 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .unit .nm { position:absolute; left:2px; right:2px; bottom:3px; z-index:1; font-weight:bold; padding:1px 0;
   background:rgba(10,8,5,.62); border-radius:3px; text-shadow:0 1px 2px #000; }
 .unit .syn { position:absolute; top:-58%; right:2px; display:flex; justify-content:flex-end; gap:2px; z-index:1; pointer-events:none; }
-.unit .syn .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:center;
-  background-repeat:no-repeat; background-size:contain; pointer-events:auto;
+.unit .syn .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:var(--syn-x,0%) var(--syn-y,0%);
+  background-repeat:no-repeat; background-size:500% 500%; pointer-events:auto;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
 .unit .syn .sy.on{ filter:brightness(1.3) saturate(1.2) drop-shadow(0 0 3px var(--gold)); }
 #synBadgeLayer { position:absolute; inset:0; z-index:60; pointer-events:none; }
 #synBadgeLayer > div { position:absolute; display:flex; justify-content:flex-end; gap:2px; }
 #synBadgeLayer .syn { display:flex; gap:2px; position:static; }
-#synBadgeLayer .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:center;
-  background-repeat:no-repeat; background-size:contain; pointer-events:auto;
+#synBadgeLayer .sy { width:calc(var(--cell)*.19); height:calc(var(--cell)*.19); background-position:var(--syn-x,0%) var(--syn-y,0%);
+  background-repeat:no-repeat; background-size:500% 500%; pointer-events:auto;
   filter:drop-shadow(0 1px 1px rgba(0,0,0,.65)); }
 #synBadgeLayer .sy.on { filter:brightness(1.3) saturate(1.2) drop-shadow(0 0 3px var(--gold)); }
 #synBadgeLayer .big-badge .sy { width:calc(var(--cell)*.3); height:calc(var(--cell)*.3); }
@@ -360,6 +360,11 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
   white-space:nowrap; font-style:normal; }
 .card .tis .ti, .card .ti { width:14px; height:14px; border-radius:50%; background-color:var(--gold-dim); border:none;
   background-size:75%; background-position:center; background-repeat:no-repeat; filter:none; opacity:1; }
+.syn-atlas { background-image:url('assets/syn/synergy-atlas.png'); background-repeat:no-repeat;
+  background-size:500% 500%; background-position:var(--syn-x,0%) var(--syn-y,0%); }
+.card .ti.syn-atlas { width:16px; height:16px; border-radius:4px; background-color:transparent; background-size:500% 500%; }
+.bsy-ico.syn-atlas { display:inline-block; vertical-align:middle; width:24px; height:24px; margin-right:7px; }
+.syn-badge .ico.syn-atlas { background-color:transparent; background-size:500% 500%; }
 .card .badges { position:absolute; top:3px; right:3px; left:auto; display:flex; flex-wrap:wrap; gap:3px; justify-content:flex-end; z-index:2; }
 .card .bd { font-size:10px; font-weight:bold; border-radius:0; padding:1px 6px; white-space:nowrap; border:1px solid transparent; letter-spacing:.5px; }
 .card .bd.pair { color:var(--gold-hi); background:rgba(224,169,78,.12); border-color:rgba(224,169,78,.4); }
@@ -2672,7 +2677,7 @@ function renderBench(){
 /* 卡面羁绊胶囊：图标+中文名（三羁绊棋子显示全部 3 个，窄卡自动裁切，悬停右栏详情可见完整信息） */
 function traitIcons(u){
   const ks=[facLabel(u),jobLabel(u)].flatMap(s=>(s||'').split('/')).filter(k=>SYN_IMG[k]).slice(0,3);
-  return ks.map(k=>`<span class="tb" title="${k}"><i class="ti" style="background-image:url(assets/syn/${SYN_IMG[k]}.png)"></i>${k}</span>`).join('');
+  return ks.map(k=>`<span class="tb" title="${k}">${synIconHTML(k,'ti')}${k}</span>`).join('');
 }
 /* 悬停商店卡：右栏详情面板实时预览（只读渲染，不改选中/购买状态） */
 function previewShopInspect(u){
@@ -2846,11 +2851,18 @@ function renderTop(){
 }
 const FAC_ICON={'深海':'🌊','星际':'🚀','毛茸乐园':'🐾','音律':'🎵','四禧丸子':'🍡','学园':'🎓','夜幕':'🌙','花语':'🌸','魔道':'🔮','森之国':'🌲','工造':'⚙️','P-SP':'🎬'};
 const JOB_ICON={'刀客':'🗡️','守护':'🛡️','歌势':'🎤','游侠':'🏹','法师':'☄️','咒术':'☠️','刺客':'🥷','狂战':'🪓','医者':'💊','偶像':'✨'};
-/* 棋子羁绊徽章（assets/syn/ 像素图标，tools/gen_syn_icons.py 生成） */
+/* 旧版羁绊 slug 供阵营光环 class 复用；图标本身统一来自 AI 透明图集。 */
 const SYN_IMG={'深海':'shenhai','星际':'xingji','毛茸乐园':'maorong','音律':'yinlv','四禧丸子':'sixi','学园':'xueyuan','夜幕':'yemu','花语':'huayu','魔道':'modao','森之国':'senzhiguo','工造':'gongzao','P-SP':'psp','刀客':'daoke','守护':'shouhu','游侠':'youxia','刺客':'cike','法师':'fashi','咒术':'zhoushu','医者':'yizhe','歌势':'geshi','偶像':'ouxiang','狂战':'kuangzhan'};
+/* Atlas order matches the generated 5×5 sprite sheet, row-major. */
+const SYN_ICON_ORDER=Object.keys(SYN_IMG), SYN_ICON_INDEX=Object.create(null);
+SYN_ICON_ORDER.forEach((k,i)=>SYN_ICON_INDEX[k]=i);
+function synIconHTML(k,extra=''){
+  const i=SYN_ICON_INDEX[k];if(i===undefined)return '';
+  return `<i class="syn-atlas${extra?' '+extra:''}" title="${k}" style="--syn-x:${(i%5)*25}%;--syn-y:${Math.floor(i/5)*25}%"></i>`;
+}
 const BV={};
 const synIconsHTML = (d, side) => { const ks=[...facsOf(d),...jobsOf(d)]; const bv=(typeof BV!=='undefined'&&BV[side])||{};
-  return ks.length?`<span class="syn">${ks.map(k=>SYN_IMG[k]?`<i class="sy${bv[k]?' on':''}" title="${k}" style="background-image:url(assets/syn/${SYN_IMG[k]}.png)"></i>`:'').join('')}</span>`:''; };
+  return ks.length?`<span class="syn">${ks.map(k=>SYN_IMG[k]?synIconHTML(k,`sy${bv[k]?' on':''}`):'').join('')}</span>`:''; };
 /* 多多式羁绊徽章：图标+名称+档位进度；已触发的排前面（档位深者优先），未触发的按「距下一档缺口」升序（差1的排在差2的前面）；
    已触发档位的效果直接显示在徽章下方（不再只显示 2/4 / MAX） */
 function synBadges(cnt,cfg,icons){
@@ -2871,7 +2883,7 @@ function synBadges(cnt,cfg,icons){
       ? `<div class="syn-eff ban">⛔ 本局被禁用（禁锢羁绊）</div>`
       : c.desc.slice(0,tier).map((d,i)=>`<div class="syn-eff">T${i+1} ${d}</div>`).join('');
     return `<div class="syn-badge ${tier>0?('on t'+tier):''}${banned?' banned':''}" title="${k}${banned?'（⛔ 本局被「禁锢羁绊」禁用，不产生任何效果）':''}\n${c.desc.map((d,i)=>`T${i+1}(${c.need[i]}人)：${d}`).join('\n')}">
-      <div class="syn-top"><span class="ico">${icons[k]||'❓'}</span><span>${banned?'⛔':''}${k}</span><span class="pips">${pips}</span><span class="cnt">${prog}</span></div>${effs}</div>`;
+      <div class="syn-top">${synIconHTML(k,'ico')||'<span class="ico">❓</span>'}<span>${banned?'⛔':''}${k}</span><span class="pips">${pips}</span><span class="cnt">${prog}</span></div>${effs}</div>`;
   }).join('') || '<div class="syn-empty">上场棋子后显示羁绊</div>';
 }
 function renderSynergy(){
@@ -5716,7 +5728,7 @@ function renderBook(){
     Object.entries(tbl).map(([k,c])=>{
       const members=UNITS.filter(u=>facsOf(u).includes(k)||jobsOf(u).includes(k)).length;
       const banned=nbList().includes(k);
-      return `<div class="bsy-item${banned?' banned':''}"><span class="bsy-ico">${icons[k]||'❓'}</span><b>${banned?'⛔ ':''}${k}</b>`+
+      return `<div class="bsy-item${banned?' banned':''}">${synIconHTML(k,'bsy-ico')||'❓'}<b>${banned?'⛔ ':''}${k}</b>`+
         `<span class="bsy-need">${c.need.join(' / ')} 人</span>`+
         (banned?`<div class="bsy-desc" style="color:#ff9a9a">本局被「${bondBanNames()}」禁用：不产生任何档位效果</div>`:'')+
         c.desc.map((d,i)=>`<div class="bsy-desc">T${i+1}（${c.need[i]}人）：${d}</div>`).join('')+
