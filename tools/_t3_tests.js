@@ -93,7 +93,7 @@ module.exports.run = function (A, driveBattle) {
     ok(aeg && swi, '战斗单位已生成');
     ok(swi.spdMul >= 1.35 && swi.manaPerSec === 3, `迅影回响通道在真实战斗单位上生效（spdMul=${swi.spdMul}, mana/s=${swi.manaPerSec}）`);
     const mana0 = swi.mana;
-    for (let i = 0; i < 35; i++) A.currentTick();   // 推 3.5 秒（前 2 tick 被开战缓冲消耗）
+    for (let i = 0; i < 35; i++) A.currentTick();   // 推 3.5 秒（前 8 tick 为开战观察时间）
     ok(swi.mana > mana0 + 8, `每秒回蓝生效（${mana0} → ${swi.mana}，含每秒 +3）`);
     ok(aeg && aeg.shield > 0, `不朽圣盾 3 秒护盾生效（shield=${aeg ? aeg.shield : 'n/a'}）`);
     driveBattle(700);
@@ -112,7 +112,7 @@ module.exports.run = function (A, driveBattle) {
     if (me && foes.length >= 1) {
       me.bounceP = 1; me.cd = 0; me.skillCd = 99999; me.mana = 0;   // 强制下一击必弹射、不放技能
       foes.forEach(f => { f.cd = 999999; f.skillCd = 99999; f.mana = 0; f.atk = 1; });   // 敌方不还手
-      for (let i = 0; i < 5; i++) A.currentTick();   // 500ms：越过 0.3s 开战缓冲，首击落地
+      for (let i = 0; i < 15; i++) A.currentTick();  // 1.5s：越过 0.8s 开战缓冲，首击落地
       const hit = foes.filter(f => f.hp < f.maxhp).length;
       ok(hit >= 1, `普攻主目标受伤（受击 ${hit}/${foes.length}）`);
       ok(foes.length < 2 || hit >= 2, `弹射结算路径生效（受击敌人数 ${hit}/${foes.length}，bounceP=1 强制）`);

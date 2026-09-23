@@ -43,9 +43,6 @@ body { background:
     linear-gradient(180deg,#161209 0%,var(--bg1) 46%,var(--bg0) 100%);
   color:var(--tx0); font-family:"Segoe UI",system-ui,sans-serif; height:100vh; height:100dvh;
   overscroll-behavior:none; display:flex; flex-direction:column; overflow:hidden; }
-.spd-b { background:var(--bg2); color:var(--tx1); border:1px solid var(--line-2); border-radius:4px;
-  padding:2px 8px; cursor:pointer; font-size:12px; letter-spacing:.3px; }
-.spd-b.on { background:var(--gold-dim); color:var(--gold-hi); border-color:var(--gold); }
 
 /* ===== ③ 浏览器表面（craft-floor：滚动条/选区也是设计） ===== */
 html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
@@ -862,7 +859,7 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 
 /* ===== ⑫ 触屏 / 抽屉 ===== */
 .touch .unit, .touch .item-chip { touch-action:none; -webkit-touch-callout:none; }
-.btn, .card, .spd-b, .btab { touch-action:manipulation; }
+.btn, .card, .btab { touch-action:manipulation; }
 .m-only { display:none; }
 body.touch .m-only { display:inline-block; }
 #mDrawer { position:fixed; left:0; right:0; top:0; bottom:0; z-index:38; display:flex;
@@ -1005,7 +1002,6 @@ body.touch .m-only { display:inline-block; }
 #goldChip { display:inline-flex; align-items:center; justify-content:center; gap:6px; }
 #goldChip::before { content:''; width:13px; height:13px; background:var(--gold); flex-shrink:0;
   mask:var(--ic) center/contain no-repeat; -webkit-mask:var(--ic) center/contain no-repeat; }
-.spdwrap { display:flex; gap:3px; align-items:center; }
 #curseTag { color:#ee8177; border:1px solid rgba(224,88,76,.5); background:rgba(224,88,76,.08);
   padding:2px 8px; font-size:12px; cursor:help;
   flex:0 1 260px; min-width:100px; max-width:440px;   /* 多诅咒不挤换行：空间不足时收缩截断，完整名单见 title 悬停 */
@@ -1042,7 +1038,7 @@ body.touch .m-only { display:inline-block; }
 </style>
 <link rel="stylesheet" href="tools/idol-ui.css?v=2">
 <link rel="stylesheet" href="tools/idol-redesign.css?v=3">
-<link rel="stylesheet" href="tools/mobile-stage.css?v=1">
+<link rel="stylesheet" href="tools/mobile-stage.css?v=2">
 </head>
 <body>
 <div id="topbar">
@@ -1065,11 +1061,6 @@ body.touch .m-only { display:inline-block; }
     <button class="btn ic" id="resetBtn" title="放弃当前进度，重新开一局" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3v8'/%3E%3Cpath d='M6.6 6.6a8 8 0 1 0 10.8 0'/%3E%3C/svg%3E&quot;)">重开</button>
     <button class="btn ic" id="endBtn" style="display:none;--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M5 21V4M5 5h12l-2.5 3.5L17 12H5'/%3E%3C/svg%3E&quot;)" title="主动结束本局：记入战绩并查看结算（再来一局保持当前模式）">结束挑战</button>
     <button class="btn ic" id="sfxBtn" title="音效开关" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 9v6h3.5L12 19V5L7.5 9z'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7'/%3E%3C/svg%3E&quot;)"></button>
-    <span class="spdwrap">
-      <button class="spd-b on" data-s="1">1×</button>
-      <button class="spd-b" data-s="1.5">1.5×</button>
-      <button class="spd-b" data-s="2">2×</button>
-    </span>
   </div>
   <button id="mMenuBtn" class="btn m-only" aria-label="更多功能">更多</button>
 </div>
@@ -1217,7 +1208,7 @@ body.touch .m-only { display:inline-block; }
     <span class="is-h">🔗 羁绊（12 阵营 + 10 职业）</span>
     按<b>不同棋子</b>计数、达标触发 T1/T2；<b style="color:#8dff9a">首次达成每档 +1 金</b>。左侧竖栏看进度，棋子右上角显示所属羁绊图标，完整效果在<b>图鉴 → 🔗羁绊</b>。
     <span class="is-h">⚔ 战斗规则</span>
-    蓝量 50 开局清零，靠攻击 / 受击回蓝，典型 5-7 秒放首个技能；护甲边际递减、魔抗百分比乘算、任意伤害 5% 保底<br>
+    蓝量 50 开局清零，靠攻击 / 受击回蓝；战斗采用固定速度，相邻技能错峰释放；护甲边际递减、魔抗百分比乘算、任意伤害 5% 保底<br>
     克制关系：烧蓝/沉默克法师 · 破盾克护盾 · 减疗克奶妈 · 嘲讽克刺客 · 净化克控制
     <span class="is-h">🎁 野怪回合（每 5 回合）</span>
     胜利掉 2 件装备、失败也保底 1 件；不扣血、不影响连胜。头目真实占据 2×2 格（近战可从任意相邻格攻击它）。
@@ -1529,7 +1520,7 @@ const COMBAT_KITS={
   likou:v3Kit('急救快闪','heal','治疗生命比例最低的队友 210% 攻击生命，同时附加 10% 最大生命护盾并净化其控制。','#ff9ab6','ward',{heal:2.1,shield:.10,cleanse:true,attackStyle:'arc'}),
   agari:v3Kit('应援心拍','team','全队回复 90% 攻击生命并获得 8% 最大生命护盾；3 秒内首次普攻额外产生一次心拍爆发。','#ff6fae','arc',{heal:.9,shield:.08,tempo:true,attackStyle:'pulse'}),
   hoshimi:v3Kit('月猫跃迁','dash','扑向生命比例最低的敌人，造成 235% 伤害并施加 2 秒流血；击杀后立刻刷新一次位移。','#dca3ff','blade',{target:'low',mult:2.35,bleed:.018,attackStyle:'blade'}),
-  chiharu:v3Kit('夜岚折返','cleave','向前方扇区斩出两道夜岚，造成 165% 伤害并使命中者受到的下一次普攻伤害提高 25%。','#8fbcff','blade',{mult:1.65,wound:.25,attackStyle:'blade'}),
+  chiharu:v3Kit('夜岚折返','cleave','向前方扇区斩出两道夜岚，合计造成 165% 伤害并使命中者受到的下一次普攻伤害提高 25%。','#8fbcff','blade',{mult:.825,hits:2,wound:.25,attackStyle:'blade'}),
   suiji:v3Kit('十小时续航','support','为除自身外的队友回复 28 点法力并治疗 60% 攻击生命；同时获得 18% 攻速，持续 4 秒。','#8ddc9b','ward',{mana:28,heal:.6,haste:.18,attackStyle:'pulse'}),
   kanban:v3Kit('海獭缓冲层','guard','吸收 45% 最大生命伤害，获得 35% 格挡，持续 4 秒；格挡成功时向攻击者喷出水花减速。','#7ed7d9','ward',{shield:.45,block:.35,slow:.20,attackStyle:'blade'}),
   zhouyi:v3Kit('破盾读秒','passive','被动：普通攻击优先拆除护盾；目标无护盾时，下一次攻击造成额外 80% 破防伤害。','#c77dff','void',{passive:true,attackHit:'shieldbreak',attackStyle:'blade'}),
@@ -1568,7 +1559,7 @@ const COMBAT_KITS={
   azi:v3Kit('高音震魂','field','释放高音震魂波，范围内敌人受到 130% 伤害并眩晕 1.5 秒；每命中一人，阿梓获得 6 点法力。','#ffbd6a','arc',{mult:1.3,stun:1.5,mana:6,attackStyle:'pulse'}),
   taodai:v3Kit('桃香结界','teamShield','全队获得 22% 最大生命护盾；桃香结界持续 4 秒，期间全队减伤 20%，桃代嘲讽 2.7 秒。','#ffb1c9','ward',{shield:.22,dr:.20,taunt:2.7,attackStyle:'blade'}),
   miki:v3Kit('星海庇护','heal','治疗 3 名队友各 150% 攻击生命，附加 12% 护盾并回复 12 点法力；优先濒危单位。','#8fd9ff','ward',{heal:1.5,healN:3,shield:.12,mana:12,attackStyle:'arc'}),
-  rei:v3Kit('灵界之门','field','开启灵界之门，范围敌人受到 135% 伤害并沉默 2.4 秒；门会把其中一次治疗转成伤害。','#b78cff','void',{mult:1.35,silence:2.4,enemyHealDown:.40,attackStyle:'pulse'}),
+  rei:v3Kit('灵界之门','field','开启灵界之门，范围敌人受到 135% 伤害并沉默 2.4 秒；门会把其中一次治疗的 40% 转成伤害。','#b78cff','void',{mult:1.35,silence:2.4,enemyHealDown:.40,attackStyle:'pulse'}),
   rinco:v3Kit('十二点拉闸','cleave','拉下总闸，对周围敌人造成 210% 伤害并沉默 1.8 秒；自身获得 25% 吸血，直到战斗结束。','#ff5f70','void',{mult:2.1,silence:1.8,lifesteal:.25,attackStyle:'blade'})
 };
 const skillName=d=>COMBAT_KITS[d.id]?.name||d.sk[0];
@@ -1615,10 +1606,13 @@ function v3Cleanse(t){
   ['stun','frozen','slowT','atkDownT','healDownT','silenceT','noShieldT','hexT','petrifyT','arDownT','mrDownT'].forEach(k=>t[k]=0);
   t.slowA=0;t.atkDownA=0;t.healDownA=0;t.v3VulnT=0;t.v3WoundT=0;t.v3HealLockT=0;t.v3BrittleOnThaw=0;
 }
+function v3AddShield(t,amount){
+  if(t && t.hp>0 && t.noShieldT<=0) t.shield=(t.shield||0)+Math.max(0,Math.round(amount));
+}
 function v3Heal(u,t,amount,k,units){
   if(!t||t.hp<=0) return 0;
   if(t.v3HealLockT>0) return 0;
-  if(u.id==='mumu'&&t.hp>=t.maxhp){t.shield=(t.shield||0)+Math.round(t.maxhp*(k.shield||.10));vfxAt(t,'tex-barrier ring shield',850);dmgPopup(u,t,'🛡+'+Math.round((k.shield||.10)*100)+'%','cast');return 0;}
+  if(u.id==='mumu'&&t.hp>=t.maxhp){v3AddShield(t,t.maxhp*(k.shield||.10));vfxAt(t,'tex-barrier ring shield',850);dmgPopup(u,t,'🛡+'+Math.round((k.shield||.10)*100)+'%','cast');return 0;}
   const healCut=t.healDownT>0?Math.max(0,t.healDownA-(u.id==='pako' ? .18 : 0)):0;
   const hd=1-healCut;
   let h=Math.max(0,Math.round(amount*hd));
@@ -1626,11 +1620,11 @@ function v3Heal(u,t,amount,k,units){
   if(t.v3HealBomb&&t.v3HealBomb.left>0&&t.v3HealBomb.owner&&t.v3HealBomb.owner.side!==t.side){const bomb=t.v3HealBomb;t.v3HealBomb=null;const burst=Math.max(1,Math.round(h*(bomb.amp||.4)));h=Math.max(0,h-burst);dealDamage(bomb.owner,t,burst,units,'magic');dmgPopup(bomb.owner,t,'✦疗愈转伤','cast');}
   if(t.hp<=0)return 0;
   const missing=t.maxhp-t.hp, real=Math.min(missing,h);t.hp+=real;bsHeal(u,real);medEcho(u,real,units,units.filter(v=>v.hp>0&&v.side!==u.side));
-  if(k.shield&&u.id!=='pako'&&u.id!=='mumu') t.shield=(t.shield||0)+Math.round(t.maxhp*k.shield);
-  if(u.id==='pako'&&h>real) t.shield=(t.shield||0)+Math.min(Math.round(t.maxhp*.18),h-real);
+  if(k.cleanse) v3Cleanse(t);
+  if(k.shield&&u.id!=='pako'&&u.id!=='mumu') v3AddShield(t,t.maxhp*k.shield);
+  if(u.id==='pako'&&h>real) v3AddShield(t,Math.min(Math.round(t.maxhp*.18),h-real));
   if(k.mana&&!isPassive(t)&&!(u.id==='suiji'&&t===u)&&u.id!=='tiandou') t.mana=Math.min(t.maxmana||50,(t.mana||0)+k.mana);
   if(k.mana&&u.id==='tiandou')t.v3ShieldMana=k.mana;
-  if(k.cleanse) v3Cleanse(t);
   vfxAt(t,'tex-holy ring heal',850);fxRise(t,'mote',2);dmgPopup(u,t,'+'+Math.max(real,0),'heal');
   return real;
 }
@@ -1645,30 +1639,30 @@ function v3BuffAllies(allies,k){
 function v3ApplyHit(u,f,power,k,units,mult){
   if(!f||f.hp<=0) return 0;
   const stoleShield=!!(k.stealShield&&f.shield>0);
-  if(stoleShield){const stolen=f.shield;f.shield=0;u.shield=(u.shield||0)+stolen;fxShards(f,'gl',3);dmgPopup(u,f,'🛡窃取','cast');}
+  if(stoleShield){const stolen=f.shield;f.shield=0;v3AddShield(u,stolen);fxShards(f,'gl',3);dmgPopup(u,f,'🛡窃取','cast');}
   else if(k.shieldbreak&&f.shield>0){f.shield=0;f.noShieldT=Math.max(f.noShieldT||0,2500);fxShards(f,'gl',3);}
   const low=f.hp/f.maxhp;
   let amount=Math.round(power*(mult===undefined?(k.mult||1):mult));
   if(k.lowHPBoost) amount=Math.round(amount*(1+k.lowHPBoost*(1-u.hp/u.maxhp)));
   if(k.execute&&low<.4) amount+=Math.round(power*k.execute);
   const dealt=dealDamage(u,f,amount,units,k.dtype||byId(u.id).dtype);
-  if(k.lifesteal&&u.id!=='rinco'&&dealt>0&&u.hp>0){const heal=Math.min(u.maxhp-u.hp,Math.round(dealt*k.lifesteal));u.hp+=heal;bsHeal(u,heal);if(heal)threadFx(u,f);}
+  if(k.lifesteal&&u.id!=='rinco'&&u.id!=='miyue'&&dealt>0&&u.hp>0){const heal=Math.min(u.maxhp-u.hp,Math.round(dealt*k.lifesteal));u.hp+=heal;bsHeal(u,heal);if(heal)threadFx(u,f);}
   if(f.hp<=0){if(u.killReset){u.mana=u.maxmana;u.skillCd=0;u.killReset=false;}return dealt;}
   if(k.stun&&(!k.stealShield||stoleShield)){f.stun=Math.max(f.stun||0,k.stun*1000);dmgPopup(u,f,'💫眩晕','cast');}
   if(k.freeze){f.frozen=Math.max(f.frozen||0,k.freeze*1000);}
   if(k.petrify){f.petrifyT=Math.max(f.petrifyT||0,k.petrify*1000);f.frozen=Math.max(f.frozen||0,k.petrify*1000);crackFx(f);}
   if(k.slow){f.slowA=Math.max(f.slowA||0,k.slow);f.slowT=Math.max(f.slowT||0,2200);}
   if(k.bleed){f.poisonT=Math.max(f.poisonT||0,3000);f.poisonDmg=Math.max(f.poisonDmg||0,Math.round(f.maxhp*k.bleed));}
-  if(k.wound){f.v3Vuln=Math.max(f.v3Vuln||0,k.wound);f.v3VulnT=Math.max(f.v3VulnT||0,4000);}
-  if(k.brittle){if(u.id==='liAn')f.v3BrittleOnThaw=Math.max(f.v3BrittleOnThaw||0,k.brittle);else{f.v3Vuln=Math.max(f.v3Vuln||0,k.brittle);f.v3VulnT=Math.max(f.v3VulnT||0,4000);}}
-  if(k.weaken){f.atkDownA=Math.max(f.atkDownA||0,k.weaken);f.atkDownT=Math.max(f.atkDownT||0,3500);}
+  if(k.wound){f.v3Vuln=Math.max(f.v3Vuln||0,k.wound);f.v3VulnT=Math.max(f.v3VulnT||0,4000);f.v3VulnBasicOnly=true;}
+  if(k.brittle){if(u.id==='liAn')f.v3BrittleOnThaw=Math.max(f.v3BrittleOnThaw||0,k.brittle);else{f.v3Vuln=Math.max(f.v3Vuln||0,k.brittle);f.v3VulnT=Math.max(f.v3VulnT||0,4000);f.v3VulnBasicOnly=false;}}
+  if(k.weaken){f.atkDownA=Math.max(f.atkDownA||0,k.weaken);f.atkDownT=Math.max(f.atkDownT||0,3500);if(u.id==='haruka')f.v3WeakenBy=u.uid;}
   if(k.shred){f.arDown=Math.max(f.arDown||0,k.shred);f.arDownT=Math.max(f.arDownT||0,4000);}
   if(k.sunder){f.mrDown=Math.max(f.mrDown||0,k.sunder);f.mrDownT=Math.max(f.mrDownT||0,4000);}
   if(k.silence){f.silenceT=Math.max(f.silenceT||0,k.silence*1000);staticFx(f);}
   if(k.manaBurn){const burn=Math.round((f.mana||0)*Math.min(.9,k.manaBurn));f.mana=Math.max(0,f.mana-burn);if(burn)dmgPopup(u,f,'-'+burn+'蓝','cast');}
   if(k.enemyHealDown){f.healDownA=Math.max(f.healDownA||0,k.enemyHealDown);f.healDownT=Math.max(f.healDownT||0,4000);}
   if(k.healBlock)f.v3HealLockT=Math.max(f.v3HealLockT||0,k.healBlock*1000);
-  if(k.reflectSkill){f.v3Reflect=k.reflectSkill;f.v3ReflectT=5000;}
+  if(k.reflectSkill){f.v3Reflect=k.reflectSkill;f.v3ReflectBy=u;f.v3ReflectT=5000;}
   if(k.echo){f.v3CastEcho={owner:u,amp:k.echo,left:5000};}
   if(k.noShield)f.noShieldT=Math.max(f.noShieldT||0,k.noShield*1000);
   return dealt;
@@ -1680,7 +1674,7 @@ function v3AttackFx(u,tgt,p){
   else if(p.style==='pulse'){const q=unitVisual(tgt),el=fxNode('atk-pulse',q.x,q.y,480);if(el)el.style.setProperty('--atk-color',p.color);}
   else {const q=unitVisual(tgt),el=fxNode('atk-burst',q.x,q.y,520);if(el)el.style.setProperty('--atk-color',p.color);fxSparks(tgt,p.color,3,18);}
 }
-function v3RainTrigger(u){if(!u||u.id!=='yuji')return;u.shield=(u.shield||0)+Math.round(u.maxhp*.08);u.v3RainReady=true;vfxAt(u,'ring frost shield',650);dmgPopup(null,u,'🌧雨幕','cast');}
+function v3RainTrigger(u){if(!u||u.id!=='yuji')return;v3AddShield(u,u.maxhp*.08);u.v3RainReady=true;vfxAt(u,'ring frost shield',650);dmgPopup(null,u,'🌧雨幕','cast');}
 function applyV3Attack(u,tgt,p,units,dealt,dmg){
   if(!p||!tgt) return;
   if(p.onHit==='rainveil'){
@@ -1688,7 +1682,7 @@ function applyV3Attack(u,tgt,p,units,dealt,dmg){
   } else if(p.onHit==='soulmate'){
     const mate=units.filter(v=>v.hp>0&&v.side===u.side&&v!==u).sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0];
     const pair=[u,mate].filter(Boolean);pair.forEach(v=>{const h=Math.round(v.maxhp*.03),r=Math.min(v.maxhp-v.hp,h);v.hp+=r;bsHeal(u,r);});
-    if((pair.some(v=>v.hp/v.maxhp<.22))&&(u.v3SoulShieldCd||0)<=0){pair.forEach(v=>{v.shield=(v.shield||0)+Math.round(v.maxhp*.2);});u.v3SoulShieldCd=8000;vfxAt(u,'tex-barrier ring shield',800);dmgPopup(u,u,'♥共护','cast');}
+    if((pair.some(v=>v.hp/v.maxhp<.22))&&(u.v3SoulShieldCd||0)<=0){pair.forEach(v=>v3AddShield(v,v.maxhp*.2));u.v3SoulShieldCd=8000;vfxAt(u,'tex-barrier ring shield',800);dmgPopup(u,u,'♥共护','cast');}
   } else if(rand()<p.proc){
     if(p.onHit==='bleed'){tgt.poisonT=Math.max(tgt.poisonT||0,2200);tgt.poisonDmg=Math.max(tgt.poisonDmg||0,Math.round(tgt.maxhp*p.potency));dmgPopup(u,tgt,'🩸流血','cast');}
     else if(p.onHit==='slow'){tgt.slowA=Math.max(tgt.slowA||0,.18);tgt.slowT=Math.max(tgt.slowT||0,1400);vfxAt(tgt,'leaves',500);}
@@ -1701,7 +1695,7 @@ function applyV3Attack(u,tgt,p,units,dealt,dmg){
     const near=v3NearestFoes(tgt,units.filter(v=>v.hp>0&&v.side!==u.side),3,1)[0];u.bounceReady=false;
     if(near){dealDamage(u,near,Math.round(dmg*.55),units,p.dtype);fireProjectile(u,near,p.color,p);dmgPopup(u,near,'📡弹射','cast');}
   }
-  if(u.tempoHits>0){u.tempoHits--;const near=v3NearestFoes(tgt,units.filter(v=>v.hp>0&&v.side!==u.side),2,2);
+  if(u.tempoHits>0){u.tempoHits--;if(tgt.hp>0)dealDamage(u,tgt,Math.round(eatk(u)*.42),units,'magic');const near=v3NearestFoes(tgt,units.filter(v=>v.hp>0&&v.side!==u.side),2,2);
     near.forEach(v=>dealDamage(u,v,Math.round(eatk(u)*.42),units,'magic'));if(near.length)dmgPopup(u,near[0],'♥心拍','cast');}
   u.itemAttackCount=(u.itemAttackCount||0)+1;
   if(u.itemFirstSnare){u.itemFirstSnare=false;tgt.slowA=Math.max(tgt.slowA||0,.20);tgt.slowT=Math.max(tgt.slowT||0,1200);vfxAt(tgt,'leaves',500);dmgPopup(u,tgt,'🍃先机','cast');}
@@ -1735,15 +1729,15 @@ function castV3Skill(u,units,skMul,k){
   let hitList=[];
   if(k.passive||k.mode==='passive'){}
   else if(k.mode==='guard'){
-    u.shield=(u.shield||0)+Math.round(u.maxhp*(k.shield||0));u.tauntT=Math.max(u.tauntT||0,(k.taunt||0)*1000);
+    v3AddShield(u,u.maxhp*(k.shield||0));u.tauntT=Math.max(u.tauntT||0,(k.taunt||0)*1000);
     if(k.block){u.blockCt=Math.max(u.blockCt||0,k.block);u.blockDmg=.5;u.blockT=4000;}
     if(k.thorns){u.thorns=Math.max(u.thorns||0,k.thorns);u.thornsT=4000;}
     if(k.counter){u.v3ShieldCounter=k.counter;u.v3ShieldCounterT=7000;}
     vfxAt(u,'tex-barrier ring shield',1000);dmgPopup(u,u,'🛡壁垒','cast');
   } else if(k.mode==='guardLink'){
     const mate=allies.filter(v=>v!==u).sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0];
-    u.shield=(u.shield||0)+Math.round(u.maxhp*(k.selfShield||0));u.tauntT=Math.max(u.tauntT||0,(k.taunt||0)*1000);
-    if(mate){mate.shield=(mate.shield||0)+Math.round(mate.maxhp*(k.allyShield||0));mate.v3LinkTo=u.uid;mate.v3LinkShare=k.link||0;mate.v3LinkT=3500;beam(mate,u,k.color);}
+    v3AddShield(u,u.maxhp*(k.selfShield||0));u.tauntT=Math.max(u.tauntT||0,(k.taunt||0)*1000);
+    if(mate){v3AddShield(mate,mate.maxhp*(k.allyShield||0));mate.v3LinkTo=u.uid;mate.v3LinkShare=k.link||0;mate.v3LinkT=3500;beam(mate,u,k.color);}
     vfxAt(u,'tex-barrier ring shield',1000);
   } else if(k.mode==='dash'||k.mode==='dashCleave'){
     if(target){v3MoveBeside(u,target,units);beam(u,target,k.color);}
@@ -1751,6 +1745,7 @@ function castV3Skill(u,units,skMul,k){
     if(k.mode==='dashCleave')hitList=foes.filter(f=>nearCells(f,u,1));
     else if(target){hitList=[target];if(k.splash){const splash=v3NearestFoes(target,foes,1,3);splash.forEach(f=>{hit(f,k.splash);hitList.push(f);});}}
     hitList.filter(f=>f===target||k.mode==='dashCleave').forEach(f=>hit(f,k.mult));
+    if(u.id==='miyue'&&hitList.length)u.vamp=Math.min(.30,(u.vamp||0)+hitList.length*(k.lifesteal||.05));
     if(k.mode==='dashCleave')vfxAt(u,'tex-slash',500);
     if(k.phase){u.phaseT=k.phase*1000;u.phaseDodge=.55;}
     if(k.afterimage&&target&&target.hp>0)target.v3Afterimage={left:2000,owner:u,damage:Math.round(power*.72),x:target.x,y:target.y};
@@ -1764,15 +1759,20 @@ function castV3Skill(u,units,skMul,k){
   } else if(k.mode==='cleave'){
     const times=k.hits||1;for(let i=0;i<times;i++){
       const list=foes.filter(f=>nearCells(f,u,1));
-      list.forEach(f=>hit(f,k.mult));hitList=list;
+      const strike=u.id==='mahiru'&&i<times-1?Object.assign({},k,{bleed:0}):k;
+      list.forEach(f=>v3ApplyHit(u,f,power,strike,units,k.mult));hitList=list;
       const e=vfxAt(u,i%2?'tex-quake':'tex-slash',430);if(e&&k.hits>1)e.style.filter='hue-rotate('+(i*90)+'deg)';
     }
   } else if(k.mode==='combo'){
     if(target){for(let i=0;i<(k.hits||1);i++){const m=(k.mults||[])[i]||1,strike=i===(k.hits||1)-1?k:Object.assign({},k,{stun:0,bleed:0});v3ApplyHit(u,target,power,strike,units,m);hitList=[target];v3AttackFx(u,target,{style:'blade',color:k.color});if(target.hp<=0)break;}}
   } else if(k.mode==='chain'){
     let from=target, remaining=foes.slice();
-    for(let i=0;i<(k.targets||3)&&from;i++){
-      const curr=from;remaining=remaining.filter(f=>f!==curr&&f.hp>0);hit(curr,(k.mults||[])[i]||k.mult||1);hitList.push(curr);if(i<(k.targets||3)-1&&remaining.length){from=remaining.sort((a,b)=>unitDist(a,curr)-unitDist(b,curr))[0];boltFx(curr,from,false);}else from=null;
+    const chainLength=Math.min(k.targets||3,foes.length);
+    for(let i=0;i<chainLength&&from;i++){
+      const curr=from;remaining=remaining.filter(f=>f!==curr&&f.hp>0);
+      const strike=u.id==='sanli'&&i<chainLength-1?Object.assign({},k,{stun:0}):k;
+      v3ApplyHit(u,curr,power,strike,units,(k.mults||[])[i]||k.mult||1);
+      hitList.push(curr);if(i<chainLength-1&&remaining.length){from=remaining.sort((a,b)=>unitDist(a,curr)-unitDist(b,curr))[0];boltFx(curr,from,false);}else from=null;
       if(k.season&&curr.hp>0){const types=['slow','manaBurn','bleed','freeze'];const effect=types[i%4];if(effect==='slow'){curr.slowA=.25;curr.slowT=2000;}if(effect==='manaBurn')curr.mana=Math.max(0,curr.mana-Math.round(curr.maxmana*.3));if(effect==='bleed'){curr.poisonT=3000;curr.poisonDmg=Math.round(curr.maxhp*.02);}if(effect==='freeze')curr.frozen=Math.max(curr.frozen,1000);dmgPopup(u,curr,['🌸春','☀夏','🍂秋','❄冬'][i%4],'cast');}
     }
     vfxAt(u,'tex-chain',500);
@@ -1782,20 +1782,22 @@ function castV3Skill(u,units,skMul,k){
     hitList=foes.filter(f=>unitDist(f,anchor)<=radius);
     hitList.forEach(f=>hit(f,k.mult));vfxAoe(anchor,Math.max(1,Math.ceil(radius/2)),u.id==='seki'?'drain':'',650);
     if(k.freeze)hitList.forEach(f=>{if(f.hp>0)f.frozen=Math.max(f.frozen,k.freeze*1000);});
-    if(k.brittle)hitList.forEach(f=>{if(u.id==='liAn')f.v3BrittleOnThaw=k.brittle;else{f.v3Vuln=k.brittle;f.v3VulnT=5000;}});
+    if(k.brittle)hitList.forEach(f=>{if(u.id==='liAn')f.v3BrittleOnThaw=k.brittle;else{f.v3Vuln=k.brittle;f.v3VulnT=5000;f.v3VulnBasicOnly=false;}});
     if(k.mana){u.mana=Math.min(u.maxmana,u.mana+k.mana*hitList.length);}
+    if(u.id==='seki')spawnZone(u,u.x,u.y,{r:3,dur:2600,dps:0,manaBurn:6});
   } else if(k.mode==='zone'){
     if(target){hit(target,k.mult);if(target.hp>0&&k.freeze)target.frozen=Math.max(target.frozen,k.freeze*1000);const zone=Object.assign({},k.zone||{r:1,dur:2500,dps:.2},k.slow?{slow:k.slow}:{});spawnZone(u,target.x,target.y,zone);hitList=[target];}
   } else if(k.mode==='chaos'){
     if(target){hit(target,k.mult);const e=rand();if(e<.34)target.frozen=Math.max(target.frozen,1300);else if(e<.67)target.silenceT=Math.max(target.silenceT||0,1800);else target.mana=Math.max(0,target.mana-20);dmgPopup(u,target,e<.34?'❄裂变':e<.67?'🔇裂变':'🔵裂变','cast');hitList=[target];}
   } else if(k.mode==='teamShield'){
-    allies.forEach(t=>{t.shield=(t.shield||0)+Math.round(t.maxhp*(k.shield||0));if(k.cleanse)v3Cleanse(t);});
+    allies.forEach(t=>{if(k.cleanse){v3Cleanse(t);t.v3ControlWard=1;}v3AddShield(t,t.maxhp*(k.shield||0));});
     v3BuffAllies(allies,k);u.tauntT=Math.max(u.tauntT||0,(k.taunt||0)*1000);vfxAt(u,'tex-barrier ring shield',1100);
   } else if(k.mode==='heal'){
     doHeal(healSet(k.healN||1));
   } else if(k.mode==='team'||k.mode==='support'){
     const recipients=u.id==='suiji'?allies.filter(t=>t!==u):allies;
-    doHeal(recipients);v3BuffAllies(u.id==='suiji'?[u]:allies,k);
+    const cleansed=u.id==='shengge'?recipients.filter(t=>t.stun>0||t.frozen>0||t.silenceT>0||t.hexT>0||t.petrifyT>0):[];
+    doHeal(recipients);v3BuffAllies(u.id==='suiji'?[u]:u.id==='shengge'?cleansed:allies,k);
     if(k.enemyHealDown)foes.forEach(f=>{f.healDownA=Math.max(f.healDownA||0,k.enemyHealDown);f.healDownT=Math.max(f.healDownT||0,4000);});
     if(k.zone)spawnZone(u,u.x,u.y,k.zone);
     if(u.id==='zeyin')Array.from({length:Math.min(4,injuredAtCast)}).forEach(()=>{const f=v3PickTarget(u,foes,{target:'near'});if(f)dealDamage(u,f,Math.round(power*.35),units,'magic');});
@@ -1803,7 +1805,7 @@ function castV3Skill(u,units,skMul,k){
   if(k.dr&&k.mode==='team')v3BuffAllies(allies,k);
   if(k.enemyHealDown&&['field','single','burst','chain','cleave','dash','dashCleave'].includes(k.mode))
     (hitList.length?hitList:foes).filter(f=>f.hp>0).forEach(f=>{f.healDownA=Math.max(f.healDownA||0,k.enemyHealDown);f.healDownT=Math.max(f.healDownT||0,4000);});
-  if(k.wound&&hitList.length)hitList.filter(f=>f.hp>0).forEach(f=>{f.v3Vuln=k.wound;f.v3VulnT=4000;});
+  if(k.wound&&hitList.length)hitList.filter(f=>f.hp>0).forEach(f=>{f.v3Vuln=k.wound;f.v3VulnT=4000;f.v3VulnBasicOnly=true;});
   if(k.noShield&&hitList.length)hitList.filter(f=>f.hp>0).forEach(f=>f.noShieldT=Math.max(f.noShieldT||0,k.noShield*1000));
   if(k.pull&&hitList.length)hitList.forEach(f=>{if(f.hp>0&&!f.big){const dx=Math.sign(u.x-f.x),dy=Math.sign(u.y-f.y);if(freeCell(units,f.x+dx,f.y+dy)){f.x+=dx;f.y+=dy;}}});
   if(u.id==='lianshiye'&&target&&target.hp>0){target.v3CastEcho={owner:u,amp:k.echo||.35,left:5000};}
@@ -2743,7 +2745,10 @@ function checkSynRewards(){ // 首次达成任一羁绊档位：+1 金币（每�
 }
 function skillDesc(u){ // 技能最终描述：原型效果 × 棋子独有变体（倍率/索敌/特效）× 星级
   const d=byId(u.id), sv=svOf(d.id);
-  if(COMBAT_KITS[d.id]) return COMBAT_KITS[d.id].desc;
+  if(COMBAT_KITS[d.id]){
+    const kit=COMBAT_KITS[d.id];
+    return kit.desc+(kit.passive||['guard','guardLink','teamShield'].includes(kit.mode)?'':'（百分比为基础值；实际伤害和治疗还受技能系数、星级与装备影响）');
+  }
   const sm = u.sks!==undefined ? u.sks : Math.pow(SKILL_STAR_M[d.cost]||1.1, (u.star||1)-1);
   const k=(u.skc!==undefined||d.skc!==undefined)?d.skc*sm*(sv.pow||1):skillCoef(d.cost)*sm*(sv.pow||1);
   const tgtTxt = sv.tgt==='low' ? '优先攻击残血' : sv.tgt==='hi' ? '优先攻击高攻' : sv.tgt==='far' ? '攻击最远的敌人' : '';
@@ -4160,9 +4165,13 @@ function genEnemy(){
 }
 
 function prepEnemy(){ S.enemyBoard = genEnemy(); }   // 备战阶段就生成敌方阵容（供玩家观察，开战时直接沿用）
-let battleTimer=null, SPEED=1, currentTick=null, tickWorker=null;   // 默认 1 倍速
-const BATTLE_DELAY = 300;   // 开战后先暂停 0.3 秒（让玩家看清双方站位）再开始移动
-const SKILL_CD = 1800;      // 技能内置冷却（ms）：防止回蓝类技能把蓝秒满后每帧反复施法形成死循环
+let battleTimer=null, currentTick=null, tickWorker=null;
+const SPEED=1;              // 固定播放速度，供现有动画时长计算使用
+const BATTLE_DELAY = 800;   // 开战前留出观察双方站位的时间
+const ATTACK_INTERVAL = 1450;
+const SKILL_CD = 3000;
+const SKILL_RECOVERY = 850; // 施法后留出特效展示时间，再进行下一次普攻
+const SKILL_STAGGER = 800;  // 同场相邻技能间隔足够展示一次技能名与特效
 const ASSASSIN_CRIT_MULT = 1.5;   // 刺客切入后首次攻击的暴击倍率
 function startTickLoop(ms){ // 用 Worker 驱动战斗时钟，避免后台标签页被浏览器节流
   stopTickLoop();
@@ -4179,11 +4188,6 @@ function stopTickLoop(){
   if(tickWorker){ tickWorker.terminate(); tickWorker=null; }
   if(battleTimer){ clearInterval(battleTimer); battleTimer=null; }
 }
-function setSpeed(s){ SPEED=s; document.body.style.setProperty('--spd',s);
-  document.querySelectorAll('.spd-b').forEach(b=>b.classList.toggle('on',+b.dataset.s===s));
-  if(S.phase==='battle') startTickLoop(100/SPEED);
-}
-document.querySelectorAll('.spd-b').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s));
 $('sfxBtn').onclick=toggleSfx;
 paintSfxBtn();
 /* ===== 战斗统计插桩（纯只读：不改任何伤害公式/判定/数值）。每场战斗一个容器，
@@ -4568,11 +4572,11 @@ function startBattle(){
       log(`🧪 临时增益生效：${tb.e} ${tb.n}（${tb.desc}）`);
     }
   }
-  let t=0, delayLeft=BATTLE_DELAY, released=false; const TICK=100;
+  let t=0, delayLeft=BATTLE_DELAY, released=false, lastCastAt=-SKILL_STAGGER, nextCastSide=rand()<.5?0:1; const TICK=100;
   currentTick=()=>{
     if(S.phase!=='battle') return;  // 非战斗阶段，任何残余时钟都是空操作
     t+=TICK;
-    // 开战缓冲：先静止 0.3 秒看清初始站位，之后双方同步开始行动（刺客的切入也在此时发生）
+    // 开战缓冲：先看清双方站位，之后双方同步开始行动（刺客的切入也在此时发生）
     if(!released){
       delayLeft-=TICK;
       if(delayLeft>0){ renderBattle(units); return; }
@@ -4590,8 +4594,20 @@ function startBattle(){
         if(u.thornsT>0){ u.thornsT-=1000; if(u.thornsT<=0){ u.thorns=0; u.thornsT=0; } } // 荆棘增益到期
       }
     }
+    const readyCasters=t-lastCastAt>=SKILL_STAGGER
+      ? units.filter(v=>v.hp>0&&!isPassive(v)&&v.stun<=0&&v.frozen<=0&&v.silenceT<=0&&v.hexT<=0&&v.mana>=v.maxmana&&v.skillCd<=0)
+      : [];
+    const nextCaster=readyCasters.find(v=>v.side===nextCastSide)||readyCasters[0]||null;
     for(const u of units){
+      if(u.v3Afterimage){const ai=u.v3Afterimage;ai.left-=TICK;if(ai.left<=0){u.v3Afterimage=null;vfxAt(u,'tex-memexp boom',700);
+        if(ai.owner&&ai.owner.hp>0&&u.hp>0)dealDamage(ai.owner,u,ai.damage,units,'magic');
+        units.filter(v=>v.hp>0&&v.side===u.side&&unitDist(v,u)<=1).forEach(v=>{v.silenceT=Math.max(v.silenceT||0,1300);staticFx(v);});}}
       if(u.hp<=0) continue;
+      if(u.noShieldT>0)u.shield=0;
+      if(u.v3ControlWard&&(u.stun>0||u.frozen>0||u.silenceT>0||u.hexT>0||u.petrifyT>0)){
+        u.stun=0;u.frozen=0;u.silenceT=0;u.hexT=0;u.petrifyT=0;u.v3ControlWard=0;
+        dmgPopup(null,u,'🐉控场抵消','cast');
+      }
       if(u.sigMark){
         u.sigMark.left-=TICK;
         if(u.sigMark.left<=0) u.sigMark=null;
@@ -4608,18 +4624,15 @@ function startBattle(){
       if(u.v3VulnT>0)u.v3VulnT-=TICK;
       if(u.v3HealLockT>0)u.v3HealLockT-=TICK;
       if(u.v3ShieldCounterT>0){u.v3ShieldCounterT-=TICK;if(u.v3ShieldCounterT<=0)u.v3ShieldCounter=0;}
-      if(u.v3ReflectT>0){u.v3ReflectT-=TICK;if(u.v3ReflectT<=0)u.v3Reflect=0;}
+      if(u.v3ReflectT>0){u.v3ReflectT-=TICK;if(u.v3ReflectT<=0){u.v3Reflect=0;u.v3ReflectBy=null;}}
       if(u.v3CastEcho){u.v3CastEcho.left-=TICK;if(u.v3CastEcho.left<=0)u.v3CastEcho=null;}
       if(u.v3HealBomb){u.v3HealBomb.left-=TICK;if(u.v3HealBomb.left<=0)u.v3HealBomb=null;}
       if(u.tempoT>0){u.tempoT-=TICK;if(u.tempoT<=0)u.tempoHits=0;}
       if(u.v3SoulShieldCd>0)u.v3SoulShieldCd-=TICK;
-      if(u.v3Afterimage){const ai=u.v3Afterimage;ai.left-=TICK;if(ai.left<=0){u.v3Afterimage=null;vfxAt(u,'tex-memexp boom',700);
-        if(ai.owner&&ai.owner.hp>0)dealDamage(ai.owner,u,ai.damage,units,'magic');
-        units.filter(v=>v.hp>0&&v.side===u.side&&unitDist(v,u)<=1).forEach(v=>{v.silenceT=Math.max(v.silenceT||0,1300);staticFx(v);});}}
       if(u.hp<=0)continue;
-      if(u.frozen>0){ u.frozen-=TICK;if(u.frozen<=0&&u.v3BrittleOnThaw>0){u.v3Vuln=Math.max(u.v3Vuln||0,u.v3BrittleOnThaw);u.v3VulnT=Math.max(u.v3VulnT||0,5000);u.v3BrittleOnThaw=0;dmgPopup(null,u,'❄易伤','cast');}continue; }
+      if(u.frozen>0){ u.frozen-=TICK;if(u.frozen<=0&&u.v3BrittleOnThaw>0){u.v3Vuln=Math.max(u.v3Vuln||0,u.v3BrittleOnThaw);u.v3VulnT=Math.max(u.v3VulnT||0,5000);u.v3VulnBasicOnly=false;u.v3BrittleOnThaw=0;dmgPopup(null,u,'❄易伤','cast');}continue; }
       if(u.stun>0){ u.stun-=TICK; continue; }        // 眩晕/击飞：无法行动
-      if(u.atkDownT>0) u.atkDownT-=TICK;             // 攻击力降低
+      if(u.atkDownT>0){u.atkDownT-=TICK;if(u.atkDownT<=0)u.v3WeakenBy=null;} // 攻击力降低
       if(u.slowT>0) u.slowT-=TICK;                   // 攻速/移速降低
       if(u.noShieldT>0) u.noShieldT-=TICK;           // 禁盾
       if(u.healDownT>0) u.healDownT-=TICK;           // 减疗
@@ -4711,11 +4724,14 @@ function startBattle(){
         for(const f of foes){ const d2=unitDist(f,u); if(d2<bd){bd=d2;tgt=f;} } }
       const d=byId(u.id);
       const aspd = d.spd*(u.spdMul||1)*(u.v3HasteMul||1)*(u.itemKillHasteBonus||1);
-      if(!isPassive(u) && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana && u.skillCd<=0){
+      if(u===nextCaster && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana && u.skillCd<=0){
         u.mana=0;
         const haste = Math.min(0.6, (u.side===0?augTotal('skillhaste')/100:0) + (u.skillHaste||0));   // ⏱️ 技能急速 + 湮灭宝珠
         u.skillCd = SKILL_CD*(1-haste);
         castSkill(u,tgt,units,u.skMul);
+        u.cd=Math.max(u.cd,SKILL_RECOVERY);
+        lastCastAt=t;
+        nextCastSide=1-u.side;
       }
       if(unitDist(tgt,u)<=d.rng){   // 距离按占据格集合算：贴 2×2 头目任意一格即在射程内
         if(u.cd<=0){
@@ -4752,11 +4768,16 @@ function startBattle(){
             dmgPopup(null,tgt,'闪避','cast');
             if(tgt.itemDodgeAmp)tgt.itemNextStrikeAmp=Math.max(tgt.itemNextStrikeAmp||0,tgt.itemDodgeAmp);
             if(tgt.id==='yuji')v3RainTrigger(tgt);
-            u.cd = 1150/aspd*(1+slow);
+            u.cd = ATTACK_INTERVAL/aspd*(1+slow);
             continue;
           }
           if(u.itemNextStrikeAmp){dmg=Math.round(dmg*(1+u.itemNextStrikeAmp));u.itemNextStrikeAmp=0;dmgPopup(u,u,'✦蓄势','cast');}
+          u._basicAttack=true;
           const dealt=dealDamage(u,tgt,dmg,units,d.dtype);
+          if(dealt>0&&u.v3WeakenBy&&u.atkDownT>0){
+            const haruka=units.find(v=>v.uid===u.v3WeakenBy&&v.hp>0);
+            if(haruka&&!isPassive(haruka))haruka.mana=Math.min(haruka.maxmana,haruka.mana+4);
+          }
           if(dealt>0&&itemCritHit&&u.itemCritExpose&&tgt.hp>0){
             tgt.itemExposeAmp=Math.max(tgt.itemExposeAmp||0,u.itemCritExpose);tgt.itemExposeT=Math.max(tgt.itemExposeT||0,2500);tgt.itemExposeSide=u.side;tgt.itemExposeBy=u.uid;
             dmgPopup(u,tgt,'✦破绽','cast');
@@ -4777,7 +4798,8 @@ function startBattle(){
             const pm=svOf(u.id).sigMark;
             if(pm) placeSigMark(tgt,u,pm,false);
           }
-          u.cd = 1150/aspd*(1+slow);   // 快节奏：攻击间隔缩短，TTK 与回蓝同步加快
+          u._basicAttack=false;
+          u.cd = ATTACK_INTERVAL/aspd*(1+slow);
           // 刀塔元素（魔道）：被近战攻击时概率石化攻击者（攻击者变形期间不触发）
           if(d.form==='me' && tgt.hp>0 && tgt.petrifyProc>0 && u.hexT<=0 && rand()<tgt.petrifyProc){
             u.petrifyT=Math.max(u.petrifyT,1500);
@@ -4831,7 +4853,7 @@ function startBattle(){
     battleZones.forEach(z=>{ z.acc=(z.acc||0)+TICK;
       if(z.acc>=1000){ z.acc-=1000;
         units.filter(o=>o.hp>0&&o.side!==z.side&&cellsOf(o).some(([cx,cy])=>Math.abs(cx-z.x)<=z.r&&Math.abs(cy-z.y)<=z.r))
-          .forEach(o=>{if(z.slow){o.slowA=Math.max(o.slowA||0,z.slow);o.slowT=Math.max(o.slowT||0,1200);}dealDamage(z.u,o,z.dmg,units,'magic');dmgPopup(null,o,z.slow?'❄减速':'❄禁地','cast');}); }
+          .forEach(o=>{if(z.slow){o.slowA=Math.max(o.slowA||0,z.slow);o.slowT=Math.max(o.slowT||0,1200);}if(z.manaBurn)o.mana=Math.max(0,o.mana-z.manaBurn);if(z.dmg>0)dealDamage(z.u,o,z.dmg,units,'magic');dmgPopup(null,o,z.manaBurn?'🔵烧蓝':z.slow?'❄减速':'❄禁地','cast');}); }
     });
     const alive0=units.filter(u=>u.hp>0&&u.side===0).length;
     const alive1=units.filter(u=>u.hp>0&&u.side===1).length;
@@ -4842,7 +4864,7 @@ function startBattle(){
       return;
     }
   };
-  startTickLoop(100/SPEED);
+  startTickLoop(100);
 }
 /* 医者羁绊「治疗回响」：医者棋子的主动治疗按 u.medEcho 比例转化为
    对敌方生命比例最低单位的魔法伤害（溢出治疗不结算，防止无中生有的伤害循环） */
@@ -4881,7 +4903,7 @@ function dealDamage(src,tgt,dmg,units,dtype){
       vfxAt(src,'ring shield',650);
     }
   }
-  if(tgt.v3VulnT>0){dmg=Math.round(dmg*(1+(tgt.v3Vuln||0)));tgt.v3VulnT=0;tgt.v3Vuln=0;}
+  if(tgt.v3VulnT>0&&(!tgt.v3VulnBasicOnly||(src&&src._basicAttack))){dmg=Math.round(dmg*(1+(tgt.v3Vuln||0)));tgt.v3VulnT=0;tgt.v3Vuln=0;tgt.v3VulnBasicOnly=false;}
   if(tgt.v3LinkT>0){const guard=units.find(v=>v.uid===tgt.v3LinkTo&&v.hp>0);if(guard&&guard!==tgt){const share=Math.min(.6,tgt.v3LinkShare||0),part=Math.round(dmg*share);dmg-=part;if(part>0)dealDamage(src,guard,part,units,dtype);}}
   /* 技能印记：下一次真实伤害时一次性引爆，过期则自然失效；护盾/减伤仍在后续按正常顺序结算。 */
   if(tgt.sigMark && tgt.sigMark.left>0 && (!tgt.sigMark.guard || (src && src.side!==tgt.side))){
@@ -4915,6 +4937,8 @@ function dealDamage(src,tgt,dmg,units,dtype){
     dmg=Math.round(dmg*(1-mr));
   }   // dt==='pure'：纯粹伤害，无视护甲与魔抗
   if(dt!=='pure') dmg=Math.max(dmg, Math.ceil(raw*0.05));   // 多多官方：任意伤害 5% 保底（纯粹伤害除外）
+  if(tgt.noShieldT>0)tgt.shield=0;
+  const preShieldDamage=dmg;
   const shieldBefore=tgt.shield||0;
   if(tgt.shield>0){
     const ab=Math.min(tgt.shield,dmg); tgt.shield-=ab; dmg-=ab;
@@ -4935,25 +4959,24 @@ function dealDamage(src,tgt,dmg,units,dtype){
   if(src&&src._casting&&src.itemManaBurn&&tgt.hp>0&&!isPassive(tgt)){
     const burn=Math.min(tgt.mana,src.itemManaBurn);tgt.mana-=burn;if(burn>0)dmgPopup(src,tgt,'-'+burn+'蓝','cast');
   }
-  if(src&&tgt.v3ReflectT>0&&src._casting){const rp=tgt.v3Reflect||0;tgt.v3Reflect=0;tgt.v3ReflectT=0;if(rp>0)dealDamage(tgt,src,Math.max(1,Math.round(dmg*rp)),units,'magic');}
-  if(src&&shieldBefore>0&&tgt.shield<=0&&tgt.v3ShieldCounterT>0&&tgt.v3ShieldCounter){const cp=tgt.v3ShieldCounter;tgt.v3ShieldCounter=0;tgt.v3ShieldCounterT=0;dealDamage(tgt,src,Math.max(1,Math.round(dmg*cp)),units,'magic');}
+  if(src&&shieldBefore>0&&tgt.shield<=0&&tgt.v3ShieldCounterT>0&&tgt.v3ShieldCounter){const cp=tgt.v3ShieldCounter;tgt.v3ShieldCounter=0;tgt.v3ShieldCounterT=0;dealDamage(tgt,src,Math.max(1,Math.round(preShieldDamage*cp)),units,'magic');}
   // 受击回蓝（多多公式×2）：随机回蓝 min(伤害/5,15) ~ min(伤害/2.5,30)
   if(dmg>0 && !isPassive(tgt) && tgt.silenceT<=0){
     const lo=Math.min(dmg/5,15), hi=Math.min(dmg/2.5,30);
     tgt.mana=Math.min(tgt.maxmana, tgt.mana+(hi>lo? lo+rand()*(hi-lo): lo)*(tgt.manaRegenMul||1));
   }
-  if(src && src.vamp && src.hexT<=0 && src.hp<src.maxhp && dmg>0){
+  if(src && src.vamp && src._basicAttack && src.hexT<=0 && dmg>0){
     const steal=Math.round(dmg*src.vamp), missing=src.maxhp-src.hp;
     const real=Math.min(missing,steal);src.hp+=real;bsHeal(src,real);threadFx(src,tgt);sfx('vampbite');
     const overflow=Math.max(0,steal-real);
     if(overflow&&src.itemVampOverShield){const sh=Math.round(overflow*src.itemVampOverShield);src.shield=(src.shield||0)+sh;if(sh)dmgPopup(src,src,'🛡溢血','cast');}
-  }   // 吸血：过量治疗可转化为血魔护盾
+  }   // 攻击吸血：过量治疗可转化为血魔护盾
   if(src && src.skillVamp && src._casting===true && src.hexT<=0 && src.hp<src.maxhp && dmg>0){
     const sv2=Math.round(dmg*src.skillVamp); const real=Math.min(src.maxhp,src.hp+sv2)-src.hp; src.hp+=real; bsHeal(src,real); threadFx(src,tgt);
   }
   if(src && src.poisonAtk && src.hexT<=0 && tgt.hp>0){ tgt.poisonT=3000; tgt.poisonDmg=Math.round(tgt.maxhp*(src.poisonPow||0.02)); }
   if(src && src.pAtkDot && src.hexT<=0 && tgt.hp>0){ tgt.poisonT=3000; tgt.poisonDmg=Math.round(tgt.maxhp*src.pAtkDot); }
-  if(tgt.thorns && src && src.hp>0 && dmg>0){ src.hp-=Math.max(1,Math.round(tgt.maxhp*tgt.thorns)); dmgPopup(null,src,'荆棘','cast');
+  if(tgt.thorns && src && src.hp>0 && preShieldDamage>0){ src.hp-=Math.max(1,Math.round(tgt.maxhp*tgt.thorns)); dmgPopup(null,src,'荆棘','cast');
     if(tgt.itemThornSlow){src.slowA=Math.max(src.slowA||0,tgt.itemThornSlow);src.slowT=Math.max(src.slowT||0,1400);vfxAt(src,'leaves',420);}
     if(src.hp<=0)triggerItemAllyDeath(src,units); }
   dmgPopup(src,tgt,'-'+dmg);
@@ -5459,7 +5482,13 @@ function showCutin(u, nm, arch){
   setTimeout(()=>{ el.remove(); }, 1180/Math.max(1,SPEED));   // 到期直接移除（进场动画 forwards 已停在淡出帧）
 }
 function castSkill(u,tgt,units,skMul){
-  if(u.v3CastEcho&&u.v3CastEcho.left>0){const echo=u.v3CastEcho;u.v3CastEcho=null;if(echo.owner&&echo.owner.hp>0){dealDamage(echo.owner,u,Math.max(1,Math.round(eatk(echo.owner)*echo.amp)),units,'magic');dmgPopup(echo.owner,u,'♫回响','cast');}}
+  if(u.v3ReflectT>0&&u.v3Reflect){
+    const owner=u.v3ReflectBy, backlash=Math.max(1,Math.round(eatk(u)*(byId(u.id).skc||1)*(u.sks||1)*(u.v3Reflect||0)));
+    u.v3Reflect=0;u.v3ReflectT=0;u.v3ReflectBy=null;
+    if(owner&&owner.hp>0){dealDamage(owner,u,backlash,units,'magic');dmgPopup(owner,u,'↩技能反噬','cast');}
+    if(u.hp<=0)return;
+  }
+  if(u.v3CastEcho&&u.v3CastEcho.left>0){const echo=u.v3CastEcho;if(echo.owner&&echo.owner.hp>0){dealDamage(echo.owner,u,Math.max(1,Math.round(eatk(echo.owner)*echo.amp)),units,'magic');dmgPopup(echo.owner,u,'♫回响','cast');}}
   const kit=COMBAT_KITS[u.id];
   if(kit){castV3Skill(u,units,skMul,kit);itemAfterCast(u,units);return;}
   const d=byId(u.id), [nm,arch]=d.sk;
@@ -5751,7 +5780,7 @@ function dmgPopup(src,tgt,text,cls){
 }
 let battleZones=[];
 function spawnZone(u,x,y,z){   // 持续区域按 tick 结算伤害和附加控制
-  battleZones.push({x,y,r:z.r,dur:z.dur,dmg:Math.max(1,Math.round(u.atk*z.dps)),slow:z.slow||0,side:u.side,acc:0,u});
+  battleZones.push({x,y,r:z.r,dur:z.dur,dmg:z.dps>0?Math.max(1,Math.round(u.atk*z.dps)):0,slow:z.slow||0,manaBurn:z.manaBurn||0,side:u.side,acc:0,u});
   vfxAoe(u,z.r,'frost',z.dur); sfx('zone');
 }
 function renderBattle(units){
@@ -5837,7 +5866,7 @@ function showResultBanner(won,cb){
     }
   }
   $('board').appendChild(el);
-  setTimeout(()=>{ el.remove(); cb(); }, 1000/SPEED);   // 结算横幅停留（随倍速），动画放慢后多留一会
+  setTimeout(()=>{ el.remove(); cb(); }, 1000);   // 结算横幅停留 1 秒
 }
 /* 羁绊启动音映射（表现层） */
 const BOND_ST={深海:'stShenhai',星际:'stXingji',毛茸乐园:'stMaorong',音律:'stYinlv',四禧丸子:'stSixi',学园:'stXueyuan',夜幕:'stYemu',花语:'stHuayu',魔道:'stModao',森之国:'stSenzhi',工造:'stGongzao','P-SP':'stPSP',刀客:'stDaoke',守护:'stShouhu',歌势:'stGeshi',游侠:'stYouxia',法师:'stFashi',咒术:'stZhoushu',刺客:'stCike',狂战:'stKuangzhan',医者:'stYizhe',偶像:'stOuxiang'};
@@ -6540,11 +6569,6 @@ if(IS_TOUCH && typeof document!=='undefined' && document.body){
     const b=document.createElement('button'); b.className='btn'; b.textContent=label; b.dataset.target=id;
     b.onclick=()=>{ closeDrawer(); $(id)?.click(); }; menu.appendChild(b);
   });
-  const speed=document.createElement('div'); speed.className='mobile-speed'; speed.innerHTML='<span>战斗速度</span>';
-  [['1×','1'],['1.5×','1.5'],['2×','2']].forEach(([label,value])=>{
-    const b=document.createElement('button'); b.className='btn'; b.textContent=label;
-    b.onclick=()=>{ document.querySelector(`.spd-b[data-s="${value}"]`)?.click(); }; speed.appendChild(b);
-  }); menu.appendChild(speed);
   const mdraw=(id,mode)=>{ document.getElementById(id).onclick=()=>{ 
     if(S.phase!=='prep'){ closeDrawer(); return; }   // 战斗/结算中：商店装备等都是备战操作，抽屉只收不开、不挡棋盘
     drawerMode()===mode ? closeDrawer() : openDrawer(mode); }; };

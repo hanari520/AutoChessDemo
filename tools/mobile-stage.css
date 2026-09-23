@@ -115,7 +115,4 @@
   body.touch #mMenuSec { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
   body.touch #mMenuSec.hidden { display: none; }
   body.touch #mMenuSec > .btn { min-height: 48px; font-size: 13px; }
-  body.touch #mMenuSec .mobile-speed { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; padding-top: 8px; border-top: 1px solid #e3eafa; }
-  body.touch #mMenuSec .mobile-speed span { margin-right: auto; color: #637495; font-size: 12px; }
-  body.touch #mMenuSec .mobile-speed .btn { min-width: 50px; min-height: 38px; }
 }

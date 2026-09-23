@@ -9,6 +9,8 @@ const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
   byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy, autoDeployBest,
   /* 诊断插桩（DBG/T1 测试用，只读导出，不影响游戏逻辑） */
   get ITEMS(){return ITEMS}, get UNITS(){return UNITS}, get FACTIONS(){return FACTIONS}, get CLASSES(){return CLASSES},
+  get COMBAT_KITS(){return COMBAT_KITS}, get ITEM_FX(){return ITEM_FX}, get ITEM_SPECIAL(){return ITEM_SPECIAL},
+  castSkill, dealDamage, v3Heal, v3AddShield, v3AttackOf, applyV3Attack, v3RainTrigger,
   get SKILL_VAR(){return SKILL_VAR}, get SKILL_INFO(){return SKILL_INFO}, get FORMA_COLS(){return FORMA_COLS},
   placeFormation, genEnemy, prepEnemy, tidyBench, fillBoardBeforeBattle, unitBand, makeBattleUnit, equipTo, sellSelected,
   get sfx(){return typeof sfx==='function'?sfx:null}, get battleStats(){return typeof battleStats!=='undefined'?battleStats:null} };
@@ -151,11 +153,13 @@ function driveBattle(maxTicks = 640) {
 /* 内嵌机器人已删除：统一使用上方加载的 bot_strategy.js（与浏览器实跑同一份） */
 
 /* ---------- 功能断言测试（T1=Phase1 布阵/备战席/补位；用 node 后即退出，不跑主循环） ---------- */
-if (process.env.T1) { require('./_t1_tests.js').run(A, driveBattle); process.exit(0); }
-if (process.env.T2) { require('./_t2_tests.js').run(A, driveBattle); process.exit(0); }
-if (process.env.T3) { require('./_t3_tests.js').run(A, driveBattle); process.exit(0); }
-if (process.env.T4) { require('./_t4_tests.js').run(A, driveBattle); process.exit(0); }
-if (process.env.T5) { require('./_solo_tests.js').run(A, driveBattle); process.exit(0); }   // 🪑 独木桥品质成长
+if (process.env.T1) { require('./_t1_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }
+if (process.env.T2) { require('./_t2_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }
+if (process.env.T3) { require('./_t3_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }
+if (process.env.T4) { require('./_t4_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }
+if (process.env.T5) { require('./_solo_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }   // 🪑 独木桥品质成长
+if (process.env.EFFECT_TEST) { require('./_effect_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }
+if (process.env.PACE_TEST) { require('./_pace_tests.js').run(A); process.exit(process.exitCode||0); }
 
 
 /* ---------- 主循环 ---------- */
