@@ -1,6 +1,6 @@
 # 虚拟棋战 · VirtuaReal 自走棋 Demo
 
-虚拟偶像主题单机闯关自走棋（VirtuaReal + P-SP 角色阵容）。游戏规则与战斗仍由 `index.html` 驱动；界面皮肤、舞台演出和施法表现拆分在 `tools/idol-ui.css`、`tools/idol-redesign.css`、`tools/idol-ui.js` 与 `tools/idol-ui-redesign.js`，无需构建或安装依赖。
+虚拟偶像主题自走棋（VirtuaReal + P-SP 角色阵容），包含单人闯关与 8 人 bot 竞技。游戏规则与战斗仍由 `index.html` 驱动；界面皮肤、舞台演出和施法表现拆分在 `tools/idol-ui.css`、`tools/idol-redesign.css`、`tools/idol-ui.js` 与 `tools/idol-ui-redesign.js`，无需构建或安装依赖。
 
 ## 本地游玩
 
@@ -25,7 +25,8 @@ python -m http.server 8081
 
 ## 玩法速览
 
-- 25 回合通关；每 5 回合野怪回合（胜利掉装备，失败不扣血）；通关后可进入 ♾ 无限模式
+- 闯关模式为 25 回合通关；每 5 回合野怪回合（胜利掉装备，失败不扣血）；通关后可进入 ♾ 无限模式
+- 八人竞技模式：1 名玩家与 7 名风格各异的 bot 共用卡池，每回合 1 对 1，生命归零淘汰，最后存活者获胜；玩家对局使用完整战斗演算，bot 之间用阵容战力模型快速结算；玩家出局后赛事会继续模拟到冠军产生
 - 经济：开局 10 金；基础收入 1→5 金递增；利息每 10 金 +1（上限 5）；胜利奖金 2 金；连胜/连败 3/5/7 → +2/3/4
 - 等级=人口（1 级起步，最高 10）；买经验 5 金 +5 经验，每回合自然 +2
 - 商店 5 卡槽独立按等级概率表抽取，共享卡池 50/40/30/20/10 张
@@ -37,7 +38,7 @@ python -m http.server 8081
 ## 开发工具（tools/）
 
 - `sim.js`：无头模拟器（Node），统计通关率/战斗时长/野怪胜率：`node tools/sim.js 300`
-- `bot_strategy.js`：普通玩家机器人策略（sim 与浏览器共用）
+- `bot_strategy.js`：托管与竞技 bot 共用的自适应运营策略，按经济、血量、战力差、对子进度、羁绊和对手阵容调整买牌、升级、搜牌、装备与站位；竞技 bot 有各自的运营风格与独立状态
 - `accept25.py`：浏览器连打 25 局验收：`python tools/accept25.py`
 - `duoduo_doc.txt`：数值设计参考文档提取版
 

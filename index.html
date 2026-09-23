@@ -1085,6 +1085,7 @@ body.touch .m-only { display:inline-block; }
     <div id="bench"></div>
   </div>
   <div id="side">
+    <div class="panel" id="arenaPanel" style="display:none"><h3>八人竞技 · 对手与名次</h3><div id="arenaInfo"></div></div>
     <div class="panel"><h3>战斗统计</h3><div id="statBar"></div></div>
     <div class="panel" id="equipPanel"><h3 title="点装备→点棋子穿戴；右键棋子卸下全部装备">装备</h3><div id="equip"></div></div>
     <div class="panel"><h3 title="单击棋子查看">棋子详情</h3><div id="inspect"><div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div></div></div>
@@ -1975,6 +1976,7 @@ function renderModePick(){
   const dc=CURSES.find(x=>x.id===dcid);
   const cards=[
     {m:'normal', t:'🎲 普通模式', d:'标准规则开局'},
+    {m:'arena', t:'🏟 八人竞技', d:'你与 7 名 bot 同场运营 · 每回合 1 对 1 · 淘汰定排名'},
     {m:'daily',  t:'📅 每日挑战', d:'种子 '+todaySeed()+' · 全体玩家同序列<br>今日诅咒：'+(dc?dc.n:'无')},
     {m:'custom', t:'⚠ 自定义诅咒', d:'自选诅咒换取补偿<br>可叠加多条（少数互斥）'},
   ];
@@ -1985,7 +1987,14 @@ function renderModePick(){
   if(di){ di.style.display = selMode==='daily' ? 'block' : 'none'; if(selMode==='daily') di.innerHTML=dailyInfoHTML(); }
 }
 function startSelected(){
+  if(selMode!=='arena')try{localStorage.removeItem(ARENA_SAVE_KEY);}catch(e){}
   if(selMode==='daily'){ startDaily(); return; }
+  if(selMode==='arena'){
+    $('overlay').classList.add('hidden'); ovMode='start';
+    newGame({arena:true}); renderAll(); $('fightBtn').disabled=false;
+    log('🏟 八人竞技开始：七名对手会独立运营，存活到最后获胜！');
+    return;
+  }
   const custom=selMode==='custom';
   $('overlay').classList.add('hidden'); ovMode='start';
   newGame(custom?{custom:true}:{}); renderAll(); $('fightBtn').disabled=false;
@@ -2192,8 +2201,8 @@ function checkLevel(){ let need=xpNeed(S.lvl);
   while(S.lvl<lvlCap() && S.xp>=need){ S.lvl++; S.xp-=need; sfx('pop'); log('⬆ 人口升级至 '+S.lvl+'（回合经验积累）'); need=xpNeed(S.lvl); } }
 
 /* ================= 状态 ================= */
-let S;
-function newGame(opts){ opts=opts||{};
+let S, ARENA=null, ARENA_SILENT=false;
+function newGame(opts){ opts=opts||{}; autoRunId++; autoBusy=false; ARENA=null;
   S = { round:1, hp:40, gold:10, lvl:2, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[], augs:[], tickets:0, tempBuff:null,
     ms:{}, curses:[], cursesData:{}, soloBoost:0, daily:false, dseed:0,
     bench:Array(BENCH).fill(null), board:Array(BOARD_H*BOARD_W).fill(null),
@@ -2203,6 +2212,7 @@ function newGame(opts){ opts=opts||{};
       hpLog:[],      // 每回合扣血记录 {r,d}（阶段扣血曲线用）
       mvp:{} } };    // 全场累计之最（按棋子名聚合：deal/take/heal/kills）
   S.pool={}; initPool();
+  S.menuPreview=!!opts.menuPreview;
   // 模式：每日种子挑战（当日预置诅咒）优先于手动勾选
   S.daily=!!opts.daily;
   if(S.daily){ S.dseed=todaySeed(); }
@@ -2227,18 +2237,287 @@ function newGame(opts){ opts=opts||{};
   }
   if(hasCurse('solo')) log('🪑 独木桥：人口升满 5 后，商店品质随回合自动提升——第 6 回合起每 5 回合 +1 级，第 31 回合升满 11 级；满人口后可点「提前升档」花金币立即 +1 档（10/15/20… 金递增，排班到点自动追平消耗）');
   if(S.tickets>0) log(`🎫 当前持有升星券 ×${S.tickets}：点击 3★ 棋子，在详情面板升为 4★（顶栏 🎫 可查余量）`);
-  prepEnemy();
-  rollShop();   // 开局发牌（含第 1 回合保底 1 费）
   S.auto = autoStoreGet(); setAutoUI();   // 托管开关跨局保留
   S.autoFight = afStoreGet();   // 自动开战跨局保留（与托管互斥：开着它就不托管）
-  if(S.autoFight){ S.auto=false; autoStoreSet(false); setAutoUI(); renderAutoFightBtn(); scheduleAutoFight(); }
-  if(S.auto) autoPilot(900);
+  if(S.autoFight){ S.auto=false; autoStoreSet(false); setAutoUI(); renderAutoFightBtn(); }
+  if(opts.arena){ S.arena=true; startArenaMatch(); }
+  else { prepEnemy(); rollShop(); }
+  if(!opts.menuPreview){
+    if(S.autoFight && S.phase==='prep') scheduleAutoFight();
+    if(S.auto) autoPilot(900);
+  }
 }
 function initPool(){ UNITS.forEach(u=>{ S.pool[u.id]=POOL_COPIES[u.cost]; }); }   // 初始化限量卡池（含开局保底 1 费）
+
+/* 八人竞技：八份独立运营状态，共享卡池；每轮配对为 1v1。bot 对局用战力模型快速结算，
+   玩家所在的一场仍走完整战斗引擎与动画。 */
+const ARENA_BOTS=[
+  {name:'雾岛·稳健',style:'economy'}, {name:'夜航·连胜',style:'tempo'},
+  {name:'星野·追三',style:'reroll'}, {name:'霜月·羁绊',style:'synergy'},
+  {name:'赤焰·压制',style:'aggressive'}, {name:'青羽·转型',style:'flexible'},
+  {name:'白昼·均衡',style:'balanced'}
+];
+function arenaStats(){ return {wins:0,losses:0,maxStreak:0,maxLossStreak:0,kills:0,dmgTaken:0,goldEarned:0,goldSpent:0,bought:0,
+  goldBy:{base:0,interest:0,streak:0,loss:0,win:0,syn:0,sell:0},hpLog:[],mvp:{}}; }
+function makeArenaBotState(profile,pool){ return {
+  round:1,hp:40,gold:10,lvl:2,xp:0,streak:0,lossStreak:0,phase:'prep',endless:false,arena:true,
+  lock:false,synDone:[],augs:[],tickets:0,tempBuff:null,ms:{},curses:[],cursesData:{},soloBoost:0,daily:false,dseed:0,
+  bench:Array(BENCH).fill(null),board:Array(BOARD_W*BOARD_H).fill(null),shop:[],enemyBoard:[],uid:1,log:[],items:[],
+  selItem:null,selUid:null,pool,stats:arenaStats(),botProfile:profile.style,botName:profile.name,botPlan:null,botDef:false,
+  goldBy:{base:0,interest:0,streak:0,loss:0,win:0,syn:0,sell:0}
+}; }
+function withArenaState(state,fn){ const prev=S, wasSilent=ARENA_SILENT; S=state; ARENA_SILENT=true;
+  try{return fn();} finally{S=prev;ARENA_SILENT=wasSilent;} }
+function arenaEnemyBoard(board,seatNo){
+  const out=Array(BOARD_W*BOARD_H).fill(null);
+  (board||[]).forEach((u,i)=>{ if(!u)return; const y=Math.floor(i/BOARD_W),x=i%BOARD_W;
+    if(y<BOARD_H/2)return;
+    const ey=BOARD_H-1-y;
+    out[ey*BOARD_W+x]={...u,uid:(seatNo+1)*10000+(u.uid||i+1),x,y:ey,items:(u.items||[]).slice(),enemy:true};
+  });
+  return out;
+}
+function arenaPairFor(seat){ return ARENA && ARENA.pairings.find(p=>p.a===seat||p.b===seat); }
+function arenaOpponent(seat){ const p=arenaPairFor(seat); return !p?null:(p.a===seat?p.b:p.a); }
+function arenaSetOpponent(state,seat,opponent){
+  if(!opponent)return;
+  const otherIndex=ARENA.seats.indexOf(opponent);
+  state.enemyBoard=arenaEnemyBoard(opponent.state.board,otherIndex);
+  state.arenaOpponentName=opponent.name;
+  state.arenaOpponentLevel=opponent.state.lvl;
+  state.arenaGhost=!!(arenaPairFor(seat)||{}).ghost;
+  state.enemyComp={round:ARENA.round,name:opponent.name,mix:{}};
+}
+function arenaMakePairings(){
+  const alive=ARENA.seats.filter(p=>p.alive).slice().sort(()=>Math.random()-.5);
+  ARENA.pairings=[];
+  while(alive.length>=2){
+    const a=alive.pop();
+    let candidates=alive.map((p,i)=>({p,i})).filter(x=>x.p.id!==a.lastOpponent&&x.p.lastOpponent!==a.id);
+    if(!candidates.length)candidates=alive.map((p,i)=>({p,i})).filter(x=>x.p.id!==a.lastOpponent);
+    const pick=candidates.length?candidates[Math.floor(Math.random()*candidates.length)]:{p:alive[alive.length-1],i:alive.length-1};
+    const b=alive.splice(pick.i,1)[0];
+    a.lastOpponent=b.id;b.lastOpponent=a.id;
+    ARENA.pairings.push({a,b,ghost:false});
+  }
+  if(alive.length){
+    const ghosts=ARENA.seats.filter(p=>!p.alive).sort((a,b)=>(b.eliminatedRound||0)-(a.eliminatedRound||0));
+    const bye=alive.pop();
+    ARENA.pairings.push({a:bye,b:ghosts[0]||bye,ghost:true});
+  }
+}
+function arenaPrepareBots(firstRound=false){
+  const formaBefore=FORMA_IDX;
+  try{
+    ARENA.seats.filter(p=>p.alive&&!p.human).forEach(seat=>{
+      const foe=arenaOpponent(seat);
+      withArenaState(seat.state,()=>{
+        S.arena=true; S.phase='prep'; S.auto=false;
+        if(!firstRound){ S.round=ARENA.round; S.lock=false; rollShop(); }
+        arenaSetOpponent(S,seat,foe);
+        if(typeof botPrep==='function') botPrep();
+      });
+    });
+  } finally { FORMA_IDX=formaBefore; }
+}
+function startArenaMatch(){
+  const human=S; human.arena=true; human.curses=[]; human.cursesData={}; human.augs=[];
+  human.round=1; human.phase='prep'; human.enemyBoard=[]; human.enemyComp=null; human.arenaOpponentName='';
+  const pool=human.pool;
+  const seats=[{id:'human',name:'你',human:true,alive:true,place:null,state:human}];
+  ARENA_BOTS.forEach((p,i)=>seats.push({id:'bot'+(i+1),name:p.name,human:false,alive:true,place:null,
+    state:makeArenaBotState(p,pool)}));
+  ARENA={round:1,seats,pairings:[],eliminated:[],startedAt:Date.now(),complete:false};
+  arenaMakePairings();
+  seats.forEach(seat=>withArenaState(seat.state,()=>{ S.arena=true; S.round=1; rollShop(); }));
+  arenaPrepareBots(true);
+  const me=seats[0], foe=arenaOpponent(me);
+  arenaSetOpponent(human,me,foe);
+  human.phase='prep';
+  renderArenaHUD();
+}
+function arenaSeatPower(state){
+  const board=(state.board||[]).filter(Boolean), active=board.slice(0,Math.min(board.length,state.lvl||11));
+  const raw=active.reduce((n,u)=>n+((u.atk||0)*1.5+(u.maxhp||u.hp||0)*.22)*Math.pow(u.star||1,1.65),0);
+  const syn=(typeof teamSynScore==='function')?withArenaState(state,()=>teamSynScore(active)):0;
+  const items=active.reduce((n,u)=>n+(u.items||[]).length*22,0);
+  return Math.max(1,raw+syn*3+items+active.length*18);
+}
+function arenaEstimateDuel(a,b){
+  const pa=arenaSeatPower(a.state),pb=arenaSeatPower(b.state),gap=(pa-pb)/Math.max(1,(pa+pb)/2);
+  const pA=Math.max(.08,Math.min(.92,.5+gap*.42));
+  const aWins=Math.random()<pA;
+  const winner=aWins?a:b, loser=aWins?b:a;
+  const ratio=Math.max(.05,Math.min(.72,Math.abs(gap)*.45+.18));
+  const survivorCount=Math.max(1,Math.ceil(winner.state.board.filter(Boolean).length*ratio));
+  return {winner,loser,survivors:survivorCount,ghost:false,bot:true};
+}
+function renderArenaHUD(){
+  const panel=$('arenaPanel'),info=$('arenaInfo'); if(!panel||!info)return;
+  if(!ARENA||!S.arena){panel.style.display='none';return;}
+  panel.style.display='block';
+  const alive=ARENA.seats.filter(p=>p.alive).sort((a,b)=>b.state.hp-a.state.hp);
+  const me=ARENA.seats[0], foe=arenaOpponent(me);
+  info.innerHTML=`<div style="font-size:12px;color:#9aa2c8;margin-bottom:6px">第 ${ARENA.round} 回合 · 存活 ${alive.length}/8<br>本轮对手：<b style="color:#ffd24a">${foe?foe.name:'—'}</b>${ARENA.pairings.some(p=>p.a===me&&p.ghost)?'（镜像轮空）':''}</div>`+
+    alive.map((p,i)=>`<div style="display:flex;justify-content:space-between;font-size:12px;line-height:1.8;color:${p.human?'#ffd24a':'#dcd6f2'}"><span>${i+1}. ${p.name}</span><span>❤${p.state.hp} · Lv${p.state.lvl}</span></div>`).join('')+
+    ARENA.seats.filter(p=>!p.alive).sort((a,b)=>(b.place||0)-(a.place||0)).map(p=>`<div style="display:flex;justify-content:space-between;font-size:11px;color:#777b91;line-height:1.65"><span>${p.place||'淘汰'}位 · ${p.name}</span><span>淘汰</span></div>`).join('');
+}
+function arenaRecordGold(state,amount,key){
+  if(amount<=0)return;
+  state.gold+=amount; state.stats.goldEarned=(state.stats.goldEarned||0)+amount;
+  state.stats.goldBy=state.stats.goldBy||{}; state.stats.goldBy[key]=(state.stats.goldBy[key]||0)+amount;
+}
+function arenaReleaseSeatCards(seat){
+  const state=seat.state;if(state.arenaPoolReleased)return;
+  [...(state.board||[]),...(state.bench||[])].filter(Boolean).forEach(u=>{
+    state.pool[u.id]=(state.pool[u.id]||0)+Math.pow(3,(u.star||1)-1);
+  });
+  (state.shop||[]).filter(Boolean).forEach(u=>state.pool[u.id]=(state.pool[u.id]||0)+1);
+  state.shop=[];state.arenaPoolReleased=true;
+}
+function arenaApplySeatResult(seat,result,round){
+  const state=seat.state;
+  withArenaState(state,()=>{
+    S.round=round; S.phase='prep';
+    if(!result.ghost){
+      if(result.winner===seat){
+        S.streak++; S.lossStreak=0; S.stats.wins++;
+        S.stats.maxStreak=Math.max(S.stats.maxStreak||0,S.streak);
+        const bonus=S.streak>=7?4:S.streak>=5?3:S.streak>=3?2:0;
+        arenaRecordGold(S,bonus,'streak'); arenaRecordGold(S,2,'win');
+      } else {
+        S.stats.losses++; S.lossStreak=(S.lossStreak||0)+1; S.streak=0;
+        S.stats.maxLossStreak=Math.max(S.stats.maxLossStreak||0,S.lossStreak);
+        const dmg=1+Math.floor(Math.max(0,(result.survivors||1)-1)/2)+Math.floor((round-1)/5);
+        S.hp=Math.max(0,S.hp-dmg); S.stats.dmgTaken=(S.stats.dmgTaken||0)+dmg;
+        (S.stats.hpLog=S.stats.hpLog||[]).push({r:round,d:dmg});
+        if(S.lossStreak>=7)arenaRecordGold(S,4,'loss');
+        else if(S.lossStreak>=5)arenaRecordGold(S,3,'loss');
+        else if(S.lossStreak>=3)arenaRecordGold(S,2,'loss');
+      }
+    }
+    const base=baseIncome(); arenaRecordGold(S,base,'base');
+    const interest=Math.min(5,Math.floor(S.gold/10)); arenaRecordGold(S,interest,'interest');
+    if(round%5===0){
+      const gear=Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted&&!ITEMS[k].arti);
+      if(gear.length)S.items.push(gear[Math.floor(rand()*gear.length)]);
+    }
+    if(S.hp<=0){S.hp=0;seat.alive=false;seat.eliminatedRound=round;arenaReleaseSeatCards(seat);}
+    else checkSynRewards();
+    S.stats.goldSpent=S.stats.goldSpent||0;
+  });
+}
+function arenaMarkEliminations(){
+  const living=ARENA.seats.filter(p=>p.alive);
+  ARENA.seats.filter(p=>!p.alive&&!p.place).forEach(p=>{
+    p.place=living.length+1; p.eliminatedRound=p.eliminatedRound||ARENA.round;
+    ARENA.eliminated.unshift(p.id);
+  });
+}
+function arenaFinishBotBracket(){
+  let guard=0;
+  while(ARENA.seats.filter(p=>p.alive).length>1&&guard++<100){
+    ARENA.round++;
+    ARENA.seats.filter(p=>p.alive&&!p.human).forEach(seat=>withArenaState(seat.state,()=>{
+      S.round=ARENA.round; S.phase='prep'; S.enemyBoard=[]; S.lock=false;
+      if(S.lvl<lvlCap()){S.xp+=2;checkLevel();}
+      rollShop();
+    }));
+    arenaMakePairings();
+    arenaPrepareBots(true);
+    ARENA.pairings.forEach(pair=>{
+      if(pair.ghost){ arenaApplySeatResult(pair.a,{ghost:true},ARENA.round); return; }
+      const result=arenaEstimateDuel(pair.a,pair.b);
+      arenaApplySeatResult(result.winner,result,ARENA.round);
+      arenaApplySeatResult(result.loser,result,ARENA.round);
+    });
+    arenaMarkEliminations();
+  }
+  const living=ARENA.seats.filter(p=>p.alive);
+  if(living.length===1)living[0].place=1;
+}
+function arenaDuelResults(humanResult){
+  const results=[];
+  ARENA.pairings.forEach(pair=>{
+    if(pair.ghost){results.push({winner:pair.a,loser:pair.b,survivors:0,ghost:true,pair});return;}
+    if(pair.a.human||pair.b.human){
+      const winner=humanResult.won?ARENA.seats[0]:arenaOpponent(ARENA.seats[0]);
+      results.push({winner,loser:winner===pair.a?pair.b:pair.a,
+        survivors:humanResult.won?humanResult.alive0:humanResult.alive1,ghost:false,pair});
+    } else results.push({...arenaEstimateDuel(pair.a,pair.b),pair});
+  });
+  return results;
+}
+function arenaNextRound(){
+  ARENA.round++;
+  ARENA.seats.filter(p=>p.alive).forEach(seat=>withArenaState(seat.state,()=>{
+    S.round=ARENA.round; S.phase='prep'; S.enemyBoard=[]; S.lock=false;
+    if(S.lvl<lvlCap()){S.xp+=2;checkLevel();}
+    rollShop();
+  }));
+  arenaMakePairings();
+  arenaPrepareBots(true);
+  const me=ARENA.seats[0],foe=arenaOpponent(me);
+  arenaSetOpponent(S,me,foe);
+  S.round=ARENA.round; S.phase='prep';
+  renderAll(); $('fightBtn').disabled=false;
+  log(`— 八人竞技 · 第 ${ARENA.round} 回合备战 — 对手：${foe?foe.name:'轮空'}`);
+  if(ARENA.round%5===0)log('🎁 本回合每名存活选手获得 1 件基础装备');
+  if(S.auto)autoPilot(250);
+  scheduleAutoFight();
+}
+function arenaFinish(humanPlace){
+  if(!ARENA||ARENA.complete)return;
+  ARENA.complete=true; S.phase='over'; endRunCleanup(); hideOvClose();
+  const human=ARENA.seats[0];
+  const alive=ARENA.seats.filter(p=>p.alive).sort((a,b)=>b.state.hp-a.state.hp);
+  if(humanPlace==null){ alive.forEach((p,i)=>{p.place=i+1;}); humanPlace=ARENA.seats[0].place||8; }
+  else ARENA.seats[0].place=humanPlace;
+  alive.forEach((p,i)=>{if(!p.place)p.place=i+1;});
+  ARENA.seats.filter(p=>!p.place).forEach(p=>p.place=alive.length+1);
+  writeRunHistory(humanPlace===1); checkAchievements();
+  try{localStorage.removeItem(saveKey());}catch(e){}
+  const order=ARENA.seats.slice().sort((a,b)=>(a.place||8)-(b.place||8));
+  $('ovTitle').textContent=humanPlace===1?'🏆 八人竞技 · 冠军！':`🏟 八人竞技 · 第 ${humanPlace} 名`;
+  const exitText=humanPlace===1?`你坚持到第 ${ARENA.round} 回合并夺冠`:
+    human.forfeited?`你在第 ${human.eliminatedRound||ARENA.round} 回合主动退赛`:
+    `你在第 ${human.eliminatedRound||ARENA.round} 回合出局`;
+  $('ovText').innerHTML=`<div style="text-align:left;max-width:430px;margin:0 auto;line-height:1.9">`+
+    `<div style="text-align:center;margin-bottom:8px">赛事进行至第 ${ARENA.round} 回合 · ${exitText} · ${S.stats.wins} 胜 ${S.stats.losses} 负 · 击败 ${S.stats.kills} 枚棋子</div>`+
+    order.map(p=>`<div style="display:flex;justify-content:space-between;border-bottom:1px solid #343047;padding:3px 6px;color:${p.human?'#ffd24a':'#dcd6f2'}"><b>${p.place}. ${p.name}</b><span>${p.alive?'存活':'淘汰'} · ❤${p.state.hp} · Lv${p.state.lvl}</span></div>`).join('')+
+    `</div>`;
+  $('ovBtn').textContent='再来一局'; $('ovBtn').onclick=()=>{ $('overlay').classList.add('hidden');newGame({arena:true});renderAll(); };
+  $('ovBtn').style.display='inline-block'; $('ovBtn2').style.display='none'; $('overlay').classList.remove('hidden');
+}
+function arenaSettleHuman(won,alive0,alive1){
+  if(!ARENA||ARENA.complete)return;
+  const me=ARENA.seats[0], foe=arenaOpponent(me), pair=arenaPairFor(me), ghost=!!(pair&&pair.ghost);
+  const results=arenaDuelResults({won,alive0,alive1});
+  results.forEach(result=>{
+    if(result.ghost){ arenaApplySeatResult(result.winner,{ghost:true},ARENA.round); return; }
+    arenaApplySeatResult(result.winner,result,ARENA.round);
+    arenaApplySeatResult(result.loser,result,ARENA.round);
+  });
+  arenaMarkEliminations();
+  if([...S.board,...S.bench].filter(Boolean).filter(u=>u.star>=3).length>=5)(S.ms=S.ms||{}).five3=1;
+  checkAchievements();
+  if(!me.alive){
+    arenaFinishBotBracket(); arenaFinish(me.place||8); return;
+  }
+  const living=ARENA.seats.filter(p=>p.alive);
+  if(living.length<=1){
+    if(living[0])living[0].place=1;
+    arenaFinish(me.place||1); return;
+  }
+  if(foe&&!foe.human&&!foe.alive)log(`☠ ${foe.name} 已被淘汰`);
+  log(ghost?'👻 轮空对局已结算，本轮不计入胜负':'🏟 本轮所有对局已结算');
+  arenaNextRound();
+}
 
 /* ================= 工具 ================= */
 const $=id=>document.getElementById(id);
 function log(t){ S.log.unshift(t); if(S.log.length>60)S.log.pop();   // 上限 60：结算块 6~9 行/回合，40 会把上回合块冲掉太快
+  if(ARENA_SILENT) return;
   $('log').innerHTML = S.log.map(x=>'· '+x).join('<br>'); }
 /* ================= 声音系统（Web Audio 程序化合成，纯表现层） =================
    单一 sfx(key) 入口；无 AudioContext（sim 桩/无头环境）一律静默 no-op；
@@ -2319,6 +2598,7 @@ function sfxCtx(){
   return _actx;
 }
 function sfx(key){
+  if(ARENA_SILENT) return;
   if(window.__sfxCount){ window.__sfxCount[key]=(window.__sfxCount[key]||0)+1; }   // DBG 计数（不计静音状态）
   if(!_sfxOn) return;
   const ctx=sfxCtx();
@@ -2551,6 +2831,7 @@ function sellSelected(){
   renderAll();
 }
 function compForRound(r){
+  if(S.arena) return {name:S.arenaOpponentName||'竞技对手',mix:{}};
   if(r%5===0) return {name:CREEP[r]||'🐗 野怪', boss:true};
   if(S.enemyComp && S.enemyComp.round===r) return S.enemyComp;   // prepEnemy 已随机好的本回合阵容
   return {name:'杂牌部队', mix:{守护:1, 刀客:2}};
@@ -2593,6 +2874,7 @@ function unitHTML(u,sel){
 }
 /* 首局欢迎指引：第 1 回合备战且棋盘为空时显示（放上棋子/开战即消失） */
 function renderBoard(){
+  if(ARENA_SILENT) return;
   const b=$('board'); b.innerHTML='';
   for(let y=0;y<BOARD_H;y++) for(let x=0;x<BOARD_W;x++){
     const i=y*BOARD_W+x;
@@ -2684,6 +2966,7 @@ function paintEquipDrop(clientX, clientY){
   return u?{t,i,u}:null;
 }
 function renderBench(){
+  if(ARENA_SILENT) return;
   const b=$('bench');
   b.innerHTML='<span style="grid-column:1/-1;font-size:11px;color:var(--tx2);letter-spacing:2px;text-align:left;line-height:1.2">备战席</span>';
   for(let i=0;i<BENCH;i++){
@@ -2716,6 +2999,7 @@ function previewShopInspect(u){
     <div class="in-desc">${skillDesc(d)}</div>`;
 }
 function renderShop(){
+  if(ARENA_SILENT) return;
   const s=$('shop'); s.innerHTML='';
   S.shop.forEach((u,i)=>{
     const c=document.createElement('div');
@@ -2751,14 +3035,15 @@ function renderShop(){
   });
 }
 function renderTop(){
-  $('round').textContent=(S.daily?'每日 ':'')+(S.endless ? S.round+' 无尽' : S.round);
-  $('roundMax').textContent = S.endless ? '' : '/'+chLen();   // ⏱ 短章急行：章节周期 25→15
+  if(ARENA_SILENT) return;
+  $('round').textContent=S.arena?('🏟 '+S.round):((S.daily?'每日 ':'')+(S.endless ? S.round+' 无尽' : S.round));
+  $('roundMax').textContent = S.arena?'/竞技':(S.endless ? '' : '/'+chLen());   // ⏱ 短章急行：章节周期 25→15
   { // 章节刻度条：一眼看到「距守关 Boss 还有几回合」；无尽模式按章节周期取模
     const rt=$('roundTicks');
     if(rt){
-      const n=chLen(), cur=S.endless ? (S.round-1)%n : S.round-1;
+      const n=S.arena?8:chLen(), cur=S.arena?Math.max(0,8-ARENA.seats.filter(p=>p.alive).length): (S.endless ? (S.round-1)%n : S.round-1);
       if(rt.childElementCount!==n)
-        rt.innerHTML=Array.from({length:n},(_,i)=>`<i${(i+1)%n===0?' class="boss"':''}></i>`).join('');
+        rt.innerHTML=Array.from({length:n},(_,i)=>`<i${!S.arena&&(i+1)%n===0?' class="boss"':''}></i>`).join('');
       [...rt.children].forEach((el,i)=>el.classList.toggle('on',i<=cur));
     }
   }
@@ -2908,6 +3193,7 @@ function synBadges(cnt,cfg,icons){
   }).join('') || '<div class="syn-empty">上场棋子后显示羁绊</div>';
 }
 function renderSynergy(){
+  if(ARENA_SILENT) return;
   const facCnt={}, clsCnt={};
   const seen=new Set(); // 羁绊按不同棋子计数：同名重复副本只算 1 个
   S.board.filter(Boolean).forEach(u=>{ if(seen.has(u.id)) return; seen.add(u.id);
@@ -3013,6 +3299,7 @@ function autoEquipAll(){
   return worn;
 }
 function renderEquip(){
+  if(ARENA_SILENT) return;
   const e=$('equip');
   const p=S.inspectUid!=null?findUnit(S.inspectUid):null;
   const u=p?getAt(p[0],p[1]):null;
@@ -3056,7 +3343,7 @@ function renderEquip(){
     inventory.appendChild(c);
   });
 }
-function renderAll(){ window.__S=S; renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); saveGame(); fitBoardCell(); }
+function renderAll(){ if(ARENA_SILENT) return; window.__S=S; renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); renderArenaHUD(); if(!S.menuPreview)saveGame(); fitBoardCell(); }
 /* ===== 棋盘自适应：实测中央区剩余宽高写入 --cell（桌面端替代 CSS 魔法数公式；竖屏/横屏仍走媒体查询） ===== */
 function fitBoardCell(){
   if(typeof matchMedia!=='function' || typeof document.body.style?.setProperty!=='function') return;   // sim 无头桩环境：跳过
@@ -5666,6 +5953,7 @@ function endBattle(alive0,alive1){
     lastBattleStats=battleStats;   // 保留给统计条（回合后查看上一场输出/抗伤/治疗）
     battleStats=null;
   }
+  if(S.arena){ arenaSettleHuman(won,alive0,alive1); return; }
   // —— 结构化结算块：收集后倒序写出（log 是 unshift，倒序写=面板正序读）——
   const blk=[];
   const flush=()=>{ for(let i=blk.length-1;i>=0;i--) log(blk[i]); };
@@ -5801,10 +6089,10 @@ function enterEndless(){
   autoPilot();
 }
 function endRunCleanup(){   // 终局统一收尾：托管/自动开战关闭（下一局默认手动），UI 同步
-  S.auto=false; autoStoreSet(false); setAutoUI();
+  S.auto=false; autoRunId++; autoBusy=false; autoStoreSet(false); setAutoUI();
   cancelAutoFight(); S.autoFight=false; afStoreSet(false); renderAutoFightBtn();
 }
-function restartGame(){ $('overlay').classList.add('hidden'); newGame({daily:!!S.daily}); }   // 再来一局保持模式（每日挑战重试=同种子同起点）
+function restartGame(){ $('overlay').classList.add('hidden'); if(!S.arena)try{localStorage.removeItem(ARENA_SAVE_KEY);}catch(e){} newGame({daily:!!S.daily,arena:!!S.arena}); }   // 再来一局保持模式
 function gameOver(win){
   S.phase='over'; ovMode='start'; hideOvClose(); endRunCleanup();
   writeRunHistory(win); checkAchievements();   // 历史战绩 + 终局成就判定
@@ -5819,6 +6107,11 @@ function gameOver(win){
 }
 function endRunEarly(){  // 🏁 主动收兵：任意模式备战期均可（无限模式记胜，普通/每日/自定义记弃局）
   if(S.phase!=='prep') return;
+  if(S.arena){
+    const me=ARENA&&ARENA.seats[0];
+    if(me){me.alive=false;me.state.hp=0;me.eliminatedRound=ARENA.round;me.forfeited=true;arenaReleaseSeatCards(me);}
+    arenaMarkEliminations(); arenaFinishBotBracket(); arenaFinish(me&&me.place||8); return;
+  }
   S.phase='over'; endRunCleanup(); hideOvClose();
   resumeAvail=null;   // 存档已删除，「继续上一局」不再有效
   writeRunHistory(!!S.endless); checkAchievements();   // 记入历史 + 终局成就判定
@@ -5860,12 +6153,14 @@ function showIntro(resume){
 }
 /* 📅 每日挑战：当日种子 + 当日预置诅咒，独立存档 */
 function startDaily(){
+  try{localStorage.removeItem(ARENA_SAVE_KEY);}catch(e){}
   $('overlay').classList.add('hidden'); ovMode='start';
   newGame({daily:true}); renderAll(); $('fightBtn').disabled=false;
   log(`📅 每日挑战开始（种子 ${S.dseed}）：今日挑战规则「${(S.curses||[]).map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、')||'无'}」。全体玩家同一随机序列，比谁推得远！`);
 }
 $('ovBtn3').onclick=()=>{
   if(ovMode==='resume'){   // 对局中打开「玩法」：按钮=切换到另一模式开局
+    try{localStorage.removeItem(ARENA_SAVE_KEY);}catch(e){}
     const toDaily=!S.daily;
     $('overlay').classList.add('hidden'); ovMode='start';
     newGame({daily:toDaily}); renderAll(); $('fightBtn').disabled=false;
@@ -5971,26 +6266,45 @@ document.querySelectorAll('#bookTabs .btab').forEach(b=>b.onclick=()=>{
 $('bookClose').onclick=()=>$('bookModal').classList.add('hidden');
 
 /* ================= 存档 / 继续上一局 / 历史战绩 ================= */
-const SAVE_KEY='vc_save3', HIST_KEY='vc_history', DAILY_KEY='vc_daily3';
+const SAVE_KEY='vc_save3', HIST_KEY='vc_history', DAILY_KEY='vc_daily3', ARENA_SAVE_KEY='vc_arena3';
 /* 🌍 全球排行（腾讯云 CloudBase 云函数网关，国内直连；数据存 PG 表 lb_entries） */
 const LB_API='https://hanari-d6gjqwx683f6c455d.service.tcloudbase.com';
 function lbHeaders(){ return {'Content-Type':'application/json'}; }
 async function lbFetch(path){ const r=await fetch(LB_API+path,{headers:lbHeaders(),cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }   // no-store：榜单必须实时，禁止 HTTP 层缓存
-function saveKey(){ return (S && S.daily) ? DAILY_KEY : SAVE_KEY; }   // 每日挑战独立存档（不覆盖普通进度）
+function saveKey(){ return S&&S.arena?ARENA_SAVE_KEY:((S && S.daily) ? DAILY_KEY : SAVE_KEY); }   // 模式分别保存
+function arenaSnapshot(){
+  if(!ARENA)return null;
+  return {round:ARENA.round,eliminated:ARENA.eliminated||[],startedAt:ARENA.startedAt,
+    seats:ARENA.seats.map(p=>({id:p.id,name:p.name,human:p.human,alive:p.alive,place:p.place,eliminatedRound:p.eliminatedRound,lastOpponent:p.lastOpponent,
+      state:p.human?null:Object.fromEntries(Object.entries(p.state).filter(([k])=>k!=='pool'&&k!=='log'))})),
+    pairings:ARENA.pairings.map(p=>({a:p.a.id,b:p.b.id,ghost:p.ghost}))};
+}
+function restoreArenaSnapshot(data){
+  if(!data||!Array.isArray(data.seats))return false;
+  const seats=data.seats.map(p=>({id:p.id,name:p.name,human:!!p.human,alive:!!p.alive,place:p.place||null,eliminatedRound:p.eliminatedRound||0,lastOpponent:p.lastOpponent||null,
+    state:p.human?S:Object.assign({pool:S.pool,log:[],arena:true,phase:'prep'},p.state||{})}));
+  seats.forEach(p=>{p.state.pool=S.pool;p.state.arena=true;});
+  ARENA={round:data.round||S.round,seats,eliminated:data.eliminated||[],startedAt:data.startedAt||Date.now(),complete:false,
+    pairings:(data.pairings||[]).map(x=>({a:seats.find(p=>p.id===x.a),b:seats.find(p=>p.id===x.b),ghost:!!x.ghost})).filter(x=>x.a&&x.b)};
+  S.arena=true;S.round=ARENA.round;S.phase='prep';
+  arenaSetOpponent(S,seats[0],arenaOpponent(seats[0]));
+  return true;
+}
 function saveGame(){ // 仅备战阶段保存（战斗中刷新不损失进度：回到该回合开打前）
   if(S.phase!=='prep') return;
   const KEY=saveKey();
   try{ localStorage.setItem(KEY,JSON.stringify({round:S.round,hp:S.hp,gold:S.gold,lvl:S.lvl,xp:S.xp,
     streak:S.streak,lossStreak:S.lossStreak,endless:S.endless,lock:!!S.lock,synDone:S.synDone||[],augs:S.augs||[],tickets:S.tickets||0,tempBuff:S.tempBuff||null,
     ms:S.ms||{},curses:S.curses||[],cursesData:S.cursesData||{},soloBoost:S.soloBoost||0,daily:!!S.daily,dseed:S.dseed||0,bench:S.bench,board:S.board,shop:S.shop,
-    uid:S.uid,log:S.log,items:S.items,pool:S.pool,stats:S.stats,ts:Date.now()})); }catch(e){}
+    uid:S.uid,log:S.log,items:S.items,pool:S.pool,stats:S.stats,arena:!!S.arena,arenaMatch:S.arena?arenaSnapshot():null,ts:Date.now()})); }catch(e){}
 }
 function loadGame(key){ key=key||SAVE_KEY;
   try{
     const o=JSON.parse(localStorage.getItem(key)||'null');
     if(!o||typeof o.round!=='number'||!Array.isArray(o.board)||!Array.isArray(o.bench)) return false;
     if(!S) S={}; // 直接从存档启动时 S 尚未初始化
-    Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
+    ARENA=null; Object.assign(S,o); S.phase='prep'; S.enemyBoard=[]; S.selUid=null; S.selItem=null;
+    delete S.arenaMatch;
     S.tickets=S.tickets||0; S.tempBuff=S.tempBuff||null; S.soloBoost=S.soloBoost||0;   // 旧存档兼容
     S.ms=S.ms||{}; S.curses=sanitizeCurses(S.curses); S.cursesData=S.cursesData||{};   // 旧存档可能同时存有互斥项
     S.daily=(key===DAILY_KEY)||!!S.daily; S.dseed=S.dseed||todaySeed();
@@ -6000,13 +6314,14 @@ function loadGame(key){ key=key||SAVE_KEY;
     if(S.autoFight){ S.auto=false; autoStoreSet(false); setAutoUI(); renderAutoFightBtn(); }
     if(S.auto) autoPilot(900);
     else if(S.autoFight) scheduleAutoFight();
-    prepEnemy();   // 读档后立即生成可观察的敌方阵容
+    if(S.arena&&o.arenaMatch){ if(!restoreArenaSnapshot(o.arenaMatch))return false; }
+    else { S.arena=false; prepEnemy(); }   // 读档后立即生成可观察的敌方阵容
     return true;
   }catch(e){ return false; }
 }
 function writeRunHistory(win){   // 终局统一写入（战绩/成就/排行共用数据源）
   try{ const h=JSON.parse(localStorage.getItem('vc_history')||'[]');
-    h.unshift({ts:Date.now(),win,round:S.round,hp:S.hp,endless:!!S.endless,ch:Math.ceil(S.round/chLen()),
+    h.unshift({ts:Date.now(),win,arena:!!S.arena,place:S.arena&&ARENA?ARENA.seats[0].place:null,round:S.round,hp:S.hp,endless:!!S.endless,ch:Math.ceil(S.round/chLen()),
       daily:!!S.daily,dseed:S.dseed||0,curses:(S.curses||[]).length,
       lineup:S.board.filter(Boolean).slice(0,6).map(u=>u.id),
       wins:S.stats.wins,losses:S.stats.losses,kills:S.stats.kills,maxStreak:S.stats.maxStreak});
@@ -6021,8 +6336,8 @@ function lbNick(){ try{ return localStorage.getItem('vc_nick')||''; }catch(e){ r
 /* 自定义诅咒局不计入排行榜：自选诅咒自带补偿（+金/半价/发券）且组合由玩家自定，
    成绩与其他玩家不可比；每日挑战是全体同种子+同预置诅咒，照常入榜。
    判定只看"是否诅咒局"，所以自定义模式但一条没勾（等同普通模式）仍然入榜。 */
-function rankedRun(){ return !!S.daily || !(S.curses||[]).length; }
-function rankedHist(x){ return !!x.daily || !(x.curses||0); }   // 同一规则用于历史记录条目（旧存档字段齐全，无需迁移）
+function rankedRun(){ return !S.arena && (!!S.daily || !(S.curses||[]).length); }
+function rankedHist(x){ return !x.arena && (!!x.daily || !(x.curses||0)); }   // 竞技成绩单列，不混入闯关榜
 function rankedNoteHTML(){   // 不计榜说明：放在结算屏【顶部】做横幅，避免压在底部按钮/备战席那条带上
   if(rankedRun()) return '';
   return `<div style="margin:4px 0 10px;font-size:12px;color:#ff9a9a">⚠ 自定义诅咒局不计入排行榜（成绩已记入 📜 战绩记录）</div>`;
@@ -6093,8 +6408,8 @@ function renderHistory(){
   $('histList').innerHTML = h.length ? h.map(x=>{
     const d=new Date(x.ts), p=n=>String(n).padStart(2,'0');
     return `<div class="hrow"><span>${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}</span>
-      <span>${x.win?'🏅 胜利':'💀 失败'}${x.endless?'（无尽）':''}${x.daily?' 📅':''}${x.curses?` ⚠×${x.curses}`:''}${rankedHist(x)?'':' 🚫不计榜'}</span>
-      <span>第 ${x.round} 回合${x.ch>1?` · ${x.ch} 章`:''} · ❤${x.hp} · 最高连胜${x.maxStreak} · 击杀${x.kills}</span></div>`;
+      <span>${x.arena?`🏟 八人竞技 · 第 ${x.place||'?'} 名`:`${x.win?'🏅 胜利':'💀 失败'}${x.endless?'（无尽）':''}${x.daily?' 📅':''}${x.curses?` ⚠×${x.curses}`:''}${rankedHist(x)?'':' 🚫不计榜'}`}</span>
+      <span>第 ${x.round} 回合${x.arena?'':(x.ch>1?` · ${x.ch} 章`:'')} · ❤${x.hp} · 最高连胜${x.maxStreak} · 击杀${x.kills}</span></div>`;
   }).join('') : '<div style="color:#8f88b0;padding:14px;text-align:center">暂无历史对局</div>';
 }
 function lineupIcons(ids){ return (ids||[]).map(id=>`<img class="lb-pt" src="assets/units/${id}.png" alt="" onerror="this.style.display='none'">`).join(''); }
@@ -6222,7 +6537,7 @@ function fitBoard(){
 }
 addEventListener('resize',fitBoard); fitBoard();
 /* 启动：开局即询问模式（三选一）；有存档时提供「继续上一局」按钮（优先今日每日） */
-let autoBusy=false;   // 必须声明在 initApp 之前：initApp → newGame 在"上次开着托管"时会直接调 autoPilot，
+let autoBusy=false, autoRunId=0;   // 必须声明在 initApp 之前：initApp → newGame 在"上次开着托管"时会直接调 autoPilot，
                       // 声明晚于此处会撞 TDZ 抛错，把后面的 renderAll()/showIntro() 一起打断
 (function initApp(){
   try{
@@ -6236,14 +6551,16 @@ let autoBusy=false;   // 必须声明在 initApp 之前：initApp → newGame �
   try{
     const d=JSON.parse(localStorage.getItem(DAILY_KEY)||'null');
     const n=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    const a=JSON.parse(localStorage.getItem(ARENA_SAVE_KEY)||'null');
     if(d && typeof d.round==='number') resumeAvail={label:`▶ 继续每日挑战（第 ${d.round} 回合）`, key:DAILY_KEY};
+    else if(a && a.arena && typeof a.round==='number') resumeAvail={label:`▶ 继续八人竞技（第 ${a.round} 回合）`, key:ARENA_SAVE_KEY};
     else if(n && typeof n.round==='number') resumeAvail={label:`▶ 继续上一局（第 ${n.round} 回合）`, key:SAVE_KEY};
   }catch(e){}
   /* 敌方阵容横幅保持原位（棋盘正上方、与棋盘同宽），左栏顶部让给「羁绊 BONDS」标题 */
   /* 桌面端：敌方阵容横幅放进左栏（羁绊标题之下、列表之上），棋盘上方让位放大棋盘 */
   if(!IS_TOUCH){ try{ $('synCol').insertBefore($('oppBar'), $('synAll')); }catch(e){} }
   fitBoardCell();
-  newGame(); renderAll(); fitBoard();   // 背景先渲染一局（选择模式后真正开新局覆盖）；棋盘先渲染，再按手机可用高度缩放
+  newGame({menuPreview:true}); renderAll(); fitBoard();   // 仅渲染预览，不让已保存的托管偏好提前开战
   showIntro(false);
 })();
 $('ovResume').onclick=()=>{ if(!resumeAvail) return;
@@ -6252,7 +6569,7 @@ $('ovResume').onclick=()=>{ if(!resumeAvail) return;
   log('📂 已恢复上一局进度'); };
 $('resumeYes').onclick=()=>{ if(!loadGame()) newGame();
   $('resumeOv').classList.add('hidden'); renderAll(); $('fightBtn').disabled=false; log('📂 已恢复上一局进度'); };
-$('resumeNo').onclick=()=>{ localStorage.removeItem(SAVE_KEY);
+$('resumeNo').onclick=()=>{ localStorage.removeItem(SAVE_KEY);localStorage.removeItem(ARENA_SAVE_KEY);
   $('resumeOv').classList.add('hidden'); newGame(); renderAll(); $('fightBtn').disabled=false; };
 $('resumeDaily').onclick=()=>{ $('resumeOv').classList.add('hidden'); startDaily(); };   // 从恢复弹窗直接进每日挑战
 /* PWA：Service Worker 注册（离线可玩，安卓可添加到主屏幕） */
@@ -6270,7 +6587,7 @@ const AUTO_FIGHT_DELAY=2500;   // 每场战斗结束后的停顿（肉眼可读�
 let afTimer=null, afGen=0;
 function setAutoFight(v){
   S.autoFight=!!v; afStoreSet(S.autoFight);
-  if(S.autoFight && S.auto){ S.auto=false; autoStoreSet(false); setAutoUI(); log('🤖 托管已关闭（与自动开战互斥）'); }
+  if(S.autoFight && S.auto){ S.auto=false; autoRunId++; autoBusy=false; autoStoreSet(false); setAutoUI(); log('🤖 托管已关闭（与自动开战互斥）'); }
   cancelAutoFight(); renderAutoFightBtn();
   if(S.autoFight && S.phase==='prep') scheduleAutoFight();
 }
@@ -6290,49 +6607,55 @@ function cancelAutoFight(){ afGen++; if(afTimer){ clearInterval(afTimer); afTime
 function renderAutoFightBtn(){
   const b=$('autoFightBtn'); if(!b) return;
   b.textContent = S.autoFight ? '⏸ 停止自动' : '▶ 自动开战';
+  b.title=S.arena?'自动进行当前对局与后续轮次；托管仍负责备战':'自动开战：保持当前阵容连续战斗，与托管互斥';
   b.classList.toggle('af-on', !!S.autoFight);
 }
 $('autoFightBtn').onclick=()=>{ if(!S||S.phase==='over') return; setAutoFight(!S.autoFight);
   log(S.autoFight?'▶ 自动开战开启：保持当前阵容连续战斗':'⏸ 自动开战关闭'); };
 function autoPilot(delay=900){
-  if(!S || !S.auto || S.phase!=='prep' || autoBusy) return;
+  if(!S||!S.auto||S.phase!=='prep'||S.hp<=0)return;
+  const run=++autoRunId, round=S.round;
   autoBusy=true;
-  setTimeout(()=>{ autoBusy=false;
-    if(!S.auto || S.phase!=='prep' || S.hp<=0) return;
-    const finish=()=>{
-      try{
-        if(S.phase==='prep' && !S.board.some(Boolean)){ rollShop(); if(typeof botPrep==='function') botPrep(); }   // 极端空场兜底
-        if(S.phase==='prep'){
-          if(S.board.some(Boolean)) startBattle();
-          else log('⚠️ 托管：无法上阵（金币/卡牌不足），请手动处理');
-        }
-      }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} }
+  const active=()=>run===autoRunId&&S&&S.auto&&S.phase==='prep'&&S.round===round;
+  const release=()=>{if(run===autoRunId)autoBusy=false;};
+  const finish=()=>{
+    if(!active()){release();return;}
+    try{
+      if(!S.board.some(Boolean)){rollShop();botBuyAvailable(botPlan(),6);botLevel();botFormation();}
+      renderAll();
+      if(S.board.some(Boolean))startBattle();
+      else log('⚠️ 托管暂时无法组出阵容，请手动补牌或上阵');
+    }catch(e){try{log('⚠️ 托管异常：'+((e&&e.message)||e));}catch(_){}}
+    release();
+  };
+  setTimeout(()=>{
+    if(!active()){release();return;}
+    const steps=typeof botPrepSteps==='function'?botPrepSteps():[];
+    if(!steps.length){finish();return;}
+    let index=0;
+    const next=()=>{
+      if(!active()){release();return;}
+      if(index>=steps.length){setTimeout(finish,220);return;}
+      const step=steps[index++];
+      const advance=()=>{
+        if(!active()){release();return;}
+        renderAll(); setTimeout(next,180+Math.round(rand()*180));
+      };
+      try{ if(step.fn.length)step.fn(advance); else {step.fn();advance();} }
+      catch(e){try{log('⚠️ '+(step.n||'托管步骤')+'失败：'+((e&&e.message)||e));}catch(_){}advance();}
     };
-    const steps = (typeof botPrepSteps==='function') ? botPrepSteps() : [];   // 装备→购买→升级→刷新→锁定→编队
-    if(!steps.length){ finish(); return; }
-    let i=0;
-    const runNext=()=>{
-      if(!S.auto || S.phase!=='prep') return;   // 中途关闭托管或手动开战即停
-      const advance=()=>{ renderAll(); i++;
-        if(i<steps.length) setTimeout(runNext, 550+Math.round(rand()*350));
-        else setTimeout(finish, 500); };
-      try{
-        const st=steps[i];
-        if(st.fn.length>=1){ st.fn(advance); return; }   // 异步步（如带停顿的刷新）：完成回调里推进
-        st.fn(); advance();
-      }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} advance(); }
-    };
-    runNext();
-  }, delay);
+    next();
+  },delay);
 }
 function setAutoUI(){ try{ const b=$('autoBtn'); if(b) b.classList.toggle('auto-on', !!S.auto); }catch(e){} }
 $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
+  if(!S.auto){autoRunId++;autoBusy=false;}
   if(S.auto && S.autoFight){ setAutoFight(false); }   // 与自动开战互斥
   log(S.auto?`🤖 托管开启：${(typeof BOT_VER!=='undefined')?BOT_VER+' —— ':''}自动买牌/上阵/穿装/开战`:'🤖 托管关闭');
   if(S.auto && S.phase==='prep') autoPilot(300);
 };
 </script>
-<script src="tools/bot_strategy.js?v=4"></script>
+<script src="tools/bot_strategy.js?v=5"></script>
 <script src="tools/idol-ui.js?v=1"></script>
 <script src="tools/idol-ui-redesign.js?v=1"></script>
 </body>

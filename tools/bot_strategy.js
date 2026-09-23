@@ -1,370 +1,335 @@
-/* 页内机器人策略 v2 ——「普通玩家」模型（与 tools/sim.js 同一套逻辑，直接调用游戏全局函数）。
-   设计原则：不以"每回合最优"为目标，而是复刻普通玩家的决策习惯——
-   看牌定型、白嫖攒钱、节点拉级、触发式搜牌、危机 all-in。改策略只改本文件。
-   botPrepSteps(): 一回合运营拆成有序步骤，浏览器托管逐步执行并停顿（肉眼可读）；
-   botPrep():      同步跑完全部步骤（模拟器/测试用，行为完全一致）。
-   sim.js 依赖：S/byId/pairCount/buy/clickUnit/rollShop/checkLevel/autoDeployBest 会被符号改写，
-   其余只允许调用 function 声明（挂 globalThis），不得直接引用顶层 const（如 XP_NEED/FACTIONS）。
-   BOT_VER 会在托管开启时打进战报，用于确认浏览器加载的不是缓存的旧策略文件。 */
-const BOT_VER='策略 v2.3（普通玩家模型：看牌定型/触发式搜牌/五段经济/节点拉级/危机all-in + 章末放血搜牌/增强三选一评分/章首防御姿态/守关前抢人口 + 升星券/顶配停刷/诅咒适配 + 无梦禁购经验/紧缩货架读 shopSize）';
+/*
+ * Adaptive autobattler decision engine.
+ * The same planner drives player automation and arena opponents. It values
+ * economy, upgrades, pair progress, board strength, synergies, equipment and
+ * the currently scouted opponent instead of replaying a fixed shopping script.
+ */
+const BOT_VER='Adaptive v3.1 · arena economy / interest timing / pressure';
 
-/* ---------- 阵容计划：看牌定型 + 粘性 ---------- */
-function botTagCount(){   // 牌面（场上+备战席）独特棋子的阵营/职业计数
-  const seen=new Set(), fc={}, jc={};
-  [...S.board, ...S.bench].filter(Boolean).forEach(u=>{
-    if(seen.has(u.id)) return; seen.add(u.id);
-    const d=byId(u.id);
-    [d.fac, d.fac2].filter(Boolean).forEach(t=>{ fc[t]=(fc[t]||0)+1; });
-    [d.job, d.job2].filter(Boolean).forEach(t=>{ jc[t]=(jc[t]||0)+1; });
+function botMembers(){ return [...(S.board||[]),...(S.bench||[])].filter(Boolean); }
+function botBoard(){ return (S.board||[]).filter(Boolean); }
+function botBench(){ return (S.bench||[]).filter(Boolean); }
+function botPower(u){ return Math.pow(u.star||1,1.7)*(Math.max(1,u.atk||0)*1.7+Math.max(1,u.maxhp||u.hp||0)*.22); }
+function botLinePower(team,pop=S.lvl||11){
+  const active=(team||[]).filter(Boolean).slice(0,pop||11);
+  const raw=active.reduce((n,u)=>n+botPower(u),0);
+  const syn=(typeof teamSynScore==='function')?teamSynScore(active):0;
+  const gear=active.reduce((n,u)=>n+(u.items||[]).length*28,0);
+  return raw+syn*3.2+gear+active.length*25;
+}
+function botOpponentPower(){
+  if(!S.enemyBoard) return 0;
+  return botLinePower(S.enemyBoard.filter(Boolean),S.arenaOpponentLevel||S.lvl);
+}
+function botPressure(){
+  const own=botLinePower(botBoard()), foe=botOpponentPower();
+  return foe>0 ? (foe-own)/Math.max(1,foe) : 0;
+}
+function botProfile(){ return S.botProfile||'balanced'; }
+function botUrgency(){
+  const gap=botPressure();
+  if(S.hp<=10 || (S.hp<=18 && gap>.22)) return 'survive';
+  if(S.lossStreak>=2 || gap>.30 || botBoard().length<Math.min(S.lvl,4)) return 'stabilize';
+  if(S.gold>=50 && S.lvl>=7) return 'strengthen';
+  return 'economy';
+}
+function botTagCounts(units){
+  const fac={},job={},seen=new Set();
+  (units||[]).forEach(u=>{ if(seen.has(u.id))return; seen.add(u.id); const d=byId(u.id);
+    (typeof facsOf==='function'?facsOf(d):[d.fac,d.fac2].filter(Boolean)).forEach(k=>fac[k]=(fac[k]||0)+1);
+    (typeof jobsOf==='function'?jobsOf(d):[d.job,d.job2].filter(Boolean)).forEach(k=>job[k]=(job[k]||0)+1);
   });
-  return {fc, jc};
+  return {fac,job};
 }
-function botMakePlan(){   // 定型：取牌面最多的 2 阵营 + 2 职业（同分按名字排，避免来回抖动）
-  const {fc, jc}=botTagCount();
-  const top=cnt=>Object.entries(cnt).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,2).map(e=>e[0]);
-  return { facs:top(fc), jobs:top(jc) };
+function botTagValue(u,team){
+  const d=byId(u.id), tags=botTagCounts(team), seen=new Set(team.map(x=>x.id));
+  let v=0;
+  (typeof facsOf==='function'?facsOf(d):[d.fac,d.fac2].filter(Boolean)).forEach(k=>{
+    const n=tags.fac[k]||0; v+=n===0?5:n===1?13:n===2?8:2;
+  });
+  (typeof jobsOf==='function'?jobsOf(d):[d.job,d.job2].filter(Boolean)).forEach(k=>{
+    const n=tags.job[k]||0; v+=n===0?5:n===1?13:n===2?8:2;
+  });
+  if(seen.has(u.id)) v+=7; // same-piece upgrades are valuable even outside the active plan
+  return v;
 }
-function botPlan(){       // 粘性：计划羁绊在牌面还有 ≥2 个独特棋子就沿用；没拿到货才重新定型
-  const p=S.botPlan;
-  if(p && p.facs && p.jobs){
-    const {fc, jc}=botTagCount();
-    const alive=[...p.facs,...p.jobs].some(t=>(fc[t]||jc[t]||0)>=2);
-    if(alive) return p;
+function botPlan(){
+  const units=botMembers(), counts=botTagCounts(units), all=[];
+  Object.keys(counts.fac).forEach(k=>all.push({kind:'fac',key:k,n:counts.fac[k]}));
+  Object.keys(counts.job).forEach(k=>all.push({kind:'job',key:k,n:counts.job[k]}));
+  all.sort((a,b)=>b.n-a.n||a.key.localeCompare(b.key));
+  const old=S.botPlan, retained=old&&old.tags&&old.tags.filter(t=>units.some(u=>{
+    const d=byId(u.id), values=t.kind==='fac'?(typeof facsOf==='function'?facsOf(d):[d.fac,d.fac2]):(typeof jobsOf==='function'?jobsOf(d):[d.job,d.job2]);
+    return values.includes(t.key);
+  })).length;
+  // Pivot when the current bench/shop gives a clear new direction; otherwise keep the comp for a round.
+  const best=all.slice(0,4);
+  let candidate=best;
+  if(botProfile()==='flexible')candidate=best;
+  else if(botProfile()==='synergy'&&old&&old.tags&&retained>=1)candidate=old.tags;
+  if(botProfile()!=='flexible'&&botProfile()!=='synergy'&&retained>=2&&old.tags.length>=2){
+    const pivotScore=best.slice(0,2).reduce((n,t)=>n+t.n,0);
+    const oldScore=old.tags.reduce((n,t)=>n+units.filter(u=>{
+      const d=byId(u.id), vals=t.kind==='fac'?(typeof facsOf==='function'?facsOf(d):[d.fac,d.fac2]):(typeof jobsOf==='function'?jobsOf(d):[d.job,d.job2]);
+      return vals.includes(t.key);
+    }).length,0);
+    if(pivotScore<oldScore+2) candidate=old.tags;
   }
-  S.botPlan=botMakePlan();
+  S.botPlan={tags:candidate.map(t=>({kind:t.kind,key:t.key})),updated:S.round};
   return S.botPlan;
 }
-function botInPlan(u, plan){   // 该棋子是否在计划内
-  const d=byId(u.id);
-  return plan.facs.includes(d.fac)||plan.facs.includes(d.fac2)
-      || plan.jobs.includes(d.job)||plan.jobs.includes(d.job2);
+function botInPlan(u,plan){
+  const d=byId(u.id), fs=typeof facsOf==='function'?facsOf(d):[d.fac,d.fac2], js=typeof jobsOf==='function'?jobsOf(d):[d.job,d.job2];
+  return (plan&&plan.tags||[]).some(t=>(t.kind==='fac'?fs:js).includes(t.key));
 }
-
-/* ---------- 战力/进度工具 ---------- */
-function botProg3(id){    // 三星进度（3★=9 份：1★=1 份、2★=3 份）
-  return [...S.board, ...S.bench].reduce((n,u)=>n+(u&&u.id===id?(u.star===2?3:(u.star||1)):0), 0);
+function botPairProgress(id){
+  return botMembers().reduce((n,u)=>n+(u.id===id?(u.star===2?3:(u.star||1)):0),0);
 }
-function botMainCarry(){  // 主C：场上非守护中「星²×费用」最高者（装备优先给他）
-  let best=null, bv=-1;
-  S.board.forEach(u=>{ if(!u) return; const d=byId(u.id); if(d.job==='守护') return;
-    const v=Math.pow(u.star||1, 2)*d.cost; if(v>bv){ bv=v; best=u; } });
+function botScoring(u,plan){
+  const d=byId(u.id), count=pairCount(u.id), progress=botPairProgress(u.id), own=botMembers();
+  let score=botPower({star:1,atk:d.atk,maxhp:d.hp})*.035 + botTagValue(u,own)*1.5 + d.cost*1.7;
+  if(count>=2) score+=90+d.cost*5;
+  else if(progress>=5 && !has3star(u.id)) score+=36+d.cost*3;
+  else if(progress>=3 && has2star(u.id)) score+=19+d.cost*2;
+  if(botInPlan(u,plan)) score+=14;
+  if(botBoard().length<S.lvl) score+=23;
+  const profile=botProfile();
+  if(profile==='reroll'&&d.cost<=2) score+=9;
+  if(profile==='aggressive'&&d.cost>=3) score+=7;
+  if(profile==='tempo'&&botBoard().length<S.lvl)score+=15;
+  if(profile==='synergy'&&botInPlan(u,plan))score+=16;
+  if(profile==='flexible'&&d.cost>=4)score+=9;
+  if(profile==='economy'&&d.cost>=4) score-=8;
+  if(S.enemyBoard&&S.enemyBoard.filter(Boolean).length){
+    const enemies=S.enemyBoard.filter(Boolean), ed=botTagCounts(enemies), enemyJobs=enemies.map(x=>byId(x.id).job);
+    const myJobs=typeof jobsOf==='function'?jobsOf(d):[d.job,d.job2];
+    if(enemyJobs.filter(j=>j==='刺客').length>=2&&myJobs.some(j=>j==='守护'||j==='医者'))score+=11;
+    if(enemyJobs.filter(j=>j==='守护').length>=2&&(d.dtype==='magic'||myJobs.includes('咒术')))score+=9;
+    if(enemyJobs.filter(j=>j==='游侠'||j==='法师').length>=3&&myJobs.includes('刺客'))score+=10;
+    if(Object.values(ed.fac).some(n=>n>=3)&&d.cost>=3)score+=2;
+  }
+  if(has3star(u.id)) score-=30;
+  return score;
+}
+function botEconFloor(mode){
+  const profile=botProfile();
+  // Do not bank the opening hand while the starting board is empty: deploy two
+  // affordable units first, then switch back to the profile's savings plan.
+  if(S.round<=2&&botBoard().length<Math.min(S.lvl,2))return 0;
+  if(mode==='survive') return profile==='economy'?12:4;
+  if(mode==='stabilize') return S.arena?(profile==='economy'?20:12):22;
+  if(mode==='strengthen') return S.arena
+    ? (profile==='economy'?45:(profile==='tempo'||profile==='aggressive'?25:35)) : 45;
+  if(S.arena){
+    // Arena shops compete for one shared pool. Spend more in the opening and
+    // midgame; later, economy profiles protect full interest while pressure
+    // profiles keep investing in upgrades.
+    if(S.round<=4)return profile==='economy'?25:profile==='reroll'?18:20;
+    if(S.round<=8)return profile==='economy'?45:profile==='reroll'?28:
+      (profile==='tempo'||profile==='aggressive'?25:35);
+    return profile==='economy'?50:profile==='reroll'?35:
+      (profile==='tempo'||profile==='aggressive'?30:40);
+  }
+  if(profile==='economy') return 55;
+  if(profile==='aggressive') return 38;
+  if(profile==='tempo') return 35;
+  if(profile==='synergy') return 48;
+  if(profile==='flexible') return 42;
+  if(profile==='reroll') return 42;
+  return 50;
+}
+function botSellAt(type,index){
+  const u=type==='board'?S.board[index]:S.bench[index]; if(!u)return false;
+  const refund=sellRefund(u), copies=Math.pow(3,(u.star||1)-1);
+  (u.items||[]).forEach(k=>S.items.push(k));
+  S.pool[u.id]=(S.pool[u.id]||0)+copies;
+  S.gold+=refund; S.stats.goldEarned=(S.stats.goldEarned||0)+refund;
+  S.stats.goldBy=S.stats.goldBy||{}; S.stats.goldBy.sell=(S.stats.goldBy.sell||0)+refund;
+  if(type==='board') S.board[index]=null; else S.bench[index]=null;
+  return true;
+}
+function botFreeBenchFor(id,plan){
+  if(S.bench.some(x=>!x))return true;
+  let pick=-1,low=Infinity;
+  S.bench.forEach((u,i)=>{
+    if(!u||u.star>1||pairCount(u.id)>=2||u.id===id)return;
+    let v=botScoring(u,plan); if(botInPlan(u,plan))v+=18;
+    if(v<low){low=v;pick=i;}
+  });
+  return pick>=0&&botSellAt('bench',pick);
+}
+function botBuyAvailable(plan,limit=8){
+  let bought=0, guard=0;
+  while(guard++<limit){
+    const under=botBoard().length<S.lvl, floor=botEconFloor(botUrgency());
+    let best=-1,bestScore=under?20:36;
+    for(let i=0;i<S.shop.length;i++){
+      const u=S.shop[i]; if(!u||u.cost>S.gold)continue;
+      const sc=botScoring(u,plan), merge=pairCount(u.id)>=2;
+      if(S.gold-u.cost<floor&&!merge&&sc<78)continue;
+      if(sc>bestScore){bestScore=sc;best=i;}
+    }
+    if(best<0)break;
+    const id=S.shop[best].id;
+    if(!botFreeBenchFor(id,plan))break;
+    const before=botMembers().length, gold=S.gold;
+    buy(best);
+    if(S.gold===gold)break;
+    bought++;
+    if(botMembers().length===before && !pairCount(id))break;
+  }
+  return bought;
+}
+function botLevel(){
+  if(S.round<=1||S.lvl>=lvlCap()||hasCurse('dreamless'))return;
+  const mode=botUrgency(), profile=botProfile(), target=[0,1,2,4,6,9,14,20,27,35,45][S.lvl]||50;
+  const timing=profile==='tempo'?target-2:profile==='economy'?target+2:target;
+  const behind=S.round>=timing, urgency=mode==='survive'?2:mode==='stabilize'?1:0;
+  let reserve=botEconFloor(mode), maxBuys=urgency?8:(profile==='aggressive'?5:3), spent=0;
+  if(profile==='reroll'&&!behind&&mode==='economy')return;
+  while(S.lvl<lvlCap()&&S.gold>=5&&spent<maxBuys){
+    const need=xpNeed(S.lvl)-S.xp, canLevel=need<=4;
+    const latePush=behind||urgency>0||S.gold>=68;
+    if(!canLevel&&(!latePush||S.gold-5<reserve))break;
+    const before=S.lvl; S.gold-=5; S.stats.goldSpent=(S.stats.goldSpent||0)+5; S.xp+=4; checkLevel(); spent++;
+    if(S.lvl>before){
+      if(S.gold<reserve||!latePush)break;
+    } else if(S.gold<reserve)break;
+  }
+}
+function botCombineGear(){
+  let changed=true, guard=0;
+  while(changed&&guard++<8){
+    changed=false;
+    for(let i=0;i<S.items.length&&!changed;i++)for(let j=i+1;j<S.items.length;j++){
+      if(!comboOf(S.items[i],S.items[j]))continue;
+      combineBagPair(i,j); changed=true; break;
+    }
+  }
+}
+function botEquipGear(){
+  if(!S.items.length)return;
+  botCombineGear();
+  const team=botBoard(), carry=team.slice().sort((a,b)=>botPower(b)-botPower(a))[0];
+  let guard=0;
+  while(S.items.length&&guard++<12){
+    const item=S.items[0], damage=isDmgItem(item);
+    const candidates=team.filter(u=>(u.items||[]).length<maxEquip()).sort((a,b)=>{
+      const ac=damage?botPower(a)+(byId(a.id).job==='守护'?-40:0):((byId(a.id).job==='守护'?55:0)+(a.maxhp||0)*.03);
+      const bc=damage?botPower(b)+(byId(b.id).job==='守护'?-40:0):((byId(b.id).job==='守护'?55:0)+(b.maxhp||0)*.03);
+      return bc-ac;
+    });
+    const target=(damage&&carry&&(carry.items||[]).length<maxEquip())?carry:candidates[0];
+    if(!target)break;
+    target.items=target.items||[]; target.items.push(item); S.items.shift();
+  }
+}
+function botFormation(){
+  if(!botMembers().length)return;
+  autoDeployBest();
+  const enemies=(S.enemyBoard||[]).filter(Boolean);
+  if(!enemies.length)return;
+  const rows=[4,5,6,7], front=botBoard().filter(u=>['守护','刀客','狂战'].includes(byId(u.id).job));
+  if(!front.length)return;
+  const enemyCenter=enemies.reduce((n,u)=>n+(u.x==null?u.uid%8:u.x),0)/enemies.length;
+  const cols=[0,1,2,3,4,5,6,7].sort((a,b)=>Math.abs(a-enemyCenter)-Math.abs(b-enemyCenter));
+  // Put durable units in the lane with the strongest enemy pressure; keep carries in the rear rows.
+  const durable=front.slice().sort((a,b)=>(b.maxhp||0)+(b.ar||0)*5-((a.maxhp||0)+(a.ar||0)*5));
+  durable.forEach((u,n)=>{
+    const from=S.board.indexOf(u); if(from<0)return;
+    let to=-1;
+    for(const x of cols){const k=rows[0]*8+x;if(!S.board[k]||S.board[k]===u){to=k;break;}}
+    if(to>=0&&to!==from){S.board[from]=S.board[to]||null;S.board[to]=u;}
+  });
+  const assassinThreat=enemies.filter(u=>byId(u.id).job==='刺客').length;
+  if(assassinThreat>=2){
+    const carry=botBoard().filter(u=>!['守护','刀客','狂战','刺客'].includes(byId(u.id).job)).sort((a,b)=>botPower(b)-botPower(a))[0];
+    if(carry){
+      const from=S.board.indexOf(carry), guard=S.board.findIndex((u,i)=>i>=4*8&&u&&['守护','刀客'].includes(byId(u.id).job));
+      if(from>=0&&guard>=0&&Math.floor(from/8)===7&&Math.abs(from%8-guard%8)>1){
+        const next=7*8+(from%8<4?Math.min(7,from%8+1):Math.max(0,from%8-1));
+        if(!S.board[next]||S.board[next]===carry){S.board[from]=S.board[next]||null;S.board[next]=carry;}
+      }
+    }
+  }
+}
+function botChooseSpend(){
+  const plan=botPlan();
+  botBuyAvailable(plan,10);
+  botLevel();
+  botBuyAvailable(plan,4);
+  return plan;
+}
+function botSearch(done){
+  const mode=botUrgency(),profile=botProfile(),plan=botPlan();
+  const gap=botPressure(), members=botMembers();
+  const pairTargets=members.filter(u=>u.star<3&&botPairProgress(u.id)>=3).length;
+  let budget=mode==='survive'?12:mode==='stabilize'?7:mode==='strengthen'?5:(pairTargets?3:0);
+  if(profile==='reroll')budget=Math.max(Math.ceil(budget*1.5),mode==='survive'?12:mode==='stabilize'?9:S.round<=6?5:3);
+  if(S.arena&&mode==='economy'){
+    if(profile==='economy')budget=Math.max(budget,S.round<=4?2:0);
+    else if(profile==='tempo'||profile==='aggressive')budget=Math.max(budget,S.round<=5?2:1);
+    else if(profile==='flexible'||profile==='synergy')budget=Math.max(budget,S.round<=3?1:0);
+  }
+  if(profile==='economy'&&mode==='economy')budget=0;
+  const floor=botEconFloor(mode);
+  let rolls=0;
+  const shouldStop=()=>rolls>=budget||S.gold<floor+refreshCost();
+  const one=()=>{
+    if(shouldStop())return false;
+    S.gold-=refreshCost(); S.stats.goldSpent=(S.stats.goldSpent||0)+refreshCost(); rolls++; rollShop();
+    botBuyAvailable(plan,5);
+    return true;
+  };
+  if(typeof done==='function'){
+    const pace=()=>{if(!S.auto||S.phase!=='prep'||!one()){done();return;} renderAll();setTimeout(pace,350+Math.random()*230);}; pace();
+  } else {while(one());}
+}
+function botLockShop(){
+  if(S.lock||S.gold<8)return;
+  const plan=botPlan(), floor=botEconFloor(botUrgency());
+  const valuable=(S.shop||[]).some(u=>u&&u.cost>S.gold&&u.cost<=S.gold+5&&
+    (pairCount(u.id)>=2||botPairProgress(u.id)>=5||botInPlan(u,plan)&&u.cost>=4));
+  if(valuable&&S.gold>=floor)S.lock=true;
+}
+function botCleanupBench(){
+  const plan=botPlan(), cap=Math.min(7,S.lvl+2);
+  while(botBench().length>cap){
+    let pick=-1,low=Infinity;
+    S.bench.forEach((u,i)=>{if(!u||u.star>1||pairCount(u.id)>=2)return;let v=botScoring(u,plan);if(v<low){low=v;pick=i;}});
+    if(pick<0||!botSellAt('bench',pick))break;
+  }
+}
+function botAugScore(off){
+  const rarity=typeof augRarity==='function'?augRarity(off.id):1;
+  let score=rarity===3?42:rarity===2?25:12;
+  const carry=botBoard().slice().sort((a,b)=>botPower(b)-botPower(a))[0];
+  if(['atk','asp','skillhaste','atkmana','killmana'].includes(off.id)&&carry)score+=18;
+  if(['hp','ar','mr','regen','startshield'].includes(off.id)&&S.hp<22)score+=22;
+  if(off.id==='gold')score+=S.gold<40?17:6;
+  if(off.id==='eqslot'&&botBoard().length>=5)score+=18;
+  if(off.weak)score*=.65;
+  return score;
+}
+function botAugPick(offer){
+  let best=0,score=-Infinity;
+  (offer||[]).forEach((x,i)=>{const value=botAugScore(x);if(value>score){score=value;best=i;}});
   return best;
 }
-function botEconMode(){   // 经济模式（普通玩家的局势判断，优先级从高到低）
-  if(S.hp<=15 || (S.lossStreak>=3 && S.hp<=25)) return 'crisis';   // 血线告急：all-in
-  if(S.lossStreak>=2) return 'urgent';                             // 连败被血入：适度搜牌稳战力
-  if(S.lvl>=10 || (S.lvl>=8 && S.gold>=60)) return 'chase';        // 高等级富余：卡 50 追三
-  if(S.gold>=50) return 'healthy';                                 // 吃满利息线：有目标才小搜
-  return 'save';                                                   // 攒钱期：白嫖不搜
+function botPrepSteps(){
+  if(S.phase!=='prep')return [];
+  return [
+    {n:'观察对手与定阵容',fn(){botPlan();S.botDecision={urgency:botUrgency(),gap:botPressure(),round:S.round};}},
+    {n:'购买与合成',fn(){botChooseSpend();}},
+    {n:'搜牌与追星',fn(done){botSearch(done);}},
+    {n:'调整人口与经济',fn(){botLevel();botBuyAvailable(botPlan(),3);}},
+    {n:'整理备战席',fn(){botCleanupBench();}},
+    {n:'针对对手布阵',fn(){botFormation();}},
+    {n:'合成与分配装备',fn(){botEquipGear();}},
+    {n:'保留关键商店',fn(){botLockShop();}}
+  ];
 }
-function botChEnd(){   // 章末 3 回合（含守关回合 r25/50/75/100…；shortch 15 周期时 r13-15/28-30/…）：
-  const L=(typeof chLen==='function')?chLen():25;   // 章内位置判定一律走 chLen()，勿写死 25
-  return (S.round-1)%L >= L-3;                      // 章首 5 回合（(S.round-1)%L<5）维持严格 50 地板=现状
+function botPrep(){
+  const steps=botPrepSteps();
+  steps.forEach(step=>{if(step.n==='搜牌与追星')step.fn();else step.fn();});
 }
-
-/* ---------- 商店评分：普通玩家的"心动程度" ---------- */
-function botScoreShop(u, plan){
-  const pc=pairCount(u.id);
-  if(pc>=2) return 100+u.cost;           // 能立即合成升星——最心动
-  if(has2star(u.id)) return 80+u.cost;   // 已有 2★ 同名：买它就是追三
-  const p3=botProg3(u.id);
-  if(p3>=5 && !has3star(u.id)) return 88+u.cost;   // 三星在望（差 ≤4 张）
-  if(botInPlan(u, plan)) return 60+u.cost;         // 计划内的牌
-  if(u.cost<=2) return 15+u.cost;                  // 廉价过渡垫场
-  return 0;                                        // 无关的高费散牌：不买
-}
-
-/* ---------- 增强三选一评分（③）：稀有度 > 局面适配，取最高分 ----------
-   实测教训（SEED=42 N=100，2026-09-19）：纯稀有度排序（金55/蓝30/白10 + hp≤16 常驻触发的
-   回蓝偏置 + 非守护≥6 恒真的急速偏置）把 atk/hp 白卡系统性顶掉，ch3/4 累计 -4/-11pp——
-   幸存者 r40 起均值 14-16，「hp≤16」不是危机信号而是常态；技能急速受蓝量约束收益递减。
-   修正：削弱版（守关败）稀有度压平+适配减半；sustain 阈值取 12（与游戏 dyn 濒死减压线一致）；
-   非守护加成只给装备大师。AUGS 是顶层 const 不可见 → 稀有度走函数声明 augRarity()。 */
-function botAugScore(off){
-  const id=off.id;
-  const r=(typeof augRarity==='function')?augRarity(id):1;
-  // 稀有度：强效按面值；削弱版压平（弱金≈强蓝、弱蓝≈好白）——弱金常不如强白
-  let sc = off.weak ? (r===3?28:r===2?20:12) : (r===3?55:r===2?30:10);
-  let adapt=0;
-  if(S.hp<=12 && ['startshield','regen','mana','atkmana'].includes(id)) adapt+=25;   // 真濒死：先祖庇护/回血回蓝
-  if(id==='synres'){   // 羁绊共鸣：档位多的阵容才配拿金
-    const syn=(typeof teamSynScore==='function')?teamSynScore(S.board.filter(Boolean)):0;
-    if(syn>=15) adapt+=25;                                        // ≈已激活 ≥3 档（每档 5+3i 分）
-  }
-  if(id==='eqslot' && S.board.filter(Boolean).filter(u=>byId(u.id).job!=='守护').length>=6) adapt+=15;
-  if(S.botDef && ['startshield','regen','ar','mr','hp'].includes(id)) adapt+=15;   // ④ 防御姿态：防御系倾斜（真濒血时与 sustain 加分叠加≈加倍）
-  return sc + (off.weak ? Math.round(adapt/2) : adapt);           // 适配分：削弱版减半
-}
-function botAugPick(offer){   // 返回应选下标（-1 兜底给调用方随机/首张）
-  let bi=-1, bv=-1e9;
-  (offer||[]).forEach((o,i)=>{ const v=botAugScore(o); if(v>bv){ bv=v; bi=i; } });
-  return bi;
-}
-
-function botPrepSteps() {
-  if (S.phase !== 'prep') return [];
-  const JOB_FRONT = new Set(['守护', '刀客', '狂战']);
-  // ④ 血量相对线：每章首回合的 prep 判定一次防御姿态（hp<60% 上限 → 本章进入防御姿态）。
-  // 依据：幸存者 r40 起均值常驻 15-16/40，crisis 绝对线（hp≤15）对多数对局常驻触发、已无预警
-  // 意义——相对线只改「姿态」（装备/换血/增强向前排与防御系倾斜），不改 botEconMode 经济判定；
-  // crisis/urgent 绝对线保留且优先级更高。
-  const L=(typeof chLen==='function')?chLen():25;
-  if((S.round-1)%L===0) S.botDef = S.hp < ((typeof hpMax==='function')?hpMax():40)*0.6;
-  const def = S.botDef===true;
-  const plan = botPlan();
-  const freeBench = () => S.bench.filter(x=>!x).length;
-
-  // 卖闲子（备战席满时腾位）：只卖 1★、非对子材料、与计划最无关的低费棋子
-  const sellIdle = () => {
-    if (freeBench() > 0) return true;
-    let bi=-1, bv=1e9;
-    S.bench.forEach((u, i) => {
-      if (!u || u.star !== 1 || pairCount(u.id) >= 2) return;
-      const d = byId(u.id);
-      const v = (botInPlan(u, plan) ? 100 : 0) + d.cost;
-      if (v < bv) { bv=v; bi=i; }
-    });
-    if (bi < 0 || bv >= 100) return false;   // 全是计划内的对子材料：不腾
-    const u = S.bench[bi], d = byId(u.id);
-    S.gold += d.cost; S.pool[u.id] += 1; S.bench[bi] = null;
-    return true;
-  };
-  // 腾位追三星：卖掉「距三星最远」的 1★ 席位子——只有当新牌更接近三星才腾
-  const makeRoom = (newId) => {
-    let wi=-1, wp=1e9;
-    S.bench.forEach((u,i)=>{ if(!u||u.star!==1) return;
-      const pp=botProg3(u.id); if(pp<wp && pairCount(u.id)<2){ wp=pp; wi=i; } });
-    if (wi<0) return false;
-    if (botProg3(newId) <= wp) return false;
-    const u=S.bench[wi], d=byId(u.id);
-    (u.items||[]).forEach(k=>S.items.push(k));
-    S.gold += d.cost; S.pool[u.id]+=1; S.bench[wi]=null;
-    return true;
-  };
-
-  const steps = [];
-  // ⓪ 升星券：有券且有 3★ 就直接用（守关胜利奖励；普通玩家拿到就花在战力最高的三星上）
-  steps.push({ n:'升星', fn(){
-    if((S.tickets||0) <= 0 || S.phase !== 'prep') return;
-    let best=null, bv=-1;
-    [...S.board, ...S.bench].forEach(u=>{
-      if(!u || u.star !== 3) return;
-      const d=byId(u.id); const v=Math.pow(u.star,2)*d.cost;
-      if(v>bv){ bv=v; best=u; }
-    });
-    if(best && typeof applyTicket==='function') applyTicket(best.uid);
-  }});
-  // ① 买牌（白嫖先拿）：普通玩家进备战先看商店——能升星的、计划内的、追三进度的先买下，
-  //    这是"不花钱刷新也照常变强"的部分。席满先卖闲子腾位。
-  //    人口未满时低费过渡也给买（开局/掉人后先凑战力，等不了"计划"成型）。
-  steps.push({ n:'购买', fn(){
-    let bought=true, iter=0;
-    const underpop = S.board.filter(Boolean).length < S.lvl;
-    while(bought && iter++<40){
-      bought=false;
-      if(freeBench()===0 && !sellIdle()) break;
-      let bestI=-1, bestSc=underpop?10:24;   // 满员 ≥25 分才买；缺人 ≥10 分（低费过渡）也买
-      for(let i=0;i<S.shop.length;i++){
-        const u=S.shop[i]; if(!u) continue;
-        if(u.cost>S.gold) continue;
-        const sc=botScoreShop(u, plan);
-        if(sc>bestSc){ bestSc=sc; bestI=i; }
-      }
-      if(bestI>=0){ const n0=freeBench(); buy(bestI); if(freeBench()!==n0) bought=true; }
-    }
-    // 4 费强卡：即使计划外也值得腾位买（后期战力天花板）
-    for(let i=0;i<S.shop.length;i++){
-      const u=S.shop[i]; if(!u||u.cost!==4||u.cost>S.gold) continue;
-      if(pairCount(u.id)>=2) continue;
-      if(freeBench()>0){ buy(i); continue; }
-      let bi=-1, bv=-1;
-      S.bench.forEach((b2,j)=>{
-        if(!b2||b2.star!==1||pairCount(b2.id)>=2) return;
-        const bd=byId(b2.id); if(bd.cost>=4) return;
-        const v=(botInPlan(b2,plan)?50:0)+bd.cost;
-        if(v>bv){ bv=v; bi=j; }
-      });
-      if(bi>=0){ const b2=S.bench[bi], bd=byId(b2.id); S.gold+=bd.cost; S.pool[b2.id]+=1; S.bench[bi]=null; buy(i); }
-    }
-  }});
-  // ② 升级（节点化拉级）：普通玩家的经验永远"买完就升级"不浪费——
-  //    存满 50 后连买到升一级就停（节点冲刺，剩余存着攒下一节点）；
-  //    攒钱期只在「一步到位」时买，金币能真正爬到 50 吃满利息。
-  steps.push({ n:'升级', fn(){
-    const mode=botEconMode();
-    if(mode==='crisis'||mode==='urgent') return;   // 有命才有钱：先稳战力不买经验
-    if(S.round===1) return;                        // 首回合禁购经验
-    if(typeof hasCurse==='function' && hasCurse('dreamless')) return;   // 💤 无梦：本局禁购经验（不能绕过按钮直接改 S.xp）
-    const cap=(typeof lvlCap==='function')?lvlCap():11;   // 🪑 独木桥诅咒：上限 5
-    if(S.lvl>=cap) return;
-    if(S.gold>=50){
-      let g=0;
-      while(S.lvl<cap && S.gold>=55 && g++<12){
-        const b=S.lvl; S.gold-=5; S.xp+=4; checkLevel();
-        if(S.lvl>b) break;                         // 升一级就停——像人一样一次拉一个节点
-        // ⑤ 经验加速 A/B（2026-09-19）已回退：每回合最多 2 脚（升级不停继续买下一级）实测
-        // 三种子合并 ch2-4 均值 -4.9pp（71.7/63.3/55.0→67.7/60.0/47.7）——溢出金币从搜牌战力
-        // 被抽去填 6→7=32xp 经验墙，人口上去了板面质量反而掉，未达 ≥+3pp 采纳线。
-      }
-    } else if(botChEnd() && S.gold>=35 && xpNeed(S.lvl)-S.xp<=8){
-      // ②a 章末卡点放宽：两脚内能升级（缺口≤8）也买——升级节点尽量赶在守关战前落地
-      //（人口是守关战最硬的杠杆；每脚保 35 本底线，最多两脚）
-      let g=0;
-      while(S.lvl<cap && S.gold>=40 && g++<2){
-        const b=S.lvl; S.gold-=5; S.xp+=4; checkLevel();
-        if(S.lvl>b) break;
-      }
-    } else if(S.gold>=30 && S.xp+4>=xpNeed(S.lvl)){
-      S.gold-=5; S.xp+=4; checkLevel();
-    }
-  }});
-  // ③ 装备：先合成（对子出成品），输出装给主C、防御装给前排——普通玩家的默认分配
-  steps.push({ n:'装备', fn(){
-    if (typeof botCombineItems === 'function') botCombineItems();
-    const carry=botMainCarry();
-    const carryIdx=()=>S.board.indexOf(carry);
-    let guard=0;
-    while(S.items.length>0 && guard++<10){
-      const it=S.items[0];
-      const dmgItem=(typeof isDmgItem==='function')?isDmgItem(it):['sword','staff','bow','vamp'].includes(it);
-      let ti=-1, best=-1;
-      if(dmgItem && carry && (carry.items||[]).length < (typeof maxEquip==='function'?maxEquip():2) && carryIdx()>=0){
-        ti=carryIdx();                                    // 输出装优先主C
-      } else {
-        S.board.forEach((u,i)=>{
-          if(!u) return; if(!u.items) u.items=[];
-          if(u.items.length >= (typeof maxEquip==='function'?maxEquip():2)) return;
-          const d=byId(u.id);
-          if(dmgItem && d.job!=='守护' && u.atk>best){ best=u.atk; ti=i; }
-          if(!dmgItem && JOB_FRONT.has(d.job) && u.maxhp>best){ best=u.maxhp; ti=i; }
-        });
-      }
-      if(ti<0){
-        if(!dmgItem && def){
-          // ④ 防御姿态：前排装备槽已满 → 防御装轮换到背包队尾（资源向前排倾斜，不散装给后排）
-          S.items.push(S.items.shift());
-          continue;
-        }
-        S.board.forEach((u,i)=>{ if(u&&(!u.items||u.items.length < (typeof maxEquip==='function'?maxEquip():2))&&ti<0) ti=i; });
-      }
-      if(ti<0) break;
-      S.selItem=0; clickUnit('board', ti);
-    }
-  }});
-  // ④ 换血：满员时把明显跟不上的 1★ 卖掉换钱/腾位——普通玩家的"汰旧换新"，≤3 人/回合防拆队
-  steps.push({ n:'换血', fn(){
-    const members=S.board.filter(Boolean);
-    if(members.length<3) return;
-    const pw=u=>Math.pow(u.star||1,2)*u.maxhp+u.atk*(u.star||1)*4;
-    const sorted=members.map(pw).sort((a,b)=>b-a);
-    const topN=Math.max(1,Math.floor(sorted.length*0.6));
-    const topAvg=sorted.slice(0,topN).reduce((a,b)=>a+b,0)/topN;
-    const weak=u=>(u.star||1)===1 && pw(u)<topAvg*0.45;
-    S.bench.forEach((u,i)=>{
-      if(!u||!weak(u)||pairCount(u.id)>=2) return;
-      if(botInPlan(u,plan)) return;                       // 计划内的留着凑羁绊
-      if(def && JOB_FRONT.has(byId(u.id).job)) return;    // ④ 防御姿态：前排不卖
-      S.selUid=u.uid; sellSelected();
-    });
-    if(members.length>=S.lvl){
-      let sold=0;
-      for(const u of members.filter(weak)){
-        if(sold>=3) break;
-        if(def && JOB_FRONT.has(byId(u.id).job)) continue;   // ④ 防御姿态：前排不卖
-        const pos=findUnit(u.uid); if(!pos||pos[0]!=='board') continue;
-        const refund=sellRefund(u);
-        let pick=-1, best=-1;
-        for(let i=0;i<S.shop.length;i++){
-          const su=S.shop[i]; if(!su) continue;
-          if(su.cost>S.gold+refund) continue;
-          const sc=(botInPlan(su,plan)?2:0)+(pairCount(su.id)>=2?3:su.cost>=3?1:0);
-          if(sc>best){ best=sc; pick=i; }
-        }
-        if(pick<0||!S.shop[pick]) continue;               // 商店没有换得起的牌：不卖，保持满员
-        S.selUid=u.uid; sellSelected(); sold++;
-        if(S.shop[pick]) buy(pick);
-      }
-    }
-  }});
-  // ④.5 临时增益（②b，默认关）：localStorage 'vc_bottempbuff'==='1' 时启用——
-  //    章末回合且 hp≤25 或 crisis/urgent → 买 25💰「开场齐射」（buyTempBuff 游戏全局函数，
-  //    每回合限 1 个、战争迷雾半价；sim 的 localStorage 桩默认空 → 模拟口径即默认关）。
-  //    ⚠ 用户约定：托管花钱买消耗品动经济结构，先试玩再决定是否默认开。
-  steps.push({ n:'增益', fn(){
-    let on=false;
-    try{ on=(localStorage.getItem('vc_bottempbuff')==='1'); }catch(e){}
-    if(!on || !botChEnd()) return;
-    const mode=botEconMode();
-    if(!(S.hp<=25 || mode==='crisis' || mode==='urgent')) return;
-    if(typeof buyTempBuff==='function') buyTempBuff('nuke');
-  }});
-  // ⑤ 搜牌（触发式，不再习惯性 roll-down）：普通玩家只在有理由时才 D——
-  //    危机 all-in / 连败适度搜 / 多面听小搜 / 满级卡 50 追三；攒钱期与健康白嫖期都不刷。
-  steps.push({ n:'搜牌', fn(done){
-    // 顶配停刷：场上全员 3★+ 时商店已无提升空间——停止无意义刷新，金币只吃利息
-    const onB=S.board.filter(Boolean);
-    if(onB.length>0 && onB.every(u=>(u.star||1)>=3)){ if(typeof done==='function') done(); return; }
-    const mode=botEconMode();
-    const chEnd=botChEnd();   // ① 章末 3 回合=难度顶点+守关败零成本：唯一能 all-in 不心疼的窗口
-    let floor, max, keep=50;
-    if(mode==='crisis'){ floor=2; max=40; keep=0; }              // 绝对线永远最高，不受章内位置影响
-    else if(mode==='urgent'){ floor=15; max=20; }
-    else if(mode==='chase'){ floor=50; max=30; }
-    else if(mode==='healthy'){
-      if(chEnd){ floor=30; max=20; keep=0; }   // ① 章末放血：利息抵不过流血，地板 52→30、上限×2
-      else {
-        // 有目标才小搜：存在"三星在望"目标，或本金囤太多（≥65）时花一点——普通玩家不守财奴
-        const ids=new Set([...S.board,...S.bench].filter(Boolean).map(u=>u.id));
-        let listens=0; ids.forEach(id=>{ if(botProg3(id)>=5&&!has3star(id)) listens++; });
-        if(listens<1 && S.gold<65){ if(typeof done==='function') done(); return; }
-        floor=52; max=10;
-      }
-    }
-    else if(chEnd){ floor=30; max=20; keep=0; }   // ① 攒钱期章末也放血（章首 5 回合维持严格 50 地板）
-    else { if(typeof done==='function') done(); return; }   // 攒钱期：靠白嫖
-    let rolls=0;
-    const rc=(typeof refreshCost==='function')?refreshCost():2;   // 📈 通胀诅咒：刷新 3 金
-    const oneRoll=()=>{
-      if(S.gold<floor+rc || rolls++>=max) return false;
-      sellIdle();
-      const jammed=freeBench()===0;      // 席满（都是对子材料）：不停刷，只收能立即合成的/腾位追三星
-      S.gold-=rc; rollShop();
-      for(let i=0;i<S.shop.length;i++){
-        const u=S.shop[i]; if(!u) continue;
-        if(u.cost>S.gold-keep) continue;
-        if(jammed){
-          if(pairCount(u.id)>=2) buy(i);
-          else if(botProg3(u.id)>=5 && makeRoom(u.id)) buy(i);
-          continue;
-        }
-        if(botScoreShop(u,plan)>=25 && freeBench()>0) buy(i);
-      }
-      return true;
-    };
-    if(typeof done==='function'){              // 浏览器托管：一刷一停（320-580ms），肉眼可读
-      (function pace(){
-        try{
-          if(!S.auto || S.phase!=='prep'){ done(); return; }
-          if(!oneRoll()){ renderAll(); done(); return; }
-          renderAll();
-          setTimeout(pace, 320+Math.random()*260);
-        }catch(e){ try{ log('⚠️ 托管异常：'+((e&&e.message)||e)) }catch(_){} done(); }
-      })();
-    } else { while(oneRoll()); }               // 模拟器：同步跑完
-  }});
-  // ⑥ 锁定：货架上有现在买不起、但下回合想要的好牌（对子或 4 费核心）时锁住商店
-  steps.push({ n:'锁定', fn(){
-    const onB=S.board.filter(Boolean);
-    if(onB.length>0 && onB.every(u=>(u.star||1)>=3)) return;   // 顶配：无可追，不锁
-    let worthy=false;
-    for(const u of S.shop){
-      if(!u) continue;
-      if(u.cost>S.gold-Math.min(5,S.gold>50?5:2) && (pairCount(u.id)>=2||u.cost>=4)){ worthy=true; break; }
-    }
-    if(worthy && !S.lock) S.lock=true;
-  }});
-  // ⑦ 择优编队：按羁绊收益+战力选最强阵容布阵
-  steps.push({ n:'编队', fn(){ autoDeployBest(); renderAll(); }});
-  return steps;
-}
-function botPrep() { const ss = botPrepSteps(); ss.forEach(s => s.fn()); }
