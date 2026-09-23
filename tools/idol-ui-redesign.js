@@ -18,7 +18,7 @@
     const featured = UNITS.filter((u) => u.cost >= 3).filter((u, i, all) => all.findIndex((v) => v.fac === u.fac) === i).slice(0, 3);
     featured.forEach((unit) => {
       const img = document.createElement('img');
-      img.src = `assets/units_big/${unit.id}.png`;
+      img.src = `assets/units_big/${unit.id}.webp`;
       img.alt = unit.name;
       img.draggable = false;
       art.appendChild(img);
@@ -69,7 +69,7 @@
     const item = document.createElement('div');
     item.className = `cf-item arch-${arch}`;
     item.style.setProperty('--hero-color', `hsl(${hue} 78% 66%)`);
-    item.innerHTML = `<img src="assets/units_big/${unit.id}.png" alt="${esc(def.name)}" draggable="false">`
+    item.innerHTML = `<img src="assets/units_big/${unit.id}.webp" alt="${esc(def.name)}" draggable="false">`
       + `<b>${esc(def.name)}</b><span>${glyphs[arch] || '✦'} ${esc(def.sk[0])}</span>`;
     slot.prepend(item);
     const speed = Math.max(1, window.SPEED || 1);

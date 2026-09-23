@@ -2865,7 +2865,7 @@ function unitInner(u){
   const inBattle = u.side===0||u.side===1;
   const mp = inBattle ? (isPassive(u) ? '<span class="sk">被动</span>'
       : `<div class="mpbar"><div class="mpfill" style="width:${m}%"></div></div>`) : '';
-  return `<i class="pt" style="background-image:url(assets/units_big/${d.id}.png)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d,u.side)}
+  return `<i class="pt" style="background-image:url(assets/units_big/${d.id}.webp)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d,u.side)}
     <span class="st">${'★'.repeat(u.star)}</span>
     <span class="nm">${d.name}</span>
     ${u.arcs?`<span class="arcs a${Math.min(3,u.arcs)}"></span>`:''}
@@ -3003,7 +3003,7 @@ function previewShopInspect(u){
   const d=byId(u.id);
   $('inspect').innerHTML=`
     <div class="in-hd"><b>${d.name}</b><span class="in-star">★</span>
-      <img class="in-pt" src="assets/units_big/${d.id}.png" alt=""></div>
+      <img class="in-pt" src="assets/units_big/${d.id}.webp" alt=""></div>
     <div class="in-tag">${facLabel(d)} · ${jobLabel(d)} ｜ ${d.cost} 费</div>
     <div class="in-row r-hp"><span>生命</span><div class="bar"><i style="width:${Math.min(100,d.hp/1.5)}%"></i></div><b>${d.hp}</b></div>
     <div class="in-row r-atk"><span>攻击</span><div class="bar"><i style="width:${Math.min(100,d.atk*4)}%"></i></div><b>${d.atk}</b></div>
@@ -3039,7 +3039,7 @@ function renderShop(){
     if(u){
       c.innerHTML=`<div class="costbar"></div>`+
         `<div class="cn">${u.name}</div>`+
-        `<div class="art"><img class="cnpt" src="assets/units_big/${u.id}.png" alt="" draggable="false"></div>`+
+        `<div class="art"><img class="cnpt" src="assets/units_big/${u.id}.webp" alt="" draggable="false"></div>`+
         `<div class="tis">${traitIcons(u)}</div>`+
         `<div class="stb"><span class="stat hp"><i></i>${u.hp}</span><span class="stat atk"><i></i>${u.atk}</span><b class="cc2">${u.cost}</b></div>`+
         (bds?`<div class="badges">${bds}</div>`:'');
@@ -3509,7 +3509,7 @@ function showInspect(u){
     : '<span style="color:#8f88b0">无</span>';
   $('inspect').innerHTML=`
     <div class="in-hd"><b>${d.name}</b><span class="in-star">${'★'.repeat(u.star)}</span>
-      <img class="in-pt" src="assets/units_big/${d.id}.png" alt="">
+      <img class="in-pt" src="assets/units_big/${d.id}.webp" alt="">
       <span class="in-close" title="关闭" onclick="hideInspect()">✕</span></div>
     <div class="in-tag">${facLabel(d)} · ${jobLabel(d)} ｜ ${d.cost} 费</div>
     <div class="in-row r-hp"><span>生命</span><div class="bar"><i style="width:${Math.min(100,u.maxhp/1.5)}%"></i></div><b>${u.maxhp}</b></div>
@@ -3544,7 +3544,7 @@ function showEnemyInspect(u){   // 敌方棋子详情（无出售按钮；数值
   $('inspect').innerHTML=`
     <div class="in-hd"><b>${d.name}</b><span class="in-star">${'★'.repeat(u.star||1)}</span>
       <span class="in-tag" style="margin-left:6px;color:#ff9a9a">敌方</span>
-      <img class="in-pt" src="assets/units_big/${d.id}.png" alt="">
+      <img class="in-pt" src="assets/units_big/${d.id}.webp" alt="">
       <span class="in-close" title="关闭" onclick="hideInspect()">✕</span></div>
     <div class="in-tag">${facLabel(d)} · ${jobLabel(d)} ｜ ${d.cost} 费</div>
     <div class="in-row r-hp"><span>生命</span><div class="bar"><i style="width:${Math.min(100,u.maxhp/1.5)}%"></i></div><b>${u.maxhp}</b></div>
@@ -5493,7 +5493,7 @@ function showCutin(u, nm, arch){
   cutinDismiss(layer.querySelector('.cutin.'+side+':not([data-out])'));   // 同边旧特写向上滑出浅隐（两侧互不干扰）
   const el = document.createElement('div');
   el.className = 'cutin '+side;
-  el.innerHTML = `<img src="assets/units_big/${u.id}.png" alt="">
+  el.innerHTML = `<img src="assets/units_big/${u.id}.webp" alt="">
     <div class="ct"><b>${nm}</b><span>${byId(u.id).name} · 大招发动</span></div>`;
   layer.appendChild(el);
   setTimeout(()=>{ el.remove(); }, 1180/Math.max(1,SPEED));   // 到期直接移除（进场动画 forwards 已停在淡出帧）
@@ -6478,7 +6478,7 @@ function renderBook(){
   $('bookGrid').innerHTML=list.map(u=>{
     const passive=u.sk.length>2;
     return `<div class="bcard" style="border-left-color:${COST_BORDER[u.cost]}">
-      <div class="bn"><span><img class="bnpt" src="assets/units_big/${u.id}.png" alt="">${u.name}</span><span class="bc">💰${u.cost}</span></div>
+      <div class="bn"><span><img class="bnpt" src="assets/units_big/${u.id}.webp" alt="">${u.name}</span><span class="bc">💰${u.cost}</span></div>
       <div class="bf2">${facLabel(u)} · ${jobLabel(u)} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div>
       ${(SKILL_VAR[u.id]&&SKILL_VAR[u.id].p&&SKILL_VAR[u.id].p.critPct)?`<div class="bp" style="color:#ffd24a">⚡ 专属暴击 ${Math.round(SKILL_VAR[u.id].p.critPct*100)}% · 暴伤 ${SKILL_VAR[u.id].p.critMul}×（与刺客羁绊/装备相加封顶 60%，暴伤取最大）</div>`:''}
       <div class="bs">${skillName(u)}（${passive?'被动':'主动'}）${passive?'':skillDesc(u)}</div>
@@ -7064,6 +7064,6 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
 </script>
 <script src="tools/bot_strategy.js?v=7"></script>
 <script src="tools/idol-ui.js?v=1"></script>
-<script src="tools/idol-ui-redesign.js?v=4"></script>
+<script src="tools/idol-ui-redesign.js?v=5"></script>
 </body>
 </html>

@@ -7,7 +7,7 @@
       "id": "agari",
       "source": "assets/units_redraw/agari.png",
       "production": [
-        "assets/units_big/agari.png",
+        "assets/units_big/agari.webp",
         "assets/units/agari.png"
       ],
       "status": "redrawn-v1"
@@ -16,7 +16,7 @@
       "id": "aza",
       "source": "assets/units_redraw/aza.png",
       "production": [
-        "assets/units_big/aza.png",
+        "assets/units_big/aza.webp",
         "assets/units/aza.png"
       ],
       "status": "redrawn-v1"
@@ -25,7 +25,7 @@
       "id": "azi",
       "source": "assets/units_redraw/azi.png",
       "production": [
-        "assets/units_big/azi.png",
+        "assets/units_big/azi.webp",
         "assets/units/azi.png"
       ],
       "status": "redrawn-v1"
@@ -34,7 +34,7 @@
       "id": "chiharu",
       "source": "assets/units_redraw/chiharu.png",
       "production": [
-        "assets/units_big/chiharu.png",
+        "assets/units_big/chiharu.webp",
         "assets/units/chiharu.png"
       ],
       "status": "redrawn-v1"
@@ -43,7 +43,7 @@
       "id": "diansu",
       "source": "assets/units_redraw/diansu.png",
       "production": [
-        "assets/units_big/diansu.png",
+        "assets/units_big/diansu.webp",
         "assets/units/diansu.png"
       ],
       "status": "redrawn-v1"
@@ -52,7 +52,7 @@
       "id": "ein",
       "source": "assets/units_redraw/ein.png",
       "production": [
-        "assets/units_big/ein.png",
+        "assets/units_big/ein.webp",
         "assets/units/ein.png"
       ],
       "status": "redrawn-v1"
@@ -61,7 +61,7 @@
       "id": "goutan",
       "source": "assets/units_redraw/goutan.png",
       "production": [
-        "assets/units_big/goutan.png",
+        "assets/units_big/goutan.webp",
         "assets/units/goutan.png"
       ],
       "status": "redrawn-v1"
@@ -70,7 +70,7 @@
       "id": "haruka",
       "source": "assets/units_redraw/haruka.png",
       "production": [
-        "assets/units_big/haruka.png",
+        "assets/units_big/haruka.webp",
         "assets/units/haruka.png"
       ],
       "status": "redrawn-v1"
@@ -79,7 +79,7 @@
       "id": "hoshimi",
       "source": "assets/units_redraw/hoshimi.png",
       "production": [
-        "assets/units_big/hoshimi.png",
+        "assets/units_big/hoshimi.webp",
         "assets/units/hoshimi.png"
       ],
       "status": "redrawn-v1"
@@ -88,7 +88,7 @@
       "id": "huali",
       "source": "assets/units_redraw/huali.png",
       "production": [
-        "assets/units_big/huali.png",
+        "assets/units_big/huali.webp",
         "assets/units/huali.png"
       ],
       "status": "redrawn-v1"
@@ -97,7 +97,7 @@
       "id": "huize",
       "source": "assets/units_redraw/huize.png",
       "production": [
-        "assets/units_big/huize.png",
+        "assets/units_big/huize.webp",
         "assets/units/huize.png"
       ],
       "status": "redrawn-v1"
@@ -106,7 +106,7 @@
       "id": "kanban",
       "source": "assets/units_redraw/kanban.png",
       "production": [
-        "assets/units_big/kanban.png",
+        "assets/units_big/kanban.webp",
         "assets/units/kanban.png"
       ],
       "status": "redrawn-v1"
@@ -115,7 +115,7 @@
       "id": "kouichi",
       "source": "assets/units_redraw/kouichi.png",
       "production": [
-        "assets/units_big/kouichi.png",
+        "assets/units_big/kouichi.webp",
         "assets/units/kouichi.png"
       ],
       "status": "redrawn-v1"
@@ -124,7 +124,7 @@
       "id": "kroya",
       "source": "assets/units_redraw/kroya.png",
       "production": [
-        "assets/units_big/kroya.png",
+        "assets/units_big/kroya.webp",
         "assets/units/kroya.png"
       ],
       "status": "redrawn-v1"
@@ -133,7 +133,7 @@
       "id": "liAn",
       "source": "assets/units_redraw/liAn.png",
       "production": [
-        "assets/units_big/liAn.png",
+        "assets/units_big/liAn.webp",
         "assets/units/liAn.png"
       ],
       "status": "redrawn-v1"
@@ -142,7 +142,7 @@
       "id": "lianshiye",
       "source": "assets/units_redraw/lianshiye.png",
       "production": [
-        "assets/units_big/lianshiye.png",
+        "assets/units_big/lianshiye.webp",
         "assets/units/lianshiye.png"
       ],
       "status": "redrawn-v1"
@@ -151,7 +151,7 @@
       "id": "likou",
       "source": "assets/units_redraw/likou.png",
       "production": [
-        "assets/units_big/likou.png",
+        "assets/units_big/likou.webp",
         "assets/units/likou.png"
       ],
       "status": "redrawn-v1"
@@ -160,7 +160,7 @@
       "id": "mahiru",
       "source": "assets/units_redraw/mahiru.png",
       "production": [
-        "assets/units_big/mahiru.png",
+        "assets/units_big/mahiru.webp",
         "assets/units/mahiru.png"
       ],
       "status": "redrawn-v1"
@@ -169,7 +169,7 @@
       "id": "miki",
       "source": "assets/units_redraw/miki.png",
       "production": [
-        "assets/units_big/miki.png",
+        "assets/units_big/miki.webp",
         "assets/units/miki.png"
       ],
       "status": "redrawn-v1"
@@ -178,7 +178,7 @@
       "id": "miting",
       "source": "assets/units_redraw/miting.png",
       "production": [
-        "assets/units_big/miting.png",
+        "assets/units_big/miting.webp",
         "assets/units/miting.png"
       ],
       "status": "redrawn-v1"
@@ -187,7 +187,7 @@
       "id": "miyue",
       "source": "assets/units_redraw/miyue.png",
       "production": [
-        "assets/units_big/miyue.png",
+        "assets/units_big/miyue.webp",
         "assets/units/miyue.png"
       ],
       "status": "redrawn-v1"
@@ -196,7 +196,7 @@
       "id": "mumu",
       "source": "assets/units_redraw/mumu.png",
       "production": [
-        "assets/units_big/mumu.png",
+        "assets/units_big/mumu.webp",
         "assets/units/mumu.png"
       ],
       "status": "redrawn-v1"
@@ -205,7 +205,7 @@
       "id": "nana7mi",
       "source": "assets/units_redraw/nana7mi.png",
       "production": [
-        "assets/units_big/nana7mi.png",
+        "assets/units_big/nana7mi.webp",
         "assets/units/nana7mi.png"
       ],
       "status": "redrawn-v1"
@@ -214,7 +214,7 @@
       "id": "nox",
       "source": "assets/units_redraw/nox.png",
       "production": [
-        "assets/units_big/nox.png",
+        "assets/units_big/nox.webp",
         "assets/units/nox.png"
       ],
       "status": "redrawn-v1"
@@ -223,7 +223,7 @@
       "id": "pako",
       "source": "assets/units_redraw/pako.png",
       "production": [
-        "assets/units_big/pako.png",
+        "assets/units_big/pako.webp",
         "assets/units/pako.png"
       ],
       "status": "redrawn-v1"
@@ -232,7 +232,7 @@
       "id": "quanrong",
       "source": "assets/units_redraw/quanrong.png",
       "production": [
-        "assets/units_big/quanrong.png",
+        "assets/units_big/quanrong.webp",
         "assets/units/quanrong.png"
       ],
       "status": "redrawn-v1"
@@ -241,7 +241,7 @@
       "id": "rei",
       "source": "assets/units_redraw/rei.png",
       "production": [
-        "assets/units_big/rei.png",
+        "assets/units_big/rei.webp",
         "assets/units/rei.png"
       ],
       "status": "redrawn-v1"
@@ -250,7 +250,7 @@
       "id": "rinco",
       "source": "assets/units_redraw/rinco.png",
       "production": [
-        "assets/units_big/rinco.png",
+        "assets/units_big/rinco.webp",
         "assets/units/rinco.png"
       ],
       "status": "redrawn-v1"
@@ -259,7 +259,7 @@
       "id": "ruiya",
       "source": "assets/units_redraw/ruiya.png",
       "production": [
-        "assets/units_big/ruiya.png",
+        "assets/units_big/ruiya.webp",
         "assets/units/ruiya.png"
       ],
       "status": "redrawn-v1"
@@ -268,7 +268,7 @@
       "id": "sanli",
       "source": "assets/units_redraw/sanli.png",
       "production": [
-        "assets/units_big/sanli.png",
+        "assets/units_big/sanli.webp",
         "assets/units/sanli.png"
       ],
       "status": "redrawn-v1"
@@ -277,7 +277,7 @@
       "id": "seki",
       "source": "assets/units_redraw/seki.png",
       "production": [
-        "assets/units_big/seki.png",
+        "assets/units_big/seki.webp",
         "assets/units/seki.png"
       ],
       "status": "redrawn-v1"
@@ -286,7 +286,7 @@
       "id": "shadow",
       "source": "assets/units_redraw/shadow.png",
       "production": [
-        "assets/units_big/shadow.png",
+        "assets/units_big/shadow.webp",
         "assets/units/shadow.png"
       ],
       "status": "redrawn-v1"
@@ -295,7 +295,7 @@
       "id": "shengge",
       "source": "assets/units_redraw/shengge.png",
       "production": [
-        "assets/units_big/shengge.png",
+        "assets/units_big/shengge.webp",
         "assets/units/shengge.png"
       ],
       "status": "redrawn-v1"
@@ -304,7 +304,7 @@
       "id": "shiliu",
       "source": "assets/units_redraw/shiliu.png",
       "production": [
-        "assets/units_big/shiliu.png",
+        "assets/units_big/shiliu.webp",
         "assets/units/shiliu.png"
       ],
       "status": "redrawn-v1"
@@ -313,7 +313,7 @@
       "id": "sishi",
       "source": "assets/units_redraw/sishi.png",
       "production": [
-        "assets/units_big/sishi.png",
+        "assets/units_big/sishi.webp",
         "assets/units/sishi.png"
       ],
       "status": "redrawn-v1"
@@ -322,7 +322,7 @@
       "id": "songlv",
       "source": "assets/units_redraw/songlv.png",
       "production": [
-        "assets/units_big/songlv.png",
+        "assets/units_big/songlv.webp",
         "assets/units/songlv.png"
       ],
       "status": "redrawn-v1"
@@ -331,7 +331,7 @@
       "id": "suiji",
       "source": "assets/units_redraw/suiji.png",
       "production": [
-        "assets/units_big/suiji.png",
+        "assets/units_big/suiji.webp",
         "assets/units/suiji.png"
       ],
       "status": "redrawn-v1"
@@ -340,7 +340,7 @@
       "id": "sumi",
       "source": "assets/units_redraw/sumi.png",
       "production": [
-        "assets/units_big/sumi.png",
+        "assets/units_big/sumi.webp",
         "assets/units/sumi.png"
       ],
       "status": "redrawn-v1"
@@ -349,7 +349,7 @@
       "id": "taodai",
       "source": "assets/units_redraw/taodai.png",
       "production": [
-        "assets/units_big/taodai.png",
+        "assets/units_big/taodai.webp",
         "assets/units/taodai.png"
       ],
       "status": "redrawn-v1"
@@ -358,7 +358,7 @@
       "id": "tiandou",
       "source": "assets/units_redraw/tiandou.png",
       "production": [
-        "assets/units_big/tiandou.png",
+        "assets/units_big/tiandou.webp",
         "assets/units/tiandou.png"
       ],
       "status": "redrawn-v1"
@@ -367,7 +367,7 @@
       "id": "xuezhu",
       "source": "assets/units_redraw/xuezhu.png",
       "production": [
-        "assets/units_big/xuezhu.png",
+        "assets/units_big/xuezhu.webp",
         "assets/units/xuezhu.png"
       ],
       "status": "redrawn-v1"
@@ -376,7 +376,7 @@
       "id": "youyi",
       "source": "assets/units_redraw/youyi.png",
       "production": [
-        "assets/units_big/youyi.png",
+        "assets/units_big/youyi.webp",
         "assets/units/youyi.png"
       ],
       "status": "redrawn-v1"
@@ -385,7 +385,7 @@
       "id": "youyu",
       "source": "assets/units_redraw/youyu.png",
       "production": [
-        "assets/units_big/youyu.png",
+        "assets/units_big/youyu.webp",
         "assets/units/youyu.png"
       ],
       "status": "redrawn-v1"
@@ -394,7 +394,7 @@
       "id": "yua",
       "source": "assets/units_redraw/yua.png",
       "production": [
-        "assets/units_big/yua.png",
+        "assets/units_big/yua.webp",
         "assets/units/yua.png"
       ],
       "status": "redrawn-v1"
@@ -403,7 +403,7 @@
       "id": "yuji",
       "source": "assets/units_redraw/yuji.png",
       "production": [
-        "assets/units_big/yuji.png",
+        "assets/units_big/yuji.webp",
         "assets/units/yuji.png"
       ],
       "status": "redrawn-v1"
@@ -412,7 +412,7 @@
       "id": "yujiu",
       "source": "assets/units_redraw/yujiu.png",
       "production": [
-        "assets/units_big/yujiu.png",
+        "assets/units_big/yujiu.webp",
         "assets/units/yujiu.png"
       ],
       "status": "redrawn-v1"
@@ -421,7 +421,7 @@
       "id": "yukie",
       "source": "assets/units_redraw/yukie.png",
       "production": [
-        "assets/units_big/yukie.png",
+        "assets/units_big/yukie.webp",
         "assets/units/yukie.png"
       ],
       "status": "redrawn-v1"
@@ -430,7 +430,7 @@
       "id": "zeyin",
       "source": "assets/units_redraw/zeyin.png",
       "production": [
-        "assets/units_big/zeyin.png",
+        "assets/units_big/zeyin.webp",
         "assets/units/zeyin.png"
       ],
       "status": "redrawn-v1"
@@ -439,7 +439,7 @@
       "id": "zhijin",
       "source": "assets/units_redraw/zhijin.png",
       "production": [
-        "assets/units_big/zhijin.png",
+        "assets/units_big/zhijin.webp",
         "assets/units/zhijin.png"
       ],
       "status": "redrawn-v1"
@@ -448,7 +448,7 @@
       "id": "zhouyi",
       "source": "assets/units_redraw/zhouyi.png",
       "production": [
-        "assets/units_big/zhouyi.png",
+        "assets/units_big/zhouyi.webp",
         "assets/units/zhouyi.png"
       ],
       "status": "redrawn-v1"
