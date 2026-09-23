@@ -19,7 +19,7 @@ const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 /* ---------- DOM 桩 ---------- */
 function makeEl() {
   const el = {
-    style: {}, dataset: {}, children: [], title: '', textContent: '',
+    style: { setProperty(k,v){ this[k]=v; }, removeProperty(k){ delete this[k]; } }, dataset: {}, children: [], title: '', textContent: '',
     _ih: '',
     classList: { add(){}, remove(){}, toggle(){}, contains(){ return false; } },
     appendChild(c) { if(this.children.length>200) this.children.shift(); this.children.push(c); return c; },
