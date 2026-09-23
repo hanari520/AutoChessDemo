@@ -1,0 +1,6 @@
+# 部署排除项（gitignore 语法；.git 与 node_modules 由 wrangler 自动跳过）
+out
+.mimosa
+.wrangler
+assets/units_redraw
+tools/_*

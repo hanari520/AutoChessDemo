@@ -1,0 +1,6 @@
+name = "autochessdemo"
+compatibility_date = "2026-09-21"
+
+# 纯静态资源 Worker：整站即本目录（线上 autochess.hanari520.cn 自定义域已绑定本 Worker）
+[assets]
+directory = "."
