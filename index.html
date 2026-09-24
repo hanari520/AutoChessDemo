@@ -210,12 +210,12 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
   justify-content:center; cursor:grab; text-align:center; line-height:1.1; overflow:visible;
   border:2px solid #888; background:#5b6b8c; z-index:2;
   font-size:calc(var(--cell)*.16); }
-/* 费用底座：备战/上场棋子按费用区分底色与描边（战斗态在下方规则中转透明） */
-.unit.cost1 { background:linear-gradient(180deg,#3a3f4a,#262a33); border-color:#8a92a3; }
-.unit.cost2 { background:linear-gradient(180deg,#23422e,#182b20); border-color:#5fae7f; }
-.unit.cost3 { background:linear-gradient(180deg,#20374e,#16283a); border-color:#5b9fd8; }
-.unit.cost4 { background:linear-gradient(180deg,#372a52,#251c38); border-color:#a678d8; }
-.unit.cost5 { background:linear-gradient(180deg,#4a3a16,#33270f); border-color:var(--gold); }
+/* 备战时以费用决定底座颜色；开战后由阵营色覆盖。 */
+.unit.cost1 { --cost-edge:#8a92a3; background:linear-gradient(180deg,#3a3f4a,#262a33); border-color:var(--cost-edge); }
+.unit.cost2 { --cost-edge:#5fae7f; background:linear-gradient(180deg,#23422e,#182b20); border-color:var(--cost-edge); }
+.unit.cost3 { --cost-edge:#5b9fd8; background:linear-gradient(180deg,#20374e,#16283a); border-color:var(--cost-edge); }
+.unit.cost4 { --cost-edge:#a678d8; background:linear-gradient(180deg,#372a52,#251c38); border-color:var(--cost-edge); }
+.unit.cost5 { --cost-edge:var(--gold); background:linear-gradient(180deg,#4a3a16,#33270f); border-color:var(--cost-edge); }
 .unit .nm { font-weight:bold; padding:0 1px; }
 .unit .st { position:absolute; top:2px; left:3px; z-index:1; font-size:calc(var(--cell)*.15);
   color:var(--gold-hi); font-weight:bold; letter-spacing:1px; text-shadow:0 1px 2px #000; }
@@ -223,16 +223,14 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .unit .fj { font-size:calc(var(--cell)*.115); color:var(--tx1); letter-spacing:.3px; }
 .unit .its { position:absolute; top:-30%; right:2px; font-size:calc(var(--cell)*.15); letter-spacing:-2px; z-index:2; }
 .unit.sel { border-color:var(--gold); box-shadow:0 0 4px rgba(224,169,78,.55); z-index:3; }
-.unit.ally { border-color:var(--ally); box-shadow:inset 0 0 0 999px rgba(84,199,162,.16); }
-.unit.enemy { border-color:var(--foe); box-shadow:inset 0 0 0 999px rgba(224,88,76,.20); }
-.unit.sel.ally { box-shadow:0 0 4px rgba(224,169,78,.55), inset 0 0 0 999px rgba(84,199,162,.16); }
-.unit.sel.enemy { box-shadow:0 0 4px rgba(224,169,78,.55), inset 0 0 0 999px rgba(224,88,76,.20); }
+.unit.ally, .unit.enemy { border-color:var(--cost-edge); box-shadow:none; }
+.unit.sel.ally, .unit.sel.enemy { border-color:var(--gold); box-shadow:0 0 4px rgba(224,169,78,.55); }
 .unit .fz { position:absolute; top:-30%; left:2px; font-size:calc(var(--cell)*.14); z-index:2; }
 .unit .pt { position:absolute; left:50%; bottom:3%; width:148%; height:230%;
   transform:translateX(-50%); transform-origin:50% 100%;
   background-position:center bottom; background-repeat:no-repeat; background-size:contain;
   pointer-events:none; opacity:.94;
-  filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));
+  filter:drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 2px 3px rgba(0,0,0,.45));
   animation:idlebob 2.6s ease-in-out infinite alternate; }
 @keyframes idlebob { from{ transform:translateX(-50%) translateY(0) } to{ transform:translateX(-50%) translateY(-3%) } }
 .unit.battle-unit::after, #board .cell > .unit::after, #bench .unit::after {
@@ -244,7 +242,6 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 #bench .unit .st { top:auto; bottom:9%; left:4%; right:auto; }
 #board .cell > .unit .syn { display:none; }
 #bench .unit .syn { top:-58%; bottom:auto; right:2px; }
-.unit.battle-unit .st { top:auto; bottom:26px; left:50%; right:auto; transform:translateX(-50%); }
 .unit .nm { position:absolute; left:2px; right:2px; bottom:3px; z-index:1; font-weight:bold; padding:1px 0;
   background:rgba(10,8,5,.62); border-radius:3px; text-shadow:0 1px 2px #000; }
 .unit .syn { position:absolute; top:-58%; right:2px; display:flex; justify-content:flex-end; gap:2px; z-index:1; pointer-events:none; }
@@ -308,9 +305,26 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .unit.enemy .mpfill { background:var(--arc); }
 .unit.frozen { filter:brightness(1.3) hue-rotate(40deg); }
 .unit.battle-unit { border-color:transparent; background:transparent; }
-.unit.battle-unit.ally, .unit.battle-unit.enemy, .unit.battle-unit.sel { box-shadow:none; border-color:transparent; }
-.unit.battle-unit .syn, .unit.battle-unit .its, .unit.battle-unit .nm { display:none; }
-.unit.battle-unit .st { top:auto; bottom:26px; left:50%; right:auto; transform:translateX(-50%); }
+.unit.battle-unit .syn, .unit.battle-unit .its, .unit.battle-unit .nm, .unit.battle-unit .st, .unit.battle-unit .sk { display:none; }
+/* 战斗阵营用颜色和形状双重区分，标记跟随移动中的棋子。 */
+.unit.battle-unit.ally { --team-color:#ffd34f; }
+.unit.battle-unit.enemy { --team-color:#ff5d53; }
+.unit.battle-unit.ally, .unit.battle-unit.enemy { border-color:transparent; box-shadow:none; }
+.unit.battle-unit::after { width:92%; height:24%; bottom:-4%; z-index:-1;
+  border:2px solid var(--team-color); box-sizing:border-box;
+  background:radial-gradient(ellipse at center, color-mix(in srgb,var(--team-color) 52%,transparent), transparent 75%);
+  box-shadow:0 0 7px var(--team-color), inset 0 0 5px var(--team-color); }
+.unit.battle-unit.enemy::after { border-radius:20%; transform:translateX(-50%) rotate(45deg); width:70%; height:24%; bottom:-4%;
+  background:radial-gradient(ellipse at center, color-mix(in srgb,var(--team-color) 30%,transparent), transparent 70%); }
+.unit.battle-unit .hpbar { height:clamp(6px,calc(var(--cell)*.095),9px); border:1px solid var(--team-color); box-sizing:border-box;
+  background:rgba(5,11,16,.88); box-shadow:0 0 6px color-mix(in srgb,var(--team-color) 55%,transparent),0 1px 3px #000; }
+.unit.battle-unit.ally .hpfill, .unit.battle-unit.enemy .hpfill { background:var(--team-color); }
+.unit.battle-unit .mpfill { background:var(--mp); }
+.unit.battle-unit .team-badge { position:absolute; left:0; bottom:30px; z-index:5; width:13px; height:13px;
+  box-sizing:border-box; border:2px solid #fff; background:var(--team-color);
+  box-shadow:0 1px 4px #000,0 0 7px var(--team-color); pointer-events:none; }
+.unit.battle-unit.ally .team-badge { border-radius:50%; }
+.unit.battle-unit.enemy .team-badge { transform:rotate(45deg) scale(.82); border-radius:2px; }
 #board .unit.solo, #bench .unit.solo { border-color:#b9b2a2; filter:drop-shadow(0 0 2px rgba(240,234,217,.28)); }
 #board .unit.pair, #bench .unit.pair { border-color:var(--gold); filter:drop-shadow(0 0 4px rgba(224,169,78,.8)); box-shadow:0 0 0 1px rgba(224,169,78,.35); }
 #board .unit.preview { opacity:.9; pointer-events:none; filter:saturate(.85); }
@@ -5981,8 +5995,10 @@ function renderBattle(units){
       el=document.createElement('div');
       el.className='unit battle-unit cost'+byId(u.id).cost+(u.side===1?' enemy':' ally');
       el.dataset.uid=u.uid;
-      el.title=unitHTML(u,false).match(/title="([^"]*)"/)[1];
+      el.title=(u.side===0?'我方 · ':'敌方 · ')+unitHTML(u,false).match(/title="([^"]*)"/)[1];
       el.innerHTML=unitInner(u);
+      const teamBadge=document.createElement('span'); teamBadge.className='team-badge';
+      teamBadge.setAttribute('aria-hidden','true'); el.appendChild(teamBadge);
       const pe=el.querySelector('.pt'); if(pe) pe.style.animationDelay=(-((u.uid*137)%2600)/1000)+'s';   // 待机呼吸相位错开
       layer.appendChild(el);
     }
