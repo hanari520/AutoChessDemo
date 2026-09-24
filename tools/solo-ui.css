@@ -1,0 +1,191 @@
+/* Standalone single-player lobby and compact run panel. */
+#soloHub[hidden], #soloPanel[hidden], #soloHubLaunch[hidden] { display:none !important; }
+
+#soloHubLaunch {
+  appearance:none; border:1px solid rgba(116,139,207,.24); border-radius:999px; padding:7px 12px;
+  color:#66769e; background:rgba(255,255,255,.68); font-family:inherit; font-size:12px; font-weight:700; line-height:1.1; cursor:pointer;
+  transition:background .16s ease,border-color .16s ease,transform .16s ease;
+}
+#soloHubLaunch:hover { background:#fff; border-color:rgba(111,136,222,.52); transform:translateY(-1px); }
+#soloHubLaunch:focus-visible, #soloHub button:focus-visible, #soloPanel button:focus-visible {
+  outline:3px solid rgba(102,132,232,.6); outline-offset:2px;
+}
+#soloHubLaunch.solo-launch-fallback { position:fixed; z-index:10000; right:14px; bottom:14px; box-shadow:0 7px 22px rgba(61,75,126,.2); }
+
+#soloPanel {
+  --solo-ink:#344363; --solo-muted:#7180a0; --solo-line:rgba(119,143,201,.2);
+  position:relative; z-index:4; flex:0 0 auto; width:100%; max-height:clamp(88px,20dvh,166px);
+  display:grid; grid-template-columns:minmax(145px,.72fr) minmax(175px,.9fr) minmax(0,1.65fr);
+  align-items:center; gap:clamp(8px,1.3vw,18px); overflow:auto; overscroll-behavior:contain;
+  padding:8px clamp(10px,1.5vw,20px); color:var(--solo-ink);
+  border-bottom:1px solid var(--solo-line); border-top:1px solid rgba(255,255,255,.8);
+  background:linear-gradient(105deg,rgba(248,252,255,.96),rgba(250,246,255,.94) 56%,rgba(255,247,251,.94));
+  box-shadow:0 5px 18px rgba(66,87,143,.09); backdrop-filter:blur(14px);
+  font-family:"Aptos","Segoe UI","Microsoft YaHei UI",system-ui,sans-serif;
+}
+.solo-panel-identity { min-width:0; }
+.solo-panel-mode { margin:0 0 3px; color:#8a75c2; font-size:9px; font-weight:850; letter-spacing:1.3px; text-transform:uppercase; }
+.solo-panel-title { margin:0; color:#3d4b70; font-size:clamp(14px,1.3vw,19px); line-height:1.2; }
+.solo-panel-subtitle { margin:4px 0 0; color:var(--solo-muted); font-size:11px; line-height:1.35; }
+.solo-panel-details { min-width:0; max-height:100%; overflow:auto; padding:2px 10px; border-left:1px solid var(--solo-line); }
+.solo-panel-details p { margin:2px 0; color:#647393; font-size:11px; line-height:1.35; overflow-wrap:anywhere; }
+.solo-panel-details .solo-panel-outcome { color:#a46e2d; font-weight:850; }
+.solo-panel-details .solo-panel-enemy { color:#b05d7d; }
+.solo-panel-details .solo-panel-resources { color:#7985a2; font-size:10px; }
+.solo-panel-actions { display:flex; min-width:0; max-height:100%; align-items:center; gap:8px; }
+.solo-panel-choices { display:flex; flex:1 1 auto; min-width:0; min-height:38px; max-height:100%; align-items:stretch; gap:6px; overflow:auto; padding:2px; }
+.solo-no-choices { align-self:center; color:#8995af; font-size:10px; white-space:nowrap; }
+.solo-action-button, .solo-choice-button {
+  appearance:none; min-width:0; border:1px solid rgba(116,137,190,.24); border-radius:10px; padding:7px 10px;
+  color:#596887; background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(239,244,255,.94));
+  box-shadow:0 2px 6px rgba(69,88,144,.07),inset 0 1px 0 #fff; font-family:inherit; font-size:11px; font-weight:750; line-height:1.25; cursor:pointer;
+  transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;
+}
+.solo-action-button:hover:not(:disabled), .solo-choice-button:hover:not(:disabled) {
+  transform:translateY(-1px); border-color:rgba(112,132,222,.55); box-shadow:0 5px 12px rgba(83,102,166,.14),inset 0 1px 0 #fff;
+}
+.solo-action-button:disabled, .solo-choice-button:disabled { opacity:.54; cursor:not-allowed; box-shadow:none; }
+.solo-panel-controls { display:flex; flex:0 0 auto; align-items:center; gap:6px; }
+.solo-fight-button { color:#fff; border-color:#8b91dc; background:linear-gradient(135deg,#6ebdad,#858be4); }
+.solo-fight-button:hover:not(:disabled) { color:#fff; border-color:#727bc8; }
+.solo-exit-button { white-space:nowrap; }
+.solo-choice-button { display:flex; flex:1 0 min(140px,42%); min-height:38px; flex-direction:column; align-items:flex-start; justify-content:center; text-align:left; }
+.solo-choice-description { display:block; margin-top:3px; color:#7c89a5; font-size:9px; font-weight:500; line-height:1.25; }
+.solo-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+#soloHub {
+  position:fixed; z-index:20000; inset:0; display:grid; place-items:center; padding:clamp(10px,3vw,34px);
+  color:#344363; background:rgba(28,37,64,.42); backdrop-filter:blur(10px);
+  font-family:"Aptos","Segoe UI","Microsoft YaHei UI",system-ui,sans-serif;
+}
+.solo-hub-dialog {
+  display:grid; grid-template-rows:auto auto minmax(0,1fr) auto; gap:12px;
+  width:min(1040px,100%); max-height:min(900px,94dvh); padding:clamp(16px,2.4vw,28px);
+  overflow:hidden; border:1px solid rgba(255,255,255,.94); border-radius:24px;
+  background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(244,247,255,.97) 56%,rgba(255,246,251,.97));
+  box-shadow:0 28px 90px rgba(26,38,77,.32),inset 0 1px 0 #fff;
+}
+.solo-hub-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.solo-hub-title-block { min-width:0; }
+.solo-kicker { margin:0 0 5px; color:#8e79c4; font-size:9px; font-weight:900; letter-spacing:2px; }
+.solo-hub-head h2 { margin:0; color:#344365; font-size:clamp(21px,3vw,31px); line-height:1.1; }
+.solo-hub-head h2:focus { outline:2px solid rgba(102,132,232,.56); outline-offset:4px; border-radius:4px; }
+.solo-icon-button { flex:0 0 auto; width:38px; height:38px; border:1px solid rgba(121,140,193,.23); border-radius:12px; color:#637292; background:#fff; font-size:25px; line-height:1; cursor:pointer; }
+.solo-icon-button:hover { color:#5265ad; background:#f5f7ff; }
+.solo-hub-intro { margin:0; color:#74819d; font-size:12px; line-height:1.55; }
+.solo-hub-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); align-content:start; gap:10px; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:2px 4px 4px 2px; }
+.solo-mode-card {
+  display:flex; min-width:0; flex-direction:column; gap:7px; padding:13px;
+  border:1px solid rgba(126,147,201,.2); border-radius:16px;
+  background:linear-gradient(155deg,rgba(255,255,255,.96),rgba(244,248,255,.91));
+  box-shadow:0 5px 14px rgba(78,96,151,.07),inset 0 1px 0 #fff;
+}
+.solo-mode-primary { grid-column:1/-1; display:grid; grid-template-columns:46px minmax(150px,.8fr) minmax(220px,1.5fr) minmax(210px,1fr); align-items:center; gap:9px 14px; padding:15px 18px; border-color:rgba(131,144,229,.35); background:linear-gradient(105deg,#eff9ff 0%,#f1f0ff 58%,#fff1f6 100%); }
+.solo-mode-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.solo-mode-primary .solo-mode-top { justify-content:center; }
+.solo-mode-icon { display:grid; place-items:center; width:34px; height:34px; border:1px solid rgba(121,138,220,.22); border-radius:12px; color:#8a82d1; background:rgba(255,255,255,.84); font-size:17px; }
+.solo-mode-kind { color:#9a84c8; font-size:8px; font-weight:850; letter-spacing:.7px; white-space:nowrap; }
+.solo-mode-title { margin:0; color:#3e4d72; font-size:15px; line-height:1.2; }
+.solo-mode-primary .solo-mode-title { font-size:19px; }
+.solo-mode-description { margin:0; color:#7986a2; font-size:10px; line-height:1.45; }
+.solo-mode-primary .solo-mode-description { font-size:11px; }
+.solo-mode-select-field { display:flex; min-width:0; align-items:center; justify-content:space-between; gap:7px; margin-top:2px; color:#7885a1; font-size:9px; font-weight:750; }
+.solo-mode-select { min-width:0; max-width:68%; padding:6px 24px 6px 8px; border:1px solid rgba(119,141,199,.27); border-radius:8px; color:#526286; background:rgba(255,255,255,.9); font:inherit; font-weight:700; cursor:pointer; }
+.solo-mode-select:focus-visible { outline:3px solid rgba(102,132,232,.5); outline-offset:2px; }
+.solo-save-summary { margin:auto 0 0; color:#9aa4ba; font-size:9px; line-height:1.35; overflow-wrap:anywhere; }
+.solo-mode-primary .solo-save-summary { grid-column:2/4; margin:0; }
+.solo-save-summary.has-save { color:#7181a2; }
+.solo-mode-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+.solo-mode-primary .solo-mode-actions { grid-column:4; grid-row:1/5; align-content:center; }
+.solo-action-button.solo-start-button, .solo-action-button.solo-continue-button, .solo-action-button.solo-confirm-button {
+  color:#4f5d95; border-color:rgba(123,139,216,.34); background:linear-gradient(130deg,#ecf4ff,#f4edff);
+}
+.solo-action-button.solo-restart-button, .solo-action-button.solo-cancel-button { color:#8a6985; background:rgba(255,255,255,.8); }
+.solo-mode-actions .solo-action-button { flex:1 1 auto; }
+.solo-restart-confirm { padding-top:5px; border-top:1px solid rgba(126,147,201,.16); }
+.solo-restart-confirm[hidden] { display:none !important; }
+.solo-confirm-copy { margin:0 0 6px; color:#98687b; font-size:10px; line-height:1.4; }
+.solo-confirm-actions { display:flex; gap:6px; }
+.solo-confirm-actions .solo-action-button { flex:1; }
+.solo-hub-status { min-height:16px; margin:0; color:#7b86a2; font-size:10px; }
+
+html[data-theme="dark"] #soloHubLaunch { color:#c0cbed; border-color:rgba(159,177,232,.25); background:rgba(29,43,75,.8); }
+html[data-theme="dark"] #soloPanel { --solo-ink:#e3eaff; --solo-muted:#aebadb; --solo-line:rgba(154,175,233,.19); color:var(--solo-ink); border-color:rgba(143,166,225,.18); background:linear-gradient(105deg,rgba(19,32,62,.97),rgba(34,31,70,.95) 56%,rgba(51,30,66,.94)); }
+html[data-theme="dark"] .solo-panel-title { color:#e2e9ff; }
+html[data-theme="dark"] .solo-panel-details p { color:#b5c1df; }
+html[data-theme="dark"] .solo-panel-details .solo-panel-outcome { color:#ffd17d; }
+html[data-theme="dark"] .solo-panel-details .solo-panel-enemy { color:#ff9dbd; }
+html[data-theme="dark"] .solo-action-button, html[data-theme="dark"] .solo-choice-button { color:#d3dcf7; border-color:rgba(147,167,222,.3); background:linear-gradient(180deg,rgba(51,67,106,.98),rgba(36,48,81,.96)); box-shadow:inset 0 1px 0 rgba(255,255,255,.1); }
+html[data-theme="dark"] .solo-fight-button { color:#fff; background:linear-gradient(135deg,#318f84,#616cc3); }
+html[data-theme="dark"] .solo-choice-description { color:#a8b6d6; }
+html[data-theme="dark"] #soloHub { color:#e1e8fb; background:rgba(4,10,25,.65); }
+html[data-theme="dark"] .solo-hub-dialog { border-color:rgba(165,184,235,.27); background:linear-gradient(145deg,rgba(25,39,72,.99),rgba(30,33,67,.98) 56%,rgba(53,33,67,.98)); box-shadow:0 28px 90px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.08); }
+html[data-theme="dark"] .solo-hub-head h2, html[data-theme="dark"] .solo-mode-title { color:#e1e9ff; }
+html[data-theme="dark"] .solo-icon-button, html[data-theme="dark"] .solo-mode-card { color:#d9e2fb; border-color:rgba(157,177,233,.2); background:linear-gradient(155deg,rgba(41,56,91,.96),rgba(30,42,73,.94)); }
+html[data-theme="dark"] .solo-mode-primary { background:linear-gradient(105deg,rgba(35,64,88,.98),rgba(48,47,91,.97) 58%,rgba(74,43,82,.96)); }
+html[data-theme="dark"] .solo-mode-description, html[data-theme="dark"] .solo-hub-intro { color:#b3bfdc; }
+html[data-theme="dark"] .solo-mode-select-field { color:#b3bfdc; }
+html[data-theme="dark"] .solo-mode-select { color:#dce5ff; border-color:rgba(157,177,233,.27); background:rgba(30,44,76,.96); }
+html[data-theme="dark"] .solo-save-summary { color:#9aa9cc; }
+html[data-theme="dark"] .solo-save-summary.has-save { color:#c0cbed; }
+html[data-theme="dark"] .solo-action-button.solo-start-button, html[data-theme="dark"] .solo-action-button.solo-continue-button, html[data-theme="dark"] .solo-action-button.solo-confirm-button { color:#dbe5ff; background:linear-gradient(130deg,#394e81,#51487f); }
+html[data-theme="dark"] .solo-restart-confirm { border-color:rgba(157,177,233,.2); }
+html[data-theme="dark"] .solo-confirm-copy { color:#f0adc7; }
+
+@media (max-width:880px) {
+  #soloPanel { grid-template-columns:minmax(125px,.8fr) minmax(0,1.4fr); max-height:clamp(92px,22dvh,170px); gap:5px 12px; }
+  .solo-panel-details { border-left:1px solid var(--solo-line); }
+  .solo-panel-actions { grid-column:1/-1; }
+  .solo-panel-choices { min-height:34px; }
+  .solo-choice-button { min-height:34px; }
+  .solo-hub-cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .solo-mode-primary { grid-template-columns:40px minmax(100px,.75fr) minmax(120px,1.3fr); }
+  .solo-mode-primary .solo-mode-actions { grid-column:2/4; grid-row:auto; }
+  .solo-mode-primary .solo-save-summary { grid-column:2/4; }
+}
+@media (max-width:600px) {
+  #soloPanel { grid-template-columns:minmax(0,1fr); align-items:start; max-height:clamp(108px,24dvh,185px); padding:7px 9px; gap:4px; }
+  .solo-panel-identity { display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:8px; align-items:baseline; }
+  .solo-panel-mode { grid-column:1/-1; margin-bottom:1px; font-size:8px; }
+  .solo-panel-title { font-size:14px; }
+  .solo-panel-subtitle { margin:0; overflow:hidden; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+  .solo-panel-details { display:flex; gap:5px 10px; align-items:center; overflow-x:auto; overflow-y:hidden; padding:0; border:0; white-space:nowrap; }
+  .solo-panel-details p { flex:0 0 auto; font-size:9px; }
+  .solo-panel-actions { gap:5px; }
+  .solo-panel-choices { min-height:32px; overflow-x:auto; }
+  .solo-choice-button { flex:0 0 min(160px,52vw); min-height:32px; padding:5px 7px; font-size:10px; }
+  .solo-choice-description { max-width:44vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .solo-panel-controls { gap:4px; }
+  .solo-panel-controls .solo-action-button { min-height:34px; padding:5px 7px; font-size:10px; }
+  #soloHub { padding:8px; }
+  .solo-hub-dialog { gap:9px; max-height:calc(100dvh - 16px); max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding:15px 13px 12px; border-radius:19px; }
+  .solo-hub-cards { grid-template-columns:minmax(0,1fr); gap:7px; }
+  .solo-mode-card { display:grid; grid-template-columns:28px minmax(0,1fr); gap:5px 8px; padding:10px; border-radius:13px; }
+  .solo-mode-primary { grid-column:auto; grid-template-columns:28px minmax(0,1fr); }
+  .solo-mode-top { grid-column:1; grid-row:1/4; align-self:start; justify-content:center; }
+  .solo-mode-icon { width:27px; height:27px; border-radius:9px; font-size:14px; }
+  .solo-mode-kind { display:none; }
+  .solo-mode-title, .solo-mode-description, .solo-save-summary, .solo-mode-actions, .solo-mode-primary .solo-save-summary, .solo-mode-primary .solo-mode-actions { grid-column:2; }
+  .solo-mode-title { font-size:13px; }
+  .solo-mode-primary .solo-mode-title { font-size:15px; }
+  .solo-mode-description { font-size:9px; }
+  .solo-mode-select-field { grid-column:2; margin-top:0; }
+  .solo-mode-select { padding-block:5px; }
+  .solo-save-summary { margin:0; }
+  .solo-mode-actions { margin-top:0; }
+  .solo-mode-actions .solo-action-button { min-height:32px; }
+  .solo-restart-confirm { grid-column:2; }
+  .solo-hub-status { min-height:13px; font-size:9px; }
+}
+@media (max-height:470px) and (orientation:landscape) {
+  #soloPanel { grid-template-columns:minmax(120px,.7fr) minmax(125px,.8fr) minmax(0,1.8fr); max-height:118px; padding-block:4px; }
+  .solo-panel-actions, .solo-panel-choices { min-height:30px; }
+  .solo-panel-details p { font-size:9px; }
+  .solo-panel-subtitle { font-size:9px; }
+  .solo-hub-dialog { max-height:96dvh; gap:7px; padding:12px 16px; }
+  .solo-hub-cards { gap:6px; }
+  .solo-mode-card { padding:8px; gap:4px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  #soloHubLaunch, #soloHub *, #soloPanel * { transition:none !important; animation:none !important; scroll-behavior:auto !important; }
+}

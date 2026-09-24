@@ -17,8 +17,11 @@ function botLinePower(team,pop=S.lvl||11){
   const gear=active.reduce((n,u)=>n+(u.items||[]).length*28,0);
   return raw+syn*3.2+gear+active.length*25;
 }
+function botFogged(){   // 🌫 迷雾军情：托管不使用看不到的敌方情报（默认防护）
+  return typeof dailyMods==='function' && !!dailyMods() && dailyMods().fog===true;
+}
 function botOpponentPower(){
-  if(!S.enemyBoard) return 0;
+  if(!S.enemyBoard||botFogged()) return 0;
   return botLinePower(S.enemyBoard.filter(Boolean),S.arenaOpponentLevel||S.lvl);
 }
 function botPressure(){
@@ -109,7 +112,7 @@ function botScoring(u,plan){
   if(profile==='synergy'&&botInPlan(u,plan))score+=16;
   if(profile==='flexible'&&d.cost>=4)score+=9;
   if(profile==='economy'&&d.cost>=4) score-=8;
-  if(S.enemyBoard&&S.enemyBoard.filter(Boolean).length){
+  if(!botFogged()&&S.enemyBoard&&S.enemyBoard.filter(Boolean).length){
     const enemies=S.enemyBoard.filter(Boolean), ed=botTagCounts(enemies), enemyJobs=enemies.map(x=>byId(x.id).job);
     const myJobs=typeof jobsOf==='function'?jobsOf(d):[d.job,d.job2];
     if(enemyJobs.filter(j=>j==='刺客').length>=2&&myJobs.some(j=>j==='守护'||j==='医者'))score+=11;
@@ -196,6 +199,7 @@ function botBuyAvailable(plan,limit=8){
 }
 function botLevel(){
   if(S.round<=1||S.lvl>=lvlCap()||hasCurse('dreamless'))return;
+  { const dm=(typeof dailyMods==='function')?dailyMods():null; if(dm&&dm.buyXp===false)return; }   // 缓慢成长：禁购经验
   const mode=botUrgency(), profile=botProfile(), target=[0,1,2,4,6,9,14,20,27,35,45][S.lvl]||50;
   const timing=profile==='tempo'?target-2:profile==='economy'?target+2:target;
   const behind=S.round>=timing, urgency=mode==='survive'?2:mode==='stabilize'?1:0;
@@ -241,6 +245,7 @@ function botEquipGear(){
 function botFormation(){
   if(!botMembers().length)return;
   autoDeployBest();
+  if(botFogged())return;   // 🌫 迷雾军情：不针对看不见的敌方站位调整阵型
   const enemies=(S.enemyBoard||[]).filter(Boolean);
   if(!enemies.length)return;
   const rows=[4,5,6,7], front=botBoard().filter(u=>['守护','刀客','狂战'].includes(byId(u.id).job));
@@ -292,6 +297,7 @@ function botSearch(done){
   const one=()=>{
     if(shouldStop())return false;
     S.gold-=refreshCost(); S.stats.goldSpent=(S.stats.goldSpent||0)+refreshCost(); rolls++; rollShop();
+    if(typeof dailyEvent==='function')dailyEvent('refresh');   // 每日主动刷新计数（黑市货架/封印免费刷新）
     botBuyAvailable(plan,5);
     return true;
   };

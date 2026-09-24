@@ -19,6 +19,7 @@ const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
   castSkill, dealDamage, v3Heal, v3AddShield, v3AttackOf, applyV3Attack, v3RainTrigger,
   get SKILL_VAR(){return SKILL_VAR}, get SKILL_INFO(){return SKILL_INFO}, get FORMA_COLS(){return FORMA_COLS},
   placeFormation, genEnemy, prepEnemy, tidyBench, fillBoardBeforeBattle, unitBand, makeBattleUnit, equipTo, sellSelected,
+  dailyEvent, dailyOnPrep, nbList, interestGain, maxEquip, enemyHidden,   /* 每日诅咒 v2 接线断言用 */
   get sfx(){return typeof sfx==='function'?sfx:null}, get battleStats(){return typeof battleStats!=='undefined'?battleStats:null} };
 `;
 
@@ -74,6 +75,10 @@ if (process.env.SEED) {
 
 (0, eval)(code);
 const A = globalThis.API;
+if (process.env.DAILY_CAMPAIGN_TEST) {
+  require('./daily-campaign.test.js').run(A);
+  process.exit(process.exitCode || 0);
+}
 if (process.env.CAMPAIGN_TEST) {
   const assert = require('node:assert/strict');
   const reset = r => { globalThis.newGame(); A.S.round=r; A.S.phase='battle'; };

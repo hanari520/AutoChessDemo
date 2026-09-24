@@ -6,3 +6,6 @@ out
 .gitignore
 assets/units_redraw
 tools/_*
+td.html
+td.css
+td.js

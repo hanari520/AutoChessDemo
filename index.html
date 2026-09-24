@@ -1011,6 +1011,7 @@ body.touch .m-only { display:inline-block; }
 <link rel="stylesheet" href="tools/mobile-stage.css?v=2">
 <link rel="stylesheet" href="tools/idol-dark.css?v=3">
 <script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#101a36':'#eaf3ff'</script>
+<link rel="stylesheet" href="tools/solo-ui.css?v=1">
 </head>
 <body>
 <div id="topbar">
@@ -1269,6 +1270,7 @@ body.touch .m-only { display:inline-block; }
     【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）
   </div>
 </div>
+<script src="tools/daily-curses.js?v=2"></script>
 <script>
 /* ================= 名单：50 人（VirtuaReal 42 + P-SP 8，2026-09-19 费用与名单修订） =================
    fac 阵营(12) / job 职业(10) / sk [技能名, 原型]——多多自走棋式：绝大多数为回蓝主动技，仅 3 个被动（破盾/格挡/吸血）
@@ -1908,18 +1910,99 @@ const CURSES=[
 const BOND_BAN_IDS=['nobond','nojob','nofac'];   // 羁绊禁用类：共用 cursesData.nobond 名单 + nbList() 读取口
 let curseSel=[];   // 自定义诅咒挑战的勾选状态（会话内保留，重开不丢）
 function hasCurse(id){ return !!(S && S.curses && S.curses.includes(id)); }
-function nbList(){ return (S && S.cursesData && S.cursesData.nobond) || []; }   // ⛓ 本局被禁用的羁绊名（nobond/nojob/nofac 共用此名单，见 initBannedBonds）
+function dailyMods(){ return S && S.dailyCurse && window.DailyCurses ? DailyCurses.modifiers(S.dailyCurse,{round:S.round,phase:S.phase}) : null; }
+function dailyRule(){ return S && S.dailyCurse && window.DailyCurses ? DailyCurses.description(S.dailyCurse.id) : null; }
+function dailyEffect(effect){
+  if(!effect || !S) return;
+  const label=effect.text||'每日诅咒补偿';
+  if(effect.type==='gold'){
+    const n=Number(effect.amount)||0;
+    if(n>0)addGold(n,label);
+    else if(n<0){const spent=Math.min(S.gold,-n);S.gold-=spent;S.stats.goldSpent+=spent;log(`　· -${spent} 金币（${label}）`);}
+  } else if(effect.type==='hp'){
+    const n=Number(effect.amount)||0;S.hp=Math.max(0,Math.min(hpMax(),S.hp+n));
+    if(n<0){S.stats.dmgTaken+=-n;(S.stats.hpLog=S.stats.hpLog||[]).push({r:S.round,d:-n});}
+    log(`　· ${n>0?'+':''}${n} 生命（${label}）`);
+  } else if(effect.type==='ticket'){S.tickets=(S.tickets||0)+(Number(effect.amount)||0);log(`🎫 ${label}：升星券 +${effect.amount||0}`);}
+  else if(effect.type==='item'){
+    if(ITEMS[effect.key]&&!ITEMS[effect.key].crafted&&!ITEMS[effect.key].arti){S.items.push(effect.key);log(`🎁 ${label}：${ITEMS[effect.key].n}`);}
+  } else if(effect.type==='unit'){
+    if(Array.isArray(effect.options)&&effect.options.length>1&&!S.auto&&!S.menuPreview&&S.phase==='prep'){
+      S.pendingDailyOffer={options:effect.options.slice(),key:effect.key,fallbackGold:effect.fallbackGold||3,text:label};
+      const nm=id=>(byId(id)||{}).name||id;
+      log(`🎁 ${label}：候选 ${effect.options.map(nm).join(' / ')}——开战前点选一名（不选则默认领 ${nm(effect.key)}）`);
+      showDailyOffer();
+      return;
+    }
+    grantDailyUnit(effect.key,label,effect.fallbackGold||3);
+  } else if(effect.type==='freeBuff'){
+    if(!S.tempBuff && TEMP_BUFFS.some(x=>x.id===effect.key)){S.tempBuff=effect.key;log(`🧪 ${label}：${TEMP_BUFFS.find(x=>x.id===effect.key).n}`);}
+  } else if(effect.type==='log') log(`⚠ ${label}`);
+}
+function dailyEvent(event,ctx={}){
+  if(!S || !S.dailyCurse || !window.DailyCurses)return true;
+  const result=DailyCurses.transition(S.dailyCurse,event,{round:S.round,gold:S.gold,units:UNITS,synergies:[...Object.keys(FACTIONS),...Object.keys(CLASSES)],...ctx});
+  S.dailyCurse=result.state;
+  (result.effects||[]).forEach(dailyEffect);
+  if(S.hp<=0){gameOver(false);return false;}
+  return true;
+}
+function grantDailyUnit(id,label,fallbackGold){   // 每日定向招募兑现：入队优先，满员/无货折金
+  const d=byId(id), slot=S.bench.findIndex(x=>!x);
+  if(d && slot>=0 && S.pool[id]>0){S.pool[id]--;S.bench[slot]={uid:S.uid++,id,star:1,sks:1,hp:Math.round(d.hp*HP_SCALE),maxhp:Math.round(d.hp*HP_SCALE),atk:d.atk,items:[]};tryMerge();log(`👤 ${label}：${d.name}`);}
+  else addGold(fallbackGold||3,'定向招募未能入队的补偿');
+}
+function showDailyOffer(){   // 定向招募三选一：备战期弹出；托管/开战按默认 key 兑现
+  if(typeof document==='undefined'||!document.body)return;
+  const offer=S&&S.pendingDailyOffer; if(!offer)return;
+  let ov=document.getElementById('dailyOfferOverlay'); if(ov)ov.remove();
+  ov=document.createElement('div');ov.id='dailyOfferOverlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:2100;background:rgba(6,8,24,.66);display:flex;align-items:center;justify-content:center';
+  const nm=id=>(byId(id)||{}).name||id;
+  const card=(id,i)=>{ const d=byId(id)||{name:id,cost:2};
+    const syn=(typeof facsOf==='function'&&d.id)?[...facsOf(d),...jobsOf(d)].join(' / '):'';
+    return `<button type="button" data-i="${i}" style="min-width:150px;padding:12px 14px;background:#241e3e;border:1px solid #4aa8ff;border-radius:12px;color:#dcd6f2;cursor:pointer;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#ffd24a">${nm(id)}</div>
+      <div style="font-size:11px;color:#8a93c4;margin-top:4px">${d.cost||2} 费 · ${syn}</div></button>`; };
+  ov.innerHTML=`<div style="background:#141230;border:1px solid #4a3d6e;border-radius:16px;padding:18px 22px;max-width:92vw">
+    <div style="color:#9dd3e8;font-size:14px;margin-bottom:10px">🎁 ${offer.text||'定向招募'}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">${offer.options.map(card).join('')}</div>
+    <div style="text-align:center;margin-top:10px;font-size:11px;color:#8a93c4">择一领取；开战或托管将按默认（${nm(offer.key)}）兑现</div></div>`;
+  ov.addEventListener('click',e=>{
+    const b=e.target.closest('button[data-i]'); if(!b)return;
+    const id=offer.options[Number(b.dataset.i)]||offer.key;
+    S.pendingDailyOffer=null; ov.remove();
+    grantDailyUnit(id,offer.text||'定向招募补偿',offer.fallbackGold||3);
+    renderAll();
+  });
+  document.body.appendChild(ov);
+}
+function dailyOnPrep(){   // 每轮备战开启：roundStart 事件（商店刷新前）+ 五人远征升档播报；返回 false=血债致死已终局
+  if(!S||!S.daily||!window.DailyCurses)return true;
+  if(!dailyEvent('roundStart'))return false;
+  const dm=dailyMods();
+  if(dm&&dm.shopLevelByRound&&S.round>=6&&S.round<=31&&(S.round-6)%5===0)
+    log(`🛒 五人远征：商店品质随回合升档（本回合起按 ${dm.shopLevel} 级概率刷新）`);
+  return true;
+}
+function enemyHidden(){ return hasCurse('fog') || !!(dailyMods()&&dailyMods().fog); }   // 🌫 备战期隐藏敌方预览（战争迷雾/迷雾军情）
+function nbList(){   // ⛓ 本局被禁用的羁绊名（nobond/nojob/nofac 共用此名单，见 initBannedBonds）；每日封印轮转并入同一读取口
+  const base=(S && S.cursesData && S.cursesData.nobond) || [];
+  const seal=dailyMods()&&dailyMods().bannedSynergy;
+  return (seal&&!base.includes(seal)) ? base.concat([seal]) : base;
+}
 function bondBanCurses(){ return BOND_BAN_IDS.filter(hasCurse); }              // 生效中的羁绊禁用类诅咒
 function bondBanNames(){ return bondBanCurses().map(id=>{ const c=CURSES.find(x=>x.id===id); return c?c.n:id; }).join(' / '); }
 function bondBanLabel(id){ const n=nbList().length; if(!n) return '';          // 顶栏短标签：名单太长只给类别
   if(id==='nojob') return '（全部职业）';
   if(id==='nofac') return '（全部阵营）';
   return `（${nbList().join('/')}）`; }
-function chLen(){ return hasCurse('shortch') ? 15 : 25; }        // 章节周期
-/* 普通模式固定四章；每日与自定义挑战保留各自的一章长度。 */
-function normalCampaign(){ return !S.arena && !S.daily && !(S.curses||[]).length; }
-function runLimit(){ return normalCampaign() ? 100 : chLen(); }
-function enemyCap(r){ return !normalCampaign()?7:r>50?10:r>25?9:7; }
+function chLen(){ return !S.daily && hasCurse('shortch') ? 15 : 25; }        // 每日固定 25 回合一章
+/* 普通与每日固定四章；自定义诅咒挑战保留单章。 */
+function normalCampaign(){ return !S.solo && !S.arena && !S.daily && !(S.curses||[]).length; }
+function fourChapterCampaign(){ return normalCampaign() || !!S.daily; }
+function runLimit(){ if(S.solo)return SoloHost.limit(); return fourChapterCampaign() ? 100 : chLen(); }
+function enemyCap(r){ return !fourChapterCampaign()?7:r>50?10:r>25?9:7; }
 function challengeAvailable(){ return normalCampaign() && S.phase==='prep' && S.round%10===0 && S.round%25!==0 && S.round<100; }
 function chooseChallenge(){
   if(!challengeAvailable() || S.challengeRound===S.round) return;
@@ -1928,10 +2011,10 @@ function chooseChallenge(){
   log(`⚔ 第 ${S.round} 回合选择精英挑战：敌方生命与攻击 +25%；胜利额外获得 2 件装备、3 金，失败扣 3 生命`);
   renderAll();
 }
-function shopSize(){ return hasCurse('tinyshop') ? 3 : SHOP_SIZE; }   // 🛒 紧缩货架：商店格数
-function refreshCost(){ return hasCurse('inflation') ? 3 : (hasCurse('tinyshop') ? 1 : 2); }  // 刷新价格
+function shopSize(){ return dailyMods()?.shopSize ?? (hasCurse('tinyshop') ? 3 : SHOP_SIZE); }
+function refreshCost(){ return dailyMods()?.refreshCost ?? (hasCurse('inflation') ? 3 : (hasCurse('tinyshop') ? 1 : 2)); }
 function interestCap(){ return hasCurse('inflation') ? 3 : 5; }  // 利息上限
-function lvlCap(){ return hasCurse('solo') ? 5 : 11; }           // 人口上限
+function lvlCap(){ return dailyMods()?.cap ?? (hasCurse('solo') ? 5 : 11); }
 /* 🪑 独木桥：人口封 5 后商店概率失去等级成长，改随回合自动升档补偿——
    r6 起每 5 回合 +1 级（r6→6级 … r31→11级封顶）。抽卡、顶栏倒计时、升档战报
    三处必须同源走 soloShopLvl()，不要另写公式。 */
@@ -1977,11 +2060,11 @@ function soloBoostBuy(){
   return true;
 }
 function tempBuffCost(b){ return hasCurse('fog') ? Math.ceil(b.cost/2) : b.cost; }
-function baseIncome(){ return Math.min(S.round+1,5) + (hasCurse('allin')?3:0) + (hasCurse('hardland')?2:0) + (hasCurse('dreamless')?2:0); }
-function hpMax(){ return hasCurse('bloodpact') ? 25 : 40; }   // 🩸 生命上限（显示与扣血日志共用）
+function baseIncome(){ if(S.solo)return 0; return Math.min(S.round+1,5) + (hasCurse('allin')?3:0) + (hasCurse('hardland')?2:0) + (hasCurse('dreamless')?2:0); }
+function hpMax(){ return dailyMods()?.maxHp ?? (hasCurse('bloodpact') ? 25 : 40); }
 /* 下回合实际到账利息：孤注一掷直接归零，否则每 10 金 +1 并按通胀上限截断。
    结算、顶栏预览、备战面板三处必须同源，否则会出现「预览的利息结算时不发」。 */
-function interestGain(){ return hasCurse('allin') ? 0 : Math.min(interestCap(), Math.floor(S.gold/10)); }
+function interestGain(){ if(S.solo)return 0; return (dailyMods()?.interestMultiplier ?? 1) * (hasCurse('allin') ? 0 : Math.min(interestCap(), Math.floor(S.gold/10))); }
 /* 互斥表：两条诅咒打同一机制时惩罚会互相抵消，因此只能选其一。新增互斥对只需在此登记双向条目。
    · allin × inflation：孤注一掷让利息恒为 0 → 通胀的「利息上限 3」失效，等于只付刷新惩罚却照拿两份补偿。
    · tinyshop × inflation：两者都写刷新价，通胀的「刷新 3 金」会被货架的「刷新 1 金」反转成红利。 */
@@ -2021,7 +2104,7 @@ const ACHV=[
   {id:'flaw15',  n:'不动如山',   d:'无败绩撑到第 15 回合',        c:()=>S.round>=15&&S.stats.losses===0},
   {id:'boss1',   n:'弑魔王',     d:'击败一次守关魔王',            c:()=>S.ms&&S.ms.chapterWin},
   {id:'ch2',     n:'再启新程',   d:'进入第 2 章',                 c:()=>S.round>chLen()},
-  {id:'ch5',     n:'四章通关',   d:'击败第 100 回合最终首领',    c:()=>normalCampaign()&&!!S.finished},
+  {id:'ch5',     n:'四章通关',   d:'击败第 100 回合最终首领',    c:()=>fourChapterCampaign()&&!!S.finished},
   {id:'round100',n:'百年战争',   d:'单局打到第 100 回合',         c:()=>S.round>=100, p:()=>'第 '+Math.min(S.round,100)+'/100 回合'},
   {id:'gold3',   n:'镀金收藏家', d:'同时持有 3 个金色增强',       c:()=>(S.augs||[]).filter(a=>augRarity(a.id)===3).length>=3},
   {id:'earn500', n:'富甲一方',   d:'单局累计收入 500 金',         c:()=>S.stats.goldEarned>=500, p:()=>Math.min(S.stats.goldEarned,500)+'/500'},
@@ -2044,41 +2127,20 @@ function checkAchievements(){
 /* ===== 每日种子挑战：可注入 RNG（mulberry32）。普通模式 RND=Math.random，行为与从前完全一致；
    每日模式以日期为种子（当日全玩家同一商店/敌方/增强序列），存档独立键，可重试（同种子同起点） ===== */
 let RND = Math.random;
-function rand(){ return RND(); }
-function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15, 1|a); t=t+Math.imul(t^t>>>7, 61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function rand(){ const value=RND(); if(S&&S.daily&&RND.state) S.dailyRngState=RND.state(); return value; }
+function mulberry32(a){ const rng=function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15, 1|a); t=t+Math.imul(t^t>>>7, 61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; rng.state=()=>a>>>0; return rng; }
 function todaySeed(){ const d=new Date(); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
 function seedHash(n){ let x=(n^0x9E3779B9)>>>0; x=Math.imul(x^x>>>16, 0x45d9f3b); x=Math.imul(x^x>>>16, 0x45d9f3b); return (x^x>>>16)>>>0; }
-/* 当日预置诅咒：按日期确定性挑选，且近 DAILY_GAP 天内不重复。
-   老写法 CURSES[seedHash(日期)%条数] 离散性差——实测近 14 天「干涸」出现 4 次、同一条隔天再来
-   （09-18 与 09-20 都是短章急行，用户报告），所以改成从锚点日逐日链式推导：每天的候选池
-   剔除近 DAILY_GAP 天已用过的诅咒，再按 seedHash 取模。历史只能由日期本身推出（不能存本地、
-   也不能问服务器），否则同一天的不同玩家会拿到不同诅咒、当日榜就失去可比性。 */
-const DAILY_GAP=10;                        // 近 10 天不重复（14 条里至少留 4 条候选）
-const DAILY_EPOCH=Date.UTC(2026,0,1);      // 推导起点；更早的日期走老规则（已无人再玩）
-const _dailyCurseCache=new Map();
-function dailySeedOf(ms){ const d=new Date(ms); return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate(); }   // 仅作日历推算，与本地时区无关
-function dailyCurseOf(seed){
-  if(_dailyCurseCache.has(seed)) return _dailyCurseCache.get(seed);
-  const target=Date.UTC(Math.floor(seed/10000), Math.floor(seed/100)%100-1, seed%100);
-  let pick=CURSES[seedHash(seed)%CURSES.length];        // 锚点之前 / 时钟异常（超出 4000 天）的兜底
-  if(target>=DAILY_EPOCH){
-    const recent=[]; let cur=DAILY_EPOCH;
-    for(let guard=0; cur<=target && guard<4000; guard++, cur+=86400000){
-      const pool=CURSES.filter(c=>!recent.includes(c.id));
-      pick=(pool.length?pool:CURSES)[seedHash(dailySeedOf(cur))%(pool.length||CURSES.length)];
-      recent.push(pick.id); if(recent.length>DAILY_GAP) recent.shift();
-    }
-  }
-  _dailyCurseCache.set(seed,pick); return pick;
-}
-function dailyCursesFor(seed){ const c=dailyCurseOf(seed); return c?[c.id]:[]; }   // 当日预置诅咒
-function applyRNG(){ RND = (S && S.daily) ? mulberry32(seedHash(S.dseed||todaySeed())) : Math.random; }
+/* 新每日池独立版本化；固定日期只会命中一条 dc_* 规则。旧自定义诅咒池不参与每日轮换。 */
+function dailyCurseOf(seed){ return window.DailyCurses ? DailyCurses.pick(seed) : null; }
+function dailyCursesFor(seed){ const c=dailyCurseOf(seed); return c?[c.id]:[]; }
+function applyRNG(){ RND = (S && S.daily) ? mulberry32(Number.isInteger(S.dailyRngState)?S.dailyRngState:seedHash(S.dseed||todaySeed())) : Math.random; }
 function dailyInfoHTML(){
   const cid=dailyCursesFor(todaySeed())[0];
-  const c=CURSES.find(x=>x.id===cid);
-  return `<b style="color:#9dd3e8">📅 每日挑战</b>：当日种子 <b>${todaySeed()}</b>——所有玩家拿到相同的商店、敌方与增强序列，比谁推得远；失败可重开（同种子同起点）。今日预置挑战规则：${c?c.n+'（'+c.d+' → '+c.r+'）':'无'}`;
+  const c=window.DailyCurses&&DailyCurses.description(cid);
+  return `<b style="color:#9dd3e8">📅 每日挑战 · 四章 100 回合</b>：当日种子 <b>${todaySeed()}</b>；同日玩家使用相同规则与随机序列。今日诅咒：${c?`${c.name}（${c.limit} 补偿：${c.compensation}）`:'无'}`;
 }
-function dailyCodeHTML(){ return `<div style="margin-top:8px;color:#9dd3e8">📅 每日挑战 · 种子 ${S.dseed||todaySeed()} · 挑战码 <b>DC-${S.dseed||todaySeed()}-${S.round}</b>（报给朋友即可对比同一种子下的进度）</div>`; }
+function dailyCodeHTML(){ return `<div style="margin-top:8px;color:#9dd3e8">📅 每日挑战 · 四章 100 回合 · 种子 ${S.dseed||todaySeed()} · 挑战码 <b>DC100-v2-${S.dseed||todaySeed()}-${S.round}${S.finished?'-WIN':''}</b>（仅对比同一天、同规则版本的成绩）</div>`; }
 /* 合成配方表：'a|b'（字典序）→ 成品 key。六种基础装的 21 种双件组合均有固定路线。 */
 const COMBOS={};
 Object.keys(ITEMS).forEach(k=>{ const f=ITEMS[k].from; if(f) COMBOS[[...f].sort().join('|')]=k; });
@@ -2162,7 +2224,7 @@ const ENEMY_ARCHETYPES=[
    否则从流派原型中加权抽取；返回 {name, list(图鉴数据数组)} */
 function rollEnemySquad(r){
   const cap=r<4?1:r<7?2:r<11?3:r<16?4:5;
-  const total=Math.min(1+Math.floor(r/2), hasCurse('solo')?5:enemyCap(r));
+  const total=Math.min(1+Math.floor(r/2), !S.daily&&hasCurse('solo')?5:enemyCap(r));
   const used=new Set(), list=[];
   const addJob=j=>list.push(pickFor(j,cap,used));
   if(rand()<0.30){   // 同门军团：抽一个在该费用段成员足够的阵营
@@ -2196,7 +2258,8 @@ const CREEP = {5:'🐺 野狼群', 10:'🗿 岩石巨像', 15:'🐉 黑龙幼崽
 /* 野怪回合：失败不扣血、不动连胜；掉落装备——胜利 2 件、失败保底 1 件（见 endBattle） */
 const SHOP_SIZE=5, MAX_ROUNDS=25, BENCH=8, MAX_EQUIP=2;
 /* 装备槽：基础 2 件，全局增强「🧤 装备大师」后 3 件（唯一出口，穿戴/合成/托管统一走这里） */
-function maxEquip(){ return MAX_EQUIP + ((typeof S!=='undefined' && S && (S.augs||[]).some(a=>a.id==='eqslot')) ? 1 : 0); }
+function maxEquip(){ const dm=dailyMods();   // 轻装出战：每名棋子最多 1 件
+  return (dm&&typeof dm.maxEquip==='number'?dm.maxEquip:MAX_EQUIP) + ((typeof S!=='undefined' && S && (S.augs||[]).some(a=>a.id==='eqslot')) ? 1 : 0); }
 const BOARD_W=8, BOARD_H=8;                 // 8×8 四边形棋盘（每方 32 格，下半 4 行为我方布阵区）
 const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节奏更线性）；蓝量全棋子统一 100、开局清零
 /* 升级人口经验表（多多式）：每回合自然 +2 经验，5 金币固定买 4 经验；2 级起步、11 级封顶；第 1 回合仅禁购买经验（自然积累照常升级） */
@@ -2230,6 +2293,11 @@ function newGame(opts){ opts=opts||{}; runSessionId++; autoRunId++; autoBusy=fal
   applyRNG();
   // 挑战规则：每日=当日预置；自定义诅咒挑战=开局勾选；普通=无
   S.curses = S.daily ? dailyCursesFor(S.dseed) : (opts.custom ? sanitizeCurses(curseSel) : []);
+  if(S.daily&&window.DailyCurses){   // 每日诅咒 v2：状态对象（独立于 S.curses 的自定义诅咒池）
+    S.dailyCurse=DailyCurses.create(S.dseed);
+    const _dr=S.dailyCurse&&DailyCurses.description(S.dailyCurse.id);
+    if(_dr){ log(`📅 每日规则生效：${_dr.name}`); log(`　限制：${_dr.limit}`); log(`　补偿：${_dr.compensation}`); log(`　时点：${_dr.timing}`); }
+  }
   S.mode=opts.arena?'arena':(S.daily?'daily':(opts.custom?'custom':'normal'));
   S.runId=makeRunId(); S.runConfig={mode:S.mode,curses:S.curses.slice(),dailySeed:S.daily?S.dseed:0}; S.finalized=false;
   if(opts.custom) curseSel=S.curses.slice();   // 互斥过滤结果同步回勾选区，弹窗不再残留已剔除项
@@ -2238,7 +2306,7 @@ function newGame(opts){ opts=opts||{}; runSessionId++; autoRunId++; autoBusy=fal
   S.gold = 10 + (hasCurse('nobond')?10:0) + (hasCurse('nojob')?15:0) + (hasCurse('nofac')?15:0)
               + (hasCurse('solo')?20:0) + (hasCurse('glass')?5:0) + (hasCurse('dry')?10:0);
   if(hasCurse('shortch')) S.tickets=1;
-  if(S.curses.length){
+  if(S.curses.length&&!S.daily){
     log(`⚠ 挑战规则生效（共 ${S.curses.length} 条，整局可见于顶栏红色标签）：`);
     S.curses.forEach(id=>{ const c=CURSES.find(x=>x.id===id); if(!c) return;
       log(`　${c.n}：${c.d} → 补偿：${c.r}`); });
@@ -2253,6 +2321,10 @@ function newGame(opts){ opts=opts||{}; runSessionId++; autoRunId++; autoBusy=fal
   S.auto = autoStoreGet(); setAutoUI();   // 托管开关跨局保留
   S.autoFight = afStoreGet();   // 自动开战跨局保留（与托管互斥：开着它就不托管）
   if(S.autoFight){ S.auto=false; autoStoreSet(false); setAutoUI(); renderAutoFightBtn(); }
+  if(S.daily&&S.dailyCurse&&!S.menuPreview){   // 每日开局事件链：start（开局补偿）→ roundStart r1（封印/计数复位），先于首刷商店
+    dailyEvent('start');
+    if(!dailyEvent('roundStart'))return;
+  }
   if(opts.arena){ S.arena=true; startArenaMatch(); }
   else { prepEnemy(); rollShop(); }
   if(!opts.menuPreview){
@@ -2716,11 +2788,13 @@ function boardTierKeys(){ // 当前场上已达成的全部羁绊档位（去重
   const out=[];
   const tags=ownedTags();
   const nb=nbList();   // ⛓ 被禁羁绊不算档（竖栏/奖励同步失效）
+  const dm=dailyMods();   // 职业/阵营偏科：门槛 +1 后奖励同步推迟
   for(const [key,ids] of Object.entries(tags)){
     const tbl=key[0]==='F'?FACTIONS:CLASSES; const name=key.slice(2);
     if(!tbl[name] || (nb && nb.includes(name))) continue;
+    const off=dm?(key[0]==='F'?(dm.synergyFactionOffset||0):(dm.synergyClassOffset||0)):0;
     const distinct=new Set(ids).size;
-    tbl[name].need.forEach((need,i)=>{ if(distinct>=need) out.push(key+':'+(i+1)); });
+    tbl[name].need.forEach((need,i)=>{ if(distinct>=need+off) out.push(key+':'+(i+1)); });
   }
   return out;
 }
@@ -2785,7 +2859,9 @@ const SHOP_ODDS = {1:[100,0,0,0,0], 2:[70,30,0,0,0], 3:[60,35,5,0,0], 4:[50,35,1
   9:[18,26,27,22,7], 10:[15,22,25,27,11], 11:[10,18,24,32,16]};
 function drawFromPool(){ // 按等级概率决定费用档，再从卡池余量中抽取
   // 🪑 独木桥：人口未满 5 前照常按真实等级（保留前期 1~5 回合的低费节奏），满 5 后概率改随回合升档
-  const lv = hasCurse('solo') ? (S.lvl>=lvlCap() ? soloShopLvl() : S.lvl) : S.lvl;
+  // 五人远征：人口封 5，商店概率绕过等级直接随回合升档
+  const dm=dailyMods();
+  const lv = dm&&dm.shopLevelByRound ? dm.shopLevel : hasCurse('solo') ? (S.lvl>=lvlCap() ? soloShopLvl() : S.lvl) : S.lvl;
   const odds = (SHOP_ODDS[lv]||SHOP_ODDS[11]).map(x=>x/100);
   // 主档按概率掷出；缺货时按概率从高到低顺延到其他档位
   const roll=rand(); let acc=0, primary=5;
@@ -2802,6 +2878,7 @@ function drawFromPool(){ // 按等级概率决定费用档，再从卡池余量�
   return UNITS.find(u=>S.pool[u.id]>0) || null;
 }
 function rollShop(){
+  if(S.solo&&S.solo.mode==='puzzle')return SoloHost.puzzleShop();
   // 商店锁定：保留当前货架不刷新、不返池
   if(S.lock){ renderShop(); return; }
   // 未购买的旧商店卡返还卡池
@@ -2846,6 +2923,7 @@ function sellSelected(){
   renderAll();
 }
 function compForRound(r){
+  if(S.solo)return {name:SoloModes.view(S.solo).encounter?.name||SoloModes.view(S.solo).title,mix:{}};
   if(S.arena) return {name:S.arenaOpponentName||'竞技对手',mix:{}};
   if(r%5===0) return {name:CREEP[r]||'🐗 野怪', boss:true};
   if(S.enemyComp && S.enemyComp.round===r) return S.enemyComp;   // prepEnemy 已随机好的本回合阵容
@@ -2900,7 +2978,7 @@ function renderBoard(){
     const u=S.board[i];
     let isEnemyPreview=false;
     if(u) cell.innerHTML=unitHTML(u, S.selUid===u.uid);
-    else if(y<BOARD_H/2 && S.phase==='prep' && S.enemyBoard && S.enemyBoard[i] && !hasCurse('fog')){
+    else if(y<BOARD_H/2 && S.phase==='prep' && S.enemyBoard && S.enemyBoard[i] && !enemyHidden()){
       // 备战期显示敌方阵容预览：可单击查看详情（数据取自图鉴），但不可拖动（🌫 战争迷雾下隐藏）
       cell.innerHTML=unitHTML(S.enemyBoard[i], false).replace('<div class="unit ','<div class="unit preview ');
       if(S.enemyBoard[i].big){   // 2×2 头目预览：从锚点格铺满 4 格（其余格为空，点击仅取消选中）
@@ -2912,6 +2990,19 @@ function renderBoard(){
     }
     cell.onclick = isEnemyPreview ? (()=>enemyCellClick(i)) : (()=>cellClick(i));
     b.appendChild(cell);
+  }
+  // 🌫 迷雾军情：隐藏具体棋子与站位，但保留人数 / 费用分布 / 羁绊情报条
+  if(S.phase==='prep' && enemyHidden() && S.enemyBoard && S.enemyBoard.some(Boolean)){
+    const foes=S.enemyBoard.filter(Boolean), byCost={}, syn={}, seen=new Set();
+    foes.forEach(u=>{ const c=(byId(u.id)||{}).cost||'?'; byCost[c]=(byCost[c]||0)+1; });
+    foes.forEach(u=>{ if(seen.has(u.id))return; seen.add(u.id); const d=byId(u.id); if(!d)return;
+      [...facsOf(d),...jobsOf(d)].forEach(k=>syn[k]=(syn[k]||0)+1); });
+    const costTxt=Object.keys(byCost).sort((a,b)=>a-b).map(c=>byCost[c]+'×'+c).join('+')||'?';
+    const synTxt=Object.entries(syn).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([k,n])=>k+(n>1?'×'+n:'')).join(' ')||'未知';
+    const strip=document.createElement('div'); strip.id='fogIntel';
+    strip.style.cssText='position:absolute;left:50%;transform:translateX(-50%);top:6px;z-index:60;background:rgba(10,14,32,.85);border:1px solid #4a3d6e;border-radius:8px;padding:4px 12px;font-size:11px;color:#9dd3e8;pointer-events:none;white-space:nowrap';
+    strip.textContent=`🌫 迷雾军情 · 敌方 ${foes.length} 人 · 费用 ${costTxt} · 羁绊 ${synTxt}`;
+    b.appendChild(strip);
   }
   // 攻击范围提示（选中 / 拖动时）：源格描金，可攻击格浅蓝
   paintRange();
@@ -2946,7 +3037,7 @@ function paintSynBadges(){
   for(let i=0;i<BOARD_W*BOARD_H;i++){
     const p=S.board[i];
     if(p){ const x=i%BOARD_W, y=(i/BOARD_W)|0; put(p,x,y,!!p.big); putStar(p,x,y,!!p.big); continue; }
-    if(S.phase==='prep' && S.enemyBoard && S.enemyBoard[i] && !hasCurse('fog')){
+    if(S.phase==='prep' && S.enemyBoard && S.enemyBoard[i] && !enemyHidden()){
       const x=i%BOARD_W, y=(i/BOARD_W)|0;
       put(S.enemyBoard[i], x, y, !!S.enemyBoard[i].big); putStar(S.enemyBoard[i], x, y, !!S.enemyBoard[i].big);
     }
@@ -3078,12 +3169,13 @@ function renderTop(){
       if(!list.length){ ct.style.display='none'; }
       else{
         ct.style.display='';
-        ct.textContent='诅咒 '+list.map(id=>{const c=CURSES.find(x=>x.id===id);
+        ct.textContent=(S.daily?'每日规则 ':'诅咒 ')+list.map(id=>{const c=CURSES.find(x=>x.id===id);
           const nb=BOND_BAN_IDS.includes(id)?bondBanLabel(id):'';
-          return (c?c.n:id)+nb;}).join(' · ')
+          return curseName(id)+nb;}).join(' · ')
           +(S.daily?' ｜ 每日':'');
         ct.title='挑战规则生效中：\n'+list.map(id=>{const c=CURSES.find(x=>x.id===id);
-          if(!c) return id;
+          if(!c){ const dr=(S&&S.daily)&&window.DailyCurses?DailyCurses.description(id):null;
+            return dr?`${dr.name}：${dr.limit}\n　→ 补偿：${dr.compensation}\n　→ 时点：${dr.timing}`:id; }
           if(BOND_BAN_IDS.includes(id)&&nbList().length)
             return `${c.n}：本局禁用【${nbList().join('、')}】\n　（这 ${nbList().length} 项羁绊整体失效，我方拿不到任何档位效果）\n　→ 补偿：${c.r}`;
           return `${c.n}：${c.d}\n　→ 补偿：${c.r}`;}).join('\n————————\n');
@@ -3188,13 +3280,16 @@ const synIconsHTML = (d, side) => { const ks=[...facsOf(d),...jobsOf(d)]; const 
    已触发档位的效果直接显示在徽章下方（不再只显示 2/4 / MAX） */
 function synBadges(cnt,cfg,icons){
   const nb=nbList();   // ⛓ 禁锢羁绊：本局被禁的羁绊（不产生任何效果）
+  const dm=dailyMods();   // 职业/阵营偏科：档位门槛 +1（羁绊栏与战斗同源）
+  const synOff=k=>dm?((FACTIONS && FACTIONS[k])?(dm.synergyFactionOffset||0):(dm.synergyClassOffset||0)):0;
   const items=Object.entries(cfg).map(([k,c])=>{
     const n=cnt[k]||0;
     const banned=nb.includes(k);
     if(n===0 && !banned) return null;
-    const tier=banned?0:c.need.filter(x=>x<=n).length;
-    const maxN=c.need[c.need.length-1];
-    const next=c.need.find(x=>x>n);
+    const off=synOff(k);
+    const tier=banned?0:c.need.filter(x=>x+off<=n).length;
+    const maxN=c.need[c.need.length-1]+off;
+    const next=c.need.find(x=>x+off>n);
     return {k,c,tier,n,banned,gap:next?next-n:0,prog:n>=maxN?'MAX':`${n}/${next}`};
   }).filter(Boolean)
     .sort((a,b)=>(a.banned?1:0)-(b.banned?1:0) || (b.tier>0?1:0)-(a.tier>0?1:0) || b.tier-a.tier || a.gap-b.gap);
@@ -3224,6 +3319,7 @@ function renderSynergy(){
 }
 /* ===== 临时增益（金币出口）：备战期购买，仅本场战斗生效，每回合限购 1 个 ===== */
 function buyTempBuff(id){
+  if(S.solo?.mode==='puzzle')return;
   if(S.phase!=='prep') return;
   const b=TEMP_BUFFS.find(x=>x.id===id); if(!b) return;
   if(S.tempBuff){ log('⚠ 本回合已购买临时增益（每回合限 1 个）'); return; }
@@ -3358,7 +3454,7 @@ function renderEquip(){
     inventory.appendChild(c);
   });
 }
-function renderAll(){ if(ARENA_SILENT) return; window.__S=S; renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); renderArenaHUD(); if(!S.menuPreview)saveGame(); fitBoardCell(); }
+function renderAll(){ if(ARENA_SILENT) return; window.__S=S; renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); renderArenaHUD(); if(!S.menuPreview)saveGame(); fitBoardCell(); if(window.SoloHost)SoloHost.render(); }
 /* ===== 棋盘自适应：实测中央区剩余宽高写入 --cell（桌面端替代 CSS 魔法数公式；竖屏/横屏仍走媒体查询） ===== */
 function fitBoardCell(){
   if(typeof matchMedia!=='function' || typeof document.body.style?.setProperty!=='function') return;   // sim 无头桩环境：跳过
@@ -3836,12 +3932,13 @@ function buy(i){
   // 备战席满时：若新买的能与已有 2 个同名 1★ 立即合成（腾出位置），仍允许购买
   if(slot<0 && pairCount(d.id)<2){ log('⚠ 备战席已满'); return; }
   S.gold-=d.cost; S.stats.goldSpent+=d.cost; S.stats.bought++; S.shop[i]=null;
+  if(S.solo?.mode==='puzzle')(S.soloPuzzlePurchased=S.soloPuzzlePurchased||[]).push(d.id);
   const nu={uid:S.uid++, id:d.id, star:1, sks:1, hp:Math.round(d.hp*HP_SCALE), maxhp:Math.round(d.hp*HP_SCALE), atk:d.atk, items:[]};
   if(slot<0) S.bench.push(nu);            // 临时超编一位，tryMerge 会立刻合成消化
   else S.bench[slot]=nu;
   tryMerge();
   if(S.bench.length>BENCH) S.bench.length=BENCH;   // 修剪临时超编位
-  sfx('buy'); log('购买 '+d.name); renderAll();
+  sfx('buy'); log('购买 '+d.name); if(S.solo?.mode==='puzzle')SoloHost.puzzleShop(); renderAll();
 }
 function tryMerge(){
   for(const d of UNITS){
@@ -3873,7 +3970,7 @@ function tryMerge(){
     }
   }
 }
-$('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<refreshCost())return; if(S.lock){ log('🔒 商店已锁定，不消耗金币刷新'); renderTop(); return; } { const rc=refreshCost(); S.gold-=rc; S.stats.goldSpent+=rc; } sfx('roll'); rollShop(); renderTop(); };
+$('refreshBtn').onclick=()=>{ if(S.phase!=='prep'||S.gold<refreshCost())return; if(S.lock){ log('🔒 商店已锁定，不消耗金币刷新'); renderTop(); return; } { const rc=refreshCost(); S.gold-=rc; S.stats.goldSpent+=rc; } sfx('roll'); dailyEvent('refresh'); rollShop(); renderTop(); };
 /* 商店锁定：下回合自动刷新时保留当前货架 */
 $('lockBtn').onclick=()=>{ if(S.phase!=='prep')return; S.lock=!S.lock;
   log(S.lock?'🔒 商店已锁定（仅保留到下回合，之后自动解锁）':'🔓 商店已解锁');
@@ -4030,7 +4127,8 @@ $('lvlBtn').onclick=()=>{ if(S.phase!=='prep')return;
   if(hasCurse('solo') && S.lvl>=lvlCap()){ soloBoostBuy(); return; }   // 🪑 满人口：按钮已变提前升档（F 同键）
   if(S.lvl>=lvlCap())return;   // 5 金币买 4 经验（更快升人口凑羁绊）
   if(hasCurse('dreamless')){ log('💤 无梦：本局不能购买经验（每回合自然 +2 经验照常）'); return; }
-  if(S.round===1){ log('⚠ 第 1 回合不可购买经验（第 2 回合起可购买，自然经验不受影响）'); return; }
+  { const _dm=dailyMods(); if(_dm&&!_dm.buyXp){ log('🐢 缓慢成长：本局不能购买经验（自然经验照常累积）'); return; } }
+  if(S.round===1&&!S.solo){ log('⚠ 第 1 回合不可购买经验（第 2 回合起可购买，自然经验不受影响）'); return; }
   if(S.gold<5){ log('⚠ 金币不足，无法购买升级经验'); return; }
   S.gold-=5; S.stats.goldSpent+=5; S.xp+=4;
   sfx('lvlup'); checkLevel(); renderAll(); };
@@ -4065,6 +4163,7 @@ function pickFor(job, cap, used){
   const u=use[use.length-1]; used.add(u.id); return u;
 }
 function genEnemy(){
+  if(S.solo)return SoloHost.enemy();
   const r=S.round;
   const cap = r<4?1 : r<7?2 : r<11?3 : r<16?4 : 5;   // 敌方费用上限随回合解锁
   // 动态难度：连败仍给追赶空间，但减压放缓（每连败 -9%，下限 0.64）；濒死减压（hp≤12 ×0.92）；
@@ -4081,7 +4180,7 @@ function genEnemy(){
   const CH_DIFF = [1, 1, 0.84, 1.02, 1.42];      // 四章逐步加压，第四章不再在 r76 突然跃升
   const CH_BOSS = [1, 1, 1.90, 1.90, 2.40];      // 第三章首领降低尖峰，第四章仍保留最终决战
   const CH_INTRA = 0.12;                         // 章内缓涨：章首 → 章末 +12%
-  const chMul = (normalCampaign() && r>25)
+  const chMul = (fourChapterCampaign() && r>25)
     ? CH_DIFF[Math.min(ch,4)] * (1 + CH_INTRA*(r-1-(ch-1)*25)/24) : 1;
   // 全局难度系数 POOL_DILUTION_COMP：46→50 名棋子后各费用段人数增加（1费 8→10），
   // 特定棋子的抽取概率降为 1/N，玩家升星变慢、整体强度下降（实测 r5 野怪胜率 99%→62%
@@ -4100,7 +4199,7 @@ function genEnemy(){
     const headCost = r>=25?5 : r>=20?4 : r>=15?4 : r>=10?3 : 0;
     const bossStar = (r>=20 && r<25) ? 2 : 1;   // 最终魔王按正常头目设计（1★），不再 2★ 特殊化
     let bossMult = r<10?1.0 : r<15?1.08 : r<20?1.15 : r<25?1.15 : 1.15;   // r25 守关（2026-09-19 v2.3 托管后 1.12→1.15：85.0→目标 80；敏感度悬崖，步进 ≤0.03）
-    if(normalCampaign() && r>25) bossMult = CH_BOSS[Math.min(ch,4)];   // 第二~四章守关魔王
+    if(fourChapterCampaign() && r>25) bossMult = CH_BOSS[Math.min(ch,4)];   // 普通/每日第二~四章守关魔王
     if(headCost){
       let heads = UNITS.filter(u=>u.cost===headCost);
       if(!heads.length) heads = UNITS.filter(u=>u.cost>=headCost);
@@ -4120,13 +4219,13 @@ function genEnemy(){
     const squad = rollEnemySquad(r);
     squad.list.forEach(u=>list.push({d:u, star:1}));
     // 第四章固定强敌波次可在备战期预览，检验高星核心之外的整队质量。
-    if(normalCampaign() && r>=76 && r%10===2 && list.length){
+    if(fourChapterCampaign() && r>=76 && r%10===2 && list.length){
       const veteran=list.reduce((best,x)=>!best || x.d.cost>best.d.cost ? x : best,null);
       veteran.star=2;
     }
     S.enemyComp = {round:r, name:squad.name, mix:squad.list.reduce((m,u)=>{ jobsOf(u).forEach(j=>m[j]=(m[j]||0)+1); return m; }, {})};
-    // 普通模式各章敌方人数上限 7/9/10/10，后期多单位与羁绊考验阵容覆盖面
-    const total = Math.min(1 + Math.floor(r/2), hasCurse('solo') ? 5 : enemyCap(r));
+    // 普通/每日各章敌方人数上限 7/9/10/10；每日敌方人数不受己方人口诅咒影响
+    const total = Math.min(1 + Math.floor(r/2), !S.daily&&hasCurse('solo') ? 5 : enemyCap(r));
     // 前期（r≤3）敌方人数与玩家人口节奏同步：1级1人、2级2人、3级3人以内
     // 避免 1 金/1 级开局被多打少，也避免敌方白凑 T2 羁绊压制玩家
     if(r<=3){
@@ -4318,7 +4417,8 @@ const ITEM_SPECIAL={
 };
 function makeBattleUnit(u, side, x, y){
   const d=byId(u.id);
-  const b={...u, side, x, y, cd:0, moveCd:0, skillCd:0, maxmana:(side===0&&hasCurse('dry'))?75:50, shield:0, frozen:0, rapid:0,
+  const dm=dailyMods();   // 每日诅咒数值口径（耗蓝/己方/敌方乘区）一次性读取
+  const b={...u, side, x, y, cd:0, moveCd:0, skillCd:0, maxmana:side===0?((dm&&dm.manaCost!==50)?dm.manaCost:(hasCurse('dry')?75:50)):50, shield:0, frozen:0, rapid:0,
     stun:0, atkDownA:0, atkDownT:0, slowA:0, slowT:0, noShieldT:0, healDownA:0, healDownT:0,
     poisonT:0, poisonDmg:0, atkMul:1, hpMul:1, spdMul:1, vamp:0, dmgReduce:0,
     tauntT:0, silenceT:0, blockCt:0, blockDmg:.5, blockT:0, thorns:0, thornsT:0, drBuff:0, drBuffT:0,
@@ -4354,7 +4454,11 @@ function makeBattleUnit(u, side, x, y){
     b.mana=Math.max(b.mana, Math.min(b.maxmana, augTotal('mana')));
     b.augRegen=augTotal('regen');   // 每秒回复 %maxhp（currentTick 消费）
     if(hasCurse('glass')){ b.atk=Math.round(b.atk*1.3); b.maxhp=Math.round(b.maxhp*0.7); }   // 🔮 玻璃大炮
-  }
+    if(dm&&(dm.allyHpMultiplier!==1||dm.allyAtkMultiplier!==1)){   // 脆晶军团：我方生命 -25% / 攻击 +25%
+      b.maxhp=Math.round(b.maxhp*dm.allyHpMultiplier); b.atk=Math.round(b.atk*dm.allyAtkMultiplier); }
+  } else if(dm&&(dm.enemyHpMultiplier!==1||dm.enemyAtkMultiplier!==1)){   // 急行军压力期 / 重甲入侵：敌方强化
+    b.maxhp=Math.round(b.maxhp*dm.enemyHpMultiplier); b.atk=Math.round(b.atk*dm.enemyAtkMultiplier); }
+  if(S.solo)SoloHost.modifyUnit(b);
   b.hp=b.maxhp;
   // 多多官方：蓝量开局清零，仅靠攻击/受击回蓝攒满 100 施放大招（蓝玉潮涌：开局 +20 蓝）
   b.mana = b.manaStart || 0;
@@ -4410,16 +4514,23 @@ function fillBoardBeforeBattle(){
 }
 function startBattle(){
   if(S.phase!=='prep') return;
+  if(S.solo&&!SoloHost.canFight())return;
+  if(S.pendingDailyOffer){   // 定向招募未选：开战前按默认兑现，不阻塞开战
+    const offer=S.pendingDailyOffer; S.pendingDailyOffer=null;
+    const _ov=document.getElementById('dailyOfferOverlay'); if(_ov)_ov.remove();
+    grantDailyUnit(offer.key,offer.text||'定向招募补偿',offer.fallbackGold||3);
+  }
   const session=runSessionId;
   closeDrawer();   // 抽屉（商店/详情）开着时开战：先收起，不挡战斗画面
   const _sl=document.getElementById('synBadgeLayer'); if(_sl) _sl.remove();   // 徽章悬浮层只属于备战棋盘
   stopTickLoop(); // 关闭任何残余的战斗时钟
   fillBoardBeforeBattle();   // 人口不满先自动补位（只上场、不动阵型、不合成）；全空则维持原拦截
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
+  if(S.solo)SoloHost.beforeBattle();
   S.phase='battle'; if(!S.enemyBoard || !S.enemyBoard.some(Boolean)) S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null; hideInspect(); clearRangeFocus();
   const c=compForRound(S.round);
   if(S.round%5===0) sfx('horn');   // 野怪回合号角预警
-  log(`⚔ 第 ${S.round} 回合开战！对手：【${c.name}】`);
+  log(S.solo?.mode==='expedition'?`🎤 第 ${S.round} 场公演开始！同台阵容：【${c.name}】`:`⚔ 第 ${S.round} 回合开战！对手：【${c.name}】`);
   $('fightBtn').disabled=true; $('refreshBtn').disabled=true; $('lvlBtn').disabled=true;
   renderAll();
   // 战斗单位图层（平滑移动）；并清掉格子里的备战副本，防止移动后原位残留
@@ -4442,8 +4553,15 @@ function startBattle(){
   S.enemyBoard.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,1,i%BOARD_W,Math.floor(i/BOARD_W))); });
   // 刺客的"切入后排"不再是开局瞬移：留在大部队中，开战后的第一次移动同步切入敌方最后一排（见 currentTick）
   // —— 双方羁绊结算（分级强化） ——
-  const tierOf=(cnt,tbl,k)=>{ let t=0; for(const n of tbl[k].need) if(cnt[k]>=n) t++; return t; };
+  /* 职业/阵营偏科（每日 dc_class/dc_faction）：仅我方（side 0）档位门槛 +1；tierOf 由 _synSide 感知当前结算方 */
+  let _synSide=0;
+  const tierOf=(cnt,tbl,k)=>{
+    const dm=_synSide===0?dailyMods():null;
+    const off=dm?(tbl===CLASSES?(dm.synergyClassOffset||0):(dm.synergyFactionOffset||0)):0;
+    let t=0; for(const n of tbl[k].need) if(cnt[k]>=n+off) t++; return t;
+  };
   for(const side of [0,1]){
+    _synSide=side;
     BV[side]={};
     const mine = units.filter(u=>u.side===side);
     const facCnt={}, clsCnt={};
@@ -4592,7 +4710,9 @@ function startBattle(){
   let t=0, delayLeft=BATTLE_DELAY, released=false, lastCastAt=-SKILL_STAGGER, nextCastSide=rand()<.5?0:1; const TICK=100;
   currentTick=()=>{
     if(session!==runSessionId || S.phase!=='battle') return;  // 跨局迟到时钟不得推进新局
+    if(S.solo&&flowPage!=='game')return;  // 单人模式打开菜单/说明时暂停舞台演算
     t+=TICK;
+    if(S.solo)SoloHost.tick(units,t,TICK);
     // 开战缓冲：先看清双方站位，之后双方同步开始行动（刺客的切入也在此时发生）
     if(!released){
       delayLeft-=TICK;
@@ -4877,7 +4997,7 @@ function startBattle(){
     if(alive0===0||alive1===0||t>60000){
       stopTickLoop();
       if(t>60000&&alive0>0&&alive1>0) log('⏱ 战斗超时，存活多者获胜');
-      showResultBanner(alive0>0&&alive0>=alive1, ()=>{ if(session===runSessionId) endBattle(alive0,alive1); });
+      showResultBanner(S.solo?SoloHost.battleWon(alive0,alive1):alive0>0&&alive0>=alive1, ()=>{ if(session===runSessionId) endBattle(alive0,alive1); });
       return;
     }
   };
@@ -5499,6 +5619,9 @@ function showCutin(u, nm, arch){
   setTimeout(()=>{ el.remove(); }, 1180/Math.max(1,SPEED));   // 到期直接移除（进场动画 forwards 已停在淡出帧）
 }
 function castSkill(u,tgt,units,skMul){
+  if(S.solo)SoloHost.onCast(u,units);
+  const _skdm=(u.side===0&&S&&S.daily)?dailyMods():null;   // 枯潮补偿：技能伤害/治疗 +20%（仅技能直接通道，普攻/装备/羁绊不乘）
+  if(_skdm&&_skdm.skillMultiplier&&_skdm.skillMultiplier!==1) skMul*=_skdm.skillMultiplier;
   if(u.v3ReflectT>0&&u.v3Reflect){
     const owner=u.v3ReflectBy, backlash=Math.max(1,Math.round(eatk(u)*(byId(u.id).skc||1)*(u.sks||1)*(u.v3Reflect||0)));
     u.v3Reflect=0;u.v3ReflectT=0;u.v3ReflectBy=null;
@@ -5524,9 +5647,9 @@ function castSkill(u,tgt,units,skMul){
   vfxAt(u,'charge',260);   // 施法蓄力预兆：起手 0.26s 收束环（纯视觉，预算内复用 vfxAt 通道）
   signatureFx(u,tgt);      // 每枚棋子独有的图腾/轮廓/命中印记
   sfx(SFX_SKILL[arch]||'spellDark');   // 技能分组音色（斩击/法术/治疗/护盾/控制）
-  log(`✨ ${u.side===0?'我方':'敌方'}${d.name} 释放【${nm}】！`);
+  log(S.solo?.mode==='expedition'?`✨ ${u.side===0?'我方':'同台'}${d.name} 演绎【${nm}】！`:`✨ ${u.side===0?'我方':'敌方'}${d.name} 释放【${nm}】！`);
   shakeCell(u.x,u.y);
-  const hm = u.healMul||1;
+  const hm = (u.healMul||1)*(_skdm&&_skdm.skillMultiplier?_skdm.skillMultiplier:1);
   switch(arch){
     case 'cleave': {
       const hits = foes.filter(f=>nearCells(f,u,1));   // 周围 1 格按占据格集合算（2×2 头目覆盖更宽）
@@ -5871,7 +5994,7 @@ function showResultBanner(won,cb){
   sfx(won?'win':'lose');   // 战斗结果 jingle
   const el=document.createElement('div');
   el.className='result-banner '+(won?'win':'lose');
-  el.textContent=won?'🏆 胜 利':'💀 失 败';
+  el.textContent=S.solo?.mode==='expedition'?(won?'🎤 演出成功':'💤 演出中止'):(won?'🏆 胜 利':'💀 失 败');
   if(won){
     for(let i=0;i<26;i++){
       const p=document.createElement('div'); p.className='confetti';
@@ -5915,7 +6038,7 @@ const AUG_RNAME={1:'白',2:'蓝',3:'金'};
 function chapterSettle(won){
   S.phase='chapter'; S.settleWon=won;
   if(won){
-    if(!normalCampaign() || S.round===50) S.tickets=(S.tickets||0)+(hasCurse('bloodpact')?2:1);
+    if(!fourChapterCampaign() || S.round===50) S.tickets=(S.tickets||0)+(hasCurse('bloodpact')?2:1);
     (S.ms=S.ms||{}).chapterWin=1; if(S.auto) S.ms.autoWin=1; }
   // 稀有度加权 3 选 1（不重复）：白 100 / 蓝 40 / 金 15；金色全局至多持有 2 个
   const goldOwned=(S.augs||[]).filter(a=>augRarity(a.id)===3).length;
@@ -5958,8 +6081,8 @@ function renderSettle(){
   $('chapterBody').innerHTML=`
     <div class="settle-hero ${w?'win':'lose'}">${w?'🎉 击败守关魔王，章节推进！':'💚 惜败守关魔王，旅路仍在继续'}</div>
     <div class="settle-row">第 ${Math.ceil(S.round/chLen())} 章 · 第 ${S.round} 回合 · 生命 ${S.hp} · 战绩 ${S.stats.wins} 胜 ${S.stats.losses} 负</div>
-    ${(S.curses&&S.curses.length)?`<div class="settle-row" style="color:#ff9a9a">⚠ 挑战规则：${S.curses.map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、')}</div>`:''}
-    ${w&&(!normalCampaign()||S.round===50)?`<div class="settle-row" style="color:#ffd24a">🎫 守关奖励：升星券 ×1（共 ${S.tickets||0} 张）— 备战期点击 3★ 棋子，在详情面板升为 4★</div>`:''}
+    ${(S.curses&&S.curses.length)?`<div class="settle-row" style="color:#ff9a9a">⚠ 挑战规则：${S.curses.map(id=>curseName(id)).join('、')}</div>`:''}
+    ${w&&(!fourChapterCampaign()||S.round===50)?`<div class="settle-row" style="color:#ffd24a">🎫 守关奖励：升星券 ×1（共 ${S.tickets||0} 张）— 备战期点击 3★ 棋子，在详情面板升为 4★</div>`:''}
     <div class="settle-ask">👇 选择一项全局${w?'强效':'削弱'}增强（3 选 1）</div>
     <div class="aug-row">${cards}</div>
     <div class="settle-row" style="color:#8a93c4;font-size:11px;margin-top:8px">已有增强：${owned}${goldOwnedNote()}</div>`;
@@ -5983,7 +6106,8 @@ function chapterContinue(){
   if(chapterAutoTimer){clearTimeout(chapterAutoTimer);chapterAutoTimer=null;}
   chapterAutoPending=false;
   S.phase='prep'; S.round++;
-  if(S.lvl<lvlCap()){ S.xp+=2; checkLevel(); }
+  if(S.lvl<lvlCap()){ S.xp+=dailyMods()?.naturalXp??2; checkLevel(); }
+  if(!dailyOnPrep())return;   // 每日 roundStart（商店刷新前）；血债致死即终局
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null); prepEnemy(); rollShop();
   if(S.lock) S.lock=false;
   hideFlowForGame(false);
@@ -6003,9 +6127,10 @@ function autoSettle(){   // 托管：自动选增强（③ 稀有度>局面适�
   setTimeout(()=>{ if(session===runSessionId&&S.auto&&S.phase==='chapter'&&flowPage==='chapter') chapterContinue(); }, 800);
 }
 function endBattle(alive0,alive1){
+  if(S.solo&&!['battle','settle'].includes(S.phase))return;
   if(S.phase==='over') return;     // 已终局，忽略迟到的结算
   { const ab=document.getElementById('aliveBar'); if(ab) ab.remove(); }   // 存活计数条仅战斗中显示
-  const won = alive0>0 && alive0>=alive1;
+  const won = S.solo ? SoloHost.battleWon(alive0,alive1) : alive0>0 && alive0>=alive1;
   const survivors = alive1>0 ? alive1 : 0;
   const isCreep = S.round%5===0;   // 野怪回合（每 5 回合）
   const eliteChallenge = normalCampaign() && S.challengeRound===S.round;
@@ -6025,7 +6150,9 @@ function endBattle(alive0,alive1){
     lastBattleStats=battleStats;   // 保留给统计条（回合后查看上一场输出/抗伤/治疗）
     battleStats=null;
   }
+  if(S.solo){SoloHost.settle(won,survivors,alive0);return;}
   if(S.arena){ arenaSettleHuman(won,alive0,alive1); return; }
+  if(S.daily&&!dailyEvent('result',{won,ordinary:!isCreep,creep:isCreep&&S.round%chLen()!==0,boss:S.round%chLen()===0}))return;   // 每日诅咒结算（赏金/掉落，done 表幂等）
   // —— 结构化结算块：收集后倒序写出（log 是 unshift，倒序写=面板正序读）——
   const blk=[];
   const flush=()=>{ for(let i=blk.length-1;i>=0;i--) log(blk[i]); };
@@ -6038,7 +6165,7 @@ function endBattle(alive0,alive1){
     if(ig) addGold(ig,'存款利息（每10金+1，上限'+interestCap()+'）',blk);
     const gi=augTotal('gold'); if(gi) addGold(gi,'全局增强·生财经纬',blk); };
   if(isCreep){
-    /* 普通模式四章守关必须取胜；第 100 回合及其他挑战模式的终点直接结算。 */
+    /* 普通/每日四章守关必须取胜；第 100 回合及自定义挑战的终点直接结算。 */
     const chapterBoss = S.round%chLen()===0;
     const finalBoss = S.round>=runLimit();
     const dropGear = n=>{ const keys=Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted && !ITEMS[k].arti);   // 成品/神器不进掉落池
@@ -6105,7 +6232,8 @@ function endBattle(alive0,alive1){
   S.round++;
   S.phase='prep';
   // 商店常驻显示，无需在战斗结束后再展开
-  if(S.lvl<lvlCap()){ S.xp+=2; checkLevel(); }   // 每回合自然 +2 升级经验，照常触发升级（首回合仅禁止"购买"经验，不影响自然积累）
+  if(S.lvl<lvlCap()){ S.xp+=dailyMods()?.naturalXp??2; checkLevel(); }   // 每回合自然经验（普通 +2；缓慢成长/急行军 +3），照常触发升级
+  if(!dailyOnPrep())return;   // 每日 roundStart（商店刷新前）；血债致死即终局
   S.enemyBoard=Array(BOARD_H*BOARD_W).fill(null);
   prepEnemy();   // 提前生成本回合敌方阵容，备战期即可观察
   rollShop();
@@ -6147,9 +6275,9 @@ function reportHTML(kind){
     <div>击败敌方棋子 ${st.kills} 名 ／ 购买 ${st.bought} 次 ／ 承受伤害 ${st.dmgTaken} 点</div>`;
   html+=sec('💰 经济构成（累计 '+st.goldEarned+' 金 · 花费 '+st.goldSpent+' 金）', econRows);
   html+=sec('🩸 阶段扣血（共失血 '+(st.hpLog||[]).reduce((s,x)=>s+x.d,0)+' 点）',
-    normalCampaign() ? [1,2,3,4].map(ch=>`第${ch}章 <b>${hpSeg((ch-1)*25+1,ch*25)}</b>`).join(' · ')
+    fourChapterCampaign() ? [1,2,3,4].map(ch=>`第${ch}章 <b>${hpSeg((ch-1)*25+1,ch*25)}</b>`).join(' · ')
       : `开局-第10回合 <b>${hpSeg(1,10)}</b> · 第11-20回合 <b>${hpSeg(11,20)}</b> · 第21-${chLen()}回合 <b>${hpSeg(21,chLen())}</b>`);
-  html+=sec('🛡 最终阵容', (S.curses&&S.curses.length?`<span style="color:#ff9a9a">⚠ 挑战规则：${S.curses.map(id=>{const c=CURSES.find(x=>x.id===id);return c?c.n:id;}).join('、')}</span><br>`:'')+lineup+((tiers.length)?`<br><span style="color:#9dd3e8">羁绊档位：${tiers.join(' · ')}</span>`:''));
+  html+=sec('🛡 最终阵容', (S.curses&&S.curses.length?`<span style="color:#ff9a9a">⚠ 挑战规则：${S.curses.map(id=>curseName(id)).join('、')}</span><br>`:'')+lineup+((tiers.length)?`<br><span style="color:#9dd3e8">羁绊档位：${tiers.join(' · ')}</span>`:''));
   html+=sec('🏆 全场之最 Top3',
     `输出：${top3('deal',v=>'（'+v+'）')}<br>承伤：${top3('take',v=>'（'+v+'）')}<br>治疗：${top3('heal',v=>'（+'+v+'）')}`);
   if(kind==='lose'){
@@ -6179,6 +6307,7 @@ function showFinalResult(title,content,meta={}){
   showFlowPage('result');
 }
 function restartGame(){
+  if(S&&S.solo)return SoloHost.start(S.solo.mode);
   if(!S||S.phase!=='over')return false;
   const config=normalizeRunConfig(S.runConfig||{mode:S.mode,curses:S.curses,dailySeed:S.dseed});
   if(config.mode==='daily'&&config.dailySeed!==todaySeed()){
@@ -6187,6 +6316,7 @@ function restartGame(){
   startConfiguredRun(config); return true;
 }
 function gameOver(win){
+  if(S&&S.solo)return SoloHost.finish(win);
   if(!S||S.finalized||S.phase==='over')return;
   S.finished=!!win;
   S.phase='over'; endRunCleanup();
@@ -6196,7 +6326,8 @@ function gameOver(win){
   const content=(win?'':`在第 ${S.round} 回合倒下。<br>`)+rankedNoteHTML()+reportHTML(win?'win':'lose')+(S.daily?dailyCodeHTML():'')+globRowHTML();
   showFinalResult(title,content,{historySaved,saveRemoved});
 }
-function endRunEarly(){  // 🏁 主动收兵：任意模式备战期均可，记为提前结束成绩
+function endRunEarly(){
+  if(S&&S.solo)return SoloHost.finish(false);  // 🏁 主动收兵：任意模式备战期均可，记为提前结束成绩
   if(S.phase!=='prep') return;
   if(S.arena){
     const me=ARENA&&ARENA.seats[0];
@@ -6302,7 +6433,7 @@ function showGameMenu(){
   $('menuRunSummary').textContent=`${modeLabel(runModeOf(S))} · 第 ${S.round} 回合 · 生命 ${S.hp} · 配置与存档保持在本局。`;
   $('menuPhaseNotice').textContent=phase==='battle'?'本场战斗会继续进行；重开、保存返回与结束将在战斗结束后开放。玩法说明可以查看。'
     :phase==='chapter'?'请先选择章节增强并继续下一章，再使用保存、重开或结算操作。'
-    :'普通与自定义模式共用存档位；每日挑战与八人竞技各用独立存档位。刷新恢复到备战检查点，敌方预览按现有逻辑重新生成。';
+    :'普通与自定义模式共用存档位；每日挑战与八人竞技各用独立存档位。刷新恢复到备战检查点；每日挑战保留敌方预览与随机进度。';
   for(const id of ['menuSaveHome','menuRestart','menuEnd'])$(id).disabled=blocked;
   flowFocusTarget=document.activeElement;
   showFlowPage('gameMenu');
@@ -6509,9 +6640,11 @@ const SAVE_KEY='vc_save4', HIST_KEY='vc_history', DAILY_KEY='vc_daily3', ARENA_S
 const SAVE_SCHEMA_VERSION=2, SAVE_KEYS=[SAVE_KEY,DAILY_KEY,ARENA_SAVE_KEY];
 let lastSaveError='',lastLoadError='';
 function flowEsc(value){return String(value==null?'':value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
-function modeLabel(mode){return ({normal:'🎲 普通模式',custom:'⚠ 自定义诅咒',daily:'📅 每日挑战',arena:'🏟 八人竞技'})[mode]||'普通模式';}
-function curseName(id){const c=CURSES.find(x=>x.id===id);return c?c.n:id;}
+function modeLabel(mode){if(window.SoloModes){const def=SoloModes.definitions.find(x=>x.id===mode);if(def)return def.name;}return ({normal:'🎲 普通模式',custom:'⚠ 自定义诅咒',daily:'📅 每日挑战',arena:'🏟 八人竞技'})[mode]||'普通模式';}
+function curseName(id){const c=CURSES.find(x=>x.id===id);if(c)return c.n;
+  const dr=(S&&S.daily)&&window.DailyCurses?DailyCurses.description(id):null;return dr?dr.name:id;}
 function runModeOf(state){
+  if(state&&state.solo)return state.solo.mode;
   if(state&&['normal','custom','daily','arena'].includes(state.mode))return state.mode;
   if(state&&state.arena)return 'arena'; if(state&&state.daily)return 'daily';
   return state&&Array.isArray(state.curses)&&state.curses.length?'custom':'normal';
@@ -6580,7 +6713,7 @@ function renderSetup(){
   const modes=[
     {id:'normal',title:'🎲 普通模式',desc:'四章共 100 回合；第 25、50、75 回合选择章节增强，第 100 回合结算。'},
     {id:'arena',title:'🏟 八人竞技',desc:'与 7 名对手比赛；每回合 1 对 1，按淘汰顺序决定名次。'},
-    {id:'daily',title:'📅 每日挑战',desc:`${todaySeed()} · 今日同种子与预置诅咒，全体玩家使用同一随机序列。`},
+    {id:'daily',title:'📅 每日挑战',desc:`${todaySeed()} · 四章共 100 回合；25/50/75 回合选择增强，100 回合最终结算。同日同种子与预置诅咒。`},
     {id:'custom',title:'⚠ 自定义诅咒',desc:'勾选挑战规则并获得对应补偿；少数规则互斥。与普通模式共享存档位。'},
   ];
   $('setupModes').innerHTML=modes.map(m=>`<button type="button" class="flow-mode-card" role="radio" aria-checked="${selMode===m.id}" data-mode="${m.id}"><strong>${m.title}</strong><span>${m.desc}</span></button>`).join('');
@@ -6632,7 +6765,7 @@ function startConfiguredRun(config,options={}){
     hideFlowForGame(false);
     if(S.autoFight&&S.phase==='prep')scheduleAutoFight();else if(S.auto&&S.phase==='prep')autoPilot(300);
     log(cfg.mode==='arena'?'🏟 八人竞技开始：七名对手会独立运营，存活到最后获胜！'
-      :cfg.mode==='daily'?`📅 每日挑战开始（种子 ${S.dseed}）：使用今日预置规则。`
+      :cfg.mode==='daily'?`📅 每日挑战开始（种子 ${S.dseed}）：四章 100 回合，使用今日预置规则；每章守关必须取胜。`
       :cfg.mode==='custom'?`⚠ 自定义诅咒挑战开始：${(S.curses||[]).map(curseName).join('、')||'未选诅咒，玩法等同普通模式'}`:'🎲 普通模式开始！');
     return true;
   }catch(error){
@@ -6673,9 +6806,11 @@ function saveSnapshot(){
     challengeRound:S.challengeRound||0,lock:!!S.lock,synDone:S.synDone||[],augs:S.augs||[],tickets:S.tickets||0,tempBuff:S.tempBuff||null,
     ms:S.ms||{},curses:S.curses||[],cursesData:S.cursesData||{},soloBoost:S.soloBoost||0,daily:!!S.daily,dseed:S.dseed||0,
     bench:S.bench,board:S.board,shop:S.shop,uid:S.uid,log:S.log,items:S.items,pool:S.pool,stats:S.stats,
+    dailyRngState:S.daily?S.dailyRngState:undefined,enemyBoard:S.daily?S.enemyBoard:undefined,enemyComp:S.daily?S.enemyComp:undefined,
+    dailyCurse:S.daily?(S.dailyCurse||null):undefined,pendingDailyOffer:S.daily?(S.pendingDailyOffer||null):undefined,
     arena:!!S.arena,arenaMatch:S.arena?arenaSnapshot():null,ts:Date.now()};
 }
-function saveGame(){ // 仅备战检查点可恢复；失败会明确返回 false
+function saveGame(){ if(S&&S.solo)return SoloHost.save(); // 仅备战检查点可恢复；失败会明确返回 false
   if(!S||S.phase!=='prep'||S.menuPreview)return false;
   const key=saveKey(),snapshot=saveSnapshot();
   try{
@@ -6696,7 +6831,7 @@ function removeRunSave(key){
 function loadGame(key){
   key=key||SAVE_KEY;
   lastLoadError='';const info=inspectSave(key); if(info.status!=='valid'){lastLoadError=info.reason||'存档无效';return false;}
-  const original=info.data, mode=info.mode||runModeOf(original), curses=sanitizeCurses(original.curses||[]);
+  const original=info.data, mode=info.mode||runModeOf(original), curses=mode==='daily'?(Array.isArray(original.curses)?original.curses.slice():[]):sanitizeCurses(original.curses||[]);
   const previousS=S,previousArena=ARENA,previousRng=RND;
   try{
     const state=Object.assign({},original);
@@ -6713,7 +6848,15 @@ function loadGame(key){
     if(!Object.keys(S.pool).length)initPool();
     applyRNG();
     if(S.arena){if(!restoreArenaSnapshot(original.arenaMatch))throw new Error('竞技赛事状态校验失败');}
-    else prepEnemy();
+    else if(S.daily&&Array.isArray(original.enemyBoard)&&original.enemyBoard.length===BOARD_W*BOARD_H){
+      S.enemyBoard=original.enemyBoard; S.enemyComp=original.enemyComp;
+    } else prepEnemy();
+    if(S.daily&&window.DailyCurses){   // 每日规则状态：按版本/种子/规则 ID 校验恢复；旧档缺失则重建（不重放已领补偿）
+      const _seed=S.dseed||todaySeed();
+      S.dailyCurse=DailyCurses.restore(original.dailyCurse,_seed)||DailyCurses.create(_seed);
+      if(!S.dailyCurse)throw new Error('每日规则状态校验失败');
+      if(S.pendingDailyOffer)showDailyOffer();
+    } else if(S.daily) S.dailyCurse=null;
     /* 先完成数据重建，再切换运行会话；旧战斗时钟/自动操作不能落到恢复后的状态上。 */
     runSessionId++;autoRunId++;autoBusy=false;stopTickLoop();cancelAutoFight();
     if(chapterAutoTimer){clearTimeout(chapterAutoTimer);chapterAutoTimer=null;}chapterAutoPending=false;
@@ -6732,7 +6875,7 @@ function writeRunHistory(win){   // runId 作为结算幂等键，战绩与排�
   try{
     const h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');if(!Array.isArray(h))throw new Error('历史战绩格式无效');
     if(h.some(row=>row&&row.runId===S.runId))return true;
-    h.unshift({runId:S.runId,ts:Date.now(),win,forfeited:!!S.forfeited,rules:normalCampaign()?'campaign100':'classic',arena:!!S.arena,place:S.arena&&ARENA?ARENA.seats[0].place:null,round:S.round,hp:S.hp,endless:!!S.endless,ch:Math.ceil(S.round/chLen()),
+    h.unshift({runId:S.runId,ts:Date.now(),win,forfeited:!!S.forfeited,rules:S.daily?'daily100':normalCampaign()?'campaign100':'classic',arena:!!S.arena,place:S.arena&&ARENA?ARENA.seats[0].place:null,round:S.round,hp:S.hp,endless:!!S.endless,ch:Math.ceil(S.round/chLen()),
       daily:!!S.daily,dseed:S.dseed||0,curses:(S.curses||[]).length,lineup:S.board.filter(Boolean).slice(0,6).map(u=>u.id),
       wins:S.stats.wins||0,losses:S.stats.losses||0,kills:S.stats.kills||0,maxStreak:S.stats.maxStreak||0});
     localStorage.setItem(HIST_KEY,JSON.stringify(h.slice(0,50)));return true;
@@ -6748,7 +6891,7 @@ function lbNick(){ try{ return localStorage.getItem('vc_nick')||''; }catch(e){ r
    判定只看"是否诅咒局"，所以自定义模式但一条没勾（等同普通模式）仍然入榜。
    提前收兵（2026-09-23 拍板）不再视为弃局排除，照常可提交。 */
 function rankedRun(){ return !S.arena && (!!S.daily || !(S.curses||[]).length); }
-function rankedHist(x){ return !x.arena && (x.rules==='campaign100' || !!x.daily); }
+function rankedHist(x){ return !x.arena && (x.rules==='campaign100' || (x.daily&&x.rules==='daily100')); }
 function rankedNoteHTML(){   // 不计榜说明：放在结算屏【顶部】做横幅，写明具体原因（自定义诅咒），避免"按钮怎么没了"的困惑
   if(rankedRun()) return '';
   return `<div style="margin:4px 0 10px;font-size:12px;color:#ff9a9a">⚠ 自定义诅咒局不计入排行榜（成绩已记入 📜 战绩记录）</div>`;
@@ -6765,30 +6908,32 @@ function globRowHTML(){   // 终局结算里的提交行（离线时不显示；
 async function submitScore(){
   const btn=$('globBtn'), msg=$('globMsg'), inp=$('nickIn');
   if(!rankedRun()){ if(msg) msg.textContent='自定义诅咒局不计入排行榜（成绩已记入战绩记录）'; return; }   // 兜底：UI 已不提供入口
+  if(S.daily&&S.dseed!==todaySeed()){ if(msg)msg.textContent='此每日挑战已跨天，成绩保留在历史战绩，无法提交今日榜。'; return; }
   const name=(inp&&inp.value||'').trim();
   if(!name){ if(msg) msg.textContent='请先输入昵称'; return; }
   try{ localStorage.setItem('vc_nick',name); }catch(e){}
   if(btn){ btn.disabled=true; btn.textContent='提交中…'; }
   try{
-    if(!S.daily){
-      const boardInfo=await lbFetch('/api/top?board=normal100');
-      if(boardInfo.board!=='normal100'){
+    const board=S.daily?'daily100':'normal100';
+    {
+      const boardInfo=await lbFetch('/api/top?board='+board+(S.daily?'&seed='+(S.dseed||todaySeed())+'&rules=2':'')).catch(()=>({}));
+      if(boardInfo.board!==board||(S.daily&&(Number(boardInfo.seed)!==S.dseed||Number(boardInfo.rules)!==2))){
         if(btn){btn.disabled=false;btn.textContent='🌍 提交全球排行';}
-        if(msg)msg.textContent='新版普通榜服务尚未更新，成绩已记录在本地排行';
+        if(msg)msg.textContent='新版'+(S.daily?'每日':'普通')+'榜服务尚未更新，成绩已记录在本地排行';
         return;
       }
     }
     const j=await fetch(LB_API+'/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name, board:S.daily?'daily':'normal100', seed:S.daily?(S.dseed||todaySeed()):0,
-        round:S.round, ch:S.daily?Math.ceil(S.round/chLen()):(S.finished?5:Math.ceil(S.round/25)), kills:S.stats.kills, curses:(S.curses||[]).length,
+      body:JSON.stringify({name, board, seed:S.daily?(S.dseed||todaySeed()):0,rules:S.daily?2:undefined,
+        round:S.round, ch:S.finished?5:Math.ceil(S.round/25), kills:S.stats.kills, curses:(S.curses||[]).length,
         lineup:S.board.filter(Boolean).slice(0,6).map(u=>u.id)})})
       .then(r=>r.json());
     if(j.ok){
       if(btn) btn.textContent='✓ 已提交（第 '+j.rank+' 名）';
       if(msg) msg.textContent='成绩已进入全球排行（战绩 → 🌍全局 查看）';
-      try{ localStorage.setItem('vc_lastSubmit', JSON.stringify({name, board:S.daily?'daily':'normal100', round:S.round, kills:S.stats.kills, ts:Date.now()})); }catch(e){}
+      try{ localStorage.setItem('vc_lastSubmit', JSON.stringify({name, board, seed:S.daily?S.dseed:0,rules:S.daily?2:undefined,round:S.round, kills:S.stats.kills, ts:Date.now()})); }catch(e){}
     }
-    else{ if(btn){ btn.disabled=false; btn.textContent='🌍 提交全球排行'; } if(msg) msg.textContent=j.error==='board required'?'新版普通榜服务尚未更新，成绩已记录在本地排行':'提交失败：'+(j.error||'未知错误'); }
+    else{ if(btn){ btn.disabled=false; btn.textContent='🌍 提交全球排行'; } if(msg) msg.textContent=j.error==='board required'?'新版排行榜服务尚未更新，成绩已记录在本地排行':'提交失败：'+(j.error||'未知错误'); }
   }catch(e){
     if(btn){ btn.disabled=false; btn.textContent='🌍 提交全球排行'; }
     if(msg) msg.textContent='提交失败：网络不可达（离线也可继续游戏）';
@@ -6800,14 +6945,15 @@ async function renderGlobalBoard(){
   try{
     const seed=todaySeed();
     const [dn,nj]=await Promise.all([
-      lbFetch('/api/top?board=daily&seed='+seed),
+      lbFetch('/api/top?board=daily100&seed='+seed+'&rules=2').catch(()=>({})),
       lbFetch('/api/top?board=normal100')]);
     const row=(x,i,showCh)=>{ const ch=parseInt(x.ch,10); const round=parseInt(x.round,10)||0;
       const kills=parseInt(x.kills,10)||0, curses=parseInt(x.curses,10)||0;
       return `<div class="hrow"><span class="lb-rk">${i+1}</span><span>${String(x.name||'?').replace(/[<>&]/g,'')}</span><span>${showCh&&ch===5?'🏅 通关 · ':showCh&&isFinite(ch)?ch+' 章 · ':''}第 ${round} 回合</span><span>击杀 ${kills}${curses?` · ⚠×${curses}`:''}</span></div>`; };
     const sec=(t,list,showCh)=>`<div style="margin-bottom:10px"><div style="color:#ffd24a;font-size:12px;margin-bottom:4px">${t}</div>`+
       (list&&list.length? list.slice(0,15).map((x,i)=>row(x,i,showCh)).join('') : '<div style="color:#8f88b0;font-size:12px">暂无记录，点下方「🔄 刷新排名」试试</div>')+'</div>';
-    el.innerHTML= sec('📅 每日榜 · 今日（种子 '+seed+'）', dn.list, false) + (nj.board==='normal100'
+    el.innerHTML= (dn.board==='daily100'&&Number(dn.seed)===seed&&Number(dn.rules)===2?sec('📅 每日榜 · 四章 100 回合（种子 '+seed+' · 规则 v2）', dn.list, true)
+      : '<div style="color:#8f88b0;font-size:12px;padding:8px">四章每日榜服务尚未更新；新版成绩可在本地排行查看</div>') + (nj.board==='normal100'
       ? sec('🏆 普通榜 · 四章 100 回合', nj.list, true)
       : '<div style="color:#8f88b0;font-size:12px;padding:8px">四章普通榜服务尚未更新；新版成绩可在本地排行查看</div>')
       +`<div style="text-align:center"><button class="btn" id="lbRefreshBtn" style="padding:4px 14px;font-size:12px;border-color:#4aa8ff66;color:#9dd3e8" onclick="renderGlobalBoard()">🔄 刷新排名</button></div>`;
@@ -6838,10 +6984,10 @@ function renderLeaderboard(){
   let h=[]; try{ h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); }catch(e){}
   if(!h.length){ $('histList').innerHTML='<div style="color:#8f88b0;padding:14px;text-align:center">暂无记录——先打完一局</div>'; return; }
   const rows=[...h].filter(x=>x.rules==='campaign100').sort((a,b)=> Number(b.win)-Number(a.win) || b.round-a.round || b.hp-a.hp || (b.kills||0)-(a.kills||0));
-  const today=h.filter(x=>x.daily && x.dseed===todaySeed());
-  const best=today.length? Math.max(...today.map(x=>x.round)) : 0;
+  const today=h.filter(x=>x.daily && x.rules==='daily100' && x.dseed===todaySeed()).sort((a,b)=>Number(b.win)-Number(a.win)||b.round-a.round||b.hp-a.hp||(b.kills||0)-(a.kills||0));
+  const best=today[0];
   const note=`<div style="color:#8f88b0;font-size:11px;margin-top:8px">※ 自定义诅咒局不计入排行（自选诅咒自带补偿，成绩不具可比性）——它们仍完整保留在「📜 战绩记录」页</div>`;
-  $('histList').innerHTML=(best?`<div style="color:#9dd3e8;font-size:12px;margin-bottom:6px">📅 今日每日挑战最佳：第 ${best} 回合（种子 ${todaySeed()}，挑战码 DC-${todaySeed()}-${best}）</div>`:'')+
+  $('histList').innerHTML=(best?`<div style="color:#9dd3e8;font-size:12px;margin-bottom:6px">📅 今日每日挑战最佳：${best.win?'🏅 四章通关':'第 '+best.round+'/100 回合'}（种子 ${todaySeed()}，挑战码 DC100-v2-${todaySeed()}-${best.round}${best.win?'-WIN':''}）</div>`:'')+
     (rows.length? rows.slice(0,20).map((x,i)=>{
     const d=new Date(x.ts), p=n=>String(n).padStart(2,'0');
     return `<div class="hrow lb"><span class="lb-rk">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
@@ -7062,8 +7208,11 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
   if(S.auto && S.phase==='prep') autoPilot(300);
 };
 </script>
-<script src="tools/bot_strategy.js?v=7"></script>
+<script src="tools/bot_strategy.js?v=8"></script>
 <script src="tools/idol-ui.js?v=1"></script>
 <script src="tools/idol-ui-redesign.js?v=5"></script>
+<script src="tools/solo-modes.js?v=1"></script>
+<script src="tools/solo-ui.js?v=1"></script>
+<script src="tools/solo-host.js?v=3"></script>
 </body>
 </html>
