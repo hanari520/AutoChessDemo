@@ -57,7 +57,7 @@ module.exports.run = function (A, driveBattle) {
       `${id} 穿戴后没有任何战斗属性变化`);
   }
   console.log(`✅ ${Object.keys(A.ITEMS).length} 件装备逐一穿戴，全部改变战斗属性`);
-  assert.equal(Object.keys(A.ITEM_SPECIAL).length, 24, '24 件成品与神器有额外触发机制；不朽圣盾的周期护盾由数值效果直接实现');
+  assert.equal(Object.keys(A.ITEM_SPECIAL).length, 20, '20 件成品有额外触发机制；不朽圣盾的周期护盾由数值效果直接实现');
 
   {
     const attacker = mk('ein'), target = mk('goutan', 1);

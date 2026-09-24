@@ -548,7 +548,7 @@ html[data-theme="dark"] .flow-danger { color:#ffb4c2; background:rgba(117,48,67,
 .gear-hero p { margin: 0; color: #7784a1; font-size: 10px; line-height: 1.45; }
 .gear-kicker { display: block; color: #8995b5; font-size: 8px; font-weight: 900; letter-spacing: 1.2px; }
 .gear-auto { flex: 0 0 auto; min-height: 38px; padding: 7px 9px; color: #6f68b3; border-color: #d7d0f4; border-radius: 10px; background: linear-gradient(135deg,#fff,#f1eeff); font-size: 10px; }
-.gear-worn, .gear-bag, .gear-forge, .gear-routebook { min-width: 0; padding: 9px; border: 1px solid rgba(130,154,201,.2); border-radius: 13px; background: linear-gradient(145deg,rgba(255,255,255,.98),rgba(245,249,255,.97)); box-shadow: 0 3px 12px rgba(83,102,153,.07); }
+.gear-worn, .gear-bag, .gear-routebook { min-width: 0; padding: 9px; border: 1px solid rgba(130,154,201,.2); border-radius: 13px; background: linear-gradient(145deg,rgba(255,255,255,.98),rgba(245,249,255,.97)); box-shadow: 0 3px 12px rgba(83,102,153,.07); }
 .gear-section-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 7px; }
 .gear-section-head > div { min-width: 0; }
 .gear-section-head b { display: block; margin-top: 2px; color: #4e6088; font-size: 12px; }
@@ -564,18 +564,16 @@ html[data-theme="dark"] .flow-danger { color:#ffb4c2; background:rgba(117,48,67,
 .gear-item-card:hover { transform: translateY(-1px); border-color: #b4c4ef; box-shadow: 0 5px 12px rgba(102,119,177,.13); }
 .gear-item-card.sel { border-color: #8a8fe2; background: linear-gradient(135deg,#f1f0ff,#fff4fb); box-shadow: 0 0 0 2px rgba(148,137,229,.18); }
 .gear-item-card.crafted { border-color: #e7ca7a; background: linear-gradient(130deg,#fffaf0,#fff); }
-.gear-item-card.arti { border-color: #daa9cf; background: linear-gradient(130deg,#fff1fa,#fbf3ff); }
 .gear-item-card > small { color: #72809d; font-size: 9px; line-height: 1.4; }
-.gear-item-card > em, .gear-ready-card > em, .gear-artifact-card > em { color: #7181b5; font-size: 9px; font-style: normal; line-height: 1.4; }
+.gear-item-card > em, .gear-ready-card > em { color: #7181b5; font-size: 9px; font-style: normal; line-height: 1.4; }
 .gear-item-card .item-chip { display: flex; align-items: center; gap: 5px; min-width: 0; padding: 0; border: 0; color: #526485; background: transparent; font-size: 11px; font-weight: 850; }
 .gear-item-card .item-chip i { margin-left: auto; padding: 2px 5px; border-radius: 6px; color: #7481a5; background: #edf1fa; font-size: 8px; font-style: normal; font-weight: 700; }
 .gear-item-card.crafted .item-chip i { color: #987326; background: #fff1c7; }
-.gear-item-card.arti .item-chip i { color: #a15189; background: #fbe6f4; }
 .gear-item-icon { display: grid; place-items: center; flex: 0 0 25px; width: 25px; height: 25px; border-radius: 8px; background: linear-gradient(145deg,#e9f4ff,#f3ecff); font-size: 15px; }
 .gear-empty { display: grid; justify-items: center; gap: 4px; padding: 13px 8px; border: 1px dashed #d6e1ef; border-radius: 11px; text-align: center; }
 .gear-empty span { color: #a19be3; font-size: 21px; }
 .gear-empty b { color: #607195; font-size: 11px; }
-.gear-empty small, .gear-forge > p { margin: 0; color: #8792aa; font-size: 9px; line-height: 1.5; }
+.gear-empty small { margin: 0; color: #8792aa; font-size: 9px; line-height: 1.5; }
 .gear-ready { margin-top: 9px; padding-top: 8px; border-top: 1px solid #e7ebf5; }
 .gear-subhead { margin-bottom: 6px; color: #6978a0; font-size: 10px; font-weight: 850; }
 .gear-ready-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 5px; }
@@ -586,12 +584,6 @@ html[data-theme="dark"] .flow-danger { color:#ffb4c2; background:rgba(117,48,67,
 .gear-ready-card > em { grid-column: 1; }
 .gear-ready-card > .btn { grid-column: 2; grid-row: 1 / span 3; min-height: 34px; padding: 5px 7px; border-radius: 8px; color: #91702b; background: #fff5d7; font-size: 9px; white-space: nowrap; }
 .gear-more { display: block; margin-top: 5px; color: #9993b4; font-size: 9px; }
-.gear-forge { border-color: rgba(222,179,101,.28); background: linear-gradient(140deg,#fffaf0,#fff7fc); }
-.gear-artifacts { display: grid; grid-template-columns: minmax(0,1fr); gap: 5px; margin-top: 7px; }
-.gear-artifact-card { display: grid; gap: 4px; padding: 7px; border: 1px solid #eee0c0; border-radius: 10px; background: rgba(255,255,255,.82); }
-.gear-artifact-card > b { color: #806a3c; font-size: 10px; }
-.gear-artifact-card > small { color: #7e88a0; font-size: 9px; line-height: 1.4; }
-.gear-artifact-card > .btn { justify-self: start; min-height: 34px; padding: 4px 7px; border-radius: 8px; color: #8f6d2c; background: #fff3d5; font-size: 9px; }
 .gear-routebook { padding: 0; overflow: hidden; }
 .gear-routebook summary { min-height: 38px; display: flex; align-items: center; padding: 9px; color: #66759a; cursor: pointer; font-size: 10px; font-weight: 850; }
 .gear-route-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 5px; padding: 0 8px 8px; }
@@ -601,19 +593,19 @@ html[data-theme="dark"] .flow-danger { color:#ffb4c2; background:rgba(117,48,67,
 .gear-route small { color: #7b87a1; font-size: 8px; line-height: 1.4; }
 .gear-route em { color: #7887bb; font-size: 8px; font-style: normal; line-height: 1.4; }
 @media (min-width: 1281px) {
-  .gear-inventory, .gear-ready-grid, .gear-artifacts, .gear-route-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .gear-inventory, .gear-ready-grid, .gear-route-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media (max-width: 880px) {
-  .gear-inventory, .gear-ready-grid, .gear-artifacts, .gear-route-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .gear-inventory, .gear-ready-grid, .gear-route-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .gear-hero { padding: 10px; }
   .gear-item-card { padding: 8px; }
 }
 @media (max-width: 420px) {
-  .gear-inventory, .gear-ready-grid, .gear-artifacts, .gear-route-grid { grid-template-columns: minmax(0,1fr); }
+  .gear-inventory, .gear-ready-grid, .gear-route-grid { grid-template-columns: minmax(0,1fr); }
   .gear-hero { align-items: flex-start; }
 }
 @media (max-width: 600px) and (orientation: portrait) {
   .gear-workshop { gap: 8px; }
-  .gear-worn, .gear-bag, .gear-forge { padding: 8px; }
+  .gear-worn, .gear-bag { padding: 8px; }
   .gear-worn .in-item-chip { min-height: 30px; }
 }

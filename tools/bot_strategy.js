@@ -327,7 +327,6 @@ function botAugScore(off){
   if(['atk','asp','skillhaste','atkmana','killmana'].includes(off.id)&&carry)score+=18;
   if(['hp','ar','mr','regen','startshield'].includes(off.id)&&S.hp<22)score+=22;
   if(off.id==='gold')score+=S.gold<40?17:6;
-  if(off.id==='eqslot'&&botBoard().length>=5)score+=18;
   if(off.weak)score*=.65;
   return score;
 }

@@ -1019,9 +1019,9 @@ body.touch .m-only { display:inline-block; }
 
 </style>
 <link rel="stylesheet" href="tools/idol-ui.css?v=2">
-<link rel="stylesheet" href="tools/idol-redesign.css?v=10">
+<link rel="stylesheet" href="tools/idol-redesign.css?v=11">
 <link rel="stylesheet" href="tools/mobile-stage.css?v=2">
-<link rel="stylesheet" href="tools/idol-dark.css?v=3">
+<link rel="stylesheet" href="tools/idol-dark.css?v=4">
 <script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#101a36':'#eaf3ff'</script>
 </head>
 <body>
@@ -1269,15 +1269,14 @@ body.touch .m-only { display:inline-block; }
     第四章第 82、92 回合会有 2★ 精英棋子带队，备战期可在敌方信息栏提前看到。
     <span class="is-h">📈 变强的手段</span>
     🎫 <b>升星券</b>（普通模式第 50 回合守关奖励）：把一名 3★ 升为 4★——顶栏 🎫 看余量，点击 3★ 棋子使用<br>
-    ⚒ <b>神器</b>：背包任意 3 件成品熔铸 1 件神器（弑神之刃 / 不灭圣铠 / 苍穹之弓 / 湮灭宝珠）<br>
     🧪 <b>临时增益</b>：备战期花金币买（攻/血 +15%、开场齐射），仅本场生效、每回合限 1 个<br>
-    ⛓ <b>装备合成</b>：两件基础装合成 1 件成品；每名棋子最多穿 2 件（装备大师增强后 3 件），全部装备与配方见 <b>图鉴 → 📦装备</b>
+    ⛓ <b>装备合成</b>：两件基础装合成 1 件成品；每名棋子最多穿 3 件，全部装备与配方见 <b>图鉴 → 📦装备</b>
     <span class="is-h">⌨️ 操作</span>
     单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）<br>
     快捷键：<b>R/A</b> 一键上阵 · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战；点【🏁 结束挑战】收兵结算（需二次确认）
     <span class="is-h">🎮 模式与荣誉</span>
     开局四选一：🎲 普通模式 / 🏟 <b>八人竞技</b>（与 7 名对手比赛，按淘汰次序排名）/ 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（自选诅咒换补偿：禁用羁绊、紧缩货架、无梦等 14 种，少数互斥）<br>
-    【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（19 项）· 🏆 本地排行 · 🌍 全球排行<br>
+    【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（17 项）· 🏆 本地排行 · 🌍 全球排行<br>
     【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）
   </div>
 </div>
@@ -1855,7 +1854,7 @@ function castV3Skill(u,units,skMul,k){
   if(mark){const offense=hitList.find(f=>f&&f.hp>0);if(offense)placeSigMark(offense,u,mark,false);else placeSigMark(u,u,mark,true);}
   u._casting=false;u._skillArch=null;
 }
-/* 装备：6 件基础装（野怪掉落池）+ 21 条双件配方 + 4 件路线终点神器。
+/* 装备：6 件基础装（野怪掉落池）+ 21 条双件配方。
    成品保留组件机制，并增加专属词条；数值和触发配置分别见 ITEM_FX / ITEM_SPECIAL。
    crafted 标记：成品只来自合成，绝不进入野怪掉落池（掉落件数/频率不变）。 */
 const ITEMS = {
@@ -1887,14 +1886,7 @@ const ITEMS = {
   bastioncoil:{n:'堡垒线圈', e:'🌀', role:'guard', crafted:1, from:['armor','mana'], desc:'+30% 生命 · 回蓝效率 +100%', trait:'过载：护盾破裂时立刻回蓝'},
   venomshot:{n:'毒羽连弩', e:'☠️', role:'attack', crafted:1, from:['bow','vamp'], desc:'+35% 攻速 · 攻击吸血 20%', trait:'蚀羽：普攻施加持续毒伤'},
   stormfang:{n:'风暴獠牙', e:'🌩', role:'attack', crafted:1, from:['vamp','mana'], desc:'攻击吸血 20% · 回蓝效率 +100%', trait:'回流：过量吸血凝成护盾'},
-  /* —— 神器（3 件成品升阶熔铸，仅 forgeArtifact 获得；占 1 个装备格）—— */
-  godblade: {n:'弑神之刃', e:'⚔', role:'attack', arti:1, desc:'+120% 攻击 · 技能伤害 +25% · 吸血 20% · 15% 暴击', trait:'神罚：暴击破防；击杀后立即准备下一次技能'},
-  godarmor: {n:'不灭圣铠', e:'🛡', role:'guard', arti:1, desc:'+90% 生命 · 护甲 +18 · 每 3 秒 10% 生命盾 · 荆棘 6%', trait:'不灭：开战护盾；友军倒下时最低血队友获盾'},
-  godbow:   {n:'苍穹之弓', e:'🏹', role:'attack', arti:1, desc:'+100% 攻速 · 普攻 40% 弹射 · 闪避 15%', trait:'星矢：每次施法为下一轮射击蓄力并穿透'},
-  godorb:   {n:'湮灭宝珠', e:'🔮', role:'magic', arti:1, desc:'开局 +30 蓝 · 回蓝效率 +200% · 技能伤害 +30% · 技能冷却 -25%', trait:'湮灭：施法后撕裂最近敌人的魔抗并向队友传能'},
 };
-/* 神器清单（升阶 UI 与判定用） */
-const ARTIFACTS=['godblade','godarmor','godbow','godorb'];
 /* 临时增益（备战期金币购买，仅本场战斗生效，每回合限购 1 个；endBattle 清空） */
 const TEMP_BUFFS=[
   {id:'atk',  e:'⚔', n:'战意激扬', short:'攻+15%', cost:15, desc:'本场战斗我方全体攻击 +15%'},
@@ -2106,8 +2098,6 @@ const ACHV=[
   {id:'merge3',  n:'三星志士',   d:'首次合成 3★ 棋子',            c:()=>S.ms&&S.ms.merged3},
   {id:'five3',   n:'梦之队',     d:'单局同时拥有 5 名 3★ 棋子',   c:()=>S.ms&&S.ms.five3},
   {id:'star4',   n:'超凡入圣',   d:'首次用升星券升出 4★',         c:()=>S.ms&&S.ms.star4},
-  {id:'arti3',   n:'神装大师',   d:'单局熔铸 3 件神器',           c:()=>S.ms&&S.ms.arti>=3},
-  {id:'eqslot',  n:'三持之际',   d:'获得「装备大师」金色增强',    c:()=>(S.augs||[]).some(a=>a.id==='eqslot')},
   {id:'kill50',  n:'百人斩·序',  d:'单局击杀 50 名敌人',          c:()=>S.stats.kills>=50,  p:()=>Math.min(S.stats.kills,50)+'/50'},
   {id:'kill150', n:'百人斩·极',  d:'单局击杀 150 名敌人',         c:()=>S.stats.kills>=150, p:()=>Math.min(S.stats.kills,150)+'/150'},
   {id:'mvp5k',   n:'一骑当千',   d:'单场战斗输出突破 5000',       c:()=>S.ms&&S.ms.mvp5k},
@@ -2172,21 +2162,6 @@ function combineBagPair(i,j){
   log(`⛓ 装备合成：${ITEMS[a].e}${ITEMS[a].n} + ${ITEMS[b].e}${ITEMS[b].n} → ${ITEMS[prod].e}${ITEMS[prod].n}（${ITEMS[prod].desc}）`);
   renderAll();
   return prod;
-}
-/* ⚒ 神器升阶：背包内任意 3 件成品熔铸为 1 件指定神器（占 1 个装备格，强于 2 件普通装） */
-function forgeArtifact(key){
-  if(S.phase!=='prep') return;
-  if(!ARTIFACTS.includes(key)) return;
-  const idxs=[]; S.items.forEach((k,i)=>{ if(ITEMS[k].crafted && idxs.length<3) idxs.push(i); });
-  if(idxs.length<3){ log('⚠ 神器升阶需要背包内有 3 件合成成品'); return; }
-  const burned=idxs.map(i=>ITEMS[S.items[i]].n);
-  [2,1,0].forEach(n=>S.items.splice(idxs[n],1));   // 从大到小删，避免下标位移
-  S.items.push(key);
-  const it=ITEMS[key];
-  (S.ms=S.ms||{}).arti=(S.ms.arti||0)+1;   // 成就里程碑
-  sfx('merge3');
-  log(`⚒ 神器升阶：${burned.join('、')} 熔铸 → ${it.e} ${it.n}（${it.desc}）`);
-  renderAll();
 }
 /* 棋子已佩戴的两件就地合成（腾出的格子保留空位） */
 function combineWorn(u){
@@ -2267,10 +2242,10 @@ function rollEnemySquad(r){
 /* 野怪回合（多多自走棋式中立生物）：失败不扣血、不影响连胜；胜利按进度掉装备 */
 const CREEP = {5:'🐺 野狼群', 10:'🗿 岩石巨像', 15:'🐉 黑龙幼崽', 20:'🦣 远古凶兽', 25:'👑 最终魔王'};
 /* 野怪回合：失败不扣血、不动连胜；掉落装备——胜利 2 件、失败保底 1 件（见 endBattle） */
-const SHOP_SIZE=5, MAX_ROUNDS=25, BENCH=8, MAX_EQUIP=2;
-/* 装备槽：基础 2 件，全局增强「🧤 装备大师」后 3 件（唯一出口，穿戴/合成/托管统一走这里） */
+const SHOP_SIZE=5, MAX_ROUNDS=25, BENCH=8, MAX_EQUIP=3;
+/* 装备槽：每名棋子固定 3 件（唯一出口，穿戴/合成/托管统一走这里） */
 function maxEquip(){ const dm=dailyMods();   // 轻装出战：每名棋子最多 1 件
-  return (dm&&typeof dm.maxEquip==='number'?dm.maxEquip:MAX_EQUIP) + ((typeof S!=='undefined' && S && (S.augs||[]).some(a=>a.id==='eqslot')) ? 1 : 0); }
+  return (dm&&typeof dm.maxEquip==='number'?dm.maxEquip:MAX_EQUIP); }
 const BOARD_W=8, BOARD_H=8;                 // 8×8 四边形棋盘（每方 32 格，下半 4 行为我方布阵区）
 const HP_SCALE = 0.92;   // 血量总倍率（压战斗时长：TTK 更短、节奏更线性）；蓝量全棋子统一 100、开局清零
 /* 升级人口经验表（多多式）：每回合自然 +2 经验，5 金币固定买 4 经验；2 级起步、11 级封顶；第 1 回合仅禁购买经验（自然积累照常升级） */
@@ -3435,7 +3410,7 @@ function autoEquipAll(){
   const rest=board.filter(x=>x!==carry && !fronts.includes(x));
   const order=[carry,...fronts.filter(f=>f!==carry),...rest];
   const freeSlot=x=>((x.u.items||[]).length<maxEquip());
-  const val=k=>ITEMS[k].arti?2:ITEMS[k].crafted?1:0;   // 同类型内优先分配更强的装备（神器 > 成品 > 基础装）
+  const val=k=>ITEMS[k].crafted?1:0;   // 同类型内优先分配更强的装备（成品 > 基础装）
   // ① 各取所需：主C 只拿输出装、其他棋子只拿防御装（不留错配）
   for(const spot of order){
     const u=spot.u, isCarry=(spot===carry);
@@ -3486,10 +3461,7 @@ function renderEquip(){
   for(let i=0;i<S.items.length;i++)for(let j=i+1;j<S.items.length;j++){
     const prod=comboOf(S.items[i],S.items[j]);if(prod)pairs.push({i,j,prod,a:S.items[i],b:S.items[j]});
   }
-  const craftN=S.items.filter(k=>ITEMS[k].crafted).length;
   const itemRoute=k=>{const it=ITEMS[k],from=it.from||[];return `<div class="gear-route"><span class="gear-route-icons">${from.length?from.map(x=>ITEMS[x].e).join(' + '):'✦'}</span><b>${it.e} ${it.n}</b><small>${it.desc}</small><em>${it.trait||''}</em></div>`;};
-  const artifactHtml=`<section class="gear-forge"><div class="gear-section-head"><div><span class="gear-kicker">ARTIFACT FORGE</span><b>神器熔铸</b></div><small>成品 ${craftN}/3</small></div><p>消耗背包内任意 3 件成品，熔铸为一件神器。</p><div class="gear-artifacts">${ARTIFACTS.map(k=>{const it=ITEMS[k],dis=S.phase!=='prep'||craftN<3;
-    return `<article class="gear-artifact-card"><b>${it.e} ${it.n}</b><small>${it.desc}</small><em>${it.trait}</em><button class="btn" ${dis?'disabled':''} onclick="forgeArtifact('${k}')">熔铸神器</button></article>`;}).join('')}</div></section>`;
   const routeBook=Object.keys(ITEMS).filter(k=>ITEMS[k].crafted);
   const routeBookHtml=`<details class="gear-routebook"><summary>查看全部 ${routeBook.length} 条合成路线</summary><div class="gear-route-grid">${routeBook.map(itemRoute).join('')}</div></details>`;
   const autoDisabled=S.phase!=='prep'||!S.items.length;
@@ -3498,20 +3470,19 @@ function renderEquip(){
       <button class="btn gear-auto" id="autoEquipBtn" ${autoDisabled?'disabled':''} title="自动合成可用配方，再按主C与前排分配装备" onclick="autoEquipAll()">⚡ 一键整理</button></header>
     ${wornHtml}
     <section class="gear-bag"><div class="gear-section-head"><div><span class="gear-kicker">BACKPACK · ${S.items.length} ITEMS</span><b>背包装备</b></div><small>${pairs.length?`可合成 ${pairs.length} 件`:'拖拽穿戴 · 点选后再点棋子'}</small></div>
-      ${S.items.length?`<div class="gear-inventory" id="gearInventory"></div>`:`<div class="gear-empty"><span>✧</span><b>背包暂时空了</b><small>赢下野怪回合可获得基础装备，三件成品还能继续熔铸神器。</small></div>`}
+      ${S.items.length?`<div class="gear-inventory" id="gearInventory"></div>`:`<div class="gear-empty"><span>✧</span><b>背包暂时空了</b><small>赢下野怪回合可获得基础装备。</small></div>`}
       ${pairs.length?`<div class="gear-ready"><div class="gear-subhead">现在可以合成</div><div class="gear-ready-grid">${pairs.slice(0,4).map(p=>`<article class="gear-ready-card"><div class="gear-ready-route">${ITEMS[p.a].e} + ${ITEMS[p.b].e}<span>→</span>${ITEMS[p.prod].e}</div><b>${ITEMS[p.prod].n}</b><em>${ITEMS[p.prod].trait}</em><button class="btn" onclick="combineBagPair(${p.i},${p.j})">合成此装备</button></article>`).join('')}</div>${pairs.length>4?`<small class="gear-more">另有 ${pairs.length-4} 件可合成</small>`:''}</div>`:''}
     </section>
-    ${artifactHtml}
     ${routeBookHtml}
   </div>`;
   bindWornChips();
   const inventory=$('gearInventory');
   if(inventory)S.items.forEach((k,i)=>{
     const it=ITEMS[k],c=document.createElement('div');
-    c.className='gear-item-card'+(S.selItem===i?' sel':'')+(it.crafted?' crafted':'')+(it.arti?' arti':'');
+    c.className='gear-item-card'+(S.selItem===i?' sel':'')+(it.crafted?' crafted':'');
     c.setAttribute('role','button');c.setAttribute('aria-pressed',String(S.selItem===i));c.tabIndex=0;
     c.title=it.desc+' · '+(it.trait||'')+'（拖到棋子上穿戴，或点选后再点棋子）';
-    c.innerHTML=`<div class="item-chip ${S.selItem===i?'sel':''}${it.crafted?' crafted':''}${it.arti?' arti':''}"><span class="gear-item-icon">${it.e}</span><span>${it.n}</span><i>${it.arti?'神器':it.crafted?'成品':'组件'}</i></div><small>${it.desc}</small><em>${it.trait||''}</em>`;
+    c.innerHTML=`<div class="item-chip ${S.selItem===i?'sel':''}${it.crafted?' crafted':''}"><span class="gear-item-icon">${it.e}</span><span>${it.n}</span><i>${it.crafted?'成品':'组件'}</i></div><small>${it.desc}</small><em>${it.trait||''}</em>`;
     c.onclick=()=>{if(Date.now()<chipClickSuppressedUntil)return;S.selItem=S.selItem===i?null:i;renderEquip();if(IS_TOUCH&&S.selItem!=null){closeDrawer();log(`🎒 已选 ${it.n}：点要穿戴的棋子（再点该装备取消）`);}};
     c.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();c.click();}};
     c.querySelector('.item-chip').addEventListener('pointerdown',ev=>{if(ev.button!==0||S.phase!=='prep')return;ev.stopPropagation();itemDrag={i,x0:ev.clientX,y0:ev.clientY,ghost:null};});
@@ -4240,20 +4211,23 @@ function genEnemy(){
   // 每章整章（途中怪物为主）吃 CH_DIFF[ch]，章内按位置缓涨 CH_INTRA（章首最松、章末最紧），
   // 守关魔王另吃 CH_BOSS[ch] 压轴加成；普通模式守关失败即终局。
   // 目标（2026-09-19 用户设定，累计通过率，针对全部 22 羁绊）：第1章 80% / 第2章 70% / 第3章 60% / 第4章 50%。
+  // 2026-09-25：第二~四章敌方引入随回合升星（enemyStarFor），升星的期望强度增量经 starComp 从
+  // mul 中剥离，净难度仍由 CH_DIFF 表达——本次把第三、四章各上调约 +8%/+7%。
   const prog = Math.min(r-1, 24) / 24;
   const ch = Math.ceil(r/25);                    // 当前章节号（1..）
-  const CH_DIFF = [1, 1, 0.84, 1.02, 1.42];      // 四章逐步加压，第四章不再在 r76 突然跃升
+  const CH_DIFF = [1, 1, 0.84, 1.10, 1.52];      // 四章逐步加压；三/四章 2026-09-25 上调（1.02→1.10 / 1.42→1.52）
   const CH_BOSS = [1, 1, 1.90, 1.90, 2.40];      // 第三章首领降低尖峰，第四章仍保留最终决战
   const CH_INTRA = 0.12;                         // 章内缓涨：章首 → 章末 +12%
   const chMul = (fourChapterCampaign() && r>25)
     ? CH_DIFF[Math.min(ch,4)] * (1 + CH_INTRA*(r-1-(ch-1)*25)/24) : 1;
+  const starComp = (fourChapterCampaign() && r>25) ? starExpMul(r) : 1;   // 敌方升星期望强度折回（见 starExpMul）
   // 全局难度系数 POOL_DILUTION_COMP：46→50 名棋子后各费用段人数增加（1费 8→10），
   // 特定棋子的抽取概率降为 1/N，玩家升星变慢、整体强度下降（实测 r5 野怪胜率 99%→62%
   // 可证——野怪不吃羁绊，只能是被稀释的卡池拖慢玩家成长期）。此系数是结构性变更的
   // 一次性补偿量（非定期旋钮），调定后不要再动；日常微调用 r25 bossMult。
   const POOL_DILUTION_COMP = 0.85;
   const DIFF_TUNE = 0.72;   // 2026-09-23：玩家反馈通关偏易；较 0.66 敌方全属性约 +9%，并同步放缓连败/濒死减压
-  const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * chMul * dyn * POOL_DILUTION_COMP * DIFF_TUNE
+  const mul = 0.985 * (1.22 + 2.60 * Math.pow(prog, 1.22)) * chMul / starComp * dyn * POOL_DILUTION_COMP * DIFF_TUNE
     * (S.challengeRound===r ? 1.25 : 1)
     * (hasCurse('hardland') ? 1.15 : 1);   // ⛰ 硬着陆：敌方全体强度 +15%
   const used=new Set();
@@ -4272,22 +4246,17 @@ function genEnemy(){
       list.push({d:b, star:bossStar, boss:true, bossMult});
     }
     const bossGuards = r<10?0 : r<20?1 : (r>=25?1:2);
-    for(let i=0;i<bossGuards;i++) list.push({d:pickFor('守护',cap,used), star:1});
+    for(let i=0;i<bossGuards;i++){ const g=pickFor('守护',cap,used); list.push({d:g, star:enemyStarFor(r,g.cost)}); }
     // 野怪数量：狼群多而弱，后期杂兵费用上限放宽；r25 收敛为魔王精英队（少而强）
     const total = r>=25 ? 5 : Math.min(2+Math.ceil(r/3), 8);
     const addCap = r<10?1 : r<15?2 : (r>=25?2:3);
     const jobs=['刀客','狂战','游侠','法师','刺客','咒术'];
     const extra = Math.max(0, total - list.length);
-    for(let i=0;i<extra;i++) list.push({d:pickFor(jobs[i%jobs.length], Math.min(cap,addCap), used), star:1});
+    for(let i=0;i<extra;i++){ const m=pickFor(jobs[i%jobs.length], Math.min(cap,addCap), used); list.push({d:m, star:enemyStarFor(r,m.cost)}); }
   } else {
-    // 随机流派/同门军团阵容：先抽阵容，再按图鉴数据生成敌兵
+    // 随机流派/同门军团阵容：先抽阵容，再按图鉴数据生成敌兵；第二章起随回合升星（enemyStarFor）
     const squad = rollEnemySquad(r);
-    squad.list.forEach(u=>list.push({d:u, star:1}));
-    // 第四章固定强敌波次可在备战期预览，检验高星核心之外的整队质量。
-    if(fourChapterCampaign() && r>=76 && r%10===2 && list.length){
-      const veteran=list.reduce((best,x)=>!best || x.d.cost>best.d.cost ? x : best,null);
-      veteran.star=2;
-    }
+    squad.list.forEach(u=>list.push({d:u, star:enemyStarFor(r,u.cost)}));
     S.enemyComp = {round:r, name:squad.name, mix:squad.list.reduce((m,u)=>{ jobsOf(u).forEach(j=>m[j]=(m[j]||0)+1); return m; }, {})};
     // 普通/每日各章敌方人数上限 7/9/10/10；每日敌方人数不受己方人口诅咒影响
     const total = Math.min(1 + Math.floor(r/2), !S.daily&&hasCurse('solo') ? 5 : enemyCap(r));
@@ -4323,6 +4292,35 @@ function genEnemy(){
 }
 
 function prepEnemy(){ S.enemyBoard = genEnemy(); }   // 备战阶段就生成敌方阵容（供玩家观察，开战时直接沿用）
+
+/* 敌方随回合升星（普通棋子）：第二章 1 费率先 2★，之后费用越高爬坡越慢、饱和占比越低；
+   第四章末段 1-2 费开始冲击 3★（饱和 0.6/0.45，保留阵容层次）。
+   守关/野怪头目不在此列（另有 bossMult 与自身 bossStar）。 */
+const ENEMY_STAR_MIX = {1:0.30, 2:0.25, 3:0.20, 4:0.15, 5:0.10};   // 期望倍率折算用的参考费用分布（pickFor 低费加权的典型阵容）
+function enemyStarProbs(r, cost){
+  const sat2 = {1:1, 2:0.9, 3:0.75, 4:0.55, 5:0.4}[cost]||0.5;    // 该费用最终的 2★ 占比
+  const p2  = sat2 * Math.min(1, Math.max(0, (r-25)/(10+cost*6))); // 爬坡：1费 r41 饱和 → 5费 r65
+  const sat3 = cost===1 ? 0.6 : cost===2 ? 0.45 : 0;               // 3★ 仅低费：1费 r78 起、2费 r90 起
+  const p3  = sat3 ? sat3*Math.min(1, Math.max(0, (r-(cost===1?78:90))/(cost===1?16:8))) : 0;
+  return {p2, p3};
+}
+function enemyStarFor(r, cost){
+  if(r<=25) return 1;   // 第一章全员 1★（开局节奏不变）
+  const {p2,p3}=enemyStarProbs(r,cost);
+  const x=rand();
+  return x<p3 ? 3 : x<p3+p2*(1-p3) ? 2 : 1;
+}
+/* 升星期望强度倍率（相对全 1★，按参考费用分布加权）：把升星带来的战力增量从 mul 里剥离，
+   净难度仍由 CH_DIFF 单独表达；逐回合实际费用分布与参考有出入，整体期望对齐。 */
+function starExpMul(r){
+  if(r<=25) return 1;
+  let e=0;
+  for(const c of [1,2,3,4,5]){
+    const {p2,p3}=enemyStarProbs(r,c), M=STAR_M[c]||1.8;
+    e += (ENEMY_STAR_MIX[c]||.1) * ((1-p3-p2*(1-p3)) + p2*(1-p3)*M + p3*M*M);
+  }
+  return e;
+}
 let battleTimer=null, currentTick=null, tickWorker=null;
 const SPEED=1;              // 固定播放速度，供现有动画时长计算使用
 const BATTLE_DELAY = 800;   // 开战前留出观察双方站位的时间
@@ -4438,11 +4436,6 @@ const ITEM_FX={
   bastioncoil:b=>{b.hpMul*=1.3;b.manaRegenMul=Math.max(b.manaRegenMul||1,2);},
   venomshot:b=>{b.spdMul*=1.35;b.vamp=Math.max(b.vamp,.2);},
   stormfang:b=>{b.vamp=Math.max(b.vamp,.2);b.manaRegenMul=Math.max(b.manaRegenMul||1,2);},
-  /* —— 神器 —— */
-  godblade: b=>{b.atkMul*=2.2; b.skMul=(b.skMul||1)+0.25; b.vamp=Math.max(b.vamp,0.2); b.critPct=(b.critPct||0)+0.15; b.critItemM=Math.max(b.critItemM||0,2);},
-  godarmor: b=>{b.hpMul*=1.9; b.ar+=18; b.shieldTick=Math.max(b.shieldTick||0,0.10); b.itemShieldCd=3000; b.thorns=Math.max(b.thorns||0,0.06);},
-  godbow:   b=>{b.spdMul*=2.0; b.bounceP=Math.max(b.bounceP||0,0.4); b.dodge=Math.max(b.dodge||0,0.15);},
-  godorb:   b=>{b.manaStart=(b.manaStart||0)+30; b.manaRegenMul=Math.max(b.manaRegenMul||1,3); b.skMul=(b.skMul||1)+0.30; b.skillHaste=Math.max(b.skillHaste||0,0.25);},
 };
 /* 基础组件的词条会沿合成路线继承；同类组件叠加时有明确上限。 */
 const ITEM_COMPONENT_FX={
@@ -4475,10 +4468,6 @@ const ITEM_SPECIAL={
   bastioncoil:b=>b.itemShieldBreakMana=Math.max(b.itemShieldBreakMana||0,12),
   venomshot:b=>b.itemPoisonPct=Math.max(b.itemPoisonPct||0,.012),
   stormfang:b=>b.itemVampOverShield=Math.max(b.itemVampOverShield||0,.45),
-  godblade:b=>{b.itemCritExpose=Math.max(b.itemCritExpose||0,.18);b.itemKillReset=true;},
-  godarmor:b=>{b.itemStartShield=Math.max(b.itemStartShield||0,.12);b.itemAllyDeathShield=Math.max(b.itemAllyDeathShield||0,.20);},
-  godbow:b=>{b.itemPrimeAmp=Math.max(b.itemPrimeAmp||0,.28);b.itemPrimeSplash=Math.max(b.itemPrimeSplash||0,.48);},
-  godorb:b=>{b.itemCastSunder=Math.max(b.itemCastSunder||0,.18);b.itemManaGift=(b.itemManaGift||0)+8;b.itemTeamCastShield=Math.max(b.itemTeamCastShield||0,.04);},
 };
 function makeBattleUnit(u, side, x, y){
   const d=byId(u.id);
@@ -6091,7 +6080,6 @@ const AUGS=[
   {id:'killmana', n:'💀 灵魂虹吸', d:v=>`我方棋子击杀敌人回复 ${v} 点蓝量`, s:20,  w:10, r:2},
   {id:'startshield',n:'🔰 先祖庇护', d:v=>`开战时全体我方获得 ${v}% 最大生命护盾`, s:18, w:10, r:2},
   {id:'skillhaste', n:'⏱️ 技能急速', d:v=>`我方棋子技能冷却 -${v}%`,        s:30,  w:18, r:2},
-  {id:'eqslot',   n:'🧤 装备大师', d:v=>`全体我方棋子装备槽 +${v}（可带 3 件）`, s:1, w:1, r:3},
   {id:'synres',   n:'🔗 羁绊共鸣', d:v=>`每个已激活羁绊档位为全队提供 +${v}% 攻击与生命（开战结算）`, s:4, w:2, r:3},
 ];
 function augTotal(id){ let v=0; (S.augs||[]).forEach(a=>{ if(a.id!==id) return; const def=AUGS.find(x=>x.id===id); v += a.weak?def.w:def.s; }); return v; }
@@ -6231,7 +6219,7 @@ function endBattle(alive0,alive1){
     /* 普通/每日四章守关必须取胜；第 100 回合及自定义挑战的终点直接结算。 */
     const chapterBoss = S.round%chLen()===0;
     const finalBoss = S.round>=runLimit();
-    const dropGear = n=>{ const keys=Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted && !ITEMS[k].arti);   // 成品/神器不进掉落池
+    const dropGear = n=>{ const keys=Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted);   // 成品不进掉落池
       for(let i=0;i<n;i++){ const k=keys[Math.floor(rand()*keys.length)];
         S.items.push(k); blk.push(`　🎁 掉落：${ITEMS[k].e} ${ITEMS[k].n}（${ITEMS[k].desc}）`); } };
     if(won){
@@ -6649,9 +6637,8 @@ function renderBook(){
         (from?`<div class="bsy-mem">配方：${from}</div>`:'')+`</div>`;
     }).join('');
   $('bookItems').innerHTML =
-    itemRow(Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted&&!ITEMS[k].arti),'🌿 基础装备（野怪回合掉落）',()=>'基础装')+
-    itemRow(Object.keys(ITEMS).filter(k=>ITEMS[k].crafted),'⚓ 合成成品（两件基础装合成）',k=>'成品')+
-    itemRow(ARTIFACTS,'⚒ 神器（任意 3 件成品熔铸，占 1 个装备格）',()=>'神器');
+    itemRow(Object.keys(ITEMS).filter(k=>!ITEMS[k].crafted),'🌿 基础装备（野怪回合掉落）',()=>'基础装')+
+    itemRow(Object.keys(ITEMS).filter(k=>ITEMS[k].crafted),'⚓ 合成成品（两件基础装合成）',k=>'成品');
   const dims=[
     ['cost','费用',[1,2,3,4,5], v=>v+'费'],
     ['fac','阵营', Object.keys(FACTIONS), v=>v],
@@ -6853,7 +6840,7 @@ function restoreArenaSnapshot(data){
   if(!data||!Array.isArray(data.seats))return false;
   const seats=data.seats.map(p=>({id:p.id,name:p.name,human:!!p.human,alive:!!p.alive,place:p.place||null,eliminatedRound:p.eliminatedRound||0,lastOpponent:p.lastOpponent||null,
     state:p.human?S:Object.assign({pool:S.pool,log:[],arena:true,phase:'prep'},p.state||{})}));
-  seats.forEach(p=>{p.state.pool=S.pool;p.state.arena=true;});
+  seats.forEach(p=>{p.state.pool=S.pool;p.state.arena=true;if(!p.human)sanitizeGear(p.state);});
   ARENA={round:data.round||S.round,seats,eliminated:data.eliminated||[],startedAt:data.startedAt||Date.now(),complete:false,
     pairings:(data.pairings||[]).map(x=>({a:seats.find(p=>p.id===x.a),b:seats.find(p=>p.id===x.b),ghost:!!x.ghost})).filter(x=>x.a&&x.b)};
   S.arena=true;S.round=ARENA.round;S.phase='prep';
@@ -6892,6 +6879,12 @@ function removeRunSave(key){
   }catch(e){}
   return 'failed';
 }
+/* 旧存档装备清洗：装备表改版后，已下线的装备（如神器）统一剥离，避免恢复后渲染/战斗取值 undefined */
+function sanitizeGear(state){
+  const ok=k=>Object.prototype.hasOwnProperty.call(ITEMS,k);
+  if(Array.isArray(state.items)) state.items=state.items.filter(ok);
+  [...(state.board||[]),...(state.bench||[])].forEach(u=>{ if(u&&Array.isArray(u.items)) u.items=u.items.filter(ok); });
+}
 function loadGame(key){
   key=key||SAVE_KEY;
   lastLoadError='';const info=inspectSave(key); if(info.status!=='valid'){lastLoadError=info.reason||'存档无效';return false;}
@@ -6909,6 +6902,7 @@ function loadGame(key){
     state.log=Array.isArray(state.log)?state.log:[];state.items=Array.isArray(state.items)?state.items:[];state.shop=Array.isArray(state.shop)?state.shop:[];
     state.finalized=false;state.auto=false;state.autoFight=false;
     S=state;ARENA=null;
+    sanitizeGear(S);
     if(!Object.keys(S.pool).length)initPool();
     applyRNG();
     if(S.arena){if(!restoreArenaSnapshot(original.arenaMatch))throw new Error('竞技赛事状态校验失败');}
@@ -7272,7 +7266,7 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
   if(S.auto && S.phase==='prep') autoPilot(300);
 };
 </script>
-<script src="tools/bot_strategy.js?v=8"></script>
+<script src="tools/bot_strategy.js?v=9"></script>
 <script src="tools/idol-ui.js?v=1"></script>
 <script src="tools/idol-ui-redesign.js?v=5"></script>
 </body>

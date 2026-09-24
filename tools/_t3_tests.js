@@ -15,9 +15,9 @@ module.exports.run = function (A, driveBattle) {
     ok(products.length >= 10, `成品 ${products.length} 件（≥10）`);
     const froms = products.filter(k => Array.isArray(ITEMS[k].from) && ITEMS[k].from.length === 2);
     ok(froms.length === products.length, '每件成品都有两件基础装配方');
-    // 野怪掉落只抽基础装：模拟掉落池（神器 arti 同样不进池）
-    const dropPool = Object.keys(ITEMS).filter(k => !ITEMS[k].crafted && !ITEMS[k].arti);
-    ok(dropPool.length === 6, '掉落池仍为 6 件基础装（成品/神器不进池）');
+    // 野怪掉落只抽基础装：模拟掉落池（成品不进池）
+    const dropPool = Object.keys(ITEMS).filter(k => !ITEMS[k].crafted);
+    ok(dropPool.length === 6, '掉落池仍为 6 件基础装（成品不进池）');
   }
 
   /* ---------- 2. 逐件成品静态生效（makeBattleUnit 通道） ---------- */
