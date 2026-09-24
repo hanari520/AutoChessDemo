@@ -1,6 +1,6 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v51-unit-team-visuals';   // v51：更新棋子费用与阵营底座、立绘描边
-const INDEX_ASSET = './index.html?v=51';
+const CACHE = 'vcache-v52-ally-outline';   // v52：更新我方战斗立绘描边
+const INDEX_ASSET = './index.html?v=52';
 const ASSETS = ['./tools/solo-modes.js?v=1', './tools/solo-ui.js?v=1', './tools/solo-ui.css?v=1', './tools/solo-host.js?v=3', './tools/daily-curses.js?v=2', './', INDEX_ASSET, './manifest.json', './icon-192.png', './icon-512.png', './assets/redraw_manifest.json', './assets/skill_signature_manifest.json', './assets/syn/synergy-atlas.png', './assets/fx/v3-blade.png', './assets/fx/v3-arc.png', './assets/fx/v3-ward.png', './assets/fx/v3-void.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js?v=8', './tools/idol-ui.css?v=2', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=10', './tools/idol-ui-redesign.js?v=5', './tools/mobile-stage.css?v=2', './tools/idol-dark.css?v=3', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png', './assets/ui/idol-arena-night.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
