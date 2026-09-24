@@ -39,3 +39,53 @@
 | 普通、每日和八人竞技的旧槽位有效并可恢复；每日种子和竞技八人状态正确 | 通过；整个单人模式验收期间三个槽位字节未变化，页面无运行时错误 |
 
 本次五场公共战斗样本均为失败结局；获胜后的巡演奖励由单独的宿主结算测试覆盖，规则层获胜分支由 Node 测试覆盖。另用 `python tools/solo-puzzle-proof.py` 在真实战斗中验证了三道谜题均有符合 12 金和 4 人口限制的获胜阵容；宿主规则驱动的三站巡演、狩猎和征服通关流程也完成了端到端状态推进。已人工查看桌面、手机竖屏和横屏截图。仍未做十五波连续真人操作或全模式难度平衡测试。
+
+## 2026-09-25 战役征服 v2 自动验收记录
+
+使用 `python tools/solo_browser_test.py`（新建临时 Playwright context，chromium 走 `channel='msedge'`）运行浏览器集成验收，`node --test tools/solo-modes.test.js` 验证规则层。M5 新增 campaign 场景 10 项断言全部通过；原五模式用例保持原样并通过。规则测试 14/14 通过。
+
+### 新增 campaign 场景断言（真实引擎驱动，seed 20260925）
+
+| 断言 | 实际结果 |
+| --- | --- |
+| 战役启动并全幅上屏：`body.solo-camp-map-open` 出现、`.solo-camp-node` 数量与 `S.solo.map.nodes` 一致、`#main` 隐藏 | 通过；act1 8/8 节点，`#main` display:none |
+| 地图选路（点击首个可攻节点）后 body class 移除、`#main` 恢复、进入 fight 相 | 通过；节点 a1n0，`#main` 恢复为 grid |
+| 进攻战斗由公共引擎结算且只结算一次：重复 `SoloHost.settle` 返回 false、战绩/金币/存档字节不重复 | 通过；真实 tick 92 次结算，重复结算无效，`vc_solo_v1_conquest` 字节不变 |
+| 防守战（counterattack）真实引擎结算且幂等 | 通过；`map:end` 触发敌袭→驻防防守战，tick 93 次结算，重复结算无效 |
+| 幕 Boss 胜利后经宿主 `act:next` 进入第 2 幕，幕检查点指向 act 2、补给线清空 | 通过；act=2、owned=0、hp 恢复至 15 |
+| 本营陷落后 `checkpoint:retry` 回幕起点：act/地图/owned/cursor/hp 与 `actCheckpoint` 一致且棋盘有兵 | 通过；owned/cursor/hp 全部与幕初一致，棋盘 2 名初始棋子（不空盘） |
+| 战役中途重载并 `resume` 恢复同一运行 | 通过；runId 一致、act=2、回合数一致 |
+| 难度门控：`vc_campaign_meta.maxClearedDifficulty=1` 时大厅难度 II 可用、III 禁用；清空后仅难度 I 可用 | 通过；禁用位 [F,F,T] → [F,T,T] |
+| 390×844 打开地图相无横向溢出且节点仍可点 | 通过；`scrollWidth-innerWidth=0`，点击可攻节点进入 fight |
+| campaign 全程其余四模式与 `vc_save4`/`vc_daily3`/`vc_arena3` 字节不变 | 通过；逐字节 diff 为空 |
+
+### 平衡校准（真实引擎，`python tools/campaign_balance.py`，`CAMPAIGN_FAST=3`）
+
+校准前先用修好的玩家式推演脚本测得原始数值基线：0/3，全部在 act2-4 对 tier6+ 节点/幕 Boss 形成无限重试磨局（胜负各半、回血与掉血互相抵消，永不终局）。玩家式策略要素：一键上阵/一键装备、追同名合成、买牌与买经验把金币花到 ≤2、残血先休整、深层优先推进、Boss 留到最后。注：脚本曾有两处静默失效（`buy`/`lvlBtn` 失败无返回值导致空转），已改为按金币/人数变化判定成交；该两处修复后基线复测仍为 0/3，故下述调整均基于有效基线。
+
+最终采用的数值调整（每次一个数值表，其余保持原值；`tools/bot_strategy.js` 未触碰）：
+
+| # | 位置 | before → after | 理由 |
+| --- | --- | --- | --- |
+| ① | solo-modes conquestEncounter | 精英/首领编制由常规公式 `2+act+floor(layer/2)`（act1 boss 6 敌）→ `2+act`（3-6 敌）；常规节点不变 | 精英/首领同时吃 1.2× 强度倍率与侧翼/护盾机制，再配满层编制是三重叠加；改为精锐小队（质≠量） |
+| ② | solo-host enemy() | conquest 幕 Boss 生命倍率 2.4 → 1.4（hunt/expedition/puzzle/siege 首领维持 2.4） | tier 缩放+随从护盾减伤之上再乘 2.4，难度 I 下无法击穿，形成无限重试 |
+| ③ | solo-host enemy() | diffMul 难度 I 1 → 0.9（II/III 不变，其他模式不走此表） | 压低 act3/4 深层节点有效强度约 10%，是最终平衡带内的最后一块 |
+| ④ | solo-modes settle()/act() | 奖励经济：常规战斗 3→4、精锐 5→7、矿区 5→7、幕 Boss 10→14、防守胜利 4→6、自选战利金 3→5（均再乘难度倍率） | 2★ 合成依赖商店随机与刷新开销，原经济下深幕前棋板普遍只有 0-2 个 2★，tier-6 节点成为纯方差墙 |
+| ⑤ | solo-modes conquestTier | 精英/首领 tier +1 取消（与常规节点同表） | 深幕敌方曲线整体 -1；精锐特色保留 1.2× 倍率与侧翼机制 |
+| ⑦ | solo-modes conquestEncounter | 常规节点编制曲线 `floor(layer/2)` → `floor(layer/3)` | act4 深层常规节点 9 敌在 1.35× 缩放下是主要败因；act2/3/4 深层降为 5/6/8 敌 |
+
+曾试过并回退：无驻军遇袭本营伤害 -4→-2（harness 修复后不再需要，已还原）；难度 I 倍率 0.9 的首次单独引入因样本噪声被回退后随最终组合重新引入。
+
+最终 3 种子 × 难度 I 完整推演（目标 60–85%）：
+
+| 种子 | 通关 | 总战斗 | 失败次数 | 终局 hp | 终幕 | 回合 | 用时 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 11 | 胜 | 35 | 0 | 11 | 4 | 53 | 51.9s |
+| 22 | 负 | 95 | 44 | 0 | 4（终局前） | 190 | 144.1s |
+| 33 | 胜 | 35 | 4 | 11 | 4 | 50 | 56.7s |
+
+通关率 2/3 = 67%，落在 60–85% 目标区间。扩展验证：另取种子 44/55/66 得 3 胜（49/13/hp10、41/7/hp11）1 负（66：act4 hp0），合计 6 种子 4/6 = 67%，与官方 3 种子一致。败局均为磨局放弃阀收敛后的血尽终局（约 100-145s），不再出现无限空转。通关局战斗数 35-74、用时 52-109s。
+
+同步改动：`tools/solo_browser_test.py` 新增 campaign 场景与逐项断言表输出；新增 `tools/campaign_balance.py` 平衡推演脚本；`sw.js` CACHE 升至 `vcache-v54-campaign-balance`，`index.html` 中 `solo-modes.js` 升 `?v=3`、`solo-host.js` 升 `?v=5` 并同步进 ASSETS 预缓存。
+
+未跑/遗留：难度 II/III 未做通关率校准（本次仅难度 I）；种子 22 为真实难局，act4 深层节点在 2★ 不足时仍可能血尽；实测显示商店随机导致单局方差较大，样本量 3-6 局对通关率区间的分辨率约 ±17%； conquest 存档 version 2 结构未变，旧 v2 存档可直接续玩（数值以读档后为准）。

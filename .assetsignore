@@ -14,6 +14,7 @@ assets/units_redraw
 # tools 中仅以下运行时文件需要对外提供；测试、部署脚本和素材草稿不上传。
 tools/**
 !tools/bot_strategy.js
+!tools/campaign-map.js
 !tools/daily-curses.js
 !tools/idol-dark.css
 !tools/idol-redesign.css

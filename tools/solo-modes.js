@@ -11,7 +11,7 @@
     { id: 'hunt', name: '首领狩猎', description: '三次准备行动后针对首领机制决战。' },
     { id: 'puzzle', name: '战术解题', description: '固定敌阵和预算，反复优化解法。' },
     { id: 'siege', name: '守城生存', description: '布置城防，应对十五波敌潮。' },
-    { id: 'conquest', name: '战役征服', description: '夺取据点、维持补给并攻克主城。' }
+    { id: 'conquest', name: '战役征服', description: '四幕战役：推进地图、驻防据点并击败深渊之主。' }
   ];
   const bossKinds = ['shield', 'charge', 'summon'];
   const mechanicNames = { shield: '护盾', charge: '蓄力', summon: '召唤', flank: '侧翼突袭', none: '常规攻势' };
@@ -29,14 +29,6 @@
     ['敌方刺客会绕到后排。', '把护卫布在被保护单位附近。', '用守护单位贴近核心，再配合治疗或控制。'],
     ['敌方的治疗和护盾会拖延战斗。', '考虑控制治疗单位或削弱护盾。', '控制与爆发并用，让输出集中到同一目标。']
   ];
-  const map = {
-    home: { name: '本营', links: ['mine', 'town'], depth: 0 },
-    mine: { name: '矿区', links: ['home', 'pass'], depth: 1 },
-    town: { name: '城镇', links: ['home', 'fort'], depth: 1 },
-    pass: { name: '山口', links: ['mine', 'fort', 'capital'], depth: 2 },
-    fort: { name: '要塞', links: ['town', 'pass', 'capital'], depth: 2 },
-    capital: { name: '敌方主城', links: ['pass', 'fort'], depth: 3 }
-  };
   const clone = value => JSON.parse(JSON.stringify(value));
   const empty = () => ({ gold: 0, hp: 0, items: [], refresh: 0, log: [], levelUp: 0, fortification: null, buildPoints: 0, recruit: null, swapArmy: null, armyUnlocked: null, puzzleReset: false });
   const hash = (seed, salt) => {
@@ -85,25 +77,262 @@
     if (state.chapter > 3) done(state, 'won');
     else state.phase = 'route';
   };
-  const conquestTarget = state => {
-    const front = state.owned.filter(id => id !== 'home' && map[id].links.some(next => !state.owned.includes(next)));
-    return front.length ? front[random(state.seed, `assault:${state.turn}`, front.length)] : 'home';
+  /* ----- conquest v2: four acts, seeded layered DAG maps, armies and raids ----- */
+  const conquestActs = {
+    1: { name: '破晓低地', boss: '矿监巨像', tagline: '矿镐与锁链的低语在破晓中回荡。' },
+    2: { name: '灰烬隘口', boss: '隘口守将', tagline: '灰烬掩埋的隘口上，号角再度吹响。' },
+    3: { name: '静默王城', boss: '摄政影卫', tagline: '静默的王城里，只听得见影卫的脚步。' },
+    4: { name: '深渊主城', boss: '深渊之主', tagline: '黑金王座之下，深渊凝视着最后的挑战者。' }
   };
-  const conquestAdvance = (state, fx) => {
-    const target = state.telegraph;
-    state.turn++;
-    if (state.turn % 3 === 0 && target) {
-      if (target === 'home') hpChange(state, -4, fx);
-      else {
-        state.owned = state.owned.filter(id => id !== target);
-        state.armies.forEach(army => { if (army.position === target) army.position = 'home'; });
-      }
-      fx.log.push(`敌军袭击${map[target].name}`);
+  const conquestGoldMult = { 1: 1, 2: 1.3, 3: 1.6 };
+  const conquestMaxHp = { 1: 15, 2: 12, 3: 10 };
+  const conquestDiffLabel = { 1: 'I', 2: 'II', 3: 'III' };
+  const conquestKindWeights = [['battle', 40], ['stronghold', 15], ['elite', 12], ['treasure', 10], ['event', 10], ['shop', 8], ['rest', 5]];
+  const conquestSupplyCost = { battle: 1, elite: 2, stronghold: 2, treasure: 1, shop: 1, event: 1, rest: 1, boss: 3 };
+  const conquestKindNames = { elite: '精锐营', treasure: '秘宝库', shop: '黑市商铺', event: '奇遇之地', rest: '休整营地' };
+  const conquestStrongholdNames = { mine: '矿区', town: '城镇', fort: '要塞' };
+  const conquestBattleNames = ['敌军营地', '前线哨所', '游荡兵团'];
+  const conquestItems = ['sword', 'armor', 'staff', 'bow', 'vamp', 'mana'];
+  const conquestItemNames = { sword: '炽焰长剑', armor: '黑金胸甲', staff: '秘法权杖', bow: '追风长弓', vamp: '汲血之刃', mana: '法力宝珠' };
+  const conquestJobs = ['守护', '游侠', '法师'];
+  const conquestRelicPool = [...relicNames, '冒险徽章'];
+  const conquestAffixes = ['swift', 'regen', 'split'];
+  const conquestBossMechanics = { 1: 'shield', 2: 'charge', 3: 'summon', 4: 'none' };
+  const conquestRaidGap = 3;
+  const conquestEvents = [
+    { title: '矿工暴动', options: [
+      { label: '发放抚恤金', description: '花费 4 金币安抚人心，本营+2', gold: -4, hp: 2 },
+      { label: '强行征调', description: '强征物资充军：本营-2，获得装备', hp: -2, item: true }
+    ] },
+    { title: '流浪商人', options: [
+      { label: '以物易物', description: '花费 4 金币换一件装备', gold: -4, item: true },
+      { label: '婉拒赶路', description: '稍作休整：本营+2', hp: 2 }
+    ] },
+    { title: '敌军残部', options: [
+      { label: '收编缴获', description: '补给+2', supply: 2 },
+      { label: '追击残部', description: '短兵相接：本营-3，+6 金币', hp: -3, gold: 6 }
+    ] }
+  ];
+  const conquestKindRoll = (seed, salt) => {
+    let roll = random(seed, salt, 100);
+    for (const entry of conquestKindWeights) {
+      if (roll < entry[1]) return entry[0];
+      roll -= entry[1];
     }
-    state.telegraph = conquestTarget(state);
-    state.armies.forEach(army => { army.ap = 1; });
-    state.supply = Math.min(5, state.supply + 1 + (state.owned.includes('town') ? 1 : 0));
-    if (state.owned.includes('mine')) fx.gold += 2;
+    return 'battle';
+  };
+  const clamp96 = value => Math.max(4, Math.min(96, value));
+
+  function conquestMap(seed, act) {
+    const range = act === 2 || act === 3 ? [10, 12] : [8, 10];
+    const total = range[0] + random(seed, `act${act}:total`, range[1] - range[0] + 1);
+    const layerCount = 6 + random(seed, `act${act}:layers`, 2);
+    const middleCount = layerCount - 2;
+    const sizes = [];
+    for (let i = 0; i < middleCount; i++) sizes.push(1);
+    let spare = total - 3 - middleCount;
+    for (let i = 0; spare > 0; i++) {
+      const idx = i < 64 ? random(seed, `act${act}:dist${i}`, middleCount) : i % middleCount;
+      if (sizes[idx] < 3) { sizes[idx]++; spare--; }
+    }
+    const grid = [['battle', 'battle']];
+    for (let k = 1; k <= middleCount; k++) {
+      const row = [];
+      for (let j = 0; j < sizes[k - 1]; j++) row.push(conquestKindRoll(seed, `act${act}:kind${k}:${j}`));
+      grid.push(row);
+    }
+    grid.push(['boss']);
+    const penIndex = grid.length - 2;
+    if (!grid[penIndex].includes('rest')) grid[penIndex][0] = 'rest';
+    const protectedRestJ = grid[penIndex].includes('rest') ? grid[penIndex].indexOf('rest') : -1;
+    const kindMins = { stronghold: 2, elite: 1, shop: 1 };
+    const donorOrder = ['battle', 'treasure', 'event', 'rest', 'elite', 'stronghold', 'shop'];
+    for (let round = 0; round < 24; round++) {
+      const counts = {};
+      grid.slice(1, -1).flat().forEach(kind => { counts[kind] = (counts[kind] || 0) + 1; });
+      const lacking = Object.keys(kindMins).find(kind => (counts[kind] || 0) < kindMins[kind]);
+      if (!lacking) break;
+      let converted = false;
+      for (const donor of donorOrder) {
+        if (!((counts[donor] || 0) > (kindMins[donor] || 0))) continue;
+        for (let k = 1; k < grid.length - 1 && !converted; k++) for (let j = 0; j < grid[k].length && !converted; j++) {
+          if (k === penIndex && j === protectedRestJ) continue;
+          if (grid[k][j] === donor) { grid[k][j] = lacking; converted = true; }
+        }
+        if (converted) break;
+      }
+      if (!converted) break;
+    }
+    const raw = [];
+    grid.forEach((row, layer) => row.forEach(kind => raw.push({ kind, layer })));
+    let strongholdSeq = 0;
+    raw.forEach(n => { if (n.kind === 'stronghold') n.sub = ['mine', 'town', 'fort'][(strongholdSeq++ + act - 1) % 3]; });
+    const byLayer = {};
+    raw.forEach((n, i) => { (byLayer[n.layer] = byLayer[n.layer] || []).push(i); });
+    const nodes = raw.map((n, i) => {
+      const row = byLayer[n.layer];
+      const j = row.indexOf(i);
+      const id = `a${act}n${i}`;
+      const x = clamp96(Math.round(12 + ((j + 1) / (row.length + 1)) * 76 + random(seed, `${id}:x`, 11) - 5));
+      const y = clamp96(Math.round(8 + (n.layer / (grid.length - 1)) * 84 + random(seed, `${id}:y`, 7) - 3));
+      const name = n.kind === 'battle' ? conquestBattleNames[random(seed, `${id}:name`, conquestBattleNames.length)]
+        : n.kind === 'stronghold' ? conquestStrongholdNames[n.sub]
+        : n.kind === 'boss' ? conquestActs[act].boss
+        : conquestKindNames[n.kind];
+      return { id, kind: n.kind, sub: n.sub || null, name, links: [], layer: n.layer, x, y, cleared: false, garrison: false };
+    });
+    for (let k = 0; k < grid.length - 1; k++) {
+      const cur = byLayer[k], next = byLayer[k + 1];
+      cur.forEach(ci => {
+        const node = nodes[ci];
+        const p = random(seed, `${node.id}:link`, next.length);
+        node.links.push(nodes[next[p]].id);
+        if (cur.length > 1 && next.length > 1 && random(seed, `${node.id}:branch`, 2) === 0) {
+          const q = (p + 1 + random(seed, `${node.id}:branch2`, next.length - 1)) % next.length;
+          node.links.push(nodes[next[q]].id);
+        }
+      });
+      next.forEach(ni => {
+        const node = nodes[ni];
+        if (!cur.some(ci => nodes[ci].links.includes(node.id))) {
+          nodes[cur[random(seed, `${node.id}:fill`, cur.length)]].links.push(node.id);
+        }
+      });
+    }
+    return { nodes };
+  }
+  const conquestNode = (s, id) => s.map.nodes.find(n => n.id === id) || null;
+  const syncConquestNodes = s => {
+    s.map.nodes.forEach(n => {
+      if (s.map.owned.includes(n.id)) n.cleared = true;
+      n.garrison = s.armies.some(a => a.node === n.id);
+    });
+  };
+  const conquestCursor = s => {
+    const cursor = [];
+    const push = id => {
+      const n = s.map.nodes.find(x => x.id === id);
+      if (n && !n.cleared && !cursor.includes(id)) cursor.push(id);
+    };
+    if (!s.map.owned.length) s.map.nodes.forEach(n => { if (n.layer === 0) push(n.id); });
+    else {
+      s.map.owned.forEach(id => { const n = conquestNode(s, id); if (n) n.links.forEach(push); });
+      s.armies.forEach(a => { if (a.node) { const n = conquestNode(s, a.node); if (n) n.links.forEach(push); } });
+    }
+    if (!cursor.length) s.map.nodes.forEach(n => { if (!n.cleared) push(n.id); });
+    return cursor;
+  };
+  const conquestTier = (s, node) => {
+    const layers = Math.max(...s.map.nodes.map(n => n.layer)) + 1;
+    const progress = Math.floor((node.layer / (layers - 1)) * 3);
+    /* M5 平衡调整⑤：精锐/首领不再 +1 层（before: tier +1 → after: 与常规节点同表）。
+       精锐特色保留 1.2× 强度倍率与侧翼突袭机制；深幕敌方 tier 曲线整体 -1。 */
+    return s.act + progress + (s.difficulty - 1);
+  };
+  const conquestAffixList = (s, offset) => {
+    const list = [];
+    for (let i = 0; i < s.difficulty - 1; i++) list.push(conquestAffixes[(offset + i) % conquestAffixes.length]);
+    return list;
+  };
+  const conquestEncounter = (s, node) => {
+    const boss = node.kind === 'boss';
+    const elite = node.kind === 'elite';
+    /* M5 平衡调整①：精英/首领编制从「满层敌军」改为精锐小队（2+act，质≠量）。
+       before: 常规公式 2+act+floor(layer/2) → act3 精英/首领 7-8 敌（精锐同时吃 1.2× 强度与侧翼机制，三重叠加成墙）
+       after : 精英/首领 2+act → act1 3 敌、act4 6 敌。常规节点编制不变。 */
+    /* M5 平衡调整⑦：常规节点编制曲线 floor(layer/2)→floor(layer/3)。
+       before: act4 深层常规节点 9 敌（在 1.35× 缩放下是 act3/4 的主要败因）
+       after : act2 深层 5、act3 深层 6、act4 深层 8。 */
+    const count = (boss || elite) ? 2 + s.act : Math.min(9, 2 + s.act + Math.floor(node.layer / 3));
+    const spec = encounter(node.name, conquestTier(s, node), count, boss,
+      boss ? conquestBossMechanics[s.act] : elite ? 'flank' : 'none',
+      hash(s.seed, `enc:${node.id}`),
+      elite ? 'elite' : node.kind === 'stronghold' ? 'fortified' : 'none');
+    spec.difficulty = s.difficulty;
+    if (boss) spec.bossScript = { act: s.act };
+    if (elite || boss) spec.affixes = conquestAffixList(s, s.act - 1);
+    return spec;
+  };
+  const conquestDefenseEncounter = (s, node) => {
+    const spec = encounter(`防守战·${node.name}`, s.act + 1 + (s.difficulty - 1), Math.max(2, 2 + s.act), false, 'flank',
+      hash(s.seed, `defense:${node.id}:${s.stats.turns}`), 'counterattack');
+    const garrison = s.armies.find(a => a.node === node.id);
+    spec.difficulty = s.difficulty;
+    spec.garrisonArmy = garrison ? garrison.id : 0;
+    spec.affixes = conquestAffixList(s, s.act);
+    return spec;
+  };
+  const setupConquestMap = (s, act) => {
+    s.map = conquestMap(s.seed, act);
+    s.map.owned = [];
+    s.map.cursor = [];
+    s.armies.forEach(a => { a.node = null; a.ap = 1; });
+    s.supply = 3;
+    s.telegraph = null;
+    s.target = null;
+    s.raidWait = 0;
+    s.phase = 'map';
+    syncConquestNodes(s);
+    s.map.cursor = conquestCursor(s);
+  };
+  const snapshotConquest = s => {
+    const cp = clone(s);
+    delete cp.actCheckpoint;
+    return cp;
+  };
+  const enterConquestAct = (s, act, fx) => {
+    s.act = act;
+    setupConquestMap(s, act);
+    hpChange(s, 4, fx);
+    s.actCheckpoint = snapshotConquest(s);
+    fx.log.push(`大军开进第${act}幕·${conquestActs[act].name}`);
+  };
+  const advanceConquestTurn = (s, fx) => {
+    if (s.phase === 'finished') return;
+    s.stats.turns++;
+    if (s.raidWait > 0) s.raidWait--;
+    if (s.telegraph) {
+      s.telegraph.countdown--;
+      if (s.telegraph.countdown <= 0) {
+        const node = conquestNode(s, s.telegraph.node);
+        s.telegraph = null;
+        s.raidWait = conquestRaidGap;
+        if (node && s.map.owned.includes(node.id)) {
+          const garrison = s.armies.find(a => a.node === node.id);
+          if (garrison) {
+            if (s.activeArmy !== garrison.id) fx.swapArmy = { from: s.activeArmy, to: garrison.id };
+            s.activeArmy = garrison.id;
+            s.phase = 'defense';
+            s.target = node.id;
+            fx.log.push(`敌军夜袭${node.name}，驻防部队就地迎击`);
+            return;
+          }
+          s.map.owned = s.map.owned.filter(id => id !== node.id);
+          node.cleared = false;
+          fx.log.push(`${node.name}无人驻防，被敌军夺占`);
+          hpChange(s, -4, fx);
+          if (s.phase === 'finished') return;
+        }
+      }
+    }
+    s.armies.forEach(a => { a.ap = 1; });
+    const ownedSubs = sub => s.map.owned.filter(id => {
+      const n = conquestNode(s, id);
+      return n && n.kind === 'stronghold' && n.sub === sub;
+    }).length;
+    s.supply = Math.min(s.maxSupply, s.supply + 1 + ownedSubs('town'));
+    const mines = ownedSubs('mine');
+    if (mines) fx.gold += 2 * mines;
+    if (!s.telegraph && s.raidWait <= 0 && s.map.owned.length) {
+      s.telegraph = { node: s.map.owned[random(s.seed, `raid:${s.stats.turns}`, s.map.owned.length)], countdown: 2 };
+    }
+    syncConquestNodes(s);
+    s.map.cursor = conquestCursor(s);
+  };
+  const returnToConquestMap = (s, fx) => {
+    s.phase = 'map';
+    s.target = null;
+    advanceConquestTurn(s, fx);
   };
 
   function create(mode, seed, options) {
@@ -114,7 +343,20 @@
     if (mode === 'hunt') Object.assign(s, { phase: 'prep', hp: 3, maxHp: 3, prep: 0, prepHistory: [], boss: opt.boss || bossKinds[Number.isInteger(opt.bossIndex) ? ((opt.bossIndex % 3) + 3) % 3 : random(s.seed, 'boss', 3)], attempts: 0, maxAttempts: 3, intel: false });
     if (mode === 'puzzle') Object.assign(s, { phase: 'fight', hp: 1, maxHp: 1, puzzle: Number.isInteger(opt.puzzleIndex) ? ((opt.puzzleIndex % 3) + 3) % 3 : Number.isInteger(opt.puzzle) ? ((opt.puzzle % 3) + 3) % 3 : random(s.seed, 'puzzle', 3), budget: 12, population: 4, candidates: [], hintLevel: 0, attempts: 0, medals: [] });
     if (mode === 'siege') Object.assign(s, { phase: 'build', hp: 20, maxHp: 20, wave: 1, targetWaves: 15, endless: false, buildPoints: 3, walls: 0, healers: 0, snares: 0, risk: false, economy: 0 });
-    if (mode === 'conquest') Object.assign(s, { phase: 'map', hp: 15, maxHp: 15, turn: 1, owned: ['home'], supply: 3, telegraph: 'home', target: null, wins: 0, armies: [{ id: 0, position: 'home', ap: 1 }], activeArmy: 0 });
+    if (mode === 'conquest') {
+      const difficulty = opt.difficulty === 2 || opt.difficulty === 3 ? opt.difficulty : 1;
+      Object.assign(s, {
+        difficulty, act: 1,
+        hp: conquestMaxHp[difficulty], maxHp: conquestMaxHp[difficulty],
+        armies: [{ id: 0, node: null, ap: 1 }], activeArmy: 0,
+        supply: 3, maxSupply: 8,
+        telegraph: null, target: null, raidWait: 0,
+        relics: [], itemsSeen: [], actCheckpoint: null,
+        stats: { turns: 1, battles: 0, losses: 0 }
+      });
+      setupConquestMap(s, 1);
+      s.actCheckpoint = snapshotConquest(s);
+    }
     if (mode === 'puzzle') s.candidates = puzzleCandidates[s.puzzle].slice();
     return s;
   }
@@ -168,19 +410,105 @@
       if (s.phase === 'complete') { base.finished = true; base.outcome = 'won'; base.choices = [choice('continue:endless', '进入无尽挑战', '从第 16 波开始，独立记录最高波次')]; }
     }
     if (s.mode === 'conquest') {
-      const army = s.armies[s.activeArmy];
-      base.subtitle = `第${s.turn}回合 · 第${army.id + 1}队驻${map[army.position].name} · 行动${army.ap} · 补给${s.supply}/5 · 本营${s.hp}/${s.maxHp}`;
-      base.objective = '控制相邻据点，攻克敌方主城';
-      base.enemyHint = `敌军下一轮目标：${map[s.telegraph].name}`;
+      const info = conquestActs[s.act] || conquestActs[1];
+      const army = s.armies[s.activeArmy] || s.armies[0];
+      base.subtitle = `第${s.act}幕·${info.name} · 难度${conquestDiffLabel[s.difficulty]} · 回合${s.stats.turns} · 本营${s.hp}/${s.maxHp} · 补给${s.supply}/${s.maxSupply} · 军队${s.armies.length}/3`;
       if (s.phase === 'map') {
-        const neighbors = map[army.position].links.filter(id => !s.owned.includes(id));
-        base.choices = neighbors.map(id => choice(`attack:${id}`, `攻打${map[id].name}`, `消耗${map[id].depth}补给与 1 行动；${id === 'capital' ? '最终决战' : '占领后提供战略收益'}`, s.supply < map[id].depth || army.ap < 1));
-        base.choices.push(...map[army.position].links.filter(id => s.owned.includes(id)).map(id => choice(`move:${id}`, `移动至${map[id].name}`, '消耗 1 行动', army.ap < 1)));
-        base.choices.push(...s.armies.filter(other => other.id !== army.id).map(other => choice(`army:switch:${other.id}`, `切换至第${other.id + 1}队`, `驻${map[other.position].name}，行动${other.ap}`)));
-        base.choices.push(choice('map:rest', '休整', '补给 +2，本营恢复 2 生命'));
-        base.choices.push(choice('map:end', '结束回合', '敌军执行预告行动'));
+        base.objective = `攻克第${s.act}幕首领${info.boss}，打通去往下一幕的通路`;
+        base.enemyHint = s.telegraph ? `敌袭预告：${(conquestNode(s, s.telegraph.node) || {}).name || '未知据点'} 将在 ${s.telegraph.countdown} 回合后遇袭` : '敌军按兵不动，正是推进的良机';
+        const blurbs = {
+          battle: '击败守军并纳入补给线', elite: '强敌据守，奖励丰厚', stronghold: '要地：占领后按类型产出',
+          treasure: '无损开取三选一战利品', shop: '折扣购买装备', event: '处理突发状况',
+          rest: '恢复本营或操练队伍', boss: `第${s.act}幕首领：${info.boss}`
+        };
+        s.map.cursor.forEach(id => {
+          const n = conquestNode(s, id);
+          if (!n) return;
+          const cost = conquestSupplyCost[n.kind] || 1;
+          base.choices.push(choice(`attack:${id}`, `攻打${n.name}`, `消耗${cost}补给 · ${blurbs[n.kind] || '占领节点'}`, s.supply < cost || army.ap < 1));
+        });
+        base.choices.push(choice('map:rest', '原地休整', '补给+2、本营+2，推进 1 回合'));
+        const from = army.node ? conquestNode(s, army.node) : null;
+        const destinations = (from ? from.links.filter(id => s.map.owned.includes(id)) : s.map.owned.slice()).filter(id => id !== army.node);
+        destinations.forEach(id => {
+          const n = conquestNode(s, id);
+          base.choices.push(choice(`move:${id}`, `${from ? '移防' : '进驻'}${n ? n.name : id}`, '调整驻防位置，消耗 1 行动', army.ap < 1));
+        });
+        s.armies.forEach(other => {
+          if (other.id === army.id) return;
+          const at = other.node ? `驻防${(conquestNode(s, other.node) || {}).name || '未知据点'}` : '待命本营';
+          base.choices.push(choice(`army:switch:${other.id}`, `切换至第${other.id + 1}队`, `${at} · 行动${other.ap}`));
+        });
+        base.choices.push(choice('map:end', '结束回合', '推进 1 回合，敌军按预告行动'));
       }
-      if (s.phase === 'fight') { base.canFight = true; const id = s.target; base.encounter = encounter(map[id].name, 1 + map[id].depth, 3 + map[id].depth, id === 'capital', id === 'capital' ? 'shield' : id === 'pass' ? 'flank' : 'none', hash(s.seed, `territory:${id}`), id === 'fort' ? 'fortified' : id === 'pass' ? 'highground' : 'none'); }
+      if (s.phase === 'fight') {
+        base.canFight = true;
+        const n = conquestNode(s, s.target);
+        base.objective = n ? `攻克${n.name}，将其纳入补给线` : '击败当前守军';
+        base.enemyHint = !n ? '' : n.kind === 'boss' ? (s.act === 4 ? '深渊之主：半血后依次觉醒护盾、蓄力与召唤三阶段' : `幕首领机制：${mechanicNames[conquestBossMechanics[s.act]]}`)
+          : n.kind === 'elite' ? '精锐侧翼突袭：留意敌方刺客切入后排' : '常规守军：稳扎稳打即可';
+        base.encounter = n ? conquestEncounter(s, n) : null;
+      }
+      if (s.phase === 'defense') {
+        base.canFight = true;
+        const n = conquestNode(s, s.target);
+        base.objective = n ? `守住${n.name}，击退敌军反扑` : '守住据点';
+        base.enemyHint = '反扑敌军：胜利保住据点并获奖励，失败则据点失守、本营受损';
+        base.encounter = n ? conquestDefenseEncounter(s, n) : null;
+      }
+      if (s.phase === 'reward') {
+        base.objective = '战斗胜利，收取战利品后继续推进';
+        base.enemyHint = '';
+        base.choices.push(choice('reward:gold', '收取战利金', '+3 金币'));
+        base.choices.push(choice('reward:item', '收取缴获装备', '获得一件随机装备'));
+        conquestJobs.forEach(job => base.choices.push(choice(`reward:recruit:${job}`, `定向整编·${job}`, `下次招募优先提供${job}定位棋子`)));
+      }
+      if (s.phase === 'treasure') {
+        base.objective = '秘宝库：三选一战利品';
+        base.enemyHint = '';
+        const item = conquestItems[random(s.seed, `treasure:${s.target}`, conquestItems.length)];
+        base.choices.push(choice('treasure:item', `开取装备·${conquestItemNames[item]}`, '收入背包，立即生效'));
+        const pool = conquestRelicPool.filter(r => !s.relics.includes(r));
+        if (pool.length) {
+          const relic = pool[random(s.seed, `treasurer:${s.target}`, pool.length)];
+          base.choices.push(choice('treasure:relic', `供奉纪念物·${relic}`, `${relicDescriptions[relic]}（战役内全程生效）`));
+        }
+        base.choices.push(choice('treasure:gold', '兑换战利金', '+6 金币'));
+      }
+      if (s.phase === 'shop') {
+        base.objective = '黑市商铺：折扣装备，购后离店';
+        base.enemyHint = '';
+        [0, 1].forEach(i => {
+          const item = conquestItems[random(s.seed, `shop:${s.target}:${i}`, conquestItems.length)];
+          const price = i === 0 ? 5 : 7;
+          base.choices.push(choice(`shop:buy:${i}`, `购买${conquestItemNames[item]}`, `折扣价 ${price} 金币（原价 ${price + 3}）`, gold < price));
+        });
+        base.choices.push(choice('shop:leave', '离开商铺', '分文不动，继续推进'));
+      }
+      if (s.phase === 'rest') {
+        base.objective = '休整营地：修复本营或操练队伍';
+        base.enemyHint = '';
+        base.choices.push(choice('rest:heal', '修复本营', '恢复 6 点本营耐久', s.hp === s.maxHp));
+        base.choices.push(choice('rest:levelup', '操练队伍', '队伍等级 +1'));
+      }
+      if (s.phase === 'event') {
+        const ev = conquestEvents[random(s.seed, `eventpick:${s.target}`, conquestEvents.length)];
+        base.objective = `突发事件：${ev.title}`;
+        base.enemyHint = '';
+        ev.options.forEach((o, i) => base.choices.push(choice(`event:${i}`, o.label, o.description, o.gold < 0 && gold < -o.gold)));
+      }
+      if (s.phase === 'actClear') {
+        const next = conquestActs[s.act + 1];
+        base.objective = `第${s.act}幕已肃清，整军进入下一幕`;
+        base.enemyHint = `下一幕首领：${next.boss}`;
+        base.choices.push(choice('act:next', `进军第${s.act + 1}幕·${next.name}`, '本营耐久+4，军队、装备与纪念物全部保留，地图换新'));
+      }
+      if (s.phase === 'finished') {
+        base.subtitle = s.outcome === 'won' ? '深渊之主陨落，四幕战役全通' : '本营陷落，战役暂时受挫';
+        base.objective = s.outcome === 'won' ? '战役征服完成，可挑战更高难度' : '从本幕检查点重整旗鼓，或返回大厅';
+        base.enemyHint = '';
+        if (s.outcome !== 'won' && s.actCheckpoint) base.choices.push(choice('checkpoint:retry', `重开第${s.act}幕`, '从本幕起点的检查点恢复：地图、据点与耐久回到幕初'));
+      }
     }
     return base;
   }
@@ -238,12 +566,100 @@
         s.phase = 'fight';
       }
     } else if (s.mode === 'conquest') {
-      if (choiceId.startsWith('attack:')) { s.target = choiceId.slice(7); s.supply -= map[s.target].depth; s.armies[s.activeArmy].ap--; s.phase = 'fight'; }
-      else if (choiceId.startsWith('move:')) { s.armies[s.activeArmy].position = choiceId.slice(5); s.armies[s.activeArmy].ap--; }
-      else if (choiceId.startsWith('army:switch:')) { const to = Number(choiceId.slice('army:switch:'.length)); fx.swapArmy = { from: s.activeArmy, to }; s.activeArmy = to; }
-      else {
-        if (choiceId === 'map:rest') { s.supply = Math.min(5, s.supply + 2); hpChange(s, 2, fx); }
-        if (s.phase !== 'finished') conquestAdvance(s, fx);
+      if (choiceId.startsWith('attack:')) {
+        const node = conquestNode(s, choiceId.slice(7));
+        s.target = node.id;
+        s.supply -= conquestSupplyCost[node.kind] || 1;
+        s.armies[s.activeArmy].ap -= 1;
+        if (['treasure', 'shop', 'rest', 'event'].includes(node.kind)) {
+          node.cleared = true;
+          syncConquestNodes(s);
+        }
+        s.phase = ['treasure', 'shop', 'rest', 'event'].includes(node.kind) ? node.kind : 'fight';
+        fx.log.push(`向${node.name}进军`);
+      } else if (choiceId.startsWith('move:')) {
+        const id = choiceId.slice(5);
+        const mover = s.armies[s.activeArmy];
+        mover.node = id;
+        mover.ap -= 1;
+        syncConquestNodes(s);
+        fx.log.push(`第${mover.id + 1}队移防${(conquestNode(s, id) || {}).name || id}`);
+      } else if (choiceId.startsWith('army:switch:')) {
+        const to = Number(choiceId.slice('army:switch:'.length));
+        fx.swapArmy = { from: s.activeArmy, to };
+        s.activeArmy = to;
+      } else if (choiceId === 'map:rest') {
+        s.supply = Math.min(s.maxSupply, s.supply + 2);
+        hpChange(s, 2, fx);
+        if (s.phase !== 'finished') advanceConquestTurn(s, fx);
+      } else if (choiceId === 'map:end') {
+        advanceConquestTurn(s, fx);
+      } else if (choiceId === 'reward:gold') {
+        fx.gold += 5;   // M5 平衡调整④：自选战利金 3→5
+        returnToConquestMap(s, fx);
+      } else if (choiceId === 'reward:item') {
+        const item = conquestItems[random(s.seed, `loot:${s.target}`, conquestItems.length)];
+        fx.items.push(item);
+        s.itemsSeen.push(item);
+        returnToConquestMap(s, fx);
+      } else if (choiceId.startsWith('reward:recruit:')) {
+        fx.recruit = choiceId.slice('reward:recruit:'.length);
+        returnToConquestMap(s, fx);
+      } else if (choiceId === 'treasure:item' || choiceId === 'treasure:relic' || choiceId === 'treasure:gold') {
+        if (choiceId === 'treasure:item') {
+          const item = conquestItems[random(s.seed, `treasure:${s.target}`, conquestItems.length)];
+          fx.items.push(item);
+          s.itemsSeen.push(item);
+          fx.log.push(`开取${conquestItemNames[item]}`);
+        }
+        if (choiceId === 'treasure:relic') {
+          const pool = conquestRelicPool.filter(r => !s.relics.includes(r));
+          if (pool.length) {
+            const relic = pool[random(s.seed, `treasurer:${s.target}`, pool.length)];
+            s.relics.push(relic);
+            fx.log.push(`获得纪念物${relic}：${relicDescriptions[relic]}`);
+          }
+        }
+        if (choiceId === 'treasure:gold') fx.gold += 6;
+        returnToConquestMap(s, fx);
+      } else if (choiceId.startsWith('shop:buy:')) {
+        const idx = Number(choiceId.slice('shop:buy:'.length));
+        const price = idx === 0 ? 5 : 7;
+        const item = conquestItems[random(s.seed, `shop:${s.target}:${idx}`, conquestItems.length)];
+        fx.gold -= price;
+        fx.items.push(item);
+        s.itemsSeen.push(item);
+        fx.log.push(`购入${conquestItemNames[item]}`);
+        returnToConquestMap(s, fx);
+      } else if (choiceId === 'shop:leave') {
+        returnToConquestMap(s, fx);
+      } else if (choiceId === 'rest:heal') {
+        hpChange(s, 6, fx);
+        if (s.phase !== 'finished') returnToConquestMap(s, fx);
+      } else if (choiceId === 'rest:levelup') {
+        fx.levelUp = 1;
+        returnToConquestMap(s, fx);
+      } else if (choiceId.startsWith('event:')) {
+        const ev = conquestEvents[random(s.seed, `eventpick:${s.target}`, conquestEvents.length)];
+        const opt = ev.options[Number(choiceId.slice('event:'.length))] || ev.options[0];
+        if (opt.gold) fx.gold += opt.gold;
+        if (opt.supply) s.supply = Math.min(s.maxSupply, s.supply + opt.supply);
+        if (opt.item) {
+          const item = conquestItems[random(s.seed, `eventitem:${s.target}`, conquestItems.length)];
+          fx.items.push(item);
+          s.itemsSeen.push(item);
+        }
+        if (opt.hp) hpChange(s, opt.hp, fx);
+        fx.log.push(`${ev.title}：${opt.label}`);
+        if (s.phase !== 'finished') returnToConquestMap(s, fx);
+      } else if (choiceId === 'act:next') {
+        enterConquestAct(s, s.act + 1, fx);
+      } else if (choiceId === 'checkpoint:retry') {
+        const cp = snapshotConquest(s.actCheckpoint);
+        cp.actCheckpoint = clone(s.actCheckpoint);
+        Object.keys(s).forEach(k => { delete s[k]; });
+        Object.assign(s, cp);
+        fx.log.push(`回到第${s.act}幕起点`);
       }
     }
     return result(s, fx);
@@ -251,7 +667,7 @@
 
   function settle(state, report) {
     const s = clone(state), fx = empty(), r = report || {};
-    assert(s.phase === 'fight', 'No battle to settle');
+    assert(s.phase === 'fight' || s.phase === 'defense', 'No battle to settle');
     assert(typeof r.won === 'boolean', 'Battle result must specify won');
     const playerSurvivors = Math.max(0, Number(r.allies) || 0);
     const playerStartingCount = Math.max(0, Number(r.playerStartingCount) || 0);
@@ -290,19 +706,60 @@
         else { if (r.won || s.wave !== 15) s.wave++; s.phase = 'build'; }
       }
     } else if (s.mode === 'conquest') {
-      if (r.won) {
-        s.owned.push(s.target); s.wins++;
-        s.armies[s.activeArmy].position = s.target;
-        if ((s.target === 'town' || s.target === 'fort') && s.armies.length < 3) {
-          const id = s.armies.length;
-          s.armies.push({ id, position: 'home', ap: 1 });
-          fx.armyUnlocked = id;
+      s.stats.battles++;
+      const mult = conquestGoldMult[s.difficulty];
+      const node = s.target ? conquestNode(s, s.target) : null;
+      if (s.phase === 'defense') {
+        s.target = null;
+        if (r.won) {
+          /* M5 平衡调整④：奖励经济表（before → after）：
+             常规战斗 3→4、精锐 5→7、矿区 5→7、幕 Boss 10→14、防守胜利 4→6、自选战利金 3→5（均再乘难度倍率）。
+             理由：2★ 合成依赖商店随机 + 刷新开销，原经济下深幕前板子普遍停在 0-2 个 2★，
+             tier-6 节点成为纯方差墙；上调后棋板能在 act3 前后到达其人口/星级天花板。 */
+          fx.gold += Math.round(6 * mult);
+          fx.log.push('防守成功：据点固若金汤');
+        } else {
+          s.stats.losses++;
+          if (node) {
+            s.map.owned = s.map.owned.filter(id => id !== node.id);
+            node.cleared = false;
+          }
+          s.armies.forEach(a => { if (node && a.node === node.id) a.node = null; });   // 同驻多队全部撤回，不留孤儿驻防标记
+          hpChange(s, -4, fx);
+          fx.log.push('防守失败：据点失守，本营受损');
         }
-        fx.gold = s.target === 'mine' ? 5 : s.target === 'capital' ? 10 : 3;
-        if (s.target === 'capital') done(s, 'won');
-      } else hpChange(s, -3, fx);
-      s.target = null;
-      if (s.phase !== 'finished') { s.phase = 'map'; conquestAdvance(s, fx); }
+        syncConquestNodes(s);
+        if (s.phase !== 'finished') returnToConquestMap(s, fx);
+      } else if (r.won) {
+        if (node) {
+          s.map.owned.push(node.id);
+          node.cleared = true;
+          s.armies[s.activeArmy].node = node.id;
+          const baseline = node.kind === 'boss' ? 14 : node.kind === 'elite' ? 7 : node.kind === 'stronghold' && node.sub === 'mine' ? 7 : 4;
+          fx.gold += Math.round(baseline * mult);
+          if (node.kind === 'stronghold' && (node.sub === 'town' || node.sub === 'fort') && s.armies.length < 3) {
+            const id = s.armies.length;
+            s.armies.push({ id, node: null, ap: 1 });
+            fx.armyUnlocked = id;
+            fx.log.push(`攻占${node.name}，解锁第${id + 1}支军队`);
+          } else {
+            fx.log.push(`攻占${node.name}，纳入补给线`);
+          }
+          syncConquestNodes(s);
+          if (node.kind === 'boss') {
+            s.target = null;
+            if (s.act >= 4) {
+              fx.log.push('深渊之主陨落：战役征服完成');
+              done(s, 'won');
+            } else s.phase = 'actClear';
+          } else s.phase = 'reward';
+        } else s.phase = 'reward';
+      } else {
+        s.stats.losses++;
+        hpChange(s, -3, fx);
+        s.target = null;
+        if (s.phase !== 'finished') returnToConquestMap(s, fx);
+      }
     }
     return result(s, fx);
   }

@@ -4,6 +4,7 @@
   const clone = value => JSON.parse(JSON.stringify(value));
   const modes = () => SoloModes.definitions;
   const key = mode => 'vc_solo_v1_' + mode;
+  const saveVersion = mode => mode === 'conquest' ? 2 : 1;   // 战役征服 v2 重制：conquest 存档升为 version 2，其余四模式保持 1
   let rendering = false;
   let lastError = '';
   const active = () => !!(S && S.solo);
@@ -20,7 +21,12 @@
       const raw = localStorage.getItem(key(mode));
       if (!raw) return null;
       const data = JSON.parse(raw);
-      if (data.version !== 1 || !data.state || data.state.solo?.mode !== mode ||
+      if (mode === 'conquest' && data.version === 1) {
+        /* 仅在战役自身活跃时提示，避免大厅渲染其他模式时把该消息泄漏进它们的副标题（P1-2） */
+        if (active() && S.solo && S.solo.mode === 'conquest') lastError = '战役已重制，请重新开始';
+        return null;
+      }
+      if (data.version !== saveVersion(mode) || !data.state || data.state.solo?.mode !== mode ||
           !Array.isArray(data.state.board) || data.state.board.length !== BOARD_W * BOARD_H ||
           !Array.isArray(data.state.bench) || data.state.bench.length !== BENCH ||
           ![...data.state.board, ...data.state.bench].every(u => !u || UNITS.some(d => d.id === u.id)))
@@ -32,7 +38,7 @@
   function save() {
     if (!active() || S.menuPreview || ['battle','settle'].includes(S.phase)) return false;
     try {
-      const data = { version: 1, savedAt: Date.now(), state: checkpoint() };
+      const data = { version: saveVersion(S.solo.mode), savedAt: Date.now(), state: checkpoint() };
       localStorage.setItem(key(S.solo.mode), JSON.stringify(data));
       const check = JSON.parse(localStorage.getItem(key(S.solo.mode)));
       if (check.state.runId !== S.runId) throw new Error('回读不一致');
@@ -95,7 +101,14 @@
     const previous = S.solo;
     S.solo = result.state;
     const fx = result.effects || {};
-    if (fx.restore || fx.retry || /retry|restart_puzzle/.test(choiceId || '')) {
+    if (choiceId === 'checkpoint:retry') {
+      /* 幕检查点重开：只回滚规则状态（地图/据点/耐久）。绝不套用 soloRetry——那是最后一场战斗开打前的
+         完整快照，若期间换过队/防守战自动切过队，会把别支军队的阵容盖在幕初活跃军队上（P1-1）。 */
+      const armyBoard = S.soloArmies && S.soloArmies[S.solo.activeArmy];
+      if (armyBoard) { S.board = clone(armyBoard.board); S.bench = clone(armyBoard.bench); }
+      else { S.board = Array(BOARD_W*BOARD_H).fill(null); S.bench = Array(BENCH).fill(null); starter(); }
+      S.soloRetry = null;
+    } else if (fx.restore || fx.retry || /retry|restart_puzzle/.test(choiceId || '')) {
       if (S.soloRetry) {
         const rules = S.solo, prior = clone(S.soloRetry);
         Object.assign(S, prior); S.solo = rules; S.soloRetry = prior;
@@ -124,8 +137,21 @@
       log('定向招募：本次商店优先提供'+fx.recruit+'棋子。');
     }
     S.phase = 'prep'; S.selUid = null; S.selItem = null;
+    if (S.solo.mode === 'conquest' && S.solo.phase === 'finished' && S.solo.outcome === 'won') recordCampaignMeta(S.solo.difficulty);
     if (S.solo.mode === 'puzzle' && (fx.puzzleReset || fx.resetBudget || previous.puzzleIndex !== S.solo.puzzleIndex || previous.puzzle !== S.solo.puzzle)) resetPuzzle();
     prepEnemy(); renderAll(); save();
+  }
+  /* 通关写入 vc_campaign_meta（大厅难度门控读这里）；写失败静默降级，不影响战役本身 */
+  function recordCampaignMeta(difficulty) {
+    try {
+      const d = Math.max(1, Math.min(3, Number(difficulty) || 1));
+      let meta = {};
+      try { meta = JSON.parse(localStorage.getItem('vc_campaign_meta')) || {}; } catch (e) { meta = {}; }
+      const prev = Math.max(0, Math.min(3, Number(meta.maxClearedDifficulty) || 0));
+      meta.maxClearedDifficulty = Math.max(prev, d);
+      meta.lastClearedAt = Date.now();
+      localStorage.setItem('vc_campaign_meta', JSON.stringify(meta));
+    } catch (e) { /* 存储被禁时忽略 */ }
   }
   function action(id) {
     if (!active() || S.phase !== 'prep') return false;
@@ -167,6 +193,7 @@
   }
   function finish(won) {
     if (!active() || ['battle','settle'].includes(S.phase)) return false;
+    if (S.solo.phase === 'finished' && S.solo.outcome === 'won') { if (window.SoloUI) SoloUI.openHub(); return true; }   // 通关墓碑不可被「结束并结算」改写为失利
     stop(); S.solo.finished = true; S.solo.outcome = won ? 'won' : 'lost'; S.solo.phase = 'finished';
     S.phase = 'prep'; save();
     log(won ? '🏁 挑战完成，已结算（成绩保留在本地存档）。' : '🏁 已结束本局并结算（成绩保留在本地存档）。');
@@ -192,7 +219,13 @@
     if (e.roster && typeof e.roster === 'object') Object.entries(e.roster).forEach(([role,n]) => {for(let i=0;i<n;i++)roles.push(role);});
     const units=[];
     let count=Math.min(12, Math.max(1,e.count||3));
-    if(S.solo.mode==='conquest'&&S.solo.target==='capital'&&S.solo.owned.includes('fort'))count=Math.max(1,count-2);
+    /* conquest v2：encounter 扩展 difficulty/affixes/bossScript/garrisonArmy（solo-modes 的 conquestEncounter/conquestDefenseEncounter）。
+       难度乘数乘进 scale；词缀作用于整支敌军：swift 提速、regen 每秒回血（均由 modifyUnit 消费），split 复用既有双线布阵。 */
+    const conquest = S.solo.mode === 'conquest';
+    const affixes = conquest && Array.isArray(e.affixes) ? e.affixes : [];
+    const diffMul = conquest ? ({1:0.9, 2:1.25, 3:1.5}[e.difficulty] || 1) : 1;   // M5 平衡调整③：难度 I 倍率 1→0.9（仅难度 I 征服；II/III 与其他模式不变）
+    const targetNode = conquest ? (S.solo.map?.nodes || []).find(n => n.id === S.solo.target) || null : null;
+    const fortGuard = conquest && S.solo.phase === 'fight' && !!targetNode && targetNode.kind === 'stronghold' && targetNode.sub === 'fort';
     for(let i=0;i<count;i++) {
       const role=roles[i] || (i%3===0?'front':i%3===1?'ranged':'support');
       const jobs=role==='front'?['守护','刀客','狂战']:role==='assassin'?['刺客']:role==='support'?['医者','咒术']:['法师','游侠'];
@@ -200,9 +233,11 @@
       if(!candidates.length)candidates=UNITS.filter(d=>d.cost<=cap);
       const d=candidates[Math.floor(rng()*candidates.length)];
       const u=makeOwned(d, tier>=6?2:1);
-      const mod=typeof e.modifier==='number'?e.modifier:({elite:1.2,scouted:0.9,risk:1.12,fortified:1.15,highground:1.08,fixed:0.78}[e.modifier]||1);
-      const scale=(0.8+tier*0.10)*mod;
+      const mod=typeof e.modifier==='number'?e.modifier:({elite:1.2,scouted:0.9,risk:1.12,fortified:1.15,highground:1.08,fixed:0.78,counterattack:1.05}[e.modifier]||1);
+      let scale=(0.8+tier*0.10)*mod;
+      if(conquest)scale*=diffMul;   // 难度乘数只作用于战役征服（其余模式 scale 数值不变）
       u.hp=u.maxhp=Math.round(u.maxhp*scale); u.atk=Math.round(u.atk*scale); u.enemy=true;
+      if(fortGuard){u.hp=u.maxhp=Math.round(u.maxhp*1.1);u.atk=Math.round(u.atk*.95);}   // 进攻要塞亚型据点：守军偏防御（+10% 生命 / -5% 攻击，自由裁量微调）
       u.boss=!!e.boss&&i===0; u.soloMechanic=u.boss?e.mechanic:null;
       if(S.solo.mode==='puzzle'&&S.solo.puzzle===0&&i<2)u.soloMechanic='shield';
       if(S.solo.mode==='puzzle'&&S.solo.puzzle===2){
@@ -210,13 +245,17 @@
         else if(i<2)u.soloMechanic='shield';
       }
       if(e.mechanic==='flank'&&i>=count-2){const assassin=UNITS.find(x=>x.job==='刺客'&&x.cost<=cap)||UNITS.find(x=>x.job==='刺客');Object.assign(u,{id:assassin.id});}
-      if(e.modifier==='split')u.soloLane=i%2;
-      if(u.boss){u.maxhp=Math.round(u.maxhp*2.4);u.hp=u.maxhp;u.atk=Math.round(u.atk*1.15);}
-      if(S.solo.mode==='conquest'&&S.solo.owned.includes('pass')){u.atk=Math.round(u.atk*.9);}
+      if(affixes.includes('swift'))u.soloAffixSwift=true;
+      if(affixes.includes('regen'))u.soloAffixRegen=true;
+      if(e.modifier==='split'||affixes.includes('split'))u.soloLane=i%2;
+      /* M5 平衡调整②：boss 生命倍率表——conquest 1.4，其他模式维持 2.4 不变。
+         before: 统一 2.4（conquest 幕 boss 在 tier 缩放+随从护盾减伤之上再乘 2.4，难度 I 下无法击穿，形成无限重试磨局）
+         after : conquest 幕 boss 1.4（配合调整①的 2+act 编制）。 */
+      if(u.boss){const hpMul=conquest?1.4:2.4;u.maxhp=Math.round(u.maxhp*hpMul);u.hp=u.maxhp;u.atk=Math.round(u.atk*1.15);if(e.bossScript)u.soloBossAct=e.bossScript.act;}   // 幕 Boss 多阶段脚本编号随单位带入 tick
       units.push(u);
     }
     placeFormation(board,[3,2,1,0],units,[]);
-    if(e.modifier==='split'){board.fill(null);units.forEach((u,i)=>{const lane=i%2?6:1;board[(3-Math.floor(i/4))*BOARD_W+lane+(Math.floor(i/2)%2)]=u;});}
+    if(e.modifier==='split'||affixes.includes('split')){board.fill(null);units.forEach((u,i)=>{const lane=i%2?6:1;board[(3-Math.floor(i/4))*BOARD_W+lane+(Math.floor(i/2)%2)]=u;});}
     S.enemyComp={round:S.round,name:e.name,mix:{}};
     return board;
   }
@@ -231,6 +270,11 @@
       }
     }
     if(b.side===1&&S.solo.mode==='siege')b.spdMul*=Math.max(.65,1-(S.solo.snares||0)*.08);
+    if(b.side===1&&S.solo.mode==='conquest') {
+      if(b.soloAffixSwift)b.spdMul*=1.2;                                   // 词缀·迅捷：攻速 ×1.2（makeBattleUnit 会重置 spdMul，只能在这里生效）
+      if(b.soloAffixRegen)b.regen=(b.regen||0)+Math.round(b.maxhp*.015);   // 词缀·回生：每秒回复 1.5% 最大生命（引擎 currentTick 每秒消费 regen）
+    }
+    if(S.solo.mode==='conquest'&&window.CAMPAIGN_FAST){const f=Number(window.CAMPAIGN_FAST);b.spdMul*=f>1?f:3;}   // CAMPAIGN_FAST 测试钩子：战役战斗双方同倍提速（默认关闭；置 1 即 ×3，可置具体倍数）
     if(b.soloMechanic==='shield') b.shield=Math.round(b.maxhp*(b.boss?.35:.18));
     if(b.soloMechanic==='support')b.regen=Math.round(b.maxhp*.02);
   }
@@ -261,6 +305,11 @@
     for(const boss of units.filter(u=>u.side===1&&u.boss&&u.hp>0)) {
       const ratio=boss.hp/boss.maxhp;
       if(ratio<0.5&&!boss.soloEnraged){boss.soloEnraged=true;boss.spdMul*=1.25;log(S.solo.mode==='expedition'?'压轴嘉宾进入返场环节：演出节奏加快。':'首领进入第二阶段：攻击节奏加快。');}
+      if(boss.soloBossAct===4) {   // 深渊之主三阶段脚本：66% 觉醒护盾、33% 开始蓄力，蓄力释放后召唤援军（复用 soloMechanic 通道）
+        if(!boss.soloAct4Stage&&ratio<=0.66){boss.soloAct4Stage=1;boss.soloMechanic='shield';boss.shield=(boss.shield||0)+Math.round(boss.maxhp*.25);log('深渊之主展开深渊护盾：先清理护卫或快速破盾。');}
+        if(boss.soloAct4Stage===1&&ratio<=0.33){boss.soloAct4Stage=2;boss.soloMechanic='charge';boss.dmgReduce=0;boss.soloCharge=2500;log('深渊之主开始蓄力：控制或沉默可以打断。');}
+        if(boss.soloAct4Stage===2&&boss.soloChargeDone){boss.soloAct4Stage=3;boss.soloChargeDone=false;boss.soloMechanic='summon';boss.soloSummoned=false;boss.dmgReduce=0;}   // 召唤日志由通用 summon 分支输出
+      }
       if(boss.soloMechanic==='shield') {
         const guards=units.some(u=>u.side===1&&!u.boss&&u.hp>0);
         boss.dmgReduce=guards?0.3:0;
@@ -269,7 +318,7 @@
         if(!boss.soloCharge&&t%8000===0){boss.soloCharge=2500;log(S.solo.mode==='expedition'?'压轴嘉宾正在准备高光曲目：控制或沉默可打断。':'首领正在蓄力：控制或沉默可以打断。');}
         if(boss.soloCharge>0) {
           if(boss.stun>0||boss.frozen>0||boss.silenceT>0||boss.hexT>0){boss.soloCharge=0;log(S.solo.mode==='expedition'?'高光曲目被打断。':'蓄力已被打断。');}
-          else {boss.soloCharge-=dt;if(boss.soloCharge<=0)units.filter(u=>u.side===0&&u.hp>0).forEach(u=>dealDamage(boss,u,Math.round(boss.atk*1.5),units,'magic'));}
+          else {boss.soloCharge-=dt;if(boss.soloCharge<=0){units.filter(u=>u.side===0&&u.hp>0).forEach(u=>dealDamage(boss,u,Math.round(boss.atk*1.5),units,'magic'));if(boss.soloBossAct===4)boss.soloChargeDone=true;}}
         }
       }
       if(boss.soloMechanic==='summon'&&!boss.soloSummoned&&ratio<0.65) {
@@ -284,17 +333,26 @@
     if(rendering||!window.SoloUI)return;
     rendering=true;
     try {
-      const saves={};modes().forEach(d=>{const record=read(d.id);if(record)saves[d.id]={savedAt:record.savedAt,finished:record.state.solo.phase==='finished',summary:SoloModes.view(record.state.solo,{gold:record.state.gold}).subtitle};});
+      const saves={};modes().forEach(d=>{
+        const record=read(d.id);
+        if(record){saves[d.id]={savedAt:record.savedAt,finished:record.state.solo.phase==='finished',summary:SoloModes.view(record.state.solo,{gold:record.state.gold}).subtitle};return;}
+        if(d.id!=='conquest')return;
+        try{const raw=localStorage.getItem(key('conquest'));if(raw&&JSON.parse(raw).version===1)saves.conquest={savedAt:0,finished:true,summary:'旧版战役存档已失效（战役已重制），重新开始开启新战役'};}catch(e){}
+      });
       let v=active()?view():null;
       if(v) {
         v={...v,inBattle:['battle','settle'].includes(S.phase),canFight:S.phase==='prep'&&v.canFight,choices:(v.choices||[]).map(c=>({...c,disabled:c.disabled||S.phase!=='prep'}))};
         if(['battle','settle'].includes(S.phase))v.subtitle=S.solo.mode==='expedition'?'公演进行中 · 行程将在谢幕后开放':'自动战斗进行中 · 行动将在结算后开放';
+        if(S.solo.mode==='conquest') {   // 战役征服 v2 新阶段文案：actClear/defense；treasure/shop/rest/event 沿用规则层 view 的 subtitle/objective/enemyHint
+          if(S.solo.phase==='actClear')v.subtitle='第'+S.solo.act+'幕攻克 · 下一幕的大门已经开启';
+          else if(S.solo.phase==='defense')v.subtitle=['battle','settle'].includes(S.phase)?'防守战进行中 · 击退敌军即可保住据点':'防守战 · 胜利保住据点，失败则据点失守、本营受损';
+        }
         if(lastError)v.subtitle+=' · '+lastError;
         if(v.finished && !v.choices.length)v.choices=[{id:'__restart',label:'重新开始',description:'开始新的挑战'},{id:'__hub',label:'返回模式大厅',description:'选择其他玩法'}];
       }
       SoloUI.render({active:active()&&flowPage==='game',mode:S?.solo?.mode,state:S?.solo,phase:S?.phase,view:v,saves,gold:S?.gold,hp:S?.hp});
       if(active()) {
-        $('fightBtn').disabled=!canFight(); $('fightBtn').textContent=S.solo.mode==='expedition'?(['battle','settle'].includes(S.phase)?'公演进行中':v.canFight?'登台演出':'先选择行程'):('battle'===S.phase||'settle'===S.phase?'战斗中':v.canFight?'开始战斗':'先选择行动');
+        $('fightBtn').disabled=!canFight(); $('fightBtn').textContent=S.solo.mode==='expedition'?(['battle','settle'].includes(S.phase)?'公演进行中':v.canFight?'登台演出':'先选择行程'):(S.solo.mode==='conquest'&&S.solo.phase==='defense'?(['battle','settle'].includes(S.phase)?'防守战中':'开始防守战'):('battle'===S.phase||'settle'===S.phase?'战斗中':v.canFight?'开始战斗':'先选择行动'));
         $('roundMax').textContent='/'+modes().find(d=>d.id===S.solo.mode).name;
         $('enemyInfo').textContent=v.encounter ? v.encounter.name+' · '+v.enemyHint : v.objective;
         const statTitle=$('statBar')?.parentElement?.querySelector('h3');if(statTitle)statTitle.textContent=S.solo.mode==='expedition'?'演出数据':'战斗统计';

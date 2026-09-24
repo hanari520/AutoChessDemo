@@ -36,6 +36,277 @@ def canonical_units(units):
     ]
 
 
+CAMPAIGN_SEED = 20260925
+PROTECTED_KEYS = (
+    "vc_solo_v1_expedition", "vc_solo_v1_hunt", "vc_solo_v1_puzzle", "vc_solo_v1_siege",
+    "vc_save4", "vc_daily3", "vc_arena3",
+)
+
+
+def drive_real_battle(page, tick_cap=700):
+    """Start the shared battle engine, drive real ticks synchronously, return the raw outcome."""
+    return evaluate(page, """cap => {
+        const before = {wins:S.stats.wins, losses:S.stats.losses, battles:S.soloBattles,
+                        gold:S.gold, ruleBattles:S.solo.stats.battles, phase:S.solo.phase};
+        startBattle(); stopTickLoop();
+        let ticks = 0;
+        while (S.phase === 'battle' && ticks < cap) { currentTick(); ticks++; }
+        const allies = window.__bu.filter(u => u.side === 0 && u.hp > 0).length;
+        const enemies = window.__bu.filter(u => u.side === 1 && u.hp > 0).length;
+        return {before, ticks, phase:S.phase, allies, enemies, won:SoloHost.battleWon(allies, enemies)};
+    }""", tick_cap)
+
+
+def settle_once_and_duplicate(page):
+    """Wait out the result banner, then prove the settle happened once and a replay is a no-op."""
+    page.wait_for_function("() => S.phase === 'prep'", timeout=6000)
+    return evaluate(page, """() => {
+        const mid = {wins:S.stats.wins, losses:S.stats.losses, battles:S.soloBattles,
+                     gold:S.gold, ruleBattles:S.solo.stats.battles, phase:S.solo.phase,
+                     owned:S.solo.map.owned.length};
+        const raw = localStorage.getItem('vc_solo_v1_conquest');
+        const duplicate = SoloHost.settle(true, 0, 2);
+        return {mid, duplicate, rawStable: raw === localStorage.getItem('vc_solo_v1_conquest'),
+                after:{wins:S.stats.wins, losses:S.stats.losses, battles:S.soloBattles,
+                       gold:S.gold, ruleBattles:S.solo.stats.battles, phase:S.solo.phase,
+                       owned:S.solo.map.owned.length}};
+    }""")
+
+
+def campaign_suite(page, errors):
+    """战役征服 v2：真实引擎驱动的地图/存档隔离/幂等结算/幕检查点/难度门控/窄屏冒烟。"""
+    rows = []
+
+    def step(name, detail):
+        rows.append((name, detail))
+        print(f"  campaign ok: {name} :: {detail}")
+
+    # 1. 战役启动与地图：全幅地图上屏、节点数与规则层一致、#main 隐藏
+    started = evaluate(page, f"() => SoloHost.start('conquest', true, {{seed:{CAMPAIGN_SEED}, difficulty:1}})")
+    map_ui = evaluate(page, """() => ({
+        mode:S.solo && S.solo.mode, act:S.solo && S.solo.act, phase:S.solo && S.solo.phase,
+        bodyOpen:document.body.classList.contains('solo-camp-map-open'),
+        domNodes:document.querySelectorAll('.solo-camp-node').length,
+        ruleNodes:S.solo.map.nodes.length,
+        mainDisplay:getComputedStyle(document.getElementById('main')).display})""")
+    require(started and map_ui["mode"] == "conquest" and map_ui["act"] == 1 and map_ui["phase"] == "map",
+            f"campaign start failed: {started}, {map_ui}")
+    require(map_ui["bodyOpen"] and map_ui["domNodes"] == map_ui["ruleNodes"] and map_ui["mainDisplay"] == "none",
+            f"campaign map did not take over the page: {map_ui}")
+    step("启动战役并全幅上屏（body.solo-camp-map-open，#main display:none）",
+         f"seed={CAMPAIGN_SEED} act={map_ui['act']} 节点 DOM/规则层={map_ui['domNodes']}/{map_ui['ruleNodes']}")
+
+    # 2. 存档隔离基线：其余四模式 + 三个经典槽位逐字节快照
+    protected_before = evaluate(page, "keys => Object.fromEntries(keys.map(k => [k, localStorage.getItem(k)]))",
+                                list(PROTECTED_KEYS))
+
+    # 3. 地图选路（点首个可攻节点）→ body class 移除、#main 恢复、进入 fight
+    route = evaluate(page, """() => {
+        const btn = document.querySelector('.solo-camp-node.solo-camp-attackable:not([disabled])');
+        if (!btn) return {clicked:false};
+        const id = btn.dataset.campKey;
+        btn.click();
+        return {clicked:true, id, phase:S.solo.phase, target:S.solo.target,
+                bodyOpen:document.body.classList.contains('solo-camp-map-open'),
+                mainDisplay:getComputedStyle(document.getElementById('main')).display};
+    }""")
+    require(route["clicked"] and route["phase"] == "fight" and not route["bodyOpen"]
+            and route["mainDisplay"] != "none", f"campaign route click failed: {route}")
+    step("地图选路（点击可攻节点）恢复棋盘区", f"节点={route['id']} phase={route['phase']} #main={route['mainDisplay']}")
+
+    # 4. 进攻战斗真实引擎结算 + 幂等（重复 settle 返回 false，战绩/金币/存档不重复）
+    evaluate(page, "() => { autoDeploy(); for (let i=0;i<5;i++) if (S.shop[i] && S.gold >= S.shop[i].cost) buy(i); autoDeploy(); }")
+    battle = drive_real_battle(page)
+    require(battle["phase"] == "settle" and battle["allies"] + battle["enemies"] > 0 and battle["ticks"] > 0,
+            f"campaign attack battle did not run the shared engine: {battle}")
+    settled = settle_once_and_duplicate(page)
+    require(settled["mid"]["battles"] == battle["before"]["battles"] + 1
+            and settled["mid"]["wins"] + settled["mid"]["losses"] == battle["before"]["wins"] + battle["before"]["losses"] + 1
+            and settled["mid"]["ruleBattles"] == battle["before"]["ruleBattles"] + 1,
+            f"campaign attack battle did not settle exactly once: {battle}, {settled}")
+    require(settled["duplicate"] is False and settled["rawStable"] and settled["after"] == settled["mid"],
+            f"campaign attack duplicate settle altered state: {settled}")
+    step("进攻战斗真实结算一次且重复结算无效",
+         f"ticks={battle['ticks']} won={battle['won']} battles={settled['mid']['battles']} dup={settled['duplicate']}")
+
+    # 5. 幕内推进到首次占领（规则层快进），再强制敌袭触发防守战并验证幂等
+    owned = evaluate(page, """() => {
+        const ctx = {gold: 9999};
+        const win = st => SoloModes.settle(st, {won:true, survivors:0, allies:4, deployed:4, playerStartingCount:4, time:25, gold:60}).state;
+        let guard = 0;
+        while (!(S.solo.map.owned.length >= 1 && ['map', 'reward'].includes(S.solo.phase)) && guard++ < 200) {
+            const st = S.solo;
+            if (st.phase === 'finished') break;
+            if (st.phase === 'map') {
+                const c = SoloModes.view(st, ctx).choices.find(x => x.id.startsWith('attack:') && !x.disabled);
+                S.solo = SoloModes.act(st, c ? c.id : 'map:rest', ctx).state;
+            } else if (st.phase === 'fight' || st.phase === 'defense') S.solo = win(st);
+            else if (st.phase === 'reward') S.solo = SoloModes.act(st, 'reward:gold', ctx).state;
+            else if (st.phase === 'treasure') S.solo = SoloModes.act(st, st.relics.length < 4 ? 'treasure:relic' : 'treasure:gold', ctx).state;
+            else if (st.phase === 'shop') S.solo = SoloModes.act(st, 'shop:leave', ctx).state;
+            else if (st.phase === 'rest') S.solo = SoloModes.act(st, st.hp < st.maxHp ? 'rest:heal' : 'rest:levelup', ctx).state;
+            else if (st.phase === 'event') S.solo = SoloModes.act(st, 'event:0', ctx).state;
+            else break;
+        }
+        if (S.solo.phase === 'reward') SoloHost.action('reward:gold');
+        return {phase:S.solo.phase, owned:S.solo.map.owned.slice(),
+                garrisoned:S.solo.map.owned.filter(id => S.solo.armies.some(a => a.node === id))};
+    }""")
+    require(owned["phase"] == "map" and owned["garrisoned"],
+            f"campaign could not reach a garrisoned node: {owned}")
+    defense = evaluate(page, """() => {
+        S.solo.telegraph = {node: S.solo.map.owned.filter(id => S.solo.armies.some(a => a.node === id))[0], countdown: 1};
+        const ok = SoloHost.action('map:end');
+        return {ok, phase:S.solo.phase, target:S.solo.target,
+                modifier:SoloModes.view(S.solo, {gold:S.gold}).encounter &&
+                         SoloModes.view(S.solo, {gold:S.gold}).encounter.modifier};
+    }""")
+    require(defense["ok"] and defense["phase"] == "defense" and defense["modifier"] == "counterattack",
+            f"campaign defense battle did not trigger: {defense}")
+    dbattle = drive_real_battle(page)
+    require(dbattle["phase"] == "settle" and dbattle["allies"] + dbattle["enemies"] > 0,
+            f"campaign defense battle did not run: {dbattle}")
+    dsettled = settle_once_and_duplicate(page)
+    require(dsettled["mid"]["battles"] == dbattle["before"]["battles"] + 1,
+            f"campaign defense battle did not settle once: {dbattle}, {dsettled}")
+    require(dsettled["duplicate"] is False and dsettled["rawStable"] and dsettled["after"] == dsettled["mid"],
+            f"campaign defense duplicate settle altered state: {dsettled}")
+    step("防守战（counterattack）真实结算一次且重复结算无效",
+         f"ticks={dbattle['ticks']} won={dbattle['won']} dup={dsettled['duplicate']}")
+
+    # 6. 幕检查点：规则层快进至 actClear → 经宿主 act:next 进入第 2 幕
+    cleared = evaluate(page, """() => {
+        const ctx = {gold: 9999};
+        const win = st => SoloModes.settle(st, {won:true, survivors:0, allies:4, deployed:4, playerStartingCount:4, time:25, gold:60}).state;
+        let guard = 0;
+        while (S.solo.phase !== 'actClear' && guard++ < 400) {
+            const st = S.solo;
+            if (st.phase === 'finished') break;
+            if (st.phase === 'map') {
+                const c = SoloModes.view(st, ctx).choices.find(x => x.id.startsWith('attack:') && !x.disabled);
+                S.solo = SoloModes.act(st, c ? c.id : 'map:rest', ctx).state;
+            } else if (st.phase === 'fight' || st.phase === 'defense') S.solo = win(st);
+            else if (st.phase === 'reward') S.solo = SoloModes.act(st, 'reward:gold', ctx).state;
+            else if (st.phase === 'treasure') S.solo = SoloModes.act(st, st.relics.length < 4 ? 'treasure:relic' : 'treasure:gold', ctx).state;
+            else if (st.phase === 'shop') S.solo = SoloModes.act(st, 'shop:leave', ctx).state;
+            else if (st.phase === 'rest') S.solo = SoloModes.act(st, st.hp < st.maxHp ? 'rest:heal' : 'rest:levelup', ctx).state;
+            else if (st.phase === 'event') S.solo = SoloModes.act(st, 'event:0', ctx).state;
+            else break;
+        }
+        return {phase:S.solo.phase, act:S.solo.act};
+    }""")
+    require(cleared["phase"] == "actClear" and cleared["act"] == 1,
+            f"campaign act 1 did not reach actClear: {cleared}")
+    advanced = evaluate(page, """() => {
+        const ok = SoloHost.action('act:next');
+        return {ok, act:S.solo.act, phase:S.solo.phase, hp:S.solo.hp,
+                checkpointAct:S.solo.actCheckpoint && S.solo.actCheckpoint.act,
+                owned:S.solo.map.owned.length};
+    }""")
+    require(advanced["ok"] and advanced["act"] == 2 and advanced["phase"] == "map"
+            and advanced["checkpointAct"] == 2 and advanced["owned"] == 0,
+            f"campaign act:next failed: {advanced}")
+    step("幕 Boss 胜利后经 act:next 进入第 2 幕（新地图空补给线，幕检查点=act 2）",
+         f"act={advanced['act']} hp={advanced['hp']} owned={advanced['owned']}")
+
+    # 7. 本营陷落 → checkpoint:retry 回幕起点：地图/据点/耐久与幕初一致且棋盘有兵
+    doomed = evaluate(page, """() => {
+        const c = SoloModes.view(S.solo, {gold:S.gold}).choices.find(x => x.id.startsWith('attack:') && !x.disabled);
+        if (!c) return {attackable:false};
+        S.solo.hp = 3; S.hp = 3;
+        const ok = SoloHost.action(c.id);
+        return {attackable:true, ok, phase:S.solo.phase};
+    }""")
+    require(doomed["attackable"] and doomed["ok"] and doomed["phase"] == "fight",
+            f"campaign doomed attack failed: {doomed}")
+    evaluate(page, "() => startBattle()")
+    dead = evaluate(page, "() => { endBattle(0, 2); return {phase:S.solo.phase, outcome:S.solo.outcome, hp:S.solo.hp}; }")
+    require(dead["phase"] == "finished" and dead["outcome"] == "lost" and dead["hp"] == 0,
+            f"campaign defeat did not finish the run: {dead}")
+    retried = evaluate(page, """() => {
+        const cp = JSON.parse(JSON.stringify(S.solo.actCheckpoint));
+        const ok = SoloHost.action('checkpoint:retry');
+        return {ok, phase:S.solo.phase, act:S.solo.act, hp:S.solo.hp,
+                hpMatches:S.solo.hp === cp.hp,
+                ownedMatches:JSON.stringify(S.solo.map.owned) === JSON.stringify(cp.map.owned),
+                cursorMatches:JSON.stringify(S.solo.map.cursor) === JSON.stringify(cp.map.cursor),
+                boardUnits:S.board.filter(Boolean).length, activeArmy:S.solo.activeArmy};
+    }""")
+    require(retried["ok"] and retried["phase"] == "map" and retried["act"] == 2
+            and retried["hpMatches"] and retried["ownedMatches"] and retried["cursorMatches"]
+            and retried["boardUnits"] > 0,
+            f"campaign checkpoint retry failed: {retried}")
+    step("本营陷落后 checkpoint:retry 回到第 2 幕起点",
+         f"act={retried['act']} owned/cursor/hp 与幕初一致 board={retried['boardUnits']} 兵 activeArmy={retried['activeArmy']}")
+
+    # 8. 战役中途重载 → resume 回同一运行
+    before_reload = evaluate(page, "() => ({runId:S.runId, act:S.solo.act, turn:S.solo.stats.turns})")
+    page.reload(wait_until="load")
+    page.wait_for_function("() => window.SoloHost && window.SoloModes && window.SoloUI")
+    resumed = evaluate(page, "() => ({ok:SoloHost.resume('conquest'), runId:S.runId, act:S.solo.act, turn:S.solo.stats.turns, phase:S.solo.phase})")
+    require(resumed["ok"] and resumed["runId"] == before_reload["runId"] and resumed["act"] == 2
+            and resumed["turn"] == before_reload["turn"],
+            f"campaign resume after reload failed: {before_reload}, {resumed}")
+    step("战役中途重载并 resume", f"runId 一致 act={resumed['act']} turn={resumed['turn']}")
+
+    # 9. 难度门控：vc_campaign_meta.maxClearedDifficulty=1 → II 可用 III 禁用；清除后仅 I 可用
+    evaluate(page, "() => localStorage.setItem('vc_campaign_meta', JSON.stringify({maxClearedDifficulty:1}))")
+    page.reload(wait_until="load")
+    page.wait_for_function("() => window.SoloHost && window.SoloModes && window.SoloUI")
+    require(evaluate(page, "() => SoloHost.openHub()"), "campaign hub did not open for difficulty gating")
+    gate1 = evaluate(page, """() => {
+        const sel = document.querySelector('select[data-mode-option="difficulty"]');
+        return sel ? {found:true, disabled:[...sel.options].map(o => o.disabled)} : {found:false};
+    }""")
+    require(gate1["found"] and gate1["disabled"] == [False, False, True],
+            f"difficulty II/III gating wrong with maxClearedDifficulty=1: {gate1}")
+    evaluate(page, "() => localStorage.removeItem('vc_campaign_meta')")
+    page.reload(wait_until="load")
+    page.wait_for_function("() => window.SoloHost && window.SoloModes && window.SoloUI")
+    require(evaluate(page, "() => SoloHost.openHub()"), "campaign hub did not open after meta clear")
+    gate0 = evaluate(page, """() => {
+        const sel = document.querySelector('select[data-mode-option="difficulty"]');
+        return sel ? {found:true, disabled:[...sel.options].map(o => o.disabled)} : {found:false};
+    }""")
+    require(gate0["found"] and gate0["disabled"] == [False, True, True],
+            f"difficulty gating wrong with cleared meta: {gate0}")
+    step("难度门控（vc_campaign_meta 驱动大厅难度选项）",
+         f"maxCleared=1 → 禁用位 {gate1['disabled']}；清空 → 禁用位 {gate0['disabled']}")
+
+    # 10. ≤880px 冒烟：390×844 打开地图相，无横向溢出且节点仍可点
+    page.set_viewport_size({"width": 390, "height": 844})
+    mobile = evaluate(page, """() => {
+        const resumed = SoloHost.resume('conquest');
+        return {resumed, phase:S.solo.phase, bodyOpen:document.body.classList.contains('solo-camp-map-open'),
+                overflow:document.scrollingElement.scrollWidth - window.innerWidth,
+                nodes:document.querySelectorAll('.solo-camp-node').length,
+                enabled:[...document.querySelectorAll('.solo-camp-node')].filter(b => !b.disabled).length};
+    }""")
+    require(mobile["resumed"] and mobile["phase"] == "map" and mobile["bodyOpen"]
+            and mobile["overflow"] <= 1 and mobile["enabled"] > 0,
+            f"campaign mobile map smoke failed: {mobile}")
+    tap = evaluate(page, """() => {
+        const btn = document.querySelector('.solo-camp-node.solo-camp-attackable:not([disabled])');
+        if (!btn) return {clicked:false};
+        btn.click();
+        return {clicked:true, phase:S.solo.phase,
+                overflow:document.scrollingElement.scrollWidth - window.innerWidth};
+    }""")
+    require(tap["clicked"] and tap["phase"] == "fight" and tap["overflow"] <= 1,
+            f"campaign mobile node tap failed: {tap}")
+    page.set_viewport_size({"width": 1366, "height": 768})
+    step("390×844 地图相无横向溢出且节点可点", f"溢出={mobile['overflow']}px 可攻节点点击后 phase={tap['phase']}")
+
+    # 11. 存档隔离收口：campaign 全程未动其余模式与经典槽位
+    protected_after = evaluate(page, "keys => Object.fromEntries(keys.map(k => [k, localStorage.getItem(k)]))",
+                               list(PROTECTED_KEYS))
+    changed = [k for k in PROTECTED_KEYS if protected_after[k] != protected_before[k]]
+    require(not changed, f"campaign activity modified protected saves: {changed}")
+    require(not errors, f"campaign runtime errors: {errors}")
+    step("campaign 全程其余四模式与 vc_save4/vc_daily3/vc_arena3 字节不变", f"diff 键: 无")
+    return rows
+
+
 def main():
     handler = partial(QuietHandler, directory=str(ROOT))
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
@@ -107,10 +378,14 @@ def main():
                     "hunt": ["prep:scout", "prep:forge", "prep:recruit"],
                     "puzzle": [],
                     "siege": ["build:economy"],
-                    "conquest": ["attack:mine"],
+                    # 战役征服 v2：节点 id 由种子生成（a<幕>n<序>），改为动态取首个可攻节点
+                    "conquest": [],
                 }[mode]
                 for action in setup:
                     require(evaluate(page, "a => SoloHost.action(a)", action), f"{mode} setup action failed: {action}")
+                if mode == "conquest":
+                    require(evaluate(page, "() => { const v = SoloModes.view(S.solo, {gold:S.gold}); const c = v.choices.find(x => x.id.startsWith('attack:') && !x.disabled); return c ? SoloHost.action(c.id) : false; }"),
+                            "conquest setup action failed: no attackable node")
                 if mode == "puzzle":
                     evaluate(page, "() => buy(0)")
                 require(evaluate(page, "() => SoloHost.canFight()"), f"{mode} did not become fight-ready")
@@ -203,12 +478,20 @@ def main():
                     "the legacy daily checkpoint no longer restores today's seed")
             require(evaluate(page, "() => loadGame('vc_save4') && S.mode==='normal'"),
                     "the legacy normal checkpoint no longer restores")
+
+            # 战役征服 v2：真实引擎驱动的 campaign 集成场景（地图/隔离/幂等/检查点/门控/窄屏）。
+            campaign_rows = campaign_suite(page, errors)
+
             require(not errors, f"browser runtime errors: {errors}")
             require(menu_paused, f"battle clock advanced while the game menu was open: {menu}, {menu_clock}")
             require(help_paused, f"battle clock advanced while help was open: {help_clock_start}, {help_clock_end}")
 
-            print("PASS solo browser integration: five independent saves and reload/resumes; isolated classic slots; deterministic enemy restore; five shared battle-loop settlements and duplicate guards; one-shot reward across reload; hunt retry snapshot; menu/help battle pause and resume; exit guards; normal/daily/arena restore")
+            print("PASS solo browser integration: five independent saves and reload/resumes; isolated classic slots; deterministic enemy restore; five shared battle-loop settlements and duplicate guards; one-shot reward across reload; hunt retry snapshot; menu/help battle pause and resume; exit guards; normal/daily/arena restore; campaign conquest map/isolation/idempotent settle/act checkpoint/difficulty gating/mobile smoke")
             print("BATTLE_RESULTS " + json.dumps(battle_results, ensure_ascii=False, sort_keys=True))
+            print("CAMPAIGN_ASSERTIONS")
+            width = max(len(name) for name, _ in campaign_rows)
+            for name, detail in campaign_rows:
+                print(f"  通过 | {name.ljust(width)} | {detail}")
             context.close()
             browser.close()
     finally:

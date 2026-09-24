@@ -189,3 +189,121 @@ html[data-theme="dark"] .solo-confirm-copy { color:#f0adc7; }
 @media (prefers-reduced-motion:reduce) {
   #soloHubLaunch, #soloHub *, #soloPanel * { transition:none !important; animation:none !important; scroll-behavior:auto !important; }
 }
+
+/* ===== 战役征服 v2 地图 ===== */
+/* Black-gold map board: act backdrop (decorative, degrades to gradient) + SVG links + absolutely positioned node buttons (translate(-50%,-50%) contract). */
+.solo-camp-root {
+  --camp-gold:#f2cc6b; --camp-gold-dim:rgba(214,178,94,.55); --camp-danger:#ff6b5e;
+  --camp-node-bg:linear-gradient(180deg,rgba(43,37,25,.94),rgba(26,22,15,.95));
+  display:flex; flex-direction:column; gap:6px; width:100%; max-width:100%; min-width:0; flex:0 0 auto;
+  font-family:inherit; text-align:left;
+}
+.solo-camp-hud { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 7px; margin:0; color:#4c5b7d; font-size:11px; font-weight:650; line-height:1.4; }
+.solo-camp-hud-sep { opacity:.55; }
+.solo-camp-hud-hp-low { color:#c9403f; font-weight:800; }
+html[data-theme="dark"] .solo-camp-hud { color:#c3cfee; }
+html[data-theme="dark"] .solo-camp-hud-hp-low { color:#ff9a90; }
+
+.solo-camp-board {
+  position:relative; width:100%; aspect-ratio:8/5; max-height:min(64dvh,600px);
+  overflow:hidden; border-radius:14px; border:1px solid rgba(214,178,94,.28);
+  background:#16130e; box-shadow:inset 0 0 0 1px rgba(0,0,0,.35), 0 4px 16px rgba(10,8,4,.25);
+}
+.solo-camp-board-bg {
+  position:absolute; inset:0; z-index:0; border-radius:inherit;
+  background-image:var(--camp-act-img, none), radial-gradient(120% 90% at 50% 0%, rgba(84,66,34,.4), rgba(0,0,0,0) 60%), linear-gradient(165deg,#2b2418 0%,#151109 58%,#1d160d 100%);
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+}
+.solo-camp-links { position:absolute; inset:0; z-index:1; width:100%; height:100%; }
+.solo-camp-link-on { stroke:rgba(244,208,120,.9); stroke-width:2px; }
+.solo-camp-link-off { stroke:rgba(214,200,164,.3); stroke-width:1.5px; stroke-dasharray:3 4; }
+.solo-camp-empty { position:absolute; inset:0; z-index:2; display:grid; place-items:center; margin:0; color:rgba(230,210,160,.6); font-size:11px; }
+.solo-camp-layer-label { display:none; }
+
+.solo-camp-node {
+  position:absolute; z-index:3; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  min-width:40px; min-height:40px; padding:6px 8px 5px; border-radius:12px; border:1px solid rgba(214,178,94,.34);
+  color:#e8d9ae; background:var(--camp-node-bg); box-shadow:0 3px 8px rgba(8,6,2,.45), inset 0 1px 0 rgba(255,235,180,.08);
+  font-family:inherit; font-size:10px; font-weight:700; line-height:1.15; cursor:default; touch-action:manipulation;
+  transition:border-color .16s ease, box-shadow .16s ease, filter .16s ease, opacity .16s ease, transform .16s ease;
+}
+.solo-camp-node-dot { display:none; }
+.solo-camp-node-icon { display:grid; place-items:center; width:22px; height:22px; }
+.solo-camp-node-icon svg { width:100%; height:100%; display:block; }
+.solo-camp-node-name { max-width:92px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#efe2b8; }
+.solo-camp-kind-boss {
+  min-width:58px; padding:8px 12px 7px; border-width:2px; border-color:rgba(255,215,122,.72); border-radius:14px;
+  box-shadow:0 0 14px rgba(255,215,122,.22), 0 3px 8px rgba(8,6,2,.5), inset 0 1px 0 rgba(255,235,180,.12);
+}
+.solo-camp-kind-boss .solo-camp-node-icon { width:26px; height:26px; }
+.solo-camp-kind-boss .solo-camp-node-name { max-width:120px; font-size:11px; color:#ffe3a1; }
+
+/* Node states: attackable (gold breath) / cleared (dim gold) / threatened (red pulse) / garrisoned (shield) / current / locked. */
+.solo-camp-attackable { cursor:pointer; z-index:4; border-color:rgba(255,215,122,.95); animation:soloCampBreath 1.9s ease-in-out infinite; }
+.solo-camp-attackable .solo-camp-node-name { color:#ffe9b0; }
+.solo-camp-movable { cursor:pointer; }
+.solo-camp-attackable:hover, .solo-camp-attackable:focus-visible, .solo-camp-movable:hover { transform:translate(-50%,-50%) scale(1.06); }
+.solo-camp-cleared { border-color:var(--camp-gold-dim); background:linear-gradient(180deg,rgba(52,44,28,.92),rgba(30,25,16,.94)); }
+.solo-camp-cleared .solo-camp-node-name { color:#cbb98a; }
+.solo-camp-threatened { z-index:5; border-color:rgba(255,183,170,.85); animation:soloCampThreat 1.5s ease-in-out infinite; }
+.solo-camp-threatened .solo-camp-node-name { color:#ffd2c9; }
+.solo-camp-garrisoned .solo-camp-node-garrison { position:absolute; right:3px; bottom:3px; width:12px; height:12px; color:#ffd77a; filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.solo-camp-garrisoned .solo-camp-node-garrison svg { width:100%; height:100%; display:block; }
+.solo-camp-node-countdown {
+  position:absolute; top:-8px; right:-8px; z-index:2; min-width:17px; height:17px; padding:0 4px; border-radius:9px;
+  background:#d94343; color:#fff; font-size:10px; font-weight:800; line-height:17px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.45);
+}
+.solo-camp-current::before { content:""; position:absolute; inset:-4px; border-radius:inherit; border:2px solid rgba(235,240,255,.8); pointer-events:none; }
+.solo-camp-current::after { content:""; position:absolute; top:-13px; left:50%; transform:translateX(-50%); width:0; height:0; border:5px solid transparent; border-top-width:0; border-bottom-color:rgba(235,240,255,.9); pointer-events:none; }
+.solo-camp-locked { opacity:.72; filter:saturate(.55) brightness(.8); border-color:rgba(170,160,135,.22); }
+.solo-camp-locked .solo-camp-node-name { color:#a99f88; }
+.solo-camp-root button:focus-visible { outline:3px solid rgba(255,215,122,.75); outline-offset:2px; }
+
+@keyframes soloCampBreath {
+  0%,100% { box-shadow:0 0 9px rgba(255,215,122,.28), 0 0 0 0 rgba(255,215,122,.38); }
+  50% { box-shadow:0 0 15px rgba(255,215,122,.5), 0 0 0 6px rgba(255,215,122,0); }
+}
+@keyframes soloCampThreat {
+  0%,100% { box-shadow:0 0 9px rgba(224,80,70,.35), 0 0 0 0 rgba(224,80,70,.4); }
+  50% { box-shadow:0 0 16px rgba(224,80,70,.6), 0 0 0 6px rgba(224,80,70,0); }
+}
+
+/* ≤880px: backdrop fades into decoration, nodes collapse into a layer-grouped vertical list. */
+@media (max-width:880px) {
+  .solo-camp-root { gap:5px; }
+  .solo-camp-board { aspect-ratio:auto; max-height:none; display:flex; flex-direction:column; gap:5px; padding:10px 9px 12px; border-radius:12px; }
+  .solo-camp-board-bg { opacity:.32; }
+  .solo-camp-links { display:none; }
+  .solo-camp-layer-label { display:block; margin:6px 2px 0; color:rgba(240,220,170,.78); font-size:10px; font-weight:800; letter-spacing:1.2px; }
+  .solo-camp-node { position:relative; left:auto !important; top:auto !important; transform:none; flex-direction:row; justify-content:flex-start; gap:8px; width:100%; min-height:40px; padding:7px 10px; text-align:left; }
+  .solo-camp-node-dot { display:block; flex:0 0 auto; width:9px; height:9px; border-radius:50%; background:rgba(200,190,160,.4); box-shadow:0 0 0 2px rgba(255,255,255,.06); }
+  .solo-camp-node.solo-camp-attackable .solo-camp-node-dot { background:#ffd77a; box-shadow:0 0 6px rgba(255,215,122,.8); }
+  .solo-camp-node.solo-camp-cleared .solo-camp-node-dot { background:rgba(214,178,94,.75); }
+  .solo-camp-node.solo-camp-threatened .solo-camp-node-dot { background:#ff6b5e; box-shadow:0 0 6px rgba(255,107,94,.8); }
+  .solo-camp-node-icon { flex:0 0 auto; }
+  .solo-camp-node-name { flex:1 1 auto; max-width:none; font-size:11px; }
+  .solo-camp-attackable:hover, .solo-camp-attackable:focus-visible, .solo-camp-movable:hover { transform:none; }
+  .solo-camp-current::after { display:none; }
+  .solo-camp-node-countdown { top:-6px; right:2px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .solo-camp-root, .solo-camp-root * { transition:none !important; animation:none !important; }
+}
+
+/* ===== 战役征服 v2：地图全幅上屏（整合补丁） ===== */
+.solo-camp-mount { min-width:0; }
+body.solo-camp-map-open #main { display:none; }
+body.solo-camp-map-open #soloPanel { max-height:none; }
+body.solo-camp-map-open .solo-camp-mount { grid-column:1/-1; grid-row:1; }
+body.solo-camp-map-open .solo-panel-identity,
+body.solo-camp-map-open .solo-panel-details,
+body.solo-camp-map-open .solo-panel-actions { grid-row:2; }
+@media (max-width:880px) {
+  body.solo-camp-map-open .solo-panel-identity,
+  body.solo-camp-map-open .solo-panel-details,
+  body.solo-camp-map-open .solo-panel-actions { grid-row:auto; }
+}
+.solo-camp-node:disabled { cursor:default; }
+.solo-camp-boss-card { position:absolute; right:14px; bottom:14px; z-index:3; width:132px; padding:8px; border-radius:10px; border:1px solid rgba(212,175,55,.55); background:rgba(12,10,8,.8); box-shadow:0 6px 18px rgba(0,0,0,.45); text-align:center; pointer-events:none; }
+.solo-camp-boss-img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; display:block; }
+.solo-camp-boss-title { margin:6px 0 0; color:#e8c86a; font-size:11px; font-weight:800; letter-spacing:1px; }

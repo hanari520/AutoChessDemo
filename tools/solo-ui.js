@@ -7,7 +7,7 @@
     { id: 'hunt', label: '首领狩猎', icon: '⚔', tone: 'secondary', description: '围绕首领机制调整阵容，完成限时狩猎。' },
     { id: 'puzzle', label: '战术解题', icon: '◇', tone: 'secondary', description: '在给定条件下寻找破局阵容与战术。' },
     { id: 'siege', label: '守城生存', icon: '⬡', tone: 'secondary', description: '抵挡连续攻势，守住城防并争取生存。' },
-    { id: 'conquest', label: '战役征服', icon: '✧', tone: 'secondary', description: '选择战役路线，连续赢下多场遭遇战。' },
+    { id: 'conquest', label: '战役征服', icon: '✧', tone: 'secondary', description: '四幕战役推图、防守补给线，攻克深渊主城。' },
   ];
 
   const byId = new Map(MODES.map((mode) => [mode.id, mode]));
@@ -30,11 +30,14 @@
   let panelChoicesNode = null;
   let panelFightNode = null;
   let panelFightHelpNode = null;
+  let panelCampMountNode = null;
+  let campaignMapMounted = false;
+  let campaignMapSignature = '';
   let fightPending = false;
   let fightStartedAt = 0;
   let fightSawBattle = false;
   let focusBeforeHub = null;
-  const modeSelections = { hunt: 0, puzzle: 0 };
+  const modeSelections = { hunt: 0, puzzle: 0, conquest: 0 };
 
   function node(tag, className, text) {
     const element = document.createElement(tag);
@@ -146,6 +149,9 @@
     panelTitleNode = appendText(identity, 'h2', 'solo-panel-title', '');
     panelSubtitleNode = appendText(identity, 'p', 'solo-panel-subtitle', '');
 
+    panelCampMountNode = node('div', 'solo-camp-mount');
+    panelCampMountNode.hidden = true;
+
     const details = node('div', 'solo-panel-details');
     panelOutcomeNode = appendText(details, 'p', 'solo-panel-outcome', '');
     panelOutcomeNode.hidden = true;
@@ -170,7 +176,7 @@
     controls.append(retry, panelFightNode, exit);
     actions.append(panelChoicesNode, controls);
 
-    panel.append(identity, details, actions);
+    panel.append(identity, panelCampMountNode, details, actions);
     panel.addEventListener('click', onPanelClick);
 
     const main = document.getElementById('main');
@@ -235,8 +241,49 @@
     return parts.join(' · ') || (save.expired ? '存档已过期' : '已有独立存档');
   }
 
+  function campaignClearedDifficulty() {
+    let cleared = 0;
+    try {
+      const raw = window.localStorage ? window.localStorage.getItem('vc_campaign_meta') : null;
+      if (raw) {
+        const meta = JSON.parse(raw);
+        const value = Number(meta && meta.maxClearedDifficulty);
+        if (Number.isFinite(value)) cleared = Math.max(0, Math.min(3, Math.floor(value)));
+      }
+    } catch (error) {
+      cleared = 0;
+    }
+    return cleared;
+  }
+
+  function campaignAllowedDifficulty() {
+    return Math.min(3, campaignClearedDifficulty() + 1);
+  }
+
   function addModeSelector(card, modeIdValue) {
-    if (modeIdValue !== 'hunt' && modeIdValue !== 'puzzle') return;
+    if (modeIdValue !== 'hunt' && modeIdValue !== 'puzzle' && modeIdValue !== 'conquest') return;
+    if (modeIdValue === 'conquest') {
+      const field = node('label', 'solo-mode-select-field');
+      appendText(field, 'span', 'solo-mode-select-label', '战役难度');
+      const select = node('select', 'solo-mode-select');
+      select.dataset.modeOption = 'difficulty';
+      select.dataset.mode = 'conquest';
+      select.setAttribute('aria-label', '战役难度');
+      const allowedIndex = campaignAllowedDifficulty() - 1;
+      if (modeSelections.conquest > allowedIndex) modeSelections.conquest = allowedIndex;
+      const choices = [['0', '难度 I · 普通'], ['1', '难度 II · 噩梦'], ['2', '难度 III · 地狱']];
+      choices.forEach(([value, label], index) => {
+        const locked = index > allowedIndex;
+        const option = node('option', '', locked ? `${label}（需通关上一难度）` : label);
+        option.value = value;
+        option.disabled = locked;
+        select.appendChild(option);
+      });
+      select.value = String(modeSelections.conquest || 0);
+      field.appendChild(select);
+      card.appendChild(field);
+      return;
+    }
     const field = node('label', 'solo-mode-select-field');
     const caption = modeIdValue === 'hunt' ? '狩猎目标' : '选择题目';
     appendText(field, 'span', 'solo-mode-select-label', caption);
@@ -260,6 +307,7 @@
   function selectedStartOptions(mode) {
     if (mode === 'hunt') return { bossIndex: modeSelections.hunt };
     if (mode === 'puzzle') return { puzzleIndex: modeSelections.puzzle };
+    if (mode === 'conquest') return { difficulty: modeSelections.conquest + 1 };
     return {};
   }
 
@@ -352,7 +400,7 @@
     const select = event.target;
     if (!select || !select.dataset || !select.dataset.modeOption) return;
     const mode = select.dataset.mode;
-    if (mode !== 'hunt' && mode !== 'puzzle') return;
+    if (mode !== 'hunt' && mode !== 'puzzle' && mode !== 'conquest') return;
     const index = Number(select.value);
     if (Number.isInteger(index) && index >= 0 && index <= 2) modeSelections[mode] = index;
   }
@@ -447,11 +495,54 @@
     return inBattle;
   }
 
+  function campaignMapSignatureOf(state, view) {
+    const map = state.map || {};
+    return JSON.stringify([
+      state.phase, state.act, state.difficulty, state.hp, state.maxHp,
+      state.supply, state.maxSupply, state.activeArmy, state.armies,
+      state.telegraph, state.target, map.nodes, map.owned, map.cursor,
+      view.choices, view.finished
+    ]);
+  }
+
+  function syncCampaignMapMount() {
+    if (!panelCampMountNode) return;
+    const component = window.CampaignMap;
+    const state = latest.state || {};
+    const view = latest.view || {};
+    /* 地图全幅上屏仅限战役地图两相；其余阶段回到紧凑面板，棋盘区恢复显示 */
+    const mapPhase = state.phase === 'map' || state.phase === 'actClear';
+    const show = !!latest.active
+      && modeId(latest.mode) === 'conquest'
+      && state.mode === 'conquest'
+      && mapPhase
+      && !!component
+      && typeof component.render === 'function'
+      && !view.finished;
+    if (!show) {
+      panelCampMountNode.hidden = true;
+      document.body.classList.remove('solo-camp-map-open');
+      if (campaignMapMounted && component && typeof component.destroy === 'function') component.destroy();
+      campaignMapMounted = false;
+      campaignMapSignature = '';
+      return;
+    }
+    panelCampMountNode.hidden = false;
+    const signature = campaignMapSignatureOf(state, view);
+    if (!campaignMapMounted || signature !== campaignMapSignature) {
+      component.render(panelCampMountNode, { state, view, onAction: (choiceId) => call('onAction', choiceId) });
+      campaignMapSignature = signature;
+    }
+    campaignMapMounted = true;
+    document.body.classList.add('solo-camp-map-open');
+  }
+
   function renderPanel(inBattle) {
     if (!panelNode) return;
     const isActive = !!latest.active;
     panelNode.hidden = !isActive;
     panelNode.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+    syncCampaignMapMount();
     if (!isActive) return;
 
     const mode = byId.get(modeId(latest.mode));
@@ -510,15 +601,17 @@
     }
 
     const canFight = !!view.canFight && !inBattle && !fightPending && !view.finished;
+    const defenseBattle = mode.id === 'conquest' && typeof view.subtitle === 'string' && view.subtitle.includes('防守战');
     const buttonCopy = expedition
       ? { active: '演出进行中', pending: '正在准备演出…', ready: '开启演出', waiting: '等待舞台安排', title: '开启当前演出', disabledTitle: '当前阶段暂不可开启演出' }
-      : { active: '战斗进行中', pending: '正在进入战斗…', ready: '开战', waiting: '等待遭遇', title: '开始当前遭遇战', disabledTitle: '当前阶段不可开战' };
+      : { active: '战斗进行中', pending: '正在进入战斗…', ready: defenseBattle ? '开始防守战' : '开战', waiting: '等待遭遇', title: '开始当前遭遇战', disabledTitle: '当前阶段不可开战' };
     if (panelFightHelpNode) panelFightHelpNode.textContent = expedition ? '仅在演出准备完成后可开启演出。' : '仅在遭遇战准备完成后可开战。';
     panelFightNode.disabled = !canFight;
     panelFightNode.textContent = inBattle ? buttonCopy.active : fightPending ? buttonCopy.pending : view.finished ? '本段已结束' : view.canFight ? buttonCopy.ready : buttonCopy.waiting;
     panelFightNode.title = canFight ? buttonCopy.title : buttonCopy.disabledTitle;
     const retry = panelNode.querySelector('[data-action="retry"]');
-    if (retry) retry.hidden = !view.finished || typeof handlers.onRetry !== 'function';
+    /* 战役终局重试走规则层 checkpoint:retry；面板「再战一次」是整局清档重开，对战役隐藏防误点覆盖存档 */
+    if (retry) retry.hidden = !view.finished || typeof handlers.onRetry !== 'function' || mode.id === 'conquest';
   }
 
   function onPanelClick(event) {
