@@ -1,6 +1,7 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v49-home-primary';   // v49：solo-host v3，首页主推经典挑战、单人玩法缩为次级入口
-const ASSETS = ['./tools/solo-modes.js?v=1', './tools/solo-ui.js?v=1', './tools/solo-ui.css?v=1', './tools/solo-host.js?v=3', './tools/daily-curses.js?v=2', './', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './assets/redraw_manifest.json', './assets/skill_signature_manifest.json', './assets/syn/synergy-atlas.png', './assets/fx/v3-blade.png', './assets/fx/v3-arc.png', './assets/fx/v3-ward.png', './assets/fx/v3-void.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js?v=8', './tools/idol-ui.css?v=2', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=10', './tools/idol-ui-redesign.js?v=5', './tools/mobile-stage.css?v=2', './tools/idol-dark.css?v=3', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png', './assets/ui/idol-arena-night.png'];
+const CACHE = 'vcache-v50-sound-stable';   // v50：更新音效与棋盘反馈，刷新首页离线缓存
+const INDEX_ASSET = './index.html?v=50';
+const ASSETS = ['./tools/solo-modes.js?v=1', './tools/solo-ui.js?v=1', './tools/solo-ui.css?v=1', './tools/solo-host.js?v=3', './tools/daily-curses.js?v=2', './', INDEX_ASSET, './manifest.json', './icon-192.png', './icon-512.png', './assets/redraw_manifest.json', './assets/skill_signature_manifest.json', './assets/syn/synergy-atlas.png', './assets/fx/v3-blade.png', './assets/fx/v3-arc.png', './assets/fx/v3-ward.png', './assets/fx/v3-void.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js?v=8', './tools/idol-ui.css?v=2', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=10', './tools/idol-ui-redesign.js?v=5', './tools/mobile-stage.css?v=2', './tools/idol-dark.css?v=3', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png', './assets/ui/idol-arena-night.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
@@ -19,9 +20,9 @@ self.addEventListener('fetch', e => {
   const isBot = e.request.url.includes('bot_strategy.js');
   if (isNav || isBot) { // 页面：网络优先，失败回退缓存（离线可玩，更新即时生效）
     e.respondWith(fetch(e.request).then(res => {
-      const copy = res.clone(); caches.open(CACHE).then(c => c.put(isBot ? e.request : './index.html', copy)).catch(() => {});
+      const copy = res.clone(); caches.open(CACHE).then(c => c.put(isBot ? e.request : INDEX_ASSET, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match(isBot ? e.request : './index.html')));
+    }).catch(() => caches.match(isBot ? e.request : INDEX_ASSET)));
     return;
   }
   // 同源静态资源：缓存优先，按完整 URL 匹配（含 query）——不再用 ignoreSearch，避免不同参数互相覆盖

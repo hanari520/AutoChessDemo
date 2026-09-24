@@ -798,9 +798,6 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 @keyframes dieFade { from{ opacity:1; } to{ opacity:0; transform:scale(.82); filter:grayscale(1) brightness(1.35); } }
 .unit.battle-unit.squash { animation:squashB calc(.42s/var(--spd)) ease-out; }
 @keyframes squashB { 0%,100%{ transform:scale(1,1); } 35%{ transform:scale(1.25,.6); } 70%{ transform:scale(.92,1.16); } }
-#board.quake { animation:quake calc(.28s/var(--spd)); }
-@keyframes quake { 0%,100%{ transform:rotateX(var(--rx,0deg)) translate(0,0); } 25%{ transform:rotateX(var(--rx,0deg)) translate(-3px,2px); }
-  55%{ transform:rotateX(var(--rx,0deg)) translate(3px,-2px); } 80%{ transform:rotateX(var(--rx,0deg)) translate(-2px,-1px); } }
 .dmg { position:absolute; color:#ff8a80; font-weight:bold; font-size:13px; pointer-events:none; z-index:50;
   animation:fly 1s ease-out forwards; }
 .dmg.heal { color:var(--heal); }
@@ -1752,7 +1749,7 @@ function castV3Skill(u,units,skMul,k){
   showCutin(u,k.name,k.mode);u._casting=true;u._skillArch=k.mode;
   if(u.id==='rinco'&&k.lifesteal)u.vamp=Math.max(u.vamp||0,k.lifesteal);
   dmgPopup(u,u,'✦'+k.name,'cast');vfxAt(u,'charge',260);signatureFx(u,foes.length?primary:null);
-  sfx(k.mode==='heal'||k.mode==='team'||k.mode==='support'||k.mode==='teamShield'?'heal':k.attackStyle==='blade'?'slash':'spellDark');
+  if(!k.passive&&k.mode!=='passive')skillSound(v3Impact(k,u));
   log('✨ '+(u.side===0?'我方':'敌方')+d.name+' 发动【'+k.name+'】！');shakeCell(u.x,u.y);
   const hit=(f,m)=>v3ApplyHit(u,f,power,k,units,m);
   const healSet=(n)=>allies.slice().sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp).slice(0,n||allies.length);
@@ -2604,8 +2601,8 @@ function log(t){ S.log.unshift(t); if(S.log.length>60)S.log.pop();   // 上限 6
   if(ARENA_SILENT) return;
   $('log').innerHTML = S.log.map(x=>'· '+x).join('<br>'); }
 /* ================= 声音系统（Web Audio 程序化合成，纯表现层） =================
-   单一 sfx(key) 入口；无 AudioContext（sim 桩/无头环境）一律静默 no-op；
-   同 key ≥100ms 限流 + 全局并发 ≤8 voices + 音高 ±5% 微调；音效绝不改变任何结算顺序/时序/数值。 */
+   sfx(key,{delay,scale}) 的 delay 是视觉时间（秒），战斗声随 SPEED 缩放。
+   一个音效事件占一个并发位；合成噪声使用独立确定性序列，不触及战斗 RNG。 */
 let _actx=null, _sfxOn=true;
 try{ _sfxOn = localStorage.getItem('vc_sfx')!=='0'; }catch(e){}
 const SFX_BUS={ui:.5, battle:.42, global:.6};   // 分类音量总线（默认克制）
@@ -2622,6 +2619,12 @@ const SFX_DEF={
   sellhint:{t:'ui',f:[900,1250],dur:.08,type:'sine',vol:.28},    // 进入出售区
   merge2:{t:'ui',f:[523,659,784],dur:.3,type:'triangle',vol:.5},     // 2★ 升星琶音
   merge3:{t:'ui',f:[523,659,784,1046,1318],dur:.65,type:'triangle',vol:.55}, // 3★ 长琶音
+  cast:{t:'battle',f:[480,720],dur:.16,type:'sine',vol:.16,priority:1}, // 蓄力环：低音量预兆
+  impactBlade:{t:'battle',noise:.45,f:[860,260],dur:.19,type:'sawtooth',vol:.34,priority:3},
+  impactArc:{t:'battle',f:[760,390],dur:.23,type:'triangle',vol:.30,noise:.13,priority:3},
+  impactWater:{t:'battle',f:[540,260],dur:.26,type:'sine',vol:.26,noise:.24,priority:3},
+  impactPoison:{t:'battle',f:[230,135],dur:.28,type:'triangle',vol:.24,noise:.20,priority:3},
+  battleStart:{t:'global',f:[196,294,392],dur:.38,type:'triangle',vol:.36,priority:4},
   slash:{t:'battle',noise:.5,f:[900,320],dur:.13,type:'sawtooth',vol:.3},   // 斩击 whoosh
   spellFire:{t:'battle',f:[210,90],dur:.24,type:'sawtooth',vol:.32,noise:.25}, // 爆裂
   spellIce:{t:'battle',f:[1500,950,620],dur:.22,type:'sine',vol:.28},          // 冰晶
@@ -2632,9 +2635,9 @@ const SFX_DEF={
   stunHit:{t:'battle',f:[150,80],dur:.15,type:'square',vol:.32,noise:.15}, // 控制命中：闷响
   crit:{t:'battle',f:[1000,1650],dur:.1,type:'square',vol:.42},    // 暴击：更响更高
   die:{t:'battle',f:[220,110],dur:.2,type:'triangle',vol:.28},     // 死亡：低沉（限流防齐响）
-  win:{t:'global',f:[523,659,784,1046],dur:.5,type:'triangle',vol:.5},   // 胜利 jingle
-  lose:{t:'global',f:[420,300,200],dur:.5,type:'triangle',vol:.45},      // 失败 jingle
-  finalWin:{t:'global',f:[523,659,784,1046,1318],dur:1.0,type:'triangle',vol:.55}, // 通关
+  win:{t:'global',f:[523,659,784,1046],dur:.5,type:'triangle',vol:.5,priority:5},   // 胜利 jingle
+  lose:{t:'global',f:[420,300,200],dur:.5,type:'triangle',vol:.45,priority:5},      // 失败 jingle
+  finalWin:{t:'global',f:[523,659,784,1046,1318],dur:1.0,type:'triangle',vol:.55,priority:5}, // 通关
   horn:{t:'global',f:[262,262,330],dur:.55,type:'sawtooth',vol:.32},     // 野怪号角预警
   settle:{t:'global',f:[740],dur:.06,type:'sine',vol:.16},       // 回合结算轻提示
   splash:{t:'battle',f:[620,300],dur:.12,type:'sine',vol:.2,noise:.3},
@@ -2674,52 +2677,99 @@ const SFX_SKILL={cleave:'slash',dash:'slash',shred:'slash',rapid:'slash',
   heal:'heal',aheal:'heal',cleanse:'heal',manafeed:'heal',
   shell:'shield',teamshield:'shield',guard:'shield',bulwark:'shield',tauntshield:'shield',
   petrify:'stunHit',massstun:'stunHit',slam:'stunHit'};
-const _sfxLast={}; let _sfxVoices=0;
+const _sfxLast={}; let _sfxVoices=0, _sfxSeed=0x19a4e317;
+const _sfxActive=[];
+function sfxNoise(){ _sfxSeed=(_sfxSeed*1664525+1013904223)>>>0; return _sfxSeed/4294967296; }
+function skillImpact(arch){ return SFX_SKILL[arch]||'impactArc'; }
+function v3Impact(k,u){
+  if(['guard','guardLink','teamShield'].includes(k.mode))return 'shield';
+  if(['heal','team','support'].includes(k.mode))return 'heal';
+  if(u.id==='sanli')return 'spellDark'; // 梦境连锁是柔和回响，不是电弧
+  if(u.id==='sishi')return 'impactArc'; // 四季弹以变调脉冲表现
+  if(u.id==='nana7mi')return 'impactWater';
+  if(k.freeze||k.mode==='zone'&&k.zone?.slow)return 'spellIce';
+  if(k.petrify||k.stun)return 'stunHit';
+  if(k.mode==='field')return k.asset===V3_ASSET.void?'spellDark':'impactArc';
+  if(k.mode==='zone')return 'zone';
+  if(k.attackStyle==='blade'||['dash','dashCleave','cleave','combo'].includes(k.mode))return 'impactBlade';
+  if(k.color&&/^(#67d4e8|#79e6d5|#7ed7d9)$/i.test(k.color))return 'impactWater';
+  if(k.bleed||k.healBlock)return 'impactPoison';
+  if(k.asset===V3_ASSET.void)return 'spellDark';
+  if(k.mode==='chain'||k.attackStyle==='shot')return 'spellZap';
+  if(k.mode==='chaos')return 'spellDark';
+  return 'impactArc';
+}
+function skillSound(key){
+  // 技能数值命中和主体 VFX 同步创建；charge 环持续 260ms 只是前景动画，
+  // 不能把伤害声推到它结束。刀锋/爆裂首帧，护盾/治疗取扩张环早期主峰。
+  const delay=key==='heal'?.07:key==='shield'?.06:key==='zone'?.03:
+    key==='spellIce'?.045:key==='spellDark'?.04:key==='impactArc'?.035:0;
+  sfx('cast',{scale:true});
+  sfx(key,{delay,scale:true,finishOnResult:true});
+}
 function sfxCtx(){
   if(_actx!==null) return _actx;
   try{ const AC=(typeof window!=='undefined')&&(window.AudioContext||window.webkitAudioContext);
     if(!AC) return (_actx=false); _actx=new AC(); }catch(e){ return (_actx=false); }
   return _actx;
 }
-function sfx(key){
-  if(ARENA_SILENT) return;
-  if(window.__sfxCount){ window.__sfxCount[key]=(window.__sfxCount[key]||0)+1; }   // DBG 计数（不计静音状态）
-  if(!_sfxOn) return;
+function sfx(key,opt={}){
+  if(ARENA_SILENT||!_sfxOn) return;
   const ctx=sfxCtx();
   if(!ctx||ctx.state!=='running') return;   // 无音频环境/无手势：静默 no-op
   const d=SFX_DEF[key]; if(!d) return;
-  if(window.__sfxPlayed!=null) window.__sfxPlayed++;   // DBG：实际发声计数（静音/无音频环境不增长）
   const now=ctx.currentTime;
-  if(_sfxLast[key] && now-_sfxLast[key]<0.1) return;   // 同 key 限流 ≥100ms
-  if(_sfxVoices>=8) return;                            // 全局并发 ≤8 voices
-  _sfxLast[key]=now;
-  const vol=(d.vol||.3)*(SFX_BUS[d.t]||.5);
-  const step=(d.dur||.1)/Math.max(1,(d.f||[]).length);
+  const when=now+Math.max(0,Number(opt.delay)||0)/(opt.scale?Math.max(1,typeof SPEED==='number'?SPEED:1):1);
+  if(_sfxLast[key]!=null && when-_sfxLast[key]<.11) return;
+  if(_sfxVoices>=8){
+    const victim=_sfxActive.filter(v=>v.priority<(d.priority||2)).sort((a,b)=>a.priority-b.priority)[0];
+    if(!victim)return;
+    victim.stop();
+  }
+  const speed=opt.scale?Math.max(1,typeof SPEED==='number'?SPEED:1):1;
+  const dur=(d.dur||.1)/speed, vol=(d.vol||.3)*(SFX_BUS[d.t]||.5);
+  const step=dur/Math.max(1,(d.f||[]).length);
+  const event={priority:d.priority||2,bus:d.t,finishOnResult:!!opt.finishOnResult,sources:[],tail:null,until:0,ended:false,registered:false,stop(){
+    if(this.ended)return; this.ended=true;
+    if(this.registered)_sfxVoices=Math.max(0,_sfxVoices-1);
+    const i=_sfxActive.indexOf(this);if(i>=0)_sfxActive.splice(i,1);
+    this.sources.forEach(src=>{try{src.stop();}catch(e){}});
+  }};
   try{
     if(d.noise){   // 噪声层（纸声/whoosh/闷响颗粒）
-      const len=Math.max(1,Math.ceil(ctx.sampleRate*(d.dur||.1)));
+      const len=Math.max(1,Math.ceil(ctx.sampleRate*dur));
       const buf=ctx.createBuffer(1,len,ctx.sampleRate), ch=buf.getChannelData(0);
-      for(let i=0;i<len;i++) ch[i]=(rand()*2-1)*Math.pow(1-i/len,1.6);
+      for(let i=0;i<len;i++) ch[i]=(sfxNoise()*2-1)*Math.pow(1-i/len,1.6);
       const src=ctx.createBufferSource(); src.buffer=buf;
       const g=ctx.createGain(); g.gain.value=vol*Math.min(1,d.noise);
       src.connect(g); g.connect(ctx.destination);
-      src.start(now); src.stop(now+(d.dur||.1)+.02);
-      _sfxVoices++; src.onended=()=>{ _sfxVoices--; };
+      const end=when+dur+.02;
+      src.start(when); src.stop(end);event.sources.push(src);
+      if(end>event.until){event.until=end;event.tail=src;}
     }
-    if(d.type && d.type!=='noise' && (d.f||[]).length){   // 振荡器琶音（每音独立包络 + ±5% 音高抖动）
+    if(d.type && d.type!=='noise' && (d.f||[]).length){
       (d.f).forEach((f0,i)=>{
         const o=ctx.createOscillator(), g=ctx.createGain();
-        o.type=d.type; o.frequency.value=Math.max(30, f0*(1+(rand()*.1-.05)));
-        const st=now+i*step*.62;
+        o.type=d.type; o.frequency.value=Math.max(30,f0);
+        const st=when+i*step*.62;
         g.gain.setValueAtTime(.0001,st);
-        g.gain.exponentialRampToValueAtTime(Math.max(.001,vol), st+.012);
+        g.gain.exponentialRampToValueAtTime(Math.max(.001,vol), st+Math.min(.012,.012/speed));
         g.gain.exponentialRampToValueAtTime(.0001, st+step+.04);
         o.connect(g); g.connect(ctx.destination);
-        o.start(st); o.stop(st+step+.06);
-        _sfxVoices++; o.onended=()=>{ _sfxVoices--; };
+        const end=st+step+.06;
+        o.start(st); o.stop(end);
+        event.sources.push(o);
+        if(end>event.until){event.until=end;event.tail=o;}
       });
     }
-  }catch(e){}
+    if(!event.sources.length)return;
+    event.tail.onended=()=>event.stop();
+    _sfxActive.push(event);event.registered=true;_sfxVoices++;_sfxLast[key]=when;
+    if(typeof window!=='undefined'){
+      if(window.__sfxCount)window.__sfxCount[key]=(window.__sfxCount[key]||0)+1;
+      if(window.__sfxPlayed!=null)window.__sfxPlayed++;
+    }
+  }catch(e){event.stop();}
 }
 /* 自动播放策略：首次用户手势 resume（此前静默不报错） */
 if(typeof document!=='undefined' && document.addEventListener){
@@ -2728,7 +2778,7 @@ if(typeof document!=='undefined' && document.addEventListener){
   document.addEventListener('keydown',_sfxUnlock,{passive:true});
 }
 function paintSfxBtn(){ const b=$('sfxBtn'); if(!b) return; b.textContent='音效'; b.title=_sfxOn?'音效：开（点击静音，状态本地保存）':'音效：关（点击开启，状态本地保存）'; b.setAttribute('aria-label',b.title); b.classList.toggle('on',_sfxOn); }
-function toggleSfx(){ _sfxOn=!_sfxOn; try{ localStorage.setItem('vc_sfx', _sfxOn?'1':'0'); }catch(e){} paintSfxBtn(); }
+function toggleSfx(){ _sfxOn=!_sfxOn; if(!_sfxOn)_sfxActive.slice().forEach(e=>e.stop()); try{ localStorage.setItem('vc_sfx', _sfxOn?'1':'0'); }catch(e){} paintSfxBtn(); }
 function byId(id){ return UNITS.find(u=>u.id===id); }
 /* 经济分类记账（只增字段）：reason 关键词映射到 goldBy 分类，供战报结算块与一局总结使用 */
 const GOLD_CAT=[['基础收入','base'],['利息','interest'],['连胜','streak'],['连败','loss'],['胜利奖金','win'],['羁绊奖励','syn'],['出售','sell']];
@@ -3936,9 +3986,10 @@ function buy(i){
   const nu={uid:S.uid++, id:d.id, star:1, sks:1, hp:Math.round(d.hp*HP_SCALE), maxhp:Math.round(d.hp*HP_SCALE), atk:d.atk, items:[]};
   if(slot<0) S.bench.push(nu);            // 临时超编一位，tryMerge 会立刻合成消化
   else S.bench[slot]=nu;
+  sfx('buy'); // 购买先叮，升星随后起音，避免合成先于购买
   tryMerge();
   if(S.bench.length>BENCH) S.bench.length=BENCH;   // 修剪临时超编位
-  sfx('buy'); log('购买 '+d.name); if(S.solo?.mode==='puzzle')SoloHost.puzzleShop(); renderAll();
+  log('购买 '+d.name); if(S.solo?.mode==='puzzle')SoloHost.puzzleShop(); renderAll();
 }
 function tryMerge(){
   for(const d of UNITS){
@@ -3962,7 +4013,7 @@ function tryMerge(){
           atk:Math.round(d.atk*Math.pow(STAR_M[d.cost]||1.8, star)), items};
         group.forEach(s=>setAt(s[0],s[1],null));
         setAt(keep[0],keep[1],upgraded);
-        sfx(star+1>=3?'merge3':'merge2');
+        sfx(star+1>=3?'merge3':'merge2',{delay:.09});
         (S.ms=S.ms||{})[star+1>=3?'merged3':'merged2']=1;   // 成就里程碑
         log(`✨ ${d.name} 升至 ${star+1} 星！`);
         tryMerge(); return;
@@ -4528,8 +4579,8 @@ function startBattle(){
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
   if(S.solo)SoloHost.beforeBattle();
   S.phase='battle'; if(!S.enemyBoard || !S.enemyBoard.some(Boolean)) S.enemyBoard=genEnemy(); S.selUid=null; S.selItem=null; hideInspect(); clearRangeFocus();
+  sfx(S.round%5===0?'horn':'battleStart');
   const c=compForRound(S.round);
-  if(S.round%5===0) sfx('horn');   // 野怪回合号角预警
   log(S.solo?.mode==='expedition'?`🎤 第 ${S.round} 场公演开始！同台阵容：【${c.name}】`:`⚔ 第 ${S.round} 回合开战！对手：【${c.name}】`);
   $('fightBtn').disabled=true; $('refreshBtn').disabled=true; $('lvlBtn').disabled=true;
   renderAll();
@@ -4624,7 +4675,7 @@ function startBattle(){
       const act=[...Object.keys(facCnt).map(k=>({k,t:tierOf(facCnt,FACTIONS,k)})),
                  ...Object.keys(clsCnt).map(k=>({k,t:tierOf(clsCnt,CLASSES,k)}))].filter(x=>x.t>0);
       act.sort((a,b)=>b.t-a.t);
-      const top=act[0]; if(top){ const key=BOND_ST[top.k]; if(key) setTimeout(()=>sfx(key), 150); }   // 只播 1 个最高档羁绊（用户反馈开局音效太多）
+      const top=act[0]; if(top){ const key=BOND_ST[top.k]; if(key) setTimeout(()=>sfx(key), 620/SPEED); }   // 开战号角/三音落定后，只播 1 个最高档羁绊
     }
     // —— 应用到每个棋子 ——
     mine.forEach(u=>{
@@ -4885,7 +4936,7 @@ function startBattle(){
             const cm=u.critM||ASSASSIN_CRIT_MULT;
             dmg=Math.round(dmg*cm);
             dmgPopup(u,tgt,'⚡暴击×'+cm,'crit'); vfxAt(tgt, u.ownCrit?'crit gold':'crit', 500);
-            fxSparks(tgt, u.ownCrit?'#ffd24a':'#c77dff', 4, 30); boardQuake();
+            fxSparks(tgt, u.ownCrit?'#ffd24a':'#c77dff', 4, 30);
             sfx('crit');
             if(window.__critN!=null) window.__critN++;   // DBG：暴击计数
           }
@@ -5396,11 +5447,6 @@ function ahealFx(u){                   // 全队治疗：脚下光柱 + 1 颗上
   fxNode('pillar',p.x,p.y+g.ch*0.45,700);
   fxRise(u,'mote',1);
 }
-function boardQuake(){                 // 暴击：短促棋盘震
-  const b=$('board');
-  b.classList.add('quake');
-  setTimeout(()=>b.classList.remove('quake'),300/SPEED);
-}
 function deathFx(el,layer){            // 死亡：灰化淡出 + 消散粒子（renderBattle 清理分支调用）
   if(el.dataset.dead) return;
   el.dataset.dead='1';
@@ -5646,7 +5692,7 @@ function castSkill(u,tgt,units,skMul){
   dmgPopup(u,u,'✦'+nm,'cast');
   vfxAt(u,'charge',260);   // 施法蓄力预兆：起手 0.26s 收束环（纯视觉，预算内复用 vfxAt 通道）
   signatureFx(u,tgt);      // 每枚棋子独有的图腾/轮廓/命中印记
-  sfx(SFX_SKILL[arch]||'spellDark');   // 技能分组音色（斩击/法术/治疗/护盾/控制）
+  skillSound(skillImpact(arch));   // 蓄力环与主体 VFX 同帧出现；音色主峰按类别微调
   log(S.solo?.mode==='expedition'?`✨ ${u.side===0?'我方':'同台'}${d.name} 演绎【${nm}】！`:`✨ ${u.side===0?'我方':'敌方'}${d.name} 释放【${nm}】！`);
   shakeCell(u.x,u.y);
   const hm = (u.healMul||1)*(_skdm&&_skdm.skillMultiplier?_skdm.skillMultiplier:1);
@@ -5991,7 +6037,8 @@ function renderBattle(units){
 function showResultBanner(won,cb){
   if(S.phase!=='battle') return;   // 已在结算流程中，防止重复横幅/重复结算
   S.phase='settle';
-  sfx(won?'win':'lose');   // 战斗结果 jingle
+  _sfxActive.filter(e=>e.bus==='battle'&&!e.finishOnResult).forEach(e=>e.stop());
+  sfx(won?'win':'lose',{delay:.12});   // 终结命中音后进入胜负主题
   const el=document.createElement('div');
   el.className='result-banner '+(won?'win':'lose');
   el.textContent=S.solo?.mode==='expedition'?(won?'🎤 演出成功':'💤 演出中止'):(won?'🏆 胜 利':'💀 失 败');
@@ -6051,7 +6098,7 @@ function chapterSettle(won){
   }
   S.settleOffer=picked.map(a=>({id:a.id, weak:!won}));
   S.settlePick=null;
-  sfx(won?'finalWin':'settle');
+  // 战斗横幅已播放胜负主题；章节选择页沿用它，避免二次结算旋律。
   const ch=Math.ceil(S.round/chLen());
   renderSettle();
   $('chapterTitle').textContent = won? `🏆 第 ${ch} 章结算 · 守关魔王已败！` : `💔 第 ${ch} 章结算 · 惜败守关魔王`;
@@ -6320,6 +6367,7 @@ function gameOver(win){
   if(!S||S.finalized||S.phase==='over')return;
   S.finished=!!win;
   S.phase='over'; endRunCleanup();
+  if(win)sfx('finalWin'); // 真正通关页播放终章旋律
   const historySaved=writeRunHistory(win); checkAchievements();
   const saveRemoved=removeRunSave(saveKey());
   const title=(S.daily?'📅 ':'')+(win ? '🏅 四章挑战通关！' : '💀 挑战失败');
