@@ -94,97 +94,82 @@ module.exports.run = function (A) {
   game.prepEnemy();
   assert.equal(A.S.enemyBoard.filter(Boolean).length, 5, 'custom solo retains its enemy cap');
 
-  // ---- Daily curse v2 host wiring: state creation, event chain, modifier consumption ----
-  global.window.DailyCurses = require('./daily-curses.js');   // host reads window.DailyCurses dynamically, so late injection works
-  const DC = window.DailyCurses;
-  const stateFor = id => ({ version: 2, id, seed: A.S.dseed, done: {}, refreshes: 0, refreshRound: 0, freeRefreshRound: 0, freeBuffRound: 0, seal: null });
-
-  A.newGame({ daily: true });
-  assert.ok(A.S.dailyCurse && A.S.dailyCurse.version === 2, 'newGame creates the v2 daily state');
-  assert.equal(A.S.dailyCurse.id, DC.pick(A.S.dseed).id, 'daily state follows the date pick');
-  const START_GOLD = { dc_debt: 12, dc_slowgrowth: 6, dc_five: 16, dc_drought: 6 };
-  A.newGame({ daily: true });
-  assert.equal(A.S.gold, 10 + (START_GOLD[A.S.dailyCurse.id] || 0), 'start gold compensation is granted through dailyEvent');
-  assert.equal(A.S.tickets, A.S.dailyCurse.id === 'dc_march' ? 1 : 0, 'march start ticket is granted');
-  assert.equal(A.S.curses.length, 1, 'daily keeps exactly one catalog id for the rank contract');
-
-  // Every rule drives the shared host read points (hp/shop/refresh/cap/equip).
-  for (const rule of DC.CATALOG.map(c => c.id)) {
-    A.newGame({ daily: true });
-    A.S.dailyCurse = stateFor(rule);
-    A.S.gold = 50;
-    const dm = DC.modifiers(A.S.dailyCurse, { round: A.S.round });
-    assert.equal(game.hpMax(), dm.maxHp, rule + ' hpMax follows modifiers');
-    assert.equal(game.shopSize(), dm.shopSize, rule + ' shopSize follows modifiers');
-    assert.equal(game.refreshCost(), dm.refreshCost, rule + ' refreshCost follows modifiers');
-    assert.equal(game.lvlCap(), dm.cap, rule + ' lvlCap follows modifiers');
-    if (typeof dm.maxEquip === 'number') assert.equal(game.maxEquip(), dm.maxEquip, rule + ' maxEquip follows modifiers');
-    assert.equal(game.interestGain(), dm.interestMultiplier * Math.min(5, Math.floor(50 / 10)), rule + ' interestGain follows modifiers');
-  }
-
-  // Battle-unit multipliers: enemy +12% (armor), enemy +15% pressure window (march), ally -25%/+25% (glass), mana 75 (drought).
-  A.newGame({ daily: true });
-  const probeDef = A.UNITS.find(u => !u.big);
-  const probe = { uid: 1, id: probeDef.id, star: 1, sks: 1, hp: 1000, maxhp: 1000, atk: 50, items: [] };
-  A.S.dailyCurse = stateFor('dc_nointerest');
-  const b0 = A.makeBattleUnit({ ...probe }, 0, 0, 0), b1 = A.makeBattleUnit({ ...probe }, 1, 0, 0);
-  assert.equal(b0.maxmana, 50, 'own mana cost stays 50 outside drought');
-  A.S.dailyCurse = stateFor('dc_armor');
-  const armored = A.makeBattleUnit({ ...probe }, 1, 0, 0);
-  assert.equal(armored.maxhp, Math.round(b1.maxhp * 1.12), 'armor enemy hp +12%');
-  assert.equal(armored.atk, Math.round(b1.atk * 1.12), 'armor enemy atk +12%');
-  A.S.dailyCurse = stateFor('dc_march');
-  A.S.round = 22;
-  const marched = A.makeBattleUnit({ ...probe }, 1, 0, 0);
-  assert.equal(marched.maxhp, Math.round(b1.maxhp * 1.15), 'march pressure window enemy hp +15%');
-  A.S.round = 2;
-  const calm = A.makeBattleUnit({ ...probe }, 1, 0, 0);
-  assert.equal(calm.maxhp, b1.maxhp, 'march outside the pressure window leaves enemies untouched');
-  A.S.dailyCurse = stateFor('dc_glass');
-  const glassy = A.makeBattleUnit({ ...probe }, 0, 0, 0);
-  assert.equal(glassy.maxhp, Math.round(b0.maxhp * 0.75), 'glass ally hp -25%');
-  assert.equal(glassy.atk, Math.round(b0.atk * 1.25), 'glass ally atk +25%');
-  A.S.dailyCurse = stateFor('dc_drought');
-  assert.equal(A.makeBattleUnit({ ...probe }, 0, 0, 0).maxmana, 75, 'drought own mana cost 75');
-
-  // Per-rule event machines through the real dailyEvent bridge.
-  A.newGame({ daily: true });
-  A.S.dailyCurse = stateFor('dc_market');
-  assert.equal(game.refreshCost(), 0, 'market first refresh is free');
+  // Shared v3 rules: daily selection and custom single-rule runs use the same host bridge.
+  global.window.DailyCurses = require('./daily-curses.js');
+  const DC=window.DailyCurses;
+  A.newGame({daily:true});
+  assert.equal(A.S.dailyCurse.version,3);
+  assert.equal(A.S.dailyCurse.id,DC.pick(A.S.dseed).id);
+  assert.equal(A.S.curses.length,1);
+  A.newGame({custom:true});
+  A.S.curses=['dc_rift'];
+  A.S.dailyCurse=DC.create(20260925,'dc_rift');
+  assert.equal(game.runLimit(),100,'new custom curses use four chapters');
+  assert.equal(game.chLen(),25);
+  assert.equal(game.rankedRun(),false);
+  const rifts=DC.modifiers(A.S.dailyCurse,{round:1}).rifts;
+  assert.equal(rifts.length,4);
+  for(const i of rifts) assert(i>=32&&i<64);
+  A.S.dailyCurse=DC.create(20260925,'dc_economy');
+  A.S.gold=50;
+  assert.equal(game.shopSize(),4);
+  assert.equal(game.refreshCost(),0);
+  assert.equal(game.interestGain(),2);
   A.dailyEvent('refresh');
-  assert.equal(game.refreshCost(), 2, 'market second refresh costs the normal 2');
-  A.dailyEvent('refresh');
-  assert.equal(game.refreshCost(), 3, 'market third refresh costs 3');
-
-  A.newGame({ daily: true });
-  A.S.dailyCurse = stateFor('dc_seal');
+  assert.equal(game.refreshCost(),2);
+  A.S.dailyCurse=DC.create(20260925,'dc_debt');
+  A.S.round=5;A.S.gold=3;
+  assert.equal(game.hpMax(),32);
   A.dailyEvent('roundStart');
-  assert.ok(A.S.dailyCurse.seal && game.nbList().includes(A.S.dailyCurse.seal), 'seal joins the shared bond-ban list');
-  assert.equal(game.refreshCost(), 0, 'seal round grants the free refresh');
-
-  A.newGame({ daily: true });
-  A.S.dailyCurse = stateFor('dc_debt');
-  A.S.hp = game.hpMax();   // debt caps max hp at 30
-  A.S.round = 5; A.S.gold = 100;
-  assert.ok(A.dailyEvent('roundStart'));
-  assert.equal(A.S.gold, 98, 'debt pays 4 and refunds 2 on time');
-  A.dailyEvent('roundStart');
-  assert.equal(A.S.gold, 98, 'debt events are idempotent per round');
-  A.S.round = 10; A.S.gold = 0;
-  const hpBefore = A.S.hp;
-  assert.ok(A.dailyEvent('roundStart'));
-  assert.equal(A.S.hp, hpBefore - 3, 'unpaid debt costs 3 life');
-
-  A.newGame({ daily: true });
-  A.S.dailyCurse = stateFor('dc_fog');
-  A.S.round = 5;
-  A.dailyEvent('roundStart');
-  assert.equal(A.enemyHidden(), true, 'fog hides the prep enemy preview');
-  assert.equal(A.S.tempBuff, 'hp', 'fog grants the round-limited free temp buff');
-
-  A.newGame({ daily: true });
-  A.S.dailyCurse = stateFor('dc_nointerest');
-  assert.equal(game.enemyHidden(), false, 'other rules keep the enemy preview visible');
-
-  console.log('PASS daily campaign: four chapters, rewards, boss losses, completion, army scaling, deterministic restart/reload, custom boundaries, historical board isolation, daily v2 effect wiring');
+  assert.equal(A.S.gold,0);
+  A.S.dailyCurse=DC.create(20260925,'dc_growth');
+  A.S.round=21;
+  assert.equal(game.dailyMods().buyXp,false);
+  assert.equal(game.dailyMods().naturalXp,3);
+  assert.equal(game.dailyMods().enemyHpMultiplier,1.1);
+  A.S.dailyCurse=DC.create(20260925,'dc_glass');
+  const probeDef=A.UNITS.find(u=>!u.big);
+  const probe={uid:1,id:probeDef.id,star:1,sks:1,hp:1000,maxhp:1000,atk:50,items:[]};
+  A.S.dailyCurse=DC.create(20260925,'dc_fog');
+  const base=A.makeBattleUnit({...probe},1,0,0);
+  const ownBase=A.makeBattleUnit({...probe},0,0,4);
+  A.S.dailyCurse=DC.create(20260925,'dc_armor');
+  const armored=A.makeBattleUnit({...probe},1,0,0);
+  assert.equal(armored.maxhp,Math.round(base.maxhp*1.1));
+  assert.equal(armored.atk,Math.round(base.atk*1.1));
+  A.S.dailyCurse=DC.create(20260925,'dc_glass');
+  const glass=A.makeBattleUnit({...probe},0,0,4);
+  assert.equal(glass.maxhp,Math.round(ownBase.maxhp*.8));
+  assert.equal(glass.atk,Math.round(ownBase.atk*1.2));
+  A.S.dailyCurse=DC.create(20260925,'dc_drought');
+  assert.equal(A.makeBattleUnit({...probe},0,0,4).maxmana,70);
+  A.S.dailyCurse=DC.create(20260925,'dc_fog');
+  assert.equal(A.enemyHidden(),true);
+  const board=Array(64).fill(null);
+  const fighter=(uid)=>({...probe,uid});
+  A.S.dailyCurse=DC.create(20260925,'dc_rift');
+  const target=DC.rifts(A.S.dailyCurse,1)[0];board[target]=fighter(10);
+  const riftUnit=A.makeBattleUnit(board[target],0,target%8,Math.floor(target/8));
+  const riftHp=riftUnit.maxhp;
+  A.applyBoardCurse([riftUnit],board,DC.modifiers(A.S.dailyCurse,{round:1}));
+  assert.equal(riftUnit.maxhp,Math.round(riftHp*.85));
+  assert.equal(riftUnit.curseDamageMul,1.15);
+  A.S.dailyCurse=DC.create(20260925,'dc_flank');
+  board.fill(null);board[32]=fighter(11);
+  const flank=A.makeBattleUnit(board[32],0,0,4);
+  A.applyBoardCurse([flank],board,DC.modifiers(A.S.dailyCurse,{round:1}));
+  assert.equal(flank.curseTakenMul,1.2);
+  assert.equal(flank.curseDamageMul,1.15);
+  A.S.dailyCurse=DC.create(20260925,'dc_rear');
+  board.fill(null);board[56]=fighter(12);board[32]=fighter(13);
+  const rear=A.makeBattleUnit(board[56],0,0,7),front=A.makeBattleUnit(board[32],0,0,4);
+  A.applyBoardCurse([rear,front],board,DC.modifiers(A.S.dailyCurse,{round:1}));
+  assert.equal(rear.curseTakenMul,1.2);
+  assert(Math.abs(front.dmgReduce-.08)<1e-9);
+  A.S.dailyCurse=DC.create(20260925,'dc_cluster');
+  board.fill(null);for(const i of [32,33,40])board[i]=fighter(i);
+  const crowd=[32,33,40].map(i=>A.makeBattleUnit(board[i],0,i%8,Math.floor(i/8)));
+  A.applyBoardCurse(crowd,board,DC.modifiers(A.S.dailyCurse,{round:1}));
+  assert(crowd.every(u=>u.spdMul===.85),'crowded 2x2 cells slow all occupants');
+  console.log('PASS daily campaign v3: four chapters, custom single curse, shared economy, debt, growth, combat and fog');
 };

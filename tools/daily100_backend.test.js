@@ -39,27 +39,27 @@ async function post(env, body) {
 const read = response => response.json();
 const validDaily = (overrides = {}) => ({
   name: '每日测试', board: 'daily100', seed: todaySeed(), round: 100, ch: 5,
-  kills: 321, curses: 1, rules: 2, lineup: ['unit-a'], ...overrides
+  kills: 321, curses: 1, rules: 3, lineup: ['unit-a'], ...overrides
 });
 
-test('daily100 reads its v2, seed-scoped board, isolated from legacy daily and normal boards', async () => {
+test('daily100 reads its v3, seed-scoped board, isolated from legacy daily and normal boards', async () => {
   const seed = todaySeed();
   const env = makeEnv({
     [`board:daily:${seed}`]: JSON.stringify([{ n: 'old-daily', r: 99 }]),
-    [`board:daily100:${seed}:v2`]: JSON.stringify([{ n: 'new-daily', r: 100, c: 1, rules: 2 }]),
+    [`board:daily100:${seed}:v3`]: JSON.stringify([{ n: 'new-daily', r: 100, c: 1, rules: 3 }]),
     'board:normal': JSON.stringify([{ n: 'legacy-normal', r: 80 }]),
     // 2026-09-25 经典榜清分：KV 键名已升为 :v2（旧键 board:normal100 保留但不再读写）
     'board:normal100:v2': JSON.stringify([{ n: 'campaign', r: 100, ch: 5 }])
   });
   const [daily, oldDaily, normal, normal100, rejectVersion] = await Promise.all([
-    get(env, `board=daily100&seed=${seed}&rules=2`),
+    get(env, `board=daily100&seed=${seed}&rules=3`),
     get(env, `board=daily&seed=${seed}`),
     get(env, 'board=normal'),
     get(env, 'board=normal100'),
     get(env, `board=daily100&seed=${seed}&rules=1`)
   ]);
   assert.equal(daily.status, 200);
-  assert.deepEqual(await read(daily), { ok: true, board: 'daily100', seed, rules: 2, list: [{ n: 'new-daily', r: 100, c: 1, rules: 2 }] });
+  assert.deepEqual(await read(daily), { ok: true, board: 'daily100', seed, rules: 3, list: [{ n: 'new-daily', r: 100, c: 1, rules: 3 }] });
   assert.equal((await read(oldDaily)).list[0].n, 'old-daily');
   assert.equal((await read(normal)).list[0].n, 'legacy-normal');
   assert.equal((await read(normal100)).list[0].n, 'campaign');
@@ -68,7 +68,7 @@ test('daily100 reads its v2, seed-scoped board, isolated from legacy daily and n
   assert.deepEqual(env.writes, [], 'reads must not change or merge stored boards');
 });
 
-test('daily100 accepts exactly one curse on a valid 100-round, chapter 5, v2 result', async () => {
+test('daily100 accepts exactly one curse on a valid 100-round, chapter 5, v3 result', async () => {
   const seed = todaySeed();
   const oldDailyKey = `board:daily:${seed}`;
   const normal100Key = 'board:normal100:v2';   // 2026-09-25 清分后的键名
@@ -78,13 +78,13 @@ test('daily100 accepts exactly one curse on a valid 100-round, chapter 5, v2 res
   const result = await read(response);
   assert.equal(result.ok, true);
   assert.equal(result.total, 1);
-  const dailyKey = `board:daily100:${seed}:v2`;
+  const dailyKey = `board:daily100:${seed}:v3`;
   const stored = JSON.parse(env.values.get(dailyKey));
   assert.equal(stored[0].n, '每日测试');
   assert.equal(stored[0].r, 100);
   assert.equal(stored[0].ch, 5);
   assert.equal(stored[0].c, 1);
-  assert.equal(stored[0].rules, 2);
+  assert.equal(stored[0].rules, 3);
   assert.equal(stored[0].s, seed);
   assert.equal(env.values.get(oldDailyKey), '[{"n":"keep-old"}]');
   assert.equal(env.values.get(normal100Key), '[{"n":"keep-normal"}]');
@@ -96,7 +96,7 @@ test('daily100 also records a loss to the final boss as round 100, chapter 4', a
   const env = makeEnv();
   const response = await post(env, validDaily({ round: 100, ch: 4 }));
   assert.equal(response.status, 200);
-  const rows = JSON.parse(env.values.get(`board:daily100:${todaySeed()}:v2`));
+  const rows = JSON.parse(env.values.get(`board:daily100:${todaySeed()}:v3`));
   assert.equal(rows[0].r, 100);
   assert.equal(rows[0].ch, 4);
   assert.equal(rows[0].c, 1);
@@ -127,7 +127,7 @@ test('ordinary boards stay uncursed and separate from daily100', async () => {
   assert.equal(legacyNormal.status, 400);
   assert.equal((await read(legacyNormal)).error, 'cursed run not ranked');
   assert.equal(env.values.has('board:normal100:v2'), true);   // 2026-09-25 清分后的键名
-  assert.equal(env.values.has(`board:daily100:${todaySeed()}:v2`), false);
+  assert.equal(env.values.has(`board:daily100:${todaySeed()}:v3`), false);
   const normalTop = await read(await get(env, 'board=normal100'));
   assert.equal(normalTop.list[0].n, '普通');
 });

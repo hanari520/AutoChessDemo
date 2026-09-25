@@ -60,7 +60,7 @@ module.exports.run = function (A, driveBattle) {
     ok(html.includes('本场之最：输出'), '本场之最（输出）存在');
     ok(/下回合：难度/.test(html), '下回合难度预告存在');
     // 野怪回合：掉落行替代扣血行
-    ok(html.includes('🎁 掉落：'), '野怪回合掉落行存在（替代扣血行）');
+    ok(html.includes('🎁 装备到手'), '野怪回合掉落信息存在（替代扣血行）');
     // 野怪块：该块的结算头与下回合行之间不应出现扣血明细（掉落行替代）
     const iCreep = html.indexOf('击败【');
     const iHeadC = html.lastIndexOf('回合结算', iCreep);
@@ -233,6 +233,114 @@ module.exports.run = function (A, driveBattle) {
     const badShape = rows.filter(([, , need]) => !need.length || need.some((x, i) => i > 0 && x <= need[i - 1]));
     ok(badShape.length === 0, `羁绊档位数组均为非空且严格递增` +
       (badShape.length ? '（异常：' + badShape.map(r => r[1] + '=' + JSON.stringify(r[2])).join('；') + '）' : ''));
+  }
+
+  /* ---------- P0-1 体验遥测与 P0-2 死亡回合统计 ---------- */
+  console.log('[e] P0 遥测与死亡分布工具');
+  {
+    const metrics=require('./sim-metrics.js');
+    try{global.localStorage.removeItem('vc_tele_v1');}catch(e){}
+    globalThis.__HEADLESS=true;
+    globalThis.newGame();
+    A.S.round=10;A.S.phase='prep';A.S.enemyBoard=[{id:'xuezhu',hp:100,maxhp:100,atk:10}];
+    A.chooseChallenge();
+    A.S.phase='chapter';A.S.settleOffer=[{id:'synres',weak:false}];A.S.settlePick=null;A.S.settleWon=true;
+    A.pickAug(0);
+    const choices=A.S.stats.tele._events||[];
+    ok(A.S.stats.tele.eliteAccept===1&&A.S.stats.tele['augPick.synres']===1&&
+      choices.some(e=>e.name==='eliteAccept'&&e.round===10&&e.health===40)&&
+      choices.some(e=>e.name==='augPick'&&e.id==='synres'&&e.rarity===3),
+      '精英选择与增强选择保留回合/生命/增强稀有度');
+    A.flushTelemetry();
+    ok(!Object.prototype.hasOwnProperty.call(global.localStorage._s,'vc_tele_v1'),
+      '__HEADLESS 下 flushTelemetry 不写 localStorage');
+
+    globalThis.__HEADLESS=false;A.S.auto=true;
+    const notice=global.document.getElementById('levelGuideModal');notice.style.display='none';
+    const autoShown=A.showLevelNotice({kind:'forecast',title:'测试',body:'测试'});
+    A.S.auto=false;A.S.autoFight=true;
+    const autoFightShown=A.showLevelNotice({kind:'recipe',title:'测试',body:'测试'});
+    A.S.autoFight=false;globalThis.__HEADLESS=true;
+    ok(!autoShown&&!autoFightShown&&notice.style.display==='none',
+      'S.auto 与 S.autoFight 下教学自动兑现，不弹窗阻塞');
+
+    const dist=metrics.deathHistogram([
+      {round:25,win:false},{round:25,win:false},{round:50,win:false},
+      {round:100,win:true},{round:100,win:false,truncated:true},
+    ],100);
+    ok(dist.rows.length===100&&dist.rows[24].deaths===2&&dist.total===3,
+      '死亡直方图固定 100 行，只统计真实终局失败并排除截断样本');
+    ok(dist.top5[0].round===25&&dist.top5[0].highlighted&&metrics.deathReport([{round:25,win:false}]).includes('卡关点 Top5'),
+      'Top5 按死亡数排序并标记达到均值 2× 的回合');
+    ok(Object.keys(metrics.mergeTelemetryTotals({},A.S.stats.tele)).includes('eliteAccept'),
+      'sim 聚合器读取各局 S.stats.tele 数字计数');
+
+    globalThis.newGame();
+    A.S.teleLastSaveAt=1000;A.recordSaveTelemetry(4,2500);
+    const saveEvents=A.S.stats.tele._events||[];
+    ok(A.S.stats.tele.sessionDurationMs===1500&&saveEvents.some(e=>e.kind==='save'&&e.savedRound===4)&&
+      !Object.keys(A.S.stats.tele).some(k=>k.startsWith('exitRound.')),
+      '存档记录间隔与回合快照，不把重复存档误算成退出');
+    A.S.round=7;globalThis.gameOver(false);
+    const exitEvents=A.S.stats.tele._events||[];
+    ok(A.S.stats.tele['exitRound.7']===1&&exitEvents.some(e=>e.kind==='exit'&&e.savedRound===7),
+      '终局只记录一次真实退出回合');
+  }
+
+  /* ---------- P0-4 / P0-5 / P0-6 展示字段、评级與信息边界 ---------- */
+  console.log('[f] P0 展示与信息层断言');
+  {
+    globalThis.newGame();
+    A.S.round=6;A.S.phase='prep';A.S.lvl=3;A.S.board[0]={id:'kanban',star:2};
+    A.renderGrowthBanner();
+    const growth=global.document.getElementById('chapterGrowth').innerHTML;
+    ok(growth.includes('新增 2★')&&growth.includes('人口提升'),'开局展示基线可触发首次小节成长提示');
+
+    A.S.round=5;A.S.challengeRound=null;A.renderTop();
+    const restTag=global.document.getElementById('restTag');
+    ok(restTag.style.display!=='none','普通野怪回合显示休整标识');
+    A.S.round=25;A.renderTop();
+    ok(restTag.style.display==='none','守关回合不显示“失败不扣血”的休整标识');
+    A.S.round=10;A.S.challengeRound=10;A.renderTop();
+    ok(restTag.style.display==='none','接受精英挑战后隐藏普通野怪休整标识');
+
+    const card=A.gearDropCardsHTML(['sword']);
+    ok(card.includes(A.ITEMS.sword.e)&&card.includes(A.ITEMS.sword.n)&&card.includes('装备到手'),'装备卡片复用装备图标与名称');
+
+    A.S.round=24;A.S.phase='prep';A.S.ms.forecastRounds=[];
+    const modal=global.document.getElementById('levelGuideModal');modal.style.display='none';
+    A.renderRoundNotice();
+    ok(A.S.ms.forecastRounds.includes(24)&&A.S.phase==='prep'&&modal.style.display==='none','无头守关预告只记标记、不弹窗或阻塞备战');
+    A.S.round=49;A.S.ms.ticketGuidePending=0;A.S.tickets=0;A.S.ms.forecastRounds=[];
+    A.renderRoundNotice();
+    ok(A.S.ms.forecastRounds.includes(49)&&modal.style.display==='none','r49守关预告不弹窗阻塞无头备战');
+    A.S.round=51;A.S.tickets=1;A.S.ms.ticketGuidePending=1;A.renderRoundNotice();
+    ok(A.S.ms.ticketGuidePending===0&&A.S.phase==='prep','无头升星券教学自动兑现，不阻塞备战');
+
+    A.S.round=25;A.S.enemyBoard=[{id:'xuezhu',star:1}];
+    const ch1=A.enemyThreatHTML(A.S.enemyBoard,false);
+    A.S.round=26;const ch2=A.enemyThreatHTML(A.S.enemyBoard,true);
+    ok(ch1.includes('法师')&&!ch1.includes('主要威胁'),
+      '首章敌方预览显示职业且隐藏威胁标签：'+ch1);
+    ok(/主要威胁：<b>(?:控制|爆发|持续伤害)<\/b>/.test(ch2),
+      '后续章节敌方预览显示主要威胁标签：'+ch2);
+    A.S.curses=['fog'];
+    ok(A.enemyThreatHTML(A.S.enemyBoard,true)===''&&A.poolGuideHTML()==='',
+      '迷雾下隐藏威胁与卡池可视化');
+    A.S.curses=[];A.S.round=26;
+    const pool=A.poolGuideHTML();
+    ok(!/undefined|null/.test(pool)&&pool.includes('池中'),'羁绊卡池提示包含候选棋子剩余张数且无空值');
+
+    const s={chapterReview:{healthValue:25,failures:3,tier2BondCount:3}};
+    const a={chapterReview:{healthValue:12,failures:8,tier2BondCount:0}};
+    const b={chapterReview:{healthValue:11,failures:9,tier2BondCount:0}};
+    ok(A.chapterRating(s)==='S'&&A.chapterRating(a)==='A'&&A.chapterRating(b)==='B',
+      '章末评级按集中定义的 S/A/B 门槛计算');
+    A.recordChapterReview();
+    const displayState={growth:A.growthSnapshot(),start:A.S.stats.chapterStart,review:A.S.stats.chapterReview,tele:A.S.stats.tele||{}};
+    const keys=[];(function walk(value){if(!value||typeof value!=='object')return;Object.entries(value).forEach(([key,child])=>{keys.push(key);walk(child);});})(displayState);
+    const badKeys=keys.filter(key=>key!=='lvlDisplay'&&/(^|[._-])(atk|hp|maxhp|ar|mr|asp|mana|crit|dmg|lvl|cost)(?=$|[._-])/i.test(key));
+    ok(!badKeys.length,'评级/成长/遥测数据没有战斗字段名'+(badKeys.length?'（'+badKeys.join(',')+'）':''));
   }
 
   console.log(fails.length ? '\nFAIL ' + fails.length + ' 项:\n' + fails.map(f => '  ✗ ' + f).join('\n') : '\nALL PASS ✅');

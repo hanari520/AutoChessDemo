@@ -329,3 +329,27 @@
 ---
 
 *所有改动均在 `tools/` 现有测试体系内验证；临时文件（`tools/_tmp_*.html`、`_vv_*.png`、`_verify_*.py`）为本次验证产物，可随时删除。*
+
+## 11. 关卡设计 P0（2026-09-25）
+
+按 `specs/LEVEL-DESIGN-P0-PROMPT.md` 完成 T1–T6，范围仅限信息、编排和展示：
+
+| 项 | 落地 |
+|---|---|
+| T1 遥测 | 统一 `tele()`；记录备战决策时长、存档时长/回合快照、精英接受/拒绝、增强 id/稀有度/回合、低生命压力回合和实际终局回合。`vc_tele_v1` 仅在回合末/终局写；无头环境保留 `S.stats.tele` 内存聚合。 |
+| T2 模拟器 | `tools/sim-metrics.js` 固定输出 100 行死亡直方图、相对均值比例、≥2× 标记与 Top5；`TELE=1` 输出精英决策、终局回合、生命压力和增强选择分布。 |
+| T3 教学 | 野怪休整标识避开守关/已接受精英；首次掉落提示 6 件基础装及 21 条配方并可打开图鉴；r24/r49 全屏守关预告；r49 合并升星券预告，获券后引导 3★→4★并说明每局至多一枚。自动/无头路径不弹窗。 |
+| T4 展示 | r6 起每 5 回合展示新增 2★、羁绊档位或人口变化；首次开局即保存成长基线；野怪结算显示装备图标卡片。 |
+| T5 展示 | 章节回顾列出章节输出、最强羁绊、生命变化和图鉴新条目；B/A/S 门槛集中在 `CHAPTER_RATING_THRESHOLDS`。评级只展示，不发放数值奖励。 |
+| T6 信息 | 敌方核心职业与威胁类型从第二章起显示；羁绊候选池展示剩余张数；`fog` 下隐藏。 |
+
+新增备份：`index.html.bak-20260925-2101`。Service Worker 缓存名及首页资源戳升至 v58。没有改后端、`CAMPAIGN_RULES_VER` 或难度/经济常量；新增代码没有额外 `rand()` 调用。
+
+### P0 验证
+
+- 14 个基线套件全绿：T1–T5、EFFECT、PACE、CAMPAIGN、DAILY_CAMPAIGN，以及 `daily100_backend`、`daily-campaign`、`daily-curses`、`sound-system`、`solo-modes`。
+- Chrome 浏览器验收 `tools/_verify_level_p0.py`：真实开局/开战/教学确认/增强选择流程；验证遥测落盘、休整标识、r24/r49 预告、配方与升星券教学、成长和装备卡片、威胁/卡池/迷雾、章节回顾、精英接受/拒绝；0 console error、0 failed request。
+- `SEED=11,N=100`：备份版与改后版 stdout 逐字节一致，均为 2668 bytes；两边通关均为 78/100、条件章节通过率均为 86% / 100% / 100% / 100%。方案 §9 的参考值 75% 与当前运行值不同，但前后完全一致，故不是本轮变化。
+- `SEED=7,MAXR=100,N=300`：通关 216/300（72%）；84 个失败样本的死亡基线均值 0.84 局/回合，Top5 为 r25=44、r100=4、r50=3、r93=3、r97=3。`eliteAccept=196`、`eliteDecline=1858`、接受率 9.54%、生命压力回合 10,160；增强选择计数：gold 47、asp 96、atk 97、killmana 74、skillhaste 65、hp 31、atkmana 100、ar 47、mana 7、regen 49、synres 24、startshield 40、mr 45、sellup 9、dropplus 9。
+
+**评级门槛仍为 `[PLACEHOLDER]`，未经 playtest 验证。** P1/P2 本轮未实施。

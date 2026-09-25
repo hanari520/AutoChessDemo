@@ -1,4 +1,4 @@
-"""Daily challenge integration acceptance: 14-rule availability, 4x25 run, and save/rank isolation."""
+"""Shared curse integration acceptance: 12 rules, 4x25 run, and save/rank isolation."""
 import json
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -36,8 +36,8 @@ def main():
             page.wait_for_function("() => window.DailyCurses && typeof S !== 'undefined' && typeof startConfiguredRun === 'function'", timeout=15000)
 
             catalog = page.evaluate("() => DailyCurses.CATALOG.map(c=>({id:c.id,name:c.name,limit:c.limit,compensation:c.compensation,timing:c.timing}))")
-            require(len(catalog) == 14, f"expected 14 daily curse definitions, got {len(catalog)}")
-            require(len({row["id"] for row in catalog}) == 14, "daily curse IDs are not unique")
+            require(len(catalog) == 12, f"expected 12 daily curse definitions, got {len(catalog)}")
+            require(len({row["id"] for row in catalog}) == 12, "daily curse IDs are not unique")
             require(all(all(row.get(k) for k in ("name", "limit", "compensation", "timing")) for row in catalog),
                     "a daily rule is missing player-facing limit/compensation/timing")
 
@@ -61,8 +61,8 @@ def main():
             require(started["limit"] == 100 and started["chapterLength"] == 25,
                     f"daily run is not four 25-round chapters: {started}")
             rule_before = page.evaluate("() => DailyCurses.pick(S.dseed).id")
-            require(started["rule"] and started["rule"]["id"] == rule_before and started["rule"]["version"] == 2,
-                    f"daily state did not pin the selected v2 rule: {started}")
+            require(started["rule"] and started["rule"]["id"] == rule_before and started["rule"]["version"] == 3,
+                    f"daily state did not pin the selected v3 rule: {started}")
             page.evaluate("""() => {
               const seed=S.dseed;
               const a=DailyCurses.pick(seed), b=DailyCurses.pick(seed);
@@ -76,7 +76,7 @@ def main():
             require(page.evaluate("() => localStorage.getItem('vc_daily3')") is not None,
                     "daily start did not create its own save slot")
             saved_rule = page.evaluate("() => JSON.parse(localStorage.getItem('vc_daily3')).dailyCurse")
-            require(saved_rule and saved_rule["id"] == rule_before and saved_rule["version"] == 2,
+            require(saved_rule and saved_rule["id"] == rule_before and saved_rule["version"] == 3,
                     f"daily save did not persist the pinned rule state: {saved_rule}")
 
             progression = page.evaluate("""() => {
@@ -116,14 +116,27 @@ def main():
             page.evaluate("() => { S.auto=false; S.autoFight=false; showHome(); startConfiguredRun({mode:'normal'}, {confirmed:true}); }")
             require(page.evaluate("() => S.mode==='normal'&&!S.daily&&runLimit()===100&&rankedRun()"),
                     "ordinary campaign inherited daily state or lost its ranking eligibility")
-            page.evaluate("() => { S.auto=false; S.autoFight=false; showHome(); startConfiguredRun({mode:'custom',curses:['solo']}, {confirmed:true}); }")
-            custom = page.evaluate("() => ({mode:S.mode,daily:S.daily,dailyRule:S.dailyCurse||null,curses:S.curses.slice(),ranked:rankedRun(),dailySave:localStorage.getItem('vc_daily3')})")
-            require(custom["mode"] == "custom" and custom["daily"] is False and "solo" in custom["curses"] and custom["ranked"] is False,
+            page.evaluate("() => { S.auto=false; S.autoFight=false; showHome(); startConfiguredRun({mode:'custom',curses:['dc_rift']}, {confirmed:true}); }")
+            custom = page.evaluate("() => ({mode:S.mode,daily:S.daily,rule:S.dailyCurse||null,curses:S.curses.slice(),limit:runLimit(),ranked:rankedRun(),dailySave:localStorage.getItem('vc_daily3')})")
+            require(custom["mode"] == "custom" and custom["daily"] is False and custom["curses"] == ["dc_rift"] and custom["limit"] == 100 and custom["ranked"] is False,
                     f"custom curse mode behavior changed: {custom}")
-            require(custom["dailyRule"] is None, f"custom mode inherited a daily-only rule: {custom}")
+            require(custom["rule"] and custom["rule"]["id"] == "dc_rift" and custom["rule"]["custom"] is True,
+                    f"custom mode did not use the shared curse rule: {custom}")
             require(custom["dailySave"] is not None, "custom mode modified the daily save slot")
+            require(page.evaluate("() => saveGame() && loadGame(SAVE_KEY) && S.dailyCurse?.id==='dc_rift' && runLimit()===100"),
+                    "custom single-curse save did not restore its shared rule and four-chapter length")
+            page.evaluate("() => { document.getElementById('levelGuideModal')?.remove(); document.getElementById('openingOfferOverlay')?.remove(); openSetup(); selMode='custom'; curseSel=[]; renderSetup(); }")
+            require(page.locator("#setupCursePick input[type=radio]").count() == 12,
+                    "custom setup must show exactly twelve single-choice rules")
+            page.evaluate("() => document.querySelector('#setupCursePick input[data-curse=dc_rift]').click()")
+            page.evaluate("() => document.querySelector('#setupCursePick input[data-curse=dc_flank]').click()")
+            require(page.evaluate("() => curseSel.join(',')") == "dc_flank",
+                    "selecting another curse should replace the first")
+            page.evaluate("() => document.querySelector('#setupCursePick input[data-curse=dc_flank]').click()")
+            require(page.evaluate("() => curseSel.length") == 0,
+                    "clicking the selected curse should clear the selection")
             require(not errors, f"browser runtime errors: {errors[:5]}")
-            print("PASS daily100 browser: 14 rule catalog metadata; deterministic same-day curse; 4 chapter transitions; 100-round terminal result; daily ranking/history; normal/arena/daily save isolation; normal/custom regression")
+            print("PASS daily100 browser: 12 rule catalog metadata; deterministic same-day curse; 4 chapter transitions; 100-round terminal result; daily ranking/history; normal/arena/daily save isolation; normal/custom regression")
             print("CHAPTERS " + json.dumps(chapters))
             context.close()
             browser.close()

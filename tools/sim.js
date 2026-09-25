@@ -1,6 +1,7 @@
 /* 无头模拟器：加载 index.html 的游戏脚本，用 DOM 桩跑真实战斗逻辑。
    普通模式四章各在 r25/50/75/100 守关，败亡即终局；MAXR 可提前截断采样。 */
 const fs = require('fs'), path = require('path');
+const simMetrics = require('./sim-metrics.js');
 const html = fs.readFileSync(process.env.HTML || path.join(__dirname, '..', 'index.html'), 'utf8');   // HTML=路径 可指定文件，用于改动前后 A/B 对照
 const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 
@@ -11,6 +12,22 @@ const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
   newGame, saveGame, loadGame, inspectSave, saveKey, saveKeyForMode, startConfiguredRun,
   showHome, openSetup, showHelp, closeHelp, showGameMenu, openFlowConfirm, cancelFlowConfirm, acceptFlowConfirm,
   restartGame, endRunEarly, gameOver, chapterSettle, chapterContinue, pickAug, scheduleAutoFight, cancelAutoFight, todaySeed,
+  tele: typeof tele==='function'?tele:null,
+  flushTelemetry: typeof flushTelemetry==='function'?flushTelemetry:null,
+  recordSaveTelemetry: typeof recordSaveTelemetry==='function'?recordSaveTelemetry:null,
+  chapterRating: typeof chapterRating==='function'?chapterRating:null,
+  recordChapterReview: typeof recordChapterReview==='function'?recordChapterReview:null,
+  growthSnapshot: typeof growthSnapshot==='function'?growthSnapshot:null,
+  renderGrowthBanner: typeof renderGrowthBanner==='function'?renderGrowthBanner:null,
+  renderTop: typeof renderTop==='function'?renderTop:null,
+  renderRoundNotice: typeof renderRoundNotice==='function'?renderRoundNotice:null,
+  gearDropCardsHTML: typeof gearDropCardsHTML==='function'?gearDropCardsHTML:null,
+  showLevelNotice: typeof showLevelNotice==='function'?showLevelNotice:null,
+  poolGuideHTML: typeof poolGuideHTML==='function'?poolGuideHTML:null,
+  threatTypeForUnit: typeof threatTypeForUnit==='function'?threatTypeForUnit:null,
+  enemyThreatHTML: typeof enemyThreatHTML==='function'?enemyThreatHTML:null,
+  chooseChallenge: typeof chooseChallenge==='function'?chooseChallenge:null,
+  get CHAPTER_RATING_THRESHOLDS(){return typeof CHAPTER_RATING_THRESHOLDS==='undefined'?null:CHAPTER_RATING_THRESHOLDS},
   get currentTick(){return currentTick},
   byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy, autoDeployBest,
   /* 诊断插桩（DBG/T1 测试用，只读导出，不影响游戏逻辑） */
@@ -19,7 +36,7 @@ const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
   castSkill, dealDamage, v3Heal, v3AddShield, v3AttackOf, applyV3Attack, v3RainTrigger,
   get SKILL_VAR(){return SKILL_VAR}, get SKILL_INFO(){return SKILL_INFO}, get FORMA_COLS(){return FORMA_COLS},
   placeFormation, genEnemy, prepEnemy, tidyBench, fillBoardBeforeBattle, unitBand, makeBattleUnit, equipTo, sellSelected,
-  dailyEvent, dailyOnPrep, nbList, interestGain, maxEquip, enemyHidden,   /* 每日诅咒 v2 接线断言用 */
+  dailyEvent, dailyOnPrep, dailyMods, boardCurseImpacts, applyBoardCurse, nbList, interestGain, maxEquip, enemyHidden,
   get sfx(){return typeof sfx==='function'?sfx:null}, get battleStats(){return typeof battleStats!=='undefined'?battleStats:null} };
 `;
 
@@ -76,6 +93,7 @@ if (process.env.SEED) {
     r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
 }
 
+global.window.DailyCurses = require('./daily-curses.js');
 (0, eval)(code);
 const A = globalThis.API;
 if (process.env.DAILY_CAMPAIGN_TEST) {
@@ -201,6 +219,7 @@ const N = parseInt(process.argv[2] || '100', 10);
 const MAXR = parseInt(process.env.MAXR || '0', 10);   // 调试用：>0 时打完该回合的章节结算即截断（章节统计在截断点之前，不受影响）
 globalThis.hpCurve = {}; globalThis.wrStats = {}; globalThis.creepWR = {};
 const results = [];
+const telemetryTotals = {};
 let ch1Wins = 0;
 const chWins = [0, 0, 0, 0];      // 各章守关胜利局数（第 k 位 = 打赢 r25k 魔王的局数；第 5 章起并入第 4 位）
 const chReached = [0, 0, 0, 0];   // 打到该章守关战（存活至该回合）的局数
@@ -263,6 +282,7 @@ for (let g = 0; g < N; g++) {
   outcome.star4=!!(A.S.ms&&A.S.ms.star4);
   outcome.elites=A.S.botElites||0;
   results.push(outcome);
+  simMetrics.mergeTelemetryTotals(telemetryTotals, A.S.stats && A.S.stats.tele);
 }
 const wins = results.filter(r => r.chapters >= 1);
 const fmtPct = (a, b) => b ? (a / b * 100).toFixed(1) + '%' : '—';
@@ -270,6 +290,7 @@ console.log(`局数=${N}${MAXR ? `（r${MAXR} 截断）` : ''}  平均推进章�
 console.log(`托管决策：使用升星券 ${results.filter(r=>r.star4).length}/${N} 局，精英挑战共 ${results.reduce((n,r)=>n+r.elites,0)} 次；100 回合通关 ${results.filter(r=>r.win).length}/${N}`);
 console.log('章节守关通过率（累计，占全部局数）: ' + chWins.map((w, i) => `第${i + 1}章 ${w}/${N}=${fmtPct(w, N)}`).join('  '));
 console.log('章节守关通过率（条件，占打到该章的局数）: ' + chWins.map((w, i) => `第${i + 1}章 ${fmtPct(w, chReached[i])}(${chReached[i]})`).join('  '));
+if (MAXR === 100 || process.env.DEATH_HIST === '1') console.log(simMetrics.deathReport(results, 100));
 const lossRounds = results.filter(r => !r.win).map(r => r.round);
 if (lossRounds.length) {
   const hist = {};
@@ -304,10 +325,24 @@ if (process.env.DBGLOG) {   // 调试：导出最后一局战报里的指定关�
 {
   const st = A.S.stats || {};
   const b = st.castBattles || 0;
-  if (b > 0) {
+if (b > 0) {
     const total = st.castTotal || 0, units = st.castUnits || 0, zero = st.castZero || 0;
     console.log(`技能可见性：每场我方施法 ${(total / b).toFixed(2)} 次 · 上场 ${(units / b).toFixed(1)} 人 · 未施法 ${(zero / b).toFixed(1)} 人 → 覆盖率 ${units ? (100 * (1 - zero / units)).toFixed(1) : 'n/a'}%`);
   } else {
     console.log('技能可见性：本批未采集到战斗（样本为 0）');
   }
+}
+if (process.env.TELE === '1') {
+  const accepts = telemetryTotals.eliteAccept || 0;
+  const declines = telemetryTotals.eliteDecline || 0;
+  const augPicks = Object.fromEntries(Object.entries(telemetryTotals).filter(([key]) => key.startsWith('augPick.')));
+  const exitRounds = Object.fromEntries(Object.entries(telemetryTotals).filter(([key]) => key.startsWith('exitRound.')));
+  console.log('体验遥测聚合：' + JSON.stringify({
+    eliteAccept: accepts,
+    eliteDecline: declines,
+    eliteAcceptRate: accepts + declines ? +(accepts / (accepts + declines)).toFixed(4) : null,
+    exitRounds,
+    lifePressureRounds: telemetryTotals.lifePressureRound || 0,
+    augPick: augPicks,
+  }));
 }
