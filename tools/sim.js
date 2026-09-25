@@ -1,7 +1,7 @@
 /* 无头模拟器：加载 index.html 的游戏脚本，用 DOM 桩跑真实战斗逻辑。
    普通模式四章各在 r25/50/75/100 守关，败亡即终局；MAXR 可提前截断采样。 */
 const fs = require('fs'), path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const html = fs.readFileSync(process.env.HTML || path.join(__dirname, '..', 'index.html'), 'utf8');   // HTML=路径 可指定文件，用于改动前后 A/B 对照
 const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 
 ;globalThis.API = { get S(){return S}, setS:v=>{S=v},
@@ -63,6 +63,9 @@ global.navigator = { serviceWorker: null };
 global.setInterval = () => 0; global.clearInterval = () => {};
 global.setTimeout = (fn, ms) => { if(fakeTimers.length>20000) fakeTimers.length=0; fakeTimers.push({ t: fakeClock + (ms || 0), fn }); return fakeTimers.length; };
 global.clearTimeout = () => {};
+/* 无头标记：让游戏知道"没有真实 UI"，需要弹窗的交互（开局定向招募等）走自动兑现分支。
+   否则无头跑批时玩家侧会白白少拿一名开局棋子，测量结果系统性低估玩家强度。 */
+global.__HEADLESS = true;
 
 /* 确定性回归：SEED=42 node tools/sim.js 20 同代码路径 → 逐字节一致。
    必须在游戏代码 eval 之前替换（游戏顶层 let RND=Math.random 在求值时捕获引用）；
@@ -81,6 +84,14 @@ if (process.env.DAILY_CAMPAIGN_TEST) {
 }
 if (process.env.CAMPAIGN_TEST) {
   const assert = require('node:assert/strict');
+  /* 2026-09-25：敌方人数上限在章节边界必须线性过渡。
+     原实现 r>50?10:r>25?9:7 会在 r26 由 7 单回合跳到 9、r51 由 9 跳到 10，
+     而玩家人口是连续增长的 → 每次跨章"突然多打 1–2 人"，是节奏断裂而非难度上升。 */
+  {
+    const capAt = r => { globalThis.newGame(); return globalThis.enemyCap(r); };
+    assert.deepEqual([25,26,27,28,29,30,50,51,52,53,54,55].map(capAt),
+      [7,7,8,8,9,9,9,9,9,10,10,10], '敌方人数上限在 r26/r51 必须线性过渡而非阶跃');
+  }
   const reset = r => { globalThis.newGame(); A.S.round=r; A.S.phase='battle'; };
   reset(25);
   assert.equal(globalThis.runLimit(), 100);
@@ -100,10 +111,22 @@ if (process.env.CAMPAIGN_TEST) {
   assert.equal(A.S.round, 100);
   reset(100); globalThis.endBattle(0, 1);
   assert.equal(A.S.finished, false);
-  reset(82); globalThis.prepEnemy();
-  assert.equal(A.S.enemyBoard.filter(u=>u&&u.star===2).length, 1);
-  reset(72); globalThis.prepEnemy();
-  assert.equal(A.S.enemyBoard.filter(u=>u&&u.star===2).length, 0);
+  /* 随回合升星（enemyStarFor）：第一章全员 1★，第二章起 2★ 占比随回合上升。
+     旧断言「r72 恰好 0 个 2★ / r82 恰好 1 个」写于已废弃的"r82/r92 固定 2★ 精英带队"设计，
+     与逐回合升星系统冲突、必然失败（2026-09-25 实测：未改动版本 r82 得到 6 个 2★，非恰好 1）。
+     改为统计口径断言：只校验"第一章必为 1★"与"第四章平均星数显著上升"这两个稳定性质。
+     用 20 次采样取均值，避免单次随机导致回归测试自身不稳定。 */
+  {
+    const starAvg = r => { let sum=0,n=0,k=20;
+      while(k--){ reset(r); globalThis.prepEnemy();
+        A.S.enemyBoard.filter(Boolean).forEach(u=>{ sum+=u.star||1; n++; }); }
+      return n ? sum/n : 0; };
+    /* 取样点必须避开野怪回合（r%5===0）：野怪头目在 r20-24 固定 2★（bossStar 规则），
+       会污染"第一章全员 1★"的判定。故取 r21 与 r82 两个普通回合。 */
+    const a21=starAvg(21), a82=starAvg(82);
+    assert.ok(Math.abs(a21-1)<1e-9, `第一章普通回合（r21）敌方应全员 1★（实测均值 ${a21.toFixed(2)}）`);
+    assert.ok(a82>1.5, `第四章普通回合（r82）敌方平均星数应显著 >1（实测均值 ${a82.toFixed(2)}）`);
+  }
   globalThis.newGame(); A.S.round=10; A.S.phase='prep'; globalThis.prepEnemy();
   const before=A.S.enemyBoard.filter(Boolean)[0].maxhp;
   globalThis.chooseChallenge();
@@ -274,4 +297,17 @@ if (bm.length) {
 if (process.env.DBGLOG) {   // 调试：导出最后一局战报里的指定关键词（逗号分隔），如 DBGLOG=独木桥
   const kws = (process.env.DBGLOG || '独木桥').split(',');
   A.S.log.filter(l => kws.some(k => l.includes(k))).forEach(l => console.log('[log]', l));
+}
+
+/* 技能可见性（C1 的长期验收口径）：一场战斗放了几次技能、多少棋子一次都没放。
+   诊断插桩，只读 S.stats，不影响任何游戏逻辑。任何规模都会输出。 */
+{
+  const st = A.S.stats || {};
+  const b = st.castBattles || 0;
+  if (b > 0) {
+    const total = st.castTotal || 0, units = st.castUnits || 0, zero = st.castZero || 0;
+    console.log(`技能可见性：每场我方施法 ${(total / b).toFixed(2)} 次 · 上场 ${(units / b).toFixed(1)} 人 · 未施法 ${(zero / b).toFixed(1)} 人 → 覆盖率 ${units ? (100 * (1 - zero / units)).toFixed(1) : 'n/a'}%`);
+  } else {
+    console.log('技能可见性：本批未采集到战斗（样本为 0）');
+  }
 }

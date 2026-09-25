@@ -25,8 +25,13 @@ module.exports.run = function (A) {
     const fresh=A.S.log.filter(line=>line.includes('发动【'));
     if(fresh.length>before)casts.push({tick,side:fresh[0].includes('我方')?0:1,count:fresh.length-before});
   }
-  assert.deepEqual(casts.map(c=>c.tick),[8,16,24,32], '技能应在开战缓冲后每 800ms 释放一次');
-  assert.deepEqual(casts.map(c=>c.side),[casts[0].side,1-casts[0].side,casts[0].side,1-casts[0].side], '双方应轮流取得施法优先权');
-  assert.ok(casts.every(c=>c.count===1), '同一时刻只能释放一个技能');
-  console.log('✅ 固定速度：开战 800ms 缓冲，技能每 800ms 错峰，双方交替施法');
+  /* 2026-09-25 契约变更：施法闸门由「单个全局 lastCastAt」改为「分边闸门」。
+     旧契约：全场每 800ms 至多 1 次技能 → 4 个棋子（每方 2 个）需要 4 个窗口，落点 8,16,24,32；
+             一场 6–8 秒战斗上限仅 6–9 次，技能覆盖率约 45%。
+     新契约：每方各自 800ms 一次 → 同样 4 个棋子只需 2 个窗口，落点 8,9,16,17，吞吐 2×；
+             同一 tick 仍只释放一个技能（沿用 nextCaster 单值，保证特效与跳字不堆叠）。 */
+  assert.deepEqual(casts.map(c=>c.tick),[8,9,16,17], '每方各自 800ms 一次：同样 4 个棋子从 4 个窗口压缩到 2 个（吞吐 2×）');
+  assert.ok(casts.every(c=>c.count===1), '同一 tick 仍只释放一个技能（表现层不堆叠）');
+  assert.ok(casts.every((c,i)=>i===0||c.side!==casts[i-1].side), '两侧交替施法');
+  console.log('✅ 固定速度：开战 800ms 缓冲，每方各自 800ms 错峰（同样单位数只占一半窗口，吞吐 2×），两侧交替、同一 tick 仅 1 次');
 };

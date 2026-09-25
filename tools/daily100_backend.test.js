@@ -48,7 +48,8 @@ test('daily100 reads its v2, seed-scoped board, isolated from legacy daily and n
     [`board:daily:${seed}`]: JSON.stringify([{ n: 'old-daily', r: 99 }]),
     [`board:daily100:${seed}:v2`]: JSON.stringify([{ n: 'new-daily', r: 100, c: 1, rules: 2 }]),
     'board:normal': JSON.stringify([{ n: 'legacy-normal', r: 80 }]),
-    'board:normal100': JSON.stringify([{ n: 'campaign', r: 100, ch: 5 }])
+    // 2026-09-25 经典榜清分：KV 键名已升为 :v2（旧键 board:normal100 保留但不再读写）
+    'board:normal100:v2': JSON.stringify([{ n: 'campaign', r: 100, ch: 5 }])
   });
   const [daily, oldDaily, normal, normal100, rejectVersion] = await Promise.all([
     get(env, `board=daily100&seed=${seed}&rules=2`),
@@ -70,7 +71,7 @@ test('daily100 reads its v2, seed-scoped board, isolated from legacy daily and n
 test('daily100 accepts exactly one curse on a valid 100-round, chapter 5, v2 result', async () => {
   const seed = todaySeed();
   const oldDailyKey = `board:daily:${seed}`;
-  const normal100Key = 'board:normal100';
+  const normal100Key = 'board:normal100:v2';   // 2026-09-25 清分后的键名
   const env = makeEnv({ [oldDailyKey]: '[{"n":"keep-old"}]', [normal100Key]: '[{"n":"keep-normal"}]' });
   const response = await post(env, validDaily());
   assert.equal(response.status, 200);
@@ -125,7 +126,7 @@ test('ordinary boards stay uncursed and separate from daily100', async () => {
   const legacyNormal = await post(env, { name: '自定义旧榜', board: 'normal', round: 50, ch: 2, kills: 10, curses: 1 });
   assert.equal(legacyNormal.status, 400);
   assert.equal((await read(legacyNormal)).error, 'cursed run not ranked');
-  assert.equal(env.values.has('board:normal100'), true);
+  assert.equal(env.values.has('board:normal100:v2'), true);   // 2026-09-25 清分后的键名
   assert.equal(env.values.has(`board:daily100:${todaySeed()}:v2`), false);
   const normalTop = await read(await get(env, 'board=normal100'));
   assert.equal(normalTop.list[0].n, '普通');

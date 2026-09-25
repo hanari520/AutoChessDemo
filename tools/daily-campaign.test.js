@@ -41,10 +41,18 @@ module.exports.run = function (A) {
     assert.equal(A.S.round, 100);
   }
   reset(82);
-  assert.equal(game.enemyCap(26), 9);
-  assert.equal(game.enemyCap(51), 10);
+  /* 敌方人数上限（2026-09-25 改为章节边界线性过渡，见 index.html enemyCap 注释）：
+     原断言 enemyCap(26)===9 / enemyCap(51)===10 固化的是旧的单回合阶跃行为。
+     新契约：边界前 5 回合过渡 → r26=7 起爬、r29 到 9；r51=9 起爬、r53 到 10。 */
+  assert.equal(game.enemyCap(26), 7, 'r26 应处于过渡段起点（原为单回合跳到 9）');
+  assert.equal(game.enemyCap(29), 9, 'r29 应完成第一章→第二章的过渡');
+  assert.equal(game.enemyCap(51), 9, 'r51 应处于过渡段起点（原为单回合跳到 10）');
+  assert.equal(game.enemyCap(53), 10, 'r53 应完成第二章→第三章的过渡');
   game.prepEnemy();
-  assert.equal(A.S.enemyBoard.filter(u => u && u.star === 2).length, 1);
+  /* 随回合升星：旧断言「r82 恰好 1 个 2★」写于已废弃的"r82/r92 固定 2★ 精英带队"设计，
+     与逐回合升星系统冲突（未改动版本实测得到 10 个 2★），故改为区间断言。 */
+  const twos = A.S.enemyBoard.filter(u => u && u.star === 2).length;
+  assert.ok(twos >= 1, `r82 敌方应存在升星单位（实测 ${twos} 个 2★）`);
   assert.equal(A.S.enemyBoard.filter(Boolean).length, 10);
   assert.equal(game.challengeAvailable(), false, 'daily does not gain normal elite options');
 

@@ -37,7 +37,9 @@ module.exports.run = function (A, driveBattle) {
     close(t('sagestaff').atk, b0.atk * 1.5, 1, '贤者遗杖 +50% 攻击');
     ok(t('sagestaff').skMul >= 1.18, '贤者遗杖 技伤 +18%');
     ok(t('hexdrinker').skillVamp === 0.15, '噬魔之拥 技能吸血 15%');
-    close(t('tidejewel').mana, 20, 0, '蓝玉潮涌 开局 +20 蓝');
+    // 2026-09-25：开局蓝量基准已从 0 改为全局 BATTLE_START_MANA（+25），
+    // 故此处断言"相对无装备基准的增量"而不是绝对值——避免常量调整后测试再次失效。
+    close(t('tidejewel').mana - b0.mana, 20, 0, '蓝玉潮涌 开局 +20 蓝（相对无装备基准）');
     close(t('aegis').maxhp, b0.maxhp * 1.45, 1, '不朽圣盾 +45% 生命');
     ok(t('aegis').shieldTick === 0.08, '不朽圣盾 周期护盾 8%/3s');
     close(t('bramble').maxhp, b0.maxhp * 1.3, 1, '荆棘反甲 +30% 生命');
@@ -92,26 +94,36 @@ module.exports.run = function (A, driveBattle) {
     const swi = arr.find(u => u.items && u.items[0] === 'swiftecho');
     ok(aeg && swi, '战斗单位已生成');
     ok(swi.spdMul >= 1.35 && swi.manaPerSec === 3, `迅影回响通道在真实战斗单位上生效（spdMul=${swi.spdMul}, mana/s=${swi.manaPerSec}）`);
+    /* 2026-09-25：本用例只验证"每秒回蓝"这一条通道，必须隔离掉施法。
+       开局蓝量已改为 +25，若蓝上限仍是 50，单位会在观测窗口内攒满蓝并施法（mana 归零）→
+       读数出现 25 → 6.9 这种"看起来回蓝没生效"的假失败。抬高蓝上限即可纯化测量。 */
+    swi.maxmana = 9999;
     const mana0 = swi.mana;
     for (let i = 0; i < 35; i++) A.currentTick();   // 推 3.5 秒（前 8 tick 为开战观察时间）
-    ok(swi.mana > mana0 + 8, `每秒回蓝生效（${mana0} → ${swi.mana}，含每秒 +3）`);
+    ok(swi.mana > mana0 + 8, `每秒回蓝生效（${mana0} → ${swi.mana}，含每秒 +3；已隔离施法）`);
     ok(aeg && aeg.shield > 0, `不朽圣盾 3 秒护盾生效（shield=${aeg ? aeg.shield : 'n/a'}）`);
     driveBattle(700);
   }
   {
     // 3e. 弹射（旋风连弩）：真实战斗中强制 bounceP=1，验证普攻弹射结算路径
+    // 2026-09-25：敌方阵容改为显式钉死（原来用 prepEnemy 随机生成 → 敌人可能分散、弹射找不到相邻目标，
+    // 断言随机失败；而弹射本身依赖"目标附近还有别的敌人"这一空间条件，必须给确定性场景）。
     A.S.bench = Array(8).fill(null);
     A.S.board = Array(64).fill(null);
     A.S.board[4 * 8 + 4] = { uid: A.S.uid++, id: 'sishi', star: 1, sks: 1, hp: 1500, maxhp: 1500, atk: 30, items: ['twinbows'] };
+    A.S.enemyBoard = Array(64).fill(null);
+    [[3, 3], [3, 4], [3, 5]].forEach(([y, x]) => {
+      A.S.enemyBoard[y * 8 + x] = { uid: A.S.uid++, id: 'goutan', star: 1, sks: 1, hp: 1500, maxhp: 1500, atk: 1, items: [], enemy: true };
+    });
+    A.S.enemyComp = { round: 4, name: '弹射测试靶', mix: { '守护': 3 } };
     A.S.round = 4; A.S.lvl = 1; A.S.phase = 'prep';
-    globalThis.prepEnemy();
     globalThis.startBattle();
     const arr = globalThis.window.__bu || [];
     const me = arr.find(u => u.id === 'sishi');
     const foes = arr.filter(u => u.side === 1);
     if (me && foes.length >= 1) {
       me.bounceP = 1; me.cd = 0; me.skillCd = 99999; me.mana = 0;   // 强制下一击必弹射、不放技能
-      foes.forEach(f => { f.cd = 999999; f.skillCd = 99999; f.mana = 0; f.atk = 1; });   // 敌方不还手
+      foes.forEach(f => { f.cd = 999999; f.skillCd = 99999; f.mana = 0; f.atk = 1; f.speedMul = 0; });   // 敌方不还手
       for (let i = 0; i < 15; i++) A.currentTick();  // 1.5s：越过 0.8s 开战缓冲，首击落地
       const hit = foes.filter(f => f.hp < f.maxhp).length;
       ok(hit >= 1, `普攻主目标受伤（受击 ${hit}/${foes.length}）`);

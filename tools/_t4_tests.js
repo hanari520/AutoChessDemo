@@ -52,25 +52,37 @@ module.exports.run = function (A, driveBattle) {
   /* ---------- 3. 触发率实测（nox 25%，±5pp） ---------- */
   console.log('[3] 触发率实测（真实战斗计数，nox 单挑木桩）');
   {
-    globalThis.newGame();
+    /* 2026-09-25：本段原来直接用 Math.random，n≈275 时 ±5pp 容差只有约 1.9σ
+       → 约 6% 概率随机失败（备份版实测 1/8 次失败）。改为在 newGame 前替换 Math.random：
+       游戏的 applyRNG() 会重新读取 Math.random（RND 不是在脚本加载时就固定死的），
+       因此在 newGame() 之前注入即可让整段走确定性随机流。测完恢复。 */
+    const seededRandom = (() => { let a = 0x9E3779B9;
+      return () => { a |= 0; a = a + 0x6D2B79F5 | 0;
+        let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296; }; })();
+    const origRandom = Math.random;
+    Math.random = seededRandom;
     let atk = 0, crit = 0;
-    for (let round = 0; round < 5; round++) {
-      A.S.bench = Array(8).fill(null);
-      A.S.board = Array(64).fill(null);
-      A.S.board[4 * 8 + 3] = { uid: A.S.uid++, id: 'nox', star: 1, sks: 1, hp: 2000, maxhp: 2000, atk: 20, items: [] };
-      A.S.enemyBoard = Array(64).fill(null);
-      A.S.enemyBoard[3 * 8 + 3] = { uid: A.S.uid++, id: 'goutan', star: 1, sks: 1, hp: 9999999, maxhp: 9999999, atk: 1, enemy: true };
-      A.S.lvl = 1; A.S.round = 2; A.S.phase = 'prep';
-      globalThis.startBattle();
-      const arr = globalThis.window.__bu || [];
-      const tank = arr.find(u => u.side === 1);
-      if (tank) { tank.cd = 9999999; tank.skillCd = 9999999; tank.moveCd = 9999999; tank.mana = 0; tank.atk = 1; }   // 木桩不还手
-      driveBattle(640);   // 60s 超时结束
-      atk += (globalThis.window.__atkN || 0);
-      crit += (globalThis.window.__critN || 0);
-    }
+    try {
+      globalThis.newGame();
+      for (let round = 0; round < 8; round++) {
+        A.S.bench = Array(8).fill(null);
+        A.S.board = Array(64).fill(null);
+        A.S.board[4 * 8 + 3] = { uid: A.S.uid++, id: 'nox', star: 1, sks: 1, hp: 2000, maxhp: 2000, atk: 20, items: [] };
+        A.S.enemyBoard = Array(64).fill(null);
+        A.S.enemyBoard[3 * 8 + 3] = { uid: A.S.uid++, id: 'goutan', star: 1, sks: 1, hp: 9999999, maxhp: 9999999, atk: 1, enemy: true };
+        A.S.lvl = 1; A.S.round = 2; A.S.phase = 'prep';
+        globalThis.startBattle();
+        const arr = globalThis.window.__bu || [];
+        const tank = arr.find(u => u.side === 1);
+        if (tank) { tank.cd = 9999999; tank.skillCd = 9999999; tank.moveCd = 9999999; tank.mana = 0; tank.atk = 1; }   // 木桩不还手
+        driveBattle(640);   // 60s 超时结束
+        atk += (globalThis.window.__atkN || 0);
+        crit += (globalThis.window.__critN || 0);
+      }
+    } finally { Math.random = origRandom; }
     const rate = atk ? crit / atk : 0;
-    ok(atk >= 200, `样本量足够（普攻 ${atk} 次 ≥200）`);
+    ok(atk >= 200, `样本量足够（普攻 ${atk} 次 ≥200，固定随机流）`);
     ok(Math.abs(rate - 0.25) <= 0.05, `nox 触发率 ${(rate * 100).toFixed(1)}% ≈ 25% ±5pp（${crit}/${atk}）`);
   }
 
