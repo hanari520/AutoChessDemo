@@ -62,7 +62,7 @@
     ['敌方的治疗和护盾会拖延战斗。', '考虑控制治疗单位或削弱护盾。', '控制与爆发并用，让输出集中到同一目标。']
   ];
   const clone = value => JSON.parse(JSON.stringify(value));
-  const empty = () => ({ gold: 0, hp: 0, items: [], refresh: 0, log: [], levelUp: 0, fortification: null, buildPoints: 0, recruit: null, swapArmy: null, armyUnlocked: null, puzzleReset: false });
+  const empty = () => ({ gold: 0, hp: 0, items: [], refresh: 0, log: [], levelUp: 0, fortification: null, buildPoints: 0, recruit: null, swapArmy: null, armyUnlocked: null, puzzleReset: false, guest: null });
   const hash = (seed, salt) => {
     let x = (Number(seed) || 1) >>> 0;
     for (const ch of String(salt)) x = Math.imul(x ^ ch.charCodeAt(0), 16777619) >>> 0;
@@ -101,6 +101,13 @@
     const alternative = pool[1 + random(state.seed, `route:${state.chapter}:${state.node}`, 4)];
     return [pool[0], alternative];
   };
+  /* 巡演专用商店费用档（%）：由站数决定，独立于经典模式的 SHOP_ODDS。 */
+  const expeditionOdds = {
+    1: [52, 32, 16, 0, 0],
+    2: [30, 30, 24, 16, 0],
+    3: [18, 26, 26, 20, 10]
+  };
+  const expeditionShopOdds = chapter => (expeditionOdds[chapter] || expeditionOdds[3]).slice();
   const advanceExpedition = state => {
     state.route.push({ chapter: state.chapter, node: state.node, kind: state.current });
     state.current = null;
@@ -413,7 +420,16 @@
         const boss = s.current === 'boss', elite = s.current === 'elite';
         base.encounter = encounter(boss ? `第${s.chapter}站压轴演出` : elite ? '特别舞台企划' : '巡演公演', s.chapter + (elite ? 1 : 0), 3 + s.chapter + (elite ? 1 : 0), boss, boss ? bossKinds[s.chapter - 1] : elite ? 'flank' : 'none', hash(s.seed, `exp:${s.chapter}:${s.node}:${s.current}`), elite ? 'elite' : 'none');
       }
-      if (s.phase === 'reward') base.choices = [choice('reward:gold', '领取巡演收益', '+6 金币'), choice('reward:relic', '领取应援纪念物', '观众留下的应援 · 随机获得：返场耳返（施放曲目后获得应援屏障）、全息伴舞（首次演绎曲目时召来伴舞）、应援手灯（台前成员承受伤害降低）'), ...['守护', '游侠', '法师'].map(job => choice(`reward:recruit:${job}`, `定向邀约·${job}`, `下次周边商店保证出现${job}定位成员`))];
+      if (s.phase === 'reward') {
+        const rewardChoices = [
+          choice('reward:gold', '领取巡演收益', '+6 金币'),
+          choice('reward:relic', '领取应援纪念物', '观众留下的应援 · 随机获得：返场耳返（施放曲目后获得应援屏障）、全息伴舞（首次演绎曲目时召来伴舞）、应援手灯（台前成员承受伤害降低）'),
+          ...['守护', '游侠', '法师'].map(job => choice(`reward:recruit:${job}`, `定向邀约·${job}`, `下次周边商店保证出现${job}定位成员`))
+        ];
+        if (s.chapter >= 2) rewardChoices.push(choice('reward:guest:4', '特邀嘉宾 · 4 费', '下次周边商店保证出现一名 4 费成员'));
+        if (s.chapter >= 3) rewardChoices.push(choice('reward:guest:5', '特邀嘉宾 · 5 费', '下次周边商店保证出现一名 5 费成员'));
+        base.choices = rewardChoices;
+      }
       if (s.phase === 'camp') base.choices = [choice('camp:heal', '后台休息', `${tourNodeFlavor[s.chapter].camp} · 恢复 5 点演出体力`), choice('camp:train', '彩排', '把今天的段落再过一遍 · 获得巡演收入与团队成长')];
       if (s.phase === 'event') {
         const ev = tourEvents[s.chapter][random(s.seed, `event:${s.chapter}`, 2)];
@@ -566,6 +582,7 @@
         if (choiceId === 'reward:gold') fx.gold = 6;
         if (choiceId === 'reward:relic') { const relic = relicNames[random(s.seed, `relic:${s.chapter}:${s.node}`, 3)]; s.relics.push(relic); fx.log.push(`获得${expeditionRelicLabels[relic] || relic}：${relicDescriptions[relic]}`); }
         if (choiceId.startsWith('reward:recruit:')) fx.recruit = choiceId.slice('reward:recruit:'.length);
+        if (choiceId.startsWith('reward:guest:')) fx.guest = Number(choiceId.slice('reward:guest:'.length));
         advanceExpedition(s);
       } else if (s.phase === 'camp') {
         if (choiceId === 'camp:heal') hpChange(s, 5, fx);
@@ -805,5 +822,5 @@
     return result(s, fx);
   }
 
-  return { definitions, create, view, act, settle };
+  return { definitions, create, view, act, settle, expeditionShopOdds };
 });

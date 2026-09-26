@@ -16,6 +16,32 @@ test('all mode states and views survive JSON roundtrip and deterministic seeds',
   assert.throws(() => M.create('unknown', 1));
 });
 
+test('expedition shop odds unlock by station and never expose high tiers early', () => {
+  const o1 = M.expeditionShopOdds(1), o2 = M.expeditionShopOdds(2), o3 = M.expeditionShopOdds(3);
+  assert.equal(o1.length, 5);
+  [o1, o2, o3].forEach(o => assert.equal(o.reduce((a, b) => a + b, 0), 100, 'each station must total 100'));
+  assert.equal(o1[3], 0, 'station 1 must not expose 4-cost');
+  assert.equal(o1[4], 0, 'station 1 must not expose 5-cost');
+  assert.equal(o2[4], 0, 'station 2 must not expose 5-cost');
+  assert(o2[3] > 0, 'station 2 must expose 4-cost');
+  assert(o3[4] > 0, 'station 3 must expose 5-cost');
+  assert.equal(M.expeditionShopOdds(9).join(), o3.join(), 'out-of-range chapter falls back to station 3');
+});
+
+test('expedition guest reward appears from station 2 and carries a cost tier', () => {
+  const s = M.create('expedition', 41);
+  const st1 = M.view({ ...s, phase: 'reward', chapter: 1 });
+  assert.equal(st1.choices.some(c => c.id === 'reward:guest:4'), false, 'no guest at station 1');
+  const st2 = M.view({ ...s, phase: 'reward', chapter: 2 });
+  assert(st2.choices.some(c => c.id === 'reward:guest:4'));
+  assert.equal(st2.choices.some(c => c.id === 'reward:guest:5'), false, 'no 5-cost guest before station 3');
+  const st3 = M.view({ ...s, phase: 'reward', chapter: 3 });
+  assert(st3.choices.some(c => c.id === 'reward:guest:5'));
+  assert.equal(M.act({ ...s, phase: 'reward', chapter: 3 }, 'reward:guest:5').effects.guest, 5);
+  /* 既有邀约不得被破坏 */
+  assert(st3.choices.some(c => c.id === 'reward:recruit:守护'));
+});
+
 test('expedition traverses 3 x 6 nodes, rewards once, and ends after final boss', () => {
   let s = M.create('expedition', 9);
   let battles = 0, bossMechanics = [];

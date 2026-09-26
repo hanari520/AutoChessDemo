@@ -136,6 +136,19 @@
       S.shop=Array.from({length:5},(_,i)=>{const d=pool[i%pool.length];if(d&&S.pool[d.id]>0){S.pool[d.id]--;return d;}return null;});
       log('定向招募：本次商店优先提供'+fx.recruit+'棋子。');
     }
+    if (fx.guest) {
+      /* 特邀嘉宾：在货架首格保底一名指定费用档的成员（不替换整店，与 recruit 的整店替换语义区分） */
+      const want = Number(fx.guest);
+      const pool = UNITS.filter(d => d.cost === want && S.pool[d.id] > 0);
+      if (pool.length) {
+        const pick = pool[Math.floor(rand() * pool.length)];
+        if (S.shop[0]) S.pool[S.shop[0].id]++;
+        S.shop[0] = pick; S.pool[pick.id]--;
+        log(`特邀嘉宾登场：货架已为「${pick.name}」保留席位。`);
+      } else {
+        log('特邀嘉宾档位暂时无货，本次未能安排。');
+      }
+    }
     S.phase = 'prep'; S.selUid = null; S.selItem = null;
     if (S.solo.mode === 'conquest' && S.solo.phase === 'finished' && S.solo.outcome === 'won') recordCampaignMeta(S.solo.difficulty);
     if (S.solo.mode === 'puzzle' && (fx.puzzleReset || fx.resetBudget || previous.puzzleIndex !== S.solo.puzzleIndex || previous.puzzle !== S.solo.puzzle)) resetPuzzle();

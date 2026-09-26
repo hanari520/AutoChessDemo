@@ -3236,7 +3236,11 @@ function drawFromPool(){ // 按等级概率决定费用档，再从卡池余量�
   // 五人远征：人口封 5，商店概率绕过等级直接随回合升档
   const dm=dailyMods();
   const lv = dm&&dm.shopLevelByRound ? dm.shopLevel : hasCurse('solo') ? (S.lvl>=lvlCap() ? soloShopLvl() : S.lvl) : S.lvl;
-  const odds = (SHOP_ODDS[lv]||SHOP_ODDS[11]).map(x=>x/100);
+  /* 巡演企划：商店费用档由「站」决定，不走人口等级（见 specs/narrative/expedition-curve-fix.md） */
+  const expedition = S.solo && S.solo.mode === 'expedition';
+  const odds = (expedition
+    ? SoloModes.expeditionShopOdds(S.solo.chapter)
+    : (SHOP_ODDS[lv]||SHOP_ODDS[11])).map(x=>x/100);
   // 主档按概率掷出；缺货时按概率从高到低顺延到其他档位
   const roll=rand(); let acc=0, primary=5;
   for(let i=0;i<5;i++){ acc+=odds[i]; if(roll<acc){ primary=i+1; break; } }
