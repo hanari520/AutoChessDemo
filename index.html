@@ -6669,7 +6669,7 @@ function chapterSettle(won){
   // 战斗横幅已播放胜负主题；章节选择页沿用它，避免二次结算旋律。
   const ch=Math.ceil(S.round/chLen());
   renderSettle();
-  $('chapterTitle').textContent = won? `🏆 第 ${ch} 章结算 · 守关魔王已败！` : `💔 第 ${ch} 章结算 · 惜败守关魔王`;
+  $('chapterTitle').textContent = won? `🏆 第 ${ch} 章结算 · 守关通过！` : `💔 第 ${ch} 章结算 · 守关未过`;
   $('chapterContinue').disabled=true; $('chapterContinue').textContent='先选择一项增强';
   if(flowPage==='help'){flowDeferredPage='chapter';if(S.auto)chapterAutoPending=true;}
   else showFlowPage('chapter');
@@ -6694,7 +6694,7 @@ function renderSettle(){
   }).join('');
   const owned=(S.augs||[]).map(a=>{const def=AUGS.find(x=>x.id===a.id);return def?def.n+(a.weak?'(削)':''):'';}).filter(Boolean).join('、')||'无';
   $('chapterBody').innerHTML=`
-    <div class="settle-hero ${w?'win':'lose'}">${w?'🎉 击败守关魔王，章节推进！':'💚 惜败守关魔王，旅路仍在继续'}</div>
+    <div class="settle-hero ${w?'win':'lose'}">${w?'🎉 守关通过，进入下一章！':'💚 守关未过，赛程继续'}</div>
     <div class="settle-row">第 ${Math.ceil(S.round/chLen())} 章 · 第 ${S.round} 回合 · 生命 ${S.hp} · 战绩 ${S.stats.wins} 胜 ${S.stats.losses} 负</div>
     <div class="gear-drop-cards">${gearDropCardsHTML(S.lastGearDrops||[])}</div>
     ${chapterReviewHTML(S.stats.chapterReview)}
@@ -7141,7 +7141,7 @@ function gameOver(win){
   if(win)sfx('finalWin'); // 真正通关页播放终章旋律
   const historySaved=writeRunHistory(win); checkAchievements();
   const saveRemoved=removeRunSave(saveKey());
-  const title=(S.daily?'📅 ':'')+(win ? '🏅 四章挑战通关！' : '💀 挑战失败');
+  const title=(S.daily?'📅 ':'')+(win ? '🏅 常设赛 · 四章通关！' : '💀 赛程止步');
   const content=(win?'':`在第 ${S.round} 回合倒下。<br>`)+rankedNoteHTML()+reportHTML(win?'win':'lose')+(win?`<div class="gear-drop-cards">${gearDropCardsHTML(S.lastGearDrops||[])}</div>${chapterReviewHTML(S.stats.chapterReview)}`:'')+(S.daily?dailyCodeHTML():'')+globRowHTML();
   showFinalResult(title,content,{historySaved,saveRemoved});
 }
@@ -7631,10 +7631,10 @@ function continueSave(key){
 }
 function renderSetup(){
   const modes=[
-    {id:'normal',title:'🎲 普通模式',desc:'四章共 100 回合；第 25、50、75 回合选择章节增强，第 100 回合结算。'},
+    {id:'normal',title:'🎲 普通模式',desc:'常设赛·常规场：四章共 100 回合；第 25、50、75 回合选择增强，第 100 回合收尾结算。'},
     {id:'arena',title:'🏟 八人竞技',desc:'与 7 名对手比赛；每回合 1 对 1，按淘汰顺序决定名次。'},
-    {id:'daily',title:'📅 每日挑战',desc:`${todaySeed()} · 四章共 100 回合；25/50/75 回合选择增强，100 回合最终结算。同日同种子与预置诅咒。`},
-    {id:'custom',title:'⚠ 自定义诅咒',desc:'从每日挑战同款 12 条规则中单选一条；四章 100 回合。与普通模式共享存档位。'},
+    {id:'daily',title:'📅 每日挑战',desc:`${todaySeed()} · 每日同步赛：四章共 100 回合；25/50/75 回合选增强，100 回合结算。同日同种子、同预置规则。`},
+    {id:'custom',title:'⚠ 自定义诅咒',desc:'自选规则场：从每日赛同款 12 条规则中单选一条；四章 100 回合。与普通模式共享存档位。'},
   ];
   $('setupModes').innerHTML=modes.map(m=>`<button type="button" class="flow-mode-card" role="radio" aria-checked="${selMode===m.id}" data-mode="${m.id}"><strong>${m.title}</strong><span>${m.desc}</span></button>`).join('');
   $('setupModes').querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{
@@ -7689,7 +7689,7 @@ function startConfiguredRun(config,options={}){
     if(S.autoFight&&S.phase==='prep')scheduleAutoFight();else if(S.auto&&S.phase==='prep')autoPilot(300);
     log(cfg.mode==='arena'?'🏟 八人竞技开始：七名对手会独立运营，存活到最后获胜！'
       :cfg.mode==='daily'?`📅 每日挑战开始（种子 ${S.dseed}）：四章 100 回合，使用今日预置规则；每章守关必须取胜。`
-      :cfg.mode==='custom'?`⚠ 自定义诅咒挑战开始：${(S.curses||[]).map(curseName).join('、')||'未选诅咒，玩法等同普通模式'}`:'🎲 普通模式开始！');
+      :cfg.mode==='custom'?`⚠ 自定义诅咒挑战开始：${(S.curses||[]).map(curseName).join('、')||'未选诅咒，玩法等同普通模式'}`:'🎲 常设赛开始：四章 100 回合，一局一局打上去。');
     return true;
   }catch(error){
     $('setupFeedback').textContent=`无法创建对局：${error&&error.message||'初始化失败'}`;
