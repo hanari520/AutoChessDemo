@@ -19,6 +19,38 @@
   const relicNames = ['回响护符', '召唤核心', '坚守旗帜'];
   const expeditionRelicLabels = { 回响护符: '返场耳返', 召唤核心: '全息伴舞', 坚守旗帜: '应援手灯', 冒险徽章: '巡演纪念章' };
   const relicDescriptions = { 回响护符: '施放曲目后获得应援屏障', 召唤核心: '首次演绎曲目时召来伴舞', 坚守旗帜: '台前成员承受伤害降低', 冒险徽章: '让对手退场后回复能量' };
+  /* ===== 巡演叙事文案（唯一来源 specs/narrative/narrative-tour.js，由 narrative-tour.test.js 漂移测试守护） ===== */
+  const tourStation = { 1: { name: '潮声港', venue: '灯塔剧场' }, 2: { name: '霓虹街', venue: '天桥圆形广场' }, 3: { name: '长夜台', venue: '星轨穹顶' } };
+  const tourObjective = { 1: '把声音送到第三十八步——没人站的地方', 2: '让围观的人真的开始听', 3: '把没唱完的那一首唱完' };
+  const tourShow = {
+    1: { battle: '潮声港·灯塔夜演', elite: '灯塔剧场·加演场', boss: '灯塔剧场·压轴夜' },
+    2: { battle: '霓虹街·天桥快闪', elite: '天桥圆形广场·加演场', boss: '天桥圆形广场·压轴夜' },
+    3: { battle: '长夜台·星轨演出', elite: '星轨穹顶·加演场', boss: '星轨穹顶·压轴夜' }
+  };
+  const tourNodeFlavor = {
+    1: { battle: '第一夜的票是免费的，来的人比想象中多。', elite: '主办方临时加了场次：同一首，只给一次机会。', camp: '灯塔的二楼有一张旧沙发，坐下去会响。', shop: '灯塔下的临时摊位，老板是本地人，只收现金。' },
+    2: { battle: '没有节目单，只有人流量。路过的每一秒都算数。', elite: '围观的人开始排队了。排队的人会变成什么，取决于这一首。', camp: '天桥下的便利店，关东煮只卖到两点。', shop: '天桥底下的摊子，卖什么取决于今天来了谁。' },
+    3: { battle: '这里没有观众席，只有一片还没有被抹掉的地方。', elite: '在长夜里加一场，等于把灯多举十分钟。', camp: '穹顶的休息室是上一轮巡演留下来的，杯子还在原处。', shop: '穹顶后台的自动贩卖机，只剩最后几样。' }
+  };
+  const tourEvents = {
+    1: [
+      { title: '借来的音响', situation: '主办方的音响比设备清单上旧十年。', safe: '用他们那台，稳', risk: '把两台接在一起' },
+      { title: '多余的座位', situation: '第一排有两个座位始终没人坐。', safe: '空着', risk: '把手灯放上去，唱完一整首' }
+    ],
+    2: [
+      { title: '雨中的天桥', situation: '雨来了，主办方建议改到室内。', safe: '转移室内', risk: '在雨里唱完' },
+      { title: '一位退场者', situation: '广场边缘站着一个只剩轮廓的人。她也在跟着哼。', safe: '绕开', risk: '把麦克风递过去' }
+    ],
+    3: [
+      { title: '旧录音带', situation: '抽屉里有一盘带子，标签写着上一轮巡演的日期。', safe: '收好', risk: '当场放出来' },
+      { title: '调音的邻居', situation: '隔壁场馆也在排练，两边的声音撞在一起。', safe: '错开时间', risk: '一起唱' }
+    ]
+  };
+  const tourLead = {
+    1: { who: 'nana7mi', name: '七海', text: '台口到最远那排，三十七步。' },
+    2: { who: 'azi', name: '阿梓', text: '先别开麦，这个返听在嗡。' },
+    3: { who: 'haruka', name: '白神遥', text: '左边。' }
+  };
   const puzzleCandidates = [
     ['ein', 'goutan', 'yujiu', 'hoshimi', 'zhouyi', 'miting'],
     ['ein', 'goutan', 'likou', 'yuji', 'kanban', 'xuezhu'],
@@ -370,16 +402,25 @@
         : `第${s.chapter}站 · 节目${s.node + 1}/6 · 演出体力${s.hp}/${s.maxHp} · 应援纪念物：${s.relics.length ? s.relics.map(id => `${expeditionRelicLabels[id] || id}（${relicDescriptions[id]}）`).join('、') : '无'}`;
       base.objective = s.phase === 'finished' ? '巡演记录已保存' : '完成三站巡演，登上终场压轴舞台';
       base.enemyHint = s.phase === 'finished' ? '' : `本站压轴演出的特别环节：${expeditionMechanicNames[bossKinds[s.chapter - 1]]}`;
-      if (s.phase === 'route') base.choices = expeditionOptions(s).map(n => choice(`route:${n.id}`, n.label, `演出挑战度${n.risk} · 节目单提前公开`));
+      if (s.phase === 'route') base.choices = expeditionOptions(s).map(n => {
+        const flavor = n.id === 'event'
+          ? tourEvents[s.chapter][random(s.seed, `event:${s.chapter}`, 2)].situation
+          : (tourNodeFlavor[s.chapter][n.id] || '');
+        return choice(`route:${n.id}`, n.label, `${flavor ? flavor + ' · ' : ''}演出挑战度${n.risk} · 节目单提前公开`);
+      });
       if (s.phase === 'fight') {
         base.canFight = true;
         const boss = s.current === 'boss', elite = s.current === 'elite';
         base.encounter = encounter(boss ? `第${s.chapter}站压轴演出` : elite ? '特别舞台企划' : '巡演公演', s.chapter + (elite ? 1 : 0), 3 + s.chapter + (elite ? 1 : 0), boss, boss ? bossKinds[s.chapter - 1] : elite ? 'flank' : 'none', hash(s.seed, `exp:${s.chapter}:${s.node}:${s.current}`), elite ? 'elite' : 'none');
       }
-      if (s.phase === 'reward') base.choices = [choice('reward:gold', '领取巡演收益', '+6 金币'), choice('reward:relic', '领取应援纪念物', '随机获得：返场耳返（施放曲目后获得应援屏障）、全息伴舞（首次演绎曲目时召来伴舞）、应援手灯（台前成员承受伤害降低）'), ...['守护', '游侠', '法师'].map(job => choice(`reward:recruit:${job}`, `定向邀约·${job}`, `下次周边商店保证出现${job}定位成员`))];
-      if (s.phase === 'camp') base.choices = [choice('camp:heal', '后台休息', '恢复 5 点演出体力'), choice('camp:train', '彩排', '获得巡演收入与团队成长')];
-      if (s.phase === 'event') base.choices = [choice('event:safe', '稳妥合作', '+4 金币'), choice('event:risk', '尝试临时联动', '-2 点演出体力，获得巡演纪念章')];
-      if (s.phase === 'shop') base.choices = [choice('shop:buy', '购买后台能量包', '花费 5 金币，恢复 5 点演出体力并刷新商店', gold < 5), choice('shop:leave', '继续巡演', '保留金币')];
+      if (s.phase === 'reward') base.choices = [choice('reward:gold', '领取巡演收益', '+6 金币'), choice('reward:relic', '领取应援纪念物', '观众留下的应援 · 随机获得：返场耳返（施放曲目后获得应援屏障）、全息伴舞（首次演绎曲目时召来伴舞）、应援手灯（台前成员承受伤害降低）'), ...['守护', '游侠', '法师'].map(job => choice(`reward:recruit:${job}`, `定向邀约·${job}`, `下次周边商店保证出现${job}定位成员`))];
+      if (s.phase === 'camp') base.choices = [choice('camp:heal', '后台休息', `${tourNodeFlavor[s.chapter].camp} · 恢复 5 点演出体力`), choice('camp:train', '彩排', '把今天的段落再过一遍 · 获得巡演收入与团队成长')];
+      if (s.phase === 'event') {
+        const ev = tourEvents[s.chapter][random(s.seed, `event:${s.chapter}`, 2)];
+        base.objective = `${ev.title}：${ev.situation}`;
+        base.choices = [choice('event:safe', '稳妥合作', `${ev.safe} · +4 金币`), choice('event:risk', '尝试临时联动', `${ev.risk} · -2 点演出体力，获得巡演纪念章`)];
+      }
+      if (s.phase === 'shop') base.choices = [choice('shop:buy', '购买后台能量包', `${tourNodeFlavor[s.chapter].shop} · 花费 5 金币，恢复 5 点演出体力并刷新商店`, gold < 5), choice('shop:leave', '继续巡演', '保留金币')];
     }
     if (s.mode === 'hunt') {
       base.subtitle = `准备${s.prep}/3 · 挑战${s.attempts}/${s.maxAttempts} · ${mechanicNames[s.boss]}首领`;
