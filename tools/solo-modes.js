@@ -406,8 +406,8 @@
     const base = { title: definitions.find(d => d.id === s.mode).name, subtitle: '', objective: '', enemyHint: '', choices: [], canFight: false, encounter: null, finished: s.phase === 'finished', outcome: s.outcome };
     if (s.mode === 'expedition') {
       base.subtitle = s.phase === 'finished' ? (s.outcome === 'won' ? '三站巡演圆满收官' : '巡演暂告一段落')
-        : `第${s.chapter}站 · 节目${s.node + 1}/6 · 演出体力${s.hp}/${s.maxHp} · 应援纪念物：${s.relics.length ? s.relics.map(id => `${expeditionRelicLabels[id] || id}（${relicDescriptions[id]}）`).join('、') : '无'}`;
-      base.objective = s.phase === 'finished' ? '巡演记录已保存' : '完成三站巡演，登上终场压轴舞台';
+        : `第${s.chapter}站·${tourStation[s.chapter].name}·${tourStation[s.chapter].venue} · 节目${s.node + 1}/6 · 演出体力${s.hp}/${s.maxHp} · 应援纪念物：${s.relics.length ? s.relics.map(id => `${expeditionRelicLabels[id] || id}（${relicDescriptions[id]}）`).join('、') : '无'}`;
+      base.objective = s.phase === 'finished' ? '巡演记录已保存' : tourObjective[s.chapter];
       base.enemyHint = s.phase === 'finished' ? '' : `本站压轴演出的特别环节：${expeditionMechanicNames[bossKinds[s.chapter - 1]]}`;
       if (s.phase === 'route') base.choices = expeditionOptions(s).map(n => {
         const flavor = n.id === 'event'
@@ -418,7 +418,11 @@
       if (s.phase === 'fight') {
         base.canFight = true;
         const boss = s.current === 'boss', elite = s.current === 'elite';
-        base.encounter = encounter(boss ? `第${s.chapter}站压轴演出` : elite ? '特别舞台企划' : '巡演公演', s.chapter + (elite ? 1 : 0), 3 + s.chapter + (elite ? 1 : 0), boss, boss ? bossKinds[s.chapter - 1] : elite ? 'flank' : 'none', hash(s.seed, `exp:${s.chapter}:${s.node}:${s.current}`), elite ? 'elite' : 'none');
+        base.encounter = encounter(
+          boss ? tourShow[s.chapter].boss : elite ? tourShow[s.chapter].elite : tourShow[s.chapter].battle,
+          s.chapter + (elite ? 1 : 0), 3 + s.chapter + (elite ? 1 : 0), boss,
+          boss ? bossKinds[s.chapter - 1] : elite ? 'flank' : 'none',
+          hash(s.seed, `exp:${s.chapter}:${s.node}:${s.current}`), elite ? 'elite' : 'none');
       }
       if (s.phase === 'reward') {
         const rewardChoices = [

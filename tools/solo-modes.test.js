@@ -73,7 +73,7 @@ test('expedition presentation uses virtual idol touring language while preservin
   const s = M.create('expedition', 31);
   const intro = M.view(s);
   assert.equal(intro.title, '巡演企划');
-  assert.equal(intro.objective, '完成三站巡演，登上终场压轴舞台');
+  assert.equal(intro.objective, '把声音送到第三十八步——没人站的地方');
   assert.equal(intro.choices[0].id, 'route:battle');
   assert.match(intro.choices[1].id, /^route:(elite|camp|event|shop)$/);
   assert.equal(intro.choices[0].label, '常规公演');
@@ -94,11 +94,11 @@ test('expedition presentation uses virtual idol touring language while preservin
   for (const staleTerm of ['远征生命', '遗物', '章末首领', '精英战', '普通战', '精英部队', '巡逻队', '回响护符', '召唤核心', '坚守旗帜', '冒险徽章', '购买补给']) {
     assert.equal(visibleCopy.includes(staleTerm), false, `stale expedition term: ${staleTerm}`);
   }
-  assert.equal(phases[1].encounter.name, '巡演公演');
-  assert.equal(phases[2].encounter.name, '特别舞台企划');
+  assert.equal(phases[1].encounter.name, '潮声港·灯塔夜演');
+  assert.equal(phases[2].encounter.name, '灯塔剧场·加演场');
   assert.equal(bossRoute.choices[0].id, 'route:boss');
   assert.equal(bossRoute.choices[0].label, '终场压轴舞台');
-  assert.equal(phases[4].encounter.name, '第1站压轴演出');
+  assert.equal(phases[4].encounter.name, '灯塔剧场·压轴夜');
   assert(phases[5].choices.some(c => c.id === 'reward:relic' && c.label === '领取应援纪念物'));
   assert(phases[5].choices.some(c => c.id === 'reward:recruit:守护'));
 });
