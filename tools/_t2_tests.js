@@ -177,8 +177,8 @@ module.exports.run = function (A, driveBattle) {
     globalThis.codexRecord(true);
     const e3 = store().ein;
     ok(!!e3 && e3.used >= 1, '中途买过又卖掉的棋子也会被收录（不只看终局阵容）');
-    ok(Object.keys(e2).every(k => ['used', 'win', 'first'].includes(k)),
-      `收集记录只含展示字段，不含任何数值字段（实际：${Object.keys(e2).join('/')}）`);
+    ok(Object.keys(e2).every(k => ['used', 'win', 'first', 'casts', 'damage', 'bestDamage', 'kills'].includes(k)),
+      `收集记录只含展示字段（used/win/first + 只读聚合的施法/伤害/击杀统计），不含可回流战斗的数值字段（实际：${Object.keys(e2).join('/')}）`);
     const cs = globalThis.codexStat();
     ok(cs.total === A.UNITS.length, `收集总数与棋子表一致（${cs.collected}/${cs.total}）`);
     ok(typeof globalThis.codexTitle(cs.total) === 'string', '里程碑称号可生成');
@@ -292,9 +292,6 @@ module.exports.run = function (A, driveBattle) {
   {
     globalThis.newGame();
     A.S.round=6;A.S.phase='prep';A.S.lvl=3;A.S.board[0]={id:'kanban',star:2};
-    A.renderGrowthBanner();
-    const growth=global.document.getElementById('chapterGrowth').innerHTML;
-    ok(growth.includes('新增 2★')&&growth.includes('人口提升'),'开局展示基线可触发首次小节成长提示');
 
     A.S.round=5;A.S.challengeRound=null;A.renderTop();
     const restTag=global.document.getElementById('restTag');
@@ -337,7 +334,7 @@ module.exports.run = function (A, driveBattle) {
     ok(A.chapterRating(s)==='S'&&A.chapterRating(a)==='A'&&A.chapterRating(b)==='B',
       '章末评级按集中定义的 S/A/B 门槛计算');
     A.recordChapterReview();
-    const displayState={growth:A.growthSnapshot(),start:A.S.stats.chapterStart,review:A.S.stats.chapterReview,tele:A.S.stats.tele||{}};
+    const displayState={start:A.S.stats.chapterStart,review:A.S.stats.chapterReview,tele:A.S.stats.tele||{}};
     const keys=[];(function walk(value){if(!value||typeof value!=='object')return;Object.entries(value).forEach(([key,child])=>{keys.push(key);walk(child);});})(displayState);
     const badKeys=keys.filter(key=>key!=='lvlDisplay'&&/(^|[._-])(atk|hp|maxhp|ar|mr|asp|mana|crit|dmg|lvl|cost)(?=$|[._-])/i.test(key));
     ok(!badKeys.length,'评级/成长/遥测数据没有战斗字段名'+(badKeys.length?'（'+badKeys.join(',')+'）':''));

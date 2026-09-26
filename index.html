@@ -848,8 +848,6 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 @keyframes cellShake { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-3px,1px)}
   50%{transform:translate(3px,-1px)} 75%{transform:translate(-2px,0)} }
 @keyframes augIn{ from{ transform:translateY(14px) scale(.92); opacity:0; } to{ transform:none; opacity:1; } }
-.growth-banner{display:none;margin:0 0 8px;padding:8px 11px;border:1px solid rgba(115,202,164,.45);background:rgba(35,83,76,.32);color:#dbffed;font-size:12px;line-height:1.55}
-.growth-banner b{color:#a8f4c6}
 .gear-drop-cards{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin:4px 0 8px}
 .gear-drop-card{display:flex;align-items:center;gap:7px;min-width:132px;padding:7px 10px;border:1px solid rgba(255,210,74,.5);background:linear-gradient(135deg,rgba(91,66,37,.75),rgba(33,29,55,.8));border-radius:8px;color:#fff1bd;font-size:12px;box-shadow:0 3px 12px #0003}
 .gear-drop-card .gear-icon{font-size:20px}
@@ -1091,7 +1089,6 @@ body.touch .m-only { display:inline-block; }
   </div>
   <div id="boardwrap">
     <div id="oppBar"><div id="enemyInfo"></div></div>
-    <div id="chapterGrowth" class="growth-banner" aria-live="polite"></div>
     <div id="gearDropCards" class="gear-drop-cards" aria-live="polite"></div>
     <div style="position:relative">
       <div id="board"></div>
@@ -2544,7 +2541,6 @@ function newGame(opts){ opts=opts||{}; runSessionId++; autoRunId++; autoBusy=fal
   initBannedBonds();
   S.hp=hpMax();   // 🩸 血之契约：生命上限 40 → 25
   beginChapterReview();
-  S.ms.growthSnapshot=growthSnapshot();
   S.gold = 10 + (hasCurse('nobond')?10:0) + (hasCurse('nojob')?15:0) + (hasCurse('nofac')?15:0)
               + (hasCurse('solo')?20:0) + (hasCurse('glass')?5:0) + (hasCurse('dry')?10:0);
   if(hasCurse('shortch')) S.tickets=1;
@@ -3894,35 +3890,6 @@ function renderEquip(){
     inventory.appendChild(c);
   });
 }
-function growthSnapshot(){
-  const stars=new Map();
-  [...(S.board||[]),...(S.bench||[])].filter(Boolean).forEach(u=>stars.set(u.id,Math.max(stars.get(u.id)||0,Number(u.star)||1)));
-  return {unitTiers:[...stars.entries()].map(([id,star])=>`${id}:${star}`).sort(),bondTiers:boardTierKeys().slice().sort(),lvlDisplay:Number(S.lvl)||0};
-}
-function renderGrowthBanner(){
-  const el=$('chapterGrowth');if(!el)return;
-  if(S.phase!=='prep'||S.round%5!==1){el.style.display='none';el.innerHTML='';return;}
-  const ms=S.ms=S.ms||{};
-  if(ms.growthRound!==S.round){
-    const current=growthSnapshot(),before=ms.growthSnapshot;
-    const lines=[];
-    if(before){
-      const oldStars=new Map(before.unitTiers.map(value=>{const p=value.split(':');return [p[0],Number(p[1])||1];}));
-      const newStars=current.unitTiers.map(value=>{const p=value.split(':');return {id:p[0],star:Number(p[1])||1,was:oldStars.get(p[0])||0};})
-        .filter(row=>row.star>=2&&row.was<2).map(row=>`${(byId(row.id)||{}).name||row.id} ${row.star}★`);
-      if(newStars.length)lines.push(`新增 2★：${newStars.slice(0,3).join('、')}`);
-      const oldTiers=new Set(before.bondTiers||[]);
-      const activated=current.bondTiers.filter(key=>!oldTiers.has(key)).map(key=>{const p=key.split(':');return `${p[1]} T${p[2]}`;});
-      if(activated.length)lines.push(`新激活羁绊：${activated.slice(0,3).join('、')}`);
-      if(current.lvlDisplay>(Number(before.lvlDisplay)||0))lines.push(`人口提升：${before.lvlDisplay} → ${current.lvlDisplay}`);
-    }
-    ms.growthSnapshot=current;ms.growthRound=S.round;ms.growthLines=lines.slice(0,3);
-  }
-  const lines=ms.growthLines||[];
-  if(!lines.length){el.style.display='none';el.innerHTML='';return;}
-  el.innerHTML=`<b>🌱 本小节成长</b><br>${lines.map(line=>`<span>${line}</span>`).join('<br>')}`;
-  el.style.display='block';
-}
 function renderGearDropCards(){
   const el=$('gearDropCards');if(!el)return;
   el.innerHTML=gearDropCardsHTML(S.lastGearDrops||[]);
@@ -3987,7 +3954,7 @@ function markPrepClock(){
   if(globalThis.__HEADLESS||!S||S.phase!=='prep')return;
   if(S.telePrepRound!==S.round){S.telePrepRound=S.round;S.telePrepStartedAt=Date.now();}
 }
-function renderAll(){ if(ARENA_SILENT) return; window.__S=S; markPrepClock(); renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); renderArenaHUD(); renderGrowthBanner(); renderGearDropCards(); renderRoundNotice(); if(!S.menuPreview)saveGame(); fitBoardCell(); if(window.SoloHost)SoloHost.render(); }
+function renderAll(){ if(ARENA_SILENT) return; window.__S=S; markPrepClock(); renderBoard(); renderBench(); renderShop(); renderTop(); renderSynergy(); renderEquip(); renderArenaHUD(); renderGearDropCards(); renderRoundNotice(); if(!S.menuPreview)saveGame(); fitBoardCell(); if(window.SoloHost)SoloHost.render(); }
 /* ===== 棋盘自适应：实测中央区剩余宽高写入 --cell（桌面端替代 CSS 魔法数公式；竖屏/横屏仍走媒体查询） ===== */
 function fitBoardCell(){
   if(typeof matchMedia!=='function' || typeof document.body.style?.setProperty!=='function') return;   // sim 无头桩环境：跳过
