@@ -155,6 +155,8 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .syn-badge.banned .syn-top { color:#ee8177; }
 .syn-badge.banned .pips i { background:#3d362a; }
 .syn-eff.ban { color:#ee8177; }
+.syn-off { flex:none; margin-left:4px; font-size:10px; font-weight:bold; color:#ffd24a;
+  border:1px solid rgba(255,210,74,.45); padding:0 3px; line-height:1.5; white-space:nowrap; }
 
 /* ===== ⑦ 棋盘场地：强透视（近大远小）+ 地台追光 + 石砖格 + 金色中线 ===== */
 #boardwrap { perspective:1150px; perspective-origin:50% -18%; }
@@ -1545,7 +1547,7 @@ const SKILL_VAR = {
   suiji:  {manaAmt:25, txt:'为队友回蓝（不含自己，避免自充能）'},
   kanban: {shellPct:.30, blockCt:.25, blockDmg:.5, blockT:4},
   zhouyi: {p:{sb:.80}},
-  yuji:   {p:{blockCt:.25,blockDmg:.5}},
+  yuji:   {p:{blockCt:.25,blockDmg:.5,rainEvery:2,rainMax:2}},
   tiandou:{healN:2, fx:[['healshield',.05]], txt:'并为她们附加 5% 最大生命护盾'},
   aza:    {fx:[['allatkup',.10]], txt:'并提升全体 10% 攻击（本场战斗）'},
   pako:   {fx:[['heallow',.40]], txt:'并为生命比例最低的队友额外回复 40% 攻击生命'},
@@ -1616,7 +1618,7 @@ const COMBAT_KITS={
   suiji:v3Kit('十小时续航','support','为除自身外的队友回复 28 点法力并治疗 60% 攻击生命；同时获得 18% 攻速，持续 4 秒。','#8ddc9b','ward',{mana:28,heal:.6,haste:.18,attackStyle:'pulse'}),
   kanban:v3Kit('海獭缓冲层','guard','吸收 45% 最大生命伤害，获得 35% 格挡，持续 4 秒；格挡成功时向攻击者喷出水花减速。','#7ed7d9','ward',{shield:.45,block:.35,slow:.20,attackStyle:'blade'}),
   zhouyi:v3Kit('破盾读秒','passive','被动：普通攻击优先拆除护盾；目标无护盾时，下一次攻击造成额外 80% 破防伤害。','#c77dff','void',{passive:true,attackHit:'shieldbreak',attackStyle:'blade'}),
-  yuji:v3Kit('雨幕偏航','passive','被动：每次闪避或格挡后召唤雨幕，获得 8% 最大生命护盾并让下一次攻击附带减速。','#72c9ff','ward',{passive:true,attackHit:'rainveil',attackStyle:'shot'}),
+  yuji:v3Kit('雨幕偏航','passive','被动：雨幕庇护——雨纪每 2 次普攻凝结 1 层「雨露」（至多 2 层）；受到攻击时消耗 1 层雨露必定闪避该次攻击，并召唤雨幕：获得 8% 最大生命护盾、下一次普攻附带减速。无雨露时保留 25% 概率格挡（伤害减半）兜底。','#72c9ff','ward',{passive:true,attackHit:'rainveil',attackStyle:'shot'}),
   tiandou:v3Kit('点心补给线','heal','把点心投向两名最需要治疗的队友，各回复 145% 攻击生命并获得 8% 护盾；护盾破裂时回复 8 点法力。','#ffc56d','ward',{heal:1.45,healN:2,shield:.08,mana:8,attackStyle:'arc'}),
   aza:v3Kit('节拍装甲','team','以鼓点强化全队：回复 70% 攻击生命、攻击 +12%，并在施法者脚下留下 2 秒震荡圈。','#ff8b8b','arc',{heal:.7,attack:.12,zone:{r:1,dur:2000,dps:.18},attackStyle:'pulse'}),
   pako:v3Kit('善意溢出','heal','治疗生命最低的队友 230% 攻击生命，溢出治疗转化为 18% 最大生命护盾，并压低其受到的治疗削减。','#73d6e8','ward',{heal:2.3,shield:.18,attackStyle:'arc'}),
@@ -1669,7 +1671,7 @@ function v3AttackOf(u){
 function v3AttackText(u){
   const p=v3AttackOf(u);
   const form=({blade:'弧形刃光',shot:'追踪箭矢',arc:'棱晶法弹',pulse:'节拍光环',burst:'碎星爆点'}[p.style]||'专属弹道');
-  const proc=({none:'稳定命中',bleed:Math.round(p.proc*100)+'% 概率造成流血',slow:Math.round(p.proc*100)+'% 概率减速',spark:Math.round(p.proc*100)+'% 概率溅射电弧',mana:'命中时额外回蓝',shieldbreak:'破盾后强化下一击',rainveil:'闪避后获得雨幕护盾',soulmate:'命中时与队友共享治疗'}[p.onHit]||'专属命中回响');
+  const proc=({none:'稳定命中',bleed:Math.round(p.proc*100)+'% 概率造成流血',slow:Math.round(p.proc*100)+'% 概率减速',spark:Math.round(p.proc*100)+'% 概率溅射电弧',mana:'命中时额外回蓝',shieldbreak:'优先攻击护盾目标，破盾后强化下一击',rainveil:'雨露闪避后召唤雨幕护盾',soulmate:'命中时与队友共享治疗'}[p.onHit]||'专属命中回响');
   return form+' · '+proc+'（'+Math.round(p.mult*100)+'% 攻击）';
 }
 
@@ -1769,6 +1771,7 @@ function v3AttackFx(u,tgt,p){
 function v3RainTrigger(u){if(!u||u.id!=='yuji')return;v3AddShield(u,u.maxhp*.08);u.v3RainReady=true;vfxAt(u,'ring frost shield',650);dmgPopup(null,u,'🌧雨幕','cast');}
 function applyV3Attack(u,tgt,p,units,dealt,dmg){
   if(!p||!tgt) return;
+  if(u.rainMax){ u.rainHits=(u.rainHits||0)+1; if(u.rainHits%(u.rainEvery||2)===0) u.rainStacks=Math.min(u.rainMax,(u.rainStacks||0)+1); }   // 雨纪：普攻凝雨露（自生成，不依赖被攻击）
   if(p.onHit==='rainveil'){
     if(u.v3RainReady){tgt.slowA=Math.max(tgt.slowA||0,.2);tgt.slowT=Math.max(tgt.slowT||0,1600);u.v3RainReady=false;}
   } else if(p.onHit==='soulmate'){
@@ -3629,6 +3632,8 @@ function renderTop(){
             return dr?`${dr.name}：${dr.limit}\n　→ 补偿：${dr.compensation}\n　→ 时点：${dr.timing}`:id; }
           if(BOND_BAN_IDS.includes(id)&&nbList().length)
             return `${c.n}：本局禁用【${nbList().join('、')}】\n　（这 ${nbList().length} 项羁绊整体失效，我方拿不到任何档位效果）\n　→ 补偿：${c.r}`;
+          if(id==='dc_bias'){ const f=S.dailyCurse&&S.dailyCurse.focus;
+            return `${c.n}：${c.d}${f?`\n　→ 本章偏科羁绊：【${f}】各档门槛 +1（羁绊栏该羁绊旁已标注 ⚠+1）`:''}\n　→ 补偿：${c.r}`; }
           return `${c.n}：${c.d}\n　→ 补偿：${c.r}`;}).join('\n————————\n');
       }
     }
@@ -3742,16 +3747,16 @@ function synBadges(cnt,cfg,icons){
     const tier=banned?0:c.need.filter(x=>x+off<=n).length;
     const maxN=c.need[c.need.length-1]+off;
     const next=c.need.find(x=>x+off>n);
-    return {k,c,tier,n,banned,gap:next?next-n:0,prog:n>=maxN?'MAX':`${n}/${next}`};
+    return {k,c,tier,n,banned,off,gap:next?(next+(off||0)-n):0,prog:n>=maxN?'MAX':`${n}/${next+(off||0)}`};
   }).filter(Boolean)
     .sort((a,b)=>(a.banned?1:0)-(b.banned?1:0) || (b.tier>0?1:0)-(a.tier>0?1:0) || b.tier-a.tier || a.gap-b.gap);
-  return items.map(({k,c,tier,n,prog,banned})=>{
+  return items.map(({k,c,tier,n,prog,banned,off})=>{
     const pips = c.need.map((x,i)=>`<i class="${i<tier?'on':''}"></i>`).join('');
     const effs = banned
       ? `<div class="syn-eff ban">⛔ 本局被禁用（禁锢羁绊）</div>`
       : bondDesc(k,c).slice(0,tier).map((d,i)=>`<div class="syn-eff">T${i+1} ${d}</div>`).join('');
-    return `<div class="syn-badge ${tier>0?('on t'+tier):''}${banned?' banned':''}" title="${k}${banned?'（⛔ 本局被「禁锢羁绊」禁用，不产生任何效果）':''}\n${bondDesc(k,c).map((d,i)=>`T${i+1}(${c.need[i]}人)：${d}`).join('\n')}">
-      <div class="syn-top">${synIconHTML(k,'ico')||'<span class="ico">❓</span>'}<span>${banned?'⛔':''}${k}</span><span class="pips">${pips}</span><span class="cnt">${prog}</span></div>${effs}</div>`;
+    return `<div class="syn-badge ${tier>0?('on t'+tier):''}${banned?' banned':''}" title="${k}${banned?'（⛔ 本局被「禁锢羁绊」禁用，不产生任何效果）':''}${off?'\n⚠ 本章「羁绊偏科」：该羁绊各档门槛 +1（图标旁已标注）':''}\n${bondDesc(k,c).map((d,i)=>`T${i+1}(${c.need[i]}人)：${d}`).join('\n')}">
+      <div class="syn-top">${synIconHTML(k,'ico')||'<span class="ico">❓</span>'}<span>${banned?'⛔':''}${k}</span>${off?'<span class="syn-off">⚠+1</span>':''}<span class="pips">${pips}</span><span class="cnt">${prog}</span></div>${effs}</div>`;
   }).join('') || '<div class="syn-empty">上场棋子后显示羁绊</div>';
 }
 function renderSynergy(){
@@ -4989,6 +4994,7 @@ function makeBattleUnit(u, side, x, y){
     b.pv=pv;
     if(pv.sb) b.sbAmt=pv.sb;                                   // 破盾特攻
     if(pv.blockCt){ b.blockCt=pv.blockCt; b.blockDmg=pv.blockDmg||.5; } // 常驻格挡
+    if(pv.rainMax){ b.rainEvery=pv.rainEvery||2; b.rainMax=pv.rainMax; b.rainStacks=0; b.rainHits=0; }   // 雨纪雨露蓄能：普攻凝层 → 受击必闪
     if(pv.vampPct) b.vamp=Math.max(b.vamp,pv.vampPct);          // 被动吸血
     if(pv.atkDot) b.pAtkDot=pv.atkDot;                          // 攻击附带毒伤
     if(pv.critPct){ b.critPct=(b.critPct||0)+pv.critPct; b.critItemM=Math.max(b.critItemM||0, pv.critMul||2); b.ownCrit=true; }  // 专属暴击（金色爆闪）
@@ -5452,6 +5458,11 @@ function startBattle(){
       else { tgt=null; let bd=1e9;
         for(const f of foes){ const d2=unitDist(f,u); if(d2<bd){bd=d2;tgt=f;} } }
       const d=byId(u.id);
+      // 破盾读秒（轴伊）：技能描述「普通攻击优先拆除护盾」——射程内有带盾目标且当前目标无盾时，换打护盾持有者
+      if(d.id==='zhouyi' && !taunters.length && !(tgt.shield>0)){
+        const shielded=foes.filter(f=>f.shield>0&&unitDist(f,u)<=d.rng).sort((a,b)=>unitDist(a,u)-unitDist(b,u))[0];
+        if(shielded)tgt=shielded;
+      }
       const aspd = d.spd*(u.spdMul||1)*(u.v3HasteMul||1)*(u.itemKillHasteBonus||1);
       if(u===nextCaster && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana && u.skillCd<=0){
         if(bondModern()&&BondRuntime.beforeCast(u,units))continue;
@@ -5494,10 +5505,14 @@ function startBattle(){
             }
           if(d.form==='rg') fireProjectile(u,tgt,profile.color,profile);
           else {hitFx(u,tgt,d.dtype);v3AttackFx(u,tgt,profile);}
-          // 闪避（刀塔精灵式）：仅对普攻生效，命中判定失败则本次普攻落空
-          if((tgt.dodge>0 && rand()<tgt.dodge)||(tgt.phaseT>0&&rand()<(tgt.phaseDodge||.5))){
+          // 闪避（刀塔精灵式）：仅对普攻生效，命中判定失败则本次普攻落空。
+          // 雨纪「雨露蓄能」：无常驻闪避可刷时，消耗 1 层雨露必定闪避（自生成资源，见 applyV3Attack 凝层）
+          let dodged=(tgt.dodge>0 && rand()<tgt.dodge)||(tgt.phaseT>0&&rand()<(tgt.phaseDodge||.5));
+          const rainDodge=!dodged&&!!tgt.rainMax&&(tgt.rainStacks||0)>0;
+          if(rainDodge){ tgt.rainStacks--; dodged=true; }
+          if(dodged){
             sfx('dodgeleaf'); vfxAt(tgt,'leaves',550);
-            dmgPopup(null,tgt,'闪避','cast');
+            dmgPopup(null,tgt,rainDodge?'🌧雨露闪避':'闪避','cast');
             if(tgt.itemDodgeAmp)tgt.itemNextStrikeAmp=Math.max(tgt.itemNextStrikeAmp||0,tgt.itemDodgeAmp);
             if(tgt.id==='yuji')v3RainTrigger(tgt);
             if(bondModern())BondRuntime.dodge(tgt);

@@ -29,8 +29,10 @@ module.exports.run = function (A, driveBattle) {
     ok(A.SKILL_VAR.nox.p.critPct === 0.25 && A.SKILL_VAR.youyi.p.critPct === 0.15, 'SKILL_VAR.p 扩展字段就位');
   }
 
-  /* ---------- 2. 叠加规则：率相加封顶 60%、暴伤取最大 ---------- */
-  console.log('[2] 叠加规则（专属 + 装备 + 刺客羁绊）');
+  /* ---------- 2. 叠加规则：率相加封顶 60%、暴伤取最大 ----------
+     2026-09-27 更新：v61 羁绊重构后刺客羁绊改为「击杀孤立目标后潜行」，不再提供常驻暴击；
+     本段改为验证 专属暴击 + 装备暴击 两源合并（率相加封顶 60%、暴伤取最大）。 */
+  console.log('[2] 叠加规则（专属 + 装备暴击合并）');
   {
     globalThis.newGame();
     A.S.bench = Array(8).fill(null);
@@ -44,8 +46,8 @@ module.exports.run = function (A, driveBattle) {
     globalThis.startBattle();
     const arr = globalThis.window.__bu || [];
     const nox = arr.find(u => u.id === 'nox');
-    ok(nox.crit === 0.6, `率相加封顶 60%（0.25+0.20+0.18=0.63 → 实际 ${nox.crit}）`);
-    ok(nox.critM === 3.5, `暴伤取最大（max(2.5专属, 2.5装备, 3.5刺客T1) → 实际 ${nox.critM}）`);
+    ok(nox.crit === 0.45, `专属+装备率相加（0.25+0.20=0.45 → 实际 ${nox.crit}）`);
+    ok(nox.critM === 2.5, `暴伤取最大（max(2.5专属, 2.5装备) → 实际 ${nox.critM}）`);
     driveBattle(700);
   }
 

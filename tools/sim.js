@@ -37,6 +37,8 @@ const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
   get SKILL_VAR(){return SKILL_VAR}, get SKILL_INFO(){return SKILL_INFO}, get FORMA_COLS(){return FORMA_COLS},
   placeFormation, genEnemy, prepEnemy, tidyBench, fillBoardBeforeBattle, unitBand, makeBattleUnit, equipTo, sellSelected,
   dailyEvent, dailyOnPrep, dailyMods, boardCurseImpacts, applyBoardCurse, nbList, interestGain, maxEquip, enemyHidden,
+  get BV(){return BV}, get BondRuntime(){return BondRuntime},
+  stopTickLoop, hpMax, shopSize, refreshCost, lvlCap, chLen, runLimit, enemyCap,
   get sfx(){return typeof sfx==='function'?sfx:null}, get battleStats(){return typeof battleStats!=='undefined'?battleStats:null} };
 `;
 
@@ -212,6 +214,8 @@ if (process.env.T4) { require('./_t4_tests.js').run(A, driveBattle); process.exi
 if (process.env.T5) { require('./_solo_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }   // 🪑 独木桥品质成长
 if (process.env.EFFECT_TEST) { require('./_effect_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }
 if (process.env.PACE_TEST) { require('./_pace_tests.js').run(A); process.exit(process.exitCode||0); }
+if (process.env.AUDIT) { require('./_audit_effects.js').run(A, driveBattle); process.exit(process.exitCode||0); }
+if (process.env.DBG1) { require('./_dbg_audit1.js').run(A); process.exit(process.exitCode||0); }
 
 
 /* ---------- 主循环 ---------- */
