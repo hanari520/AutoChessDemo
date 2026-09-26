@@ -364,7 +364,7 @@
         $('interest').textContent=''; $('resGold').title='金币用于招募和升级；本模式不计算存款利息。';$('goldChip').title='当前金币（本模式不计算存款利息）';
         $('autoBtn').disabled=true; if($('autoFightBtn'))$('autoFightBtn').disabled=true;
         if(S.solo.mode==='puzzle'){$('lvlBtn').disabled=true;$('refreshBtn').disabled=true;}
-      } else { const statTitle=$('statBar')?.parentElement?.querySelector('h3');if(statTitle)statTitle.textContent='战斗统计';const logTitle=$('log')?.parentElement?.querySelector('h3');if(logTitle)logTitle.textContent='战报';const hpTitle=$('resHp')?.querySelector('.rl');if(hpTitle)hpTitle.textContent='生命';const streakTitle=$('resStreak')?.querySelector('.rl');if(streakTitle)streakTitle.textContent='连胜';$('tempBuffBox').hidden=false;$('fightBtn').textContent='开战';$('resGold').title='利息：每10金+1，上限5。下回合利息预览见绿色数字';$('goldChip').title='当前金币（利息：每10金+1，上限5）'; $('autoBtn').disabled=false; if($('autoFightBtn'))$('autoFightBtn').disabled=false; }
+      } else { const statTitle=$('statBar')?.parentElement?.querySelector('h3');if(statTitle)statTitle.textContent='战斗统计';const logTitle=$('log')?.parentElement?.querySelector('h3');if(logTitle)logTitle.textContent='战报';const hpTitle=$('resHp')?.querySelector('.rl');if(hpTitle)hpTitle.textContent='生命';const streakTitle=$('resStreak')?.querySelector('.rl');if(streakTitle)streakTitle.textContent='连胜';$('tempBuffBox').hidden=false;$('fightBtn').textContent='开战';$('resGold').title='利息：每10金+1，上限3。下回合利息预览见绿色数字';$('goldChip').title='当前金币（利息：每10金+1，上限3）'; $('autoBtn').disabled=false; if($('autoFightBtn'))$('autoFightBtn').disabled=false; }
     } finally {rendering=false;}
   }
   window.SoloHost={start,resume,action,settle,save,openHub,canFight,beforeBattle,enemy,modifyUnit,tick,onCast,battleWon,render,finish,puzzleShop,

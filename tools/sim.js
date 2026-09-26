@@ -94,7 +94,7 @@ if (process.env.SEED) {
 }
 
 global.window.DailyCurses = require('./daily-curses.js');
-(0, eval)(code);
+(0, eval)(fs.readFileSync(path.join(__dirname, 'bond-runtime.js'), 'utf8') + '\n' + code);
 const A = globalThis.API;
 if (process.env.DAILY_CAMPAIGN_TEST) {
   require('./daily-campaign.test.js').run(A);

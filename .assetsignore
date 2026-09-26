@@ -16,6 +16,7 @@ assets/campaign
 # 单人玩法（campaign-map/solo-*）已下线，不再上传；恢复时重新加白名单。
 tools/**
 !tools/bot_strategy.js
+!tools/bond-runtime.js
 !tools/daily-curses.js
 !tools/idol-dark.css
 !tools/idol-redesign.css
