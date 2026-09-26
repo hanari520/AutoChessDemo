@@ -215,7 +215,6 @@ if (process.env.T5) { require('./_solo_tests.js').run(A, driveBattle); process.e
 if (process.env.EFFECT_TEST) { require('./_effect_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }
 if (process.env.PACE_TEST) { require('./_pace_tests.js').run(A); process.exit(process.exitCode||0); }
 if (process.env.AUDIT) { require('./_audit_effects.js').run(A, driveBattle); process.exit(process.exitCode||0); }
-if (process.env.DBG1) { require('./_dbg_audit1.js').run(A); process.exit(process.exitCode||0); }
 
 
 /* ---------- 主循环 ---------- */
