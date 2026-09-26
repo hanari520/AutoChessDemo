@@ -22,6 +22,7 @@
   let panelTitleNode = null;
   let panelModeNode = null;
   let panelSubtitleNode = null;
+  let panelLineNode = null;
   let panelObjectiveNode = null;
   let panelEnemyNode = null;
   let panelEncounterNode = null;
@@ -153,6 +154,8 @@
     panelCampMountNode.hidden = true;
 
     const details = node('div', 'solo-panel-details');
+    panelLineNode = appendText(details, 'p', 'solo-panel-line', '');
+    panelLineNode.hidden = true;
     panelOutcomeNode = appendText(details, 'p', 'solo-panel-outcome', '');
     panelOutcomeNode.hidden = true;
     panelObjectiveNode = appendText(details, 'p', 'solo-panel-objective', '');
@@ -560,6 +563,8 @@
     const enemyHint = describeValue(view.enemyHint);
     panelEnemyNode.textContent = enemyHint ? `${expedition ? '舞台预告' : '敌情'}：${enemyHint}` : '';
     panelEnemyNode.hidden = !enemyHint;
+    const lead = view.line && view.line.text ? `${view.line.name}：「${view.line.text}」` : '';
+    if (panelLineNode) { panelLineNode.textContent = lead; panelLineNode.hidden = !lead; }
     const encounter = describeValue(view.encounter);
     panelEncounterNode.textContent = encounter ? `${expedition ? '演出阵容' : '遭遇'}：${encounter}` : '';
     panelEncounterNode.hidden = !encounter;

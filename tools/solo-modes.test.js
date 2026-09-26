@@ -90,7 +90,7 @@ test('expedition presentation uses virtual idol touring language while preservin
     M.view({ ...s, phase: 'event' }),
     M.view({ ...s, phase: 'shop' })
   ];
-  const visibleCopy = phases.flatMap(v => [v.title, v.subtitle, v.objective, v.enemyHint, ...v.choices.flatMap(c => [c.label, c.description]), v.encounter && v.encounter.name]).filter(Boolean).join(' ');
+  const visibleCopy = phases.flatMap(v => [v.title, v.subtitle, v.objective, v.enemyHint, v.line && v.line.text, ...v.choices.flatMap(c => [c.label, c.description]), v.encounter && v.encounter.name]).filter(Boolean).join(' ');
   for (const staleTerm of ['远征生命', '遗物', '章末首领', '精英战', '普通战', '精英部队', '巡逻队', '回响护符', '召唤核心', '坚守旗帜', '冒险徽章', '购买补给']) {
     assert.equal(visibleCopy.includes(staleTerm), false, `stale expedition term: ${staleTerm}`);
   }

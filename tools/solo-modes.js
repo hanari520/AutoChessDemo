@@ -403,12 +403,13 @@
   function view(state, context) {
     const s = state, gold = Math.max(0, Number((context || {}).gold) || 0);
     assert(s && definitions.some(d => d.id === s.mode), 'Invalid solo state');
-    const base = { title: definitions.find(d => d.id === s.mode).name, subtitle: '', objective: '', enemyHint: '', choices: [], canFight: false, encounter: null, finished: s.phase === 'finished', outcome: s.outcome };
+    const base = { title: definitions.find(d => d.id === s.mode).name, subtitle: '', objective: '', enemyHint: '', choices: [], canFight: false, encounter: null, finished: s.phase === 'finished', outcome: s.outcome, line: null };
     if (s.mode === 'expedition') {
       base.subtitle = s.phase === 'finished' ? (s.outcome === 'won' ? '三站巡演圆满收官' : '巡演暂告一段落')
         : `第${s.chapter}站·${tourStation[s.chapter].name}·${tourStation[s.chapter].venue} · 节目${s.node + 1}/6 · 演出体力${s.hp}/${s.maxHp} · 应援纪念物：${s.relics.length ? s.relics.map(id => `${expeditionRelicLabels[id] || id}（${relicDescriptions[id]}）`).join('、') : '无'}`;
       base.objective = s.phase === 'finished' ? '巡演记录已保存' : tourObjective[s.chapter];
       base.enemyHint = s.phase === 'finished' ? '' : `本站压轴演出的特别环节：${expeditionMechanicNames[bossKinds[s.chapter - 1]]}`;
+      base.line = s.phase === 'finished' ? null : tourLead[s.chapter];
       if (s.phase === 'route') base.choices = expeditionOptions(s).map(n => {
         const flavor = n.id === 'event'
           ? tourEvents[s.chapter][random(s.seed, `event:${s.chapter}`, 2)].situation
