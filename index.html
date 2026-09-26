@@ -1055,6 +1055,7 @@ body.touch .m-only { display:inline-block; }
 <link rel="stylesheet" href="tools/idol-dark.css?v=4">
 <link rel="stylesheet" href="tools/stage-themes.css?v=1">
 <link rel="stylesheet" href="tools/narrative-bar.css?v=2">
+<link rel="stylesheet" href="tools/solo-ui.css?v=3">
 <script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#0a0d1c':'#f6f8fd'</script>
 </head>
 <body>
@@ -1311,7 +1312,7 @@ body.touch .m-only { display:inline-block; }
     单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）<br>
     快捷键：<b>R/A</b> 一键上阵 · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战；点【🏁 结束挑战】收兵结算（需二次确认）
     <span class="is-h">🎮 模式与荣誉</span>
-    开局四选一：🎲 普通模式 / 🏟 <b>八人竞技</b>（与 7 名对手比赛，按淘汰次序排名）/ 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（与每日挑战共用 12 条规则，单选一条）<br>
+    开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（与每日挑战共用 12 条规则，单选一条）；✦ <b>巡演企划</b>（剧情模式）在首页主按钮与新建对局卡片<br>
     【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（17 项）· 🏆 本地排行 · 🌍 全球排行<br>
     【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）
   </div>
@@ -7633,14 +7634,21 @@ function continueSave(key){
 function renderSetup(){
   const modes=[
     {id:'normal',title:'🎲 普通模式',desc:'常设赛·常规场：四章共 100 回合；第 25、50、75 回合选择增强，第 100 回合收尾结算。'},
-    {id:'arena',title:'🏟 八人竞技',desc:'与 7 名对手比赛；每回合 1 对 1，按淘汰顺序决定名次。'},
     {id:'daily',title:'📅 每日挑战',desc:`${todaySeed()} · 每日同步赛：四章共 100 回合；25/50/75 回合选增强，100 回合结算。同日同种子、同预置规则。`},
     {id:'custom',title:'⚠ 自定义诅咒',desc:'自选规则场：从每日赛同款 12 条规则中单选一条；四章 100 回合。与普通模式共享存档位。'},
   ];
-  $('setupModes').innerHTML=modes.map(m=>`<button type="button" class="flow-mode-card" role="radio" aria-checked="${selMode===m.id}" data-mode="${m.id}"><strong>${m.title}</strong><span>${m.desc}</span></button>`).join('');
+  /* 路线图批次 D：八人竞技入口下线（引擎与老存档保留），卡位让给「巡演企划」剧情模式（specs/narrative/tour-project.md §0.4） */
+  $('setupModes').innerHTML=modes.map(m=>`<button type="button" class="flow-mode-card" role="radio" aria-checked="${selMode===m.id}" data-mode="${m.id}"><strong>${m.title}</strong><span>${m.desc}</span></button>`).join('')
+    +`<button type="button" class="flow-mode-card flow-mode-story" data-tour="1"><strong>✦ 巡演企划 · 剧情模式</strong><span>五十位主播的三站巡演：排阵容、登台演出，赶在终场之前把没唱完的那首唱完。</span></button>`;
   $('setupModes').querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{
     selMode=button.dataset.mode;renderSetup();
   }));
+  const tourCard=$('setupModes').querySelector('[data-tour]');
+  if(tourCard)tourCard.addEventListener('click',()=>{
+    showHome();
+    if(window.SoloHost)SoloHost.openHub();
+    else $('setupFeedback').textContent='剧情模式资源尚未加载完成，请稍后重试。';
+  });
   const info=modes.find(m=>m.id===selMode)||modes[0];
   let details=info.desc;
   if(selMode==='daily')details+=`<br>${dailyInfoHTML()}`;
@@ -7658,7 +7666,7 @@ function renderSetup(){
         return `<label class="cp-item${on?' on':''}"><input type="radio" name="custom-curse" data-curse="${flowEsc(c.id)}" ${on?'checked':''}><b>${flowEsc(c.n)}</b><span class="cp-d">${flowEsc(c.d)}</span><span class="cp-r">${flowEsc(c.r)}</span></label>`;}).join('');
     curses.querySelectorAll('[data-curse]').forEach(input=>input.addEventListener('click',e=>{if(curseSel[0]===input.dataset.curse)e.preventDefault();toggleCurse(input.dataset.curse);}));
   }
-  $('setupSlotNote').textContent=selMode==='normal'||selMode==='custom'?'普通与自定义共用存档位 vc_save4。开始前会确认覆盖；每日与八人竞技存档互不影响。':`本模式使用独立存档位 ${selMode==='daily'?'vc_daily3':'vc_arena3'}；开始前会确认覆盖。`;
+  $('setupSlotNote').textContent=selMode==='normal'||selMode==='custom'?'普通与自定义共用存档位 vc_save4。开始前会确认覆盖；每日挑战存档独立互不影响。':`本模式使用独立存档位 ${selMode==='daily'?'vc_daily3':'vc_arena3'}；开始前会确认覆盖。`;
   $('setupFeedback').textContent=setupNotice;
   $('setupStart').textContent=`开始${modeLabel(selMode).replace(/^\S+\s*/,'')}`;
 }
@@ -8170,6 +8178,10 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
 <script src="tools/bot_strategy.js?v=9"></script>
 <script src="tools/idol-ui.js?v=1"></script>
 <script src="tools/idol-ui-redesign.js?v=5"></script>
+<script src="tools/solo-modes.js?v=4"></script>
+<script src="tools/campaign-map.js?v=2"></script>
+<script src="tools/solo-ui.js?v=4"></script>
+<script src="tools/solo-host.js?v=6"></script>
 <div id="levelGuideModal" class="level-guide-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="levelGuideTitle">
   <section class="level-guide-card" id="levelGuideCard">
     <div class="level-guide-kicker" id="levelGuideKicker">关卡提示</div>

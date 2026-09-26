@@ -385,12 +385,12 @@
     get lastError(){return lastError;}};
   SoloUI.mount({onStart:start,onContinue:resume,onAction:action,onFight:startBattle,onExit:openHub,onRetry:()=>start(S.solo.mode)});
   const oldNew=$('homeNew').onclick;
-  /* 首页主推经典挑战：原「新建对局」按钮回到经典入口主位（升主按钮样式）；单人玩法缩为次级小按钮 */
-  $('homeNew').textContent='经典挑战 / 八人竞技'; $('homeNew').classList.remove('flow-secondary'); $('homeNew').classList.add('flow-primary'); $('homeNew').onclick=oldNew;
-  const soloEntry=document.createElement('button');soloEntry.id='homeSolo';soloEntry.type='button';soloEntry.className='flow-secondary';soloEntry.textContent='单人玩法';
-  soloEntry.title='巡演企划、首领狩猎、战术解题、守城生存、战役征服';
-  soloEntry.style.cssText='font-size:12px;padding:6px 14px;min-width:0;opacity:.85';
-  soloEntry.onclick=openHub;$('homeNew').after(soloEntry);
+  /* 路线图批次 D：巡演企划升为首页主按钮（剧情模式），经典挑战降为次级；八人竞技入口下线、引擎与老存档保留（specs/narrative/tour-project.md §0.4） */
+  $('homeNew').textContent='✦ 巡演企划 · 剧情模式'; $('homeNew').classList.remove('flow-secondary'); $('homeNew').classList.add('flow-primary'); $('homeNew').title='剧情模式：五十位主播的三站巡演'; $('homeNew').onclick=openHub;
+  const classicEntry=document.createElement('button');classicEntry.id='homeClassic';classicEntry.type='button';classicEntry.className='flow-secondary';classicEntry.textContent='经典挑战';
+  classicEntry.title='常设赛：普通模式 / 每日挑战 / 自定义诅咒';
+  classicEntry.style.cssText='font-size:12px;padding:6px 14px;min-width:0;opacity:.85';
+  classicEntry.onclick=oldNew;$('homeNew').after(classicEntry);
   const oldReset=$('resetBtn').onclick; $('resetBtn').onclick=()=>active()?openHub():oldReset?.();
   const oldSave=$('menuSaveHome').onclick; $('menuSaveHome').onclick=()=>active()?openHub():oldSave?.();
   const oldRestart=$('menuRestart').onclick; $('menuRestart').onclick=()=>active()?start(S.solo.mode):oldRestart?.();

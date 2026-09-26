@@ -395,7 +395,7 @@
       const top = node('div', 'solo-mode-top');
       const icon = appendText(top, 'span', 'solo-mode-icon', mode.icon);
       icon.setAttribute('aria-hidden', 'true');
-      const kindLabel = appendText(top, 'span', 'solo-mode-kind', mode.tone === 'primary' ? '主线推荐' : '挑战玩法');
+      const kindLabel = appendText(top, 'span', 'solo-mode-kind', mode.tone === 'primary' ? '剧情模式' : '挑战玩法');
       kindLabel.setAttribute('aria-hidden', 'true');
       card.appendChild(top);
       appendText(card, 'h3', 'solo-mode-title', label);

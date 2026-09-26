@@ -13,10 +13,10 @@ specs
 assets/units_redraw
 assets/campaign
 # tools 中仅以下运行时文件需要对外提供；测试、部署脚本和素材草稿不上传。
-# 单人玩法（campaign-map/solo-*）已下线，不再上传；恢复时重新加白名单。
 tools/**
 !tools/bot_strategy.js
 !tools/bond-runtime.js
+!tools/campaign-map.js
 !tools/daily-curses.js
 !tools/idol-dark.css
 !tools/idol-redesign.css
@@ -27,6 +27,10 @@ tools/**
 !tools/narrative-bar.css
 !tools/narrative-bar.js
 !tools/narrative-tour.js
+!tools/solo-host.js
+!tools/solo-modes.js
+!tools/solo-ui.css
+!tools/solo-ui.js
 !tools/stage-themes.css
 td.html
 td.css
