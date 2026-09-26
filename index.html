@@ -3903,7 +3903,7 @@ function renderEquip(){
     c.innerHTML=`<div class="item-chip ${S.selItem===i?'sel':''}${it.crafted?' crafted':''}"><span class="gear-item-icon">${it.e}</span><span>${it.n}</span><i>${it.crafted?'成品':'组件'}</i></div><small>${it.desc}</small><em>${it.trait||''}</em>`;
     c.onclick=()=>{if(Date.now()<chipClickSuppressedUntil)return;S.selItem=S.selItem===i?null:i;renderEquip();if(IS_TOUCH&&S.selItem!=null){closeDrawer();log(`🎒 已选 ${it.n}：点要穿戴的棋子（再点该装备取消）`);}};
     c.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();c.click();}};
-    c.querySelector('.item-chip').addEventListener('pointerdown',ev=>{if(ev.button!==0||S.phase!=='prep')return;ev.stopPropagation();itemDrag={i,x0:ev.clientX,y0:ev.clientY,ghost:null};});
+    c.addEventListener('pointerdown',ev=>{if(ev.button!==0||S.phase!=='prep')return;ev.stopPropagation();itemDrag={i,x0:ev.clientX,y0:ev.clientY,ghost:null};});   // 整卡可拖：只绑 .item-chip 的话，按住描述文字区拖动无响应
     inventory.appendChild(c);
   });
 }
