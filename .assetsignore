@@ -24,6 +24,7 @@ tools/**
 !tools/idol-ui.css
 !tools/idol-ui.js
 !tools/mobile-stage.css
+!tools/stage-themes.css
 td.html
 td.css
 td.js
