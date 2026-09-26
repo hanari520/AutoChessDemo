@@ -10,6 +10,8 @@
     { id: 'conquest', label: '战役征服', icon: '✧', tone: 'secondary', description: '四幕战役推图、防守补给线，攻克深渊主城。' },
   ];
 
+  /* 批次 E（2026-09-27）：单人玩法其余四模式暂时隐藏（定义与代码保留，随时可恢复） */
+  const HIDDEN_MODES = ['hunt', 'puzzle', 'siege', 'conquest'];
   const byId = new Map(MODES.map((mode) => [mode.id, mode]));
   let handlers = {};
   let latest = { active: false, mode: 'expedition', state: {}, view: {}, saves: {} };
@@ -219,7 +221,7 @@
     panelFightNode.setAttribute('aria-describedby', 'soloFightHelp');
     panelFightHelpNode = appendText(controls, 'span', 'solo-sr-only', '仅在演出准备完成后可开启演出。');
     panelFightHelpNode.id = 'soloFightHelp';
-    const exit = button('solo-action-button solo-exit-button', '返回单人大厅', 'exit');
+    const exit = button('solo-action-button solo-exit-button', '退出巡演', 'exit');
     const retry = button('solo-action-button solo-retry-button', '再战一次', 'retry');
     retry.hidden = true;
     controls.append(retry, panelFightNode, exit);
@@ -386,6 +388,7 @@
     const focusKey = active && hubNode && hubNode.contains(active) ? active.dataset.focusKey : '';
     const fragment = document.createDocumentFragment();
     for (const mode of MODES) {
+      if (HIDDEN_MODES.includes(mode.id)) continue;
       const label = modeLabel(mode);
       const description = modeDescription(mode);
       const save = saveFor(mode.id);

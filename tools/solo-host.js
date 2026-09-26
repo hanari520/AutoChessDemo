@@ -206,13 +206,19 @@
   }
   function finish(won) {
     if (!active() || ['battle','settle'].includes(S.phase)) return false;
-    if (S.solo.phase === 'finished' && S.solo.outcome === 'won') { if (window.SoloUI) SoloUI.openHub(); return true; }   // 通关墓碑不可被「结束并结算」改写为失利
+    if (S.solo.phase === 'finished' && S.solo.outcome === 'won') { exitToHome(); return true; }   // 通关墓碑不可被「结束并结算」改写为失利
     stop(); S.solo.finished = true; S.solo.outcome = won ? 'won' : 'lost'; S.solo.phase = 'finished';
     S.phase = 'prep'; save();
     log(won ? '🏁 挑战完成，已结算（成绩保留在本地存档）。' : '🏁 已结束本局并结算（成绩保留在本地存档）。');
     if (typeof hideFlowForGame === 'function') hideFlowForGame(false);   // 「结束并结算」必须关掉确认弹窗/菜单，不能停在原界面
     renderAll();
-    if (window.SoloUI) SoloUI.openHub();   // 大厅对已结算的运行提供「重新开始 / 返回模式大厅」
+    exitToHome();   // 批次 E：结束巡演与普通模式一致——回到主页最上层（不再停在单人大厅）
+    return true;
+  }
+  /* 批次 E：退出巡演回到主页最上层（与普通模式退出语义一致）。hub 保留代码但不再是常规出口。 */
+  function exitToHome() {
+    if (window.SoloUI) SoloUI.closeHub();
+    if (typeof showHome === 'function') showHome();
     return true;
   }
   function resetPuzzle() {
@@ -383,16 +389,12 @@
   window.SoloHost={start,resume,action,settle,save,openHub,canFight,beforeBattle,enemy,modifyUnit,tick,onCast,battleWon,render,finish,puzzleShop,
     limit:()=>S.solo.mode==='siege'?15:S.solo.mode==='expedition'?18:S.solo.mode==='hunt'?4:S.solo.mode==='puzzle'?1:30,
     get lastError(){return lastError;}};
-  SoloUI.mount({onStart:start,onContinue:resume,onAction:action,onFight:startBattle,onExit:openHub,onRetry:()=>start(S.solo.mode)});
+  SoloUI.mount({onStart:start,onContinue:resume,onAction:action,onFight:startBattle,onExit:exitToHome,onRetry:()=>start(S.solo.mode)});
   const oldNew=$('homeNew').onclick;
-  /* 路线图批次 D：巡演企划升为首页主按钮（剧情模式），经典挑战降为次级；八人竞技入口下线、引擎与老存档保留（specs/narrative/tour-project.md §0.4） */
-  $('homeNew').textContent='✦ 巡演企划 · 剧情模式'; $('homeNew').classList.remove('flow-secondary'); $('homeNew').classList.add('flow-primary'); $('homeNew').title='剧情模式：五十位主播的三站巡演'; $('homeNew').onclick=openHub;
-  const classicEntry=document.createElement('button');classicEntry.id='homeClassic';classicEntry.type='button';classicEntry.className='flow-secondary';classicEntry.textContent='经典挑战';
-  classicEntry.title='常设赛：普通模式 / 每日挑战 / 自定义诅咒';
-  classicEntry.style.cssText='font-size:12px;padding:6px 14px;min-width:0;opacity:.85';
-  classicEntry.onclick=oldNew;$('homeNew').after(classicEntry);
-  const oldReset=$('resetBtn').onclick; $('resetBtn').onclick=()=>active()?openHub():oldReset?.();
-  const oldSave=$('menuSaveHome').onclick; $('menuSaveHome').onclick=()=>active()?openHub():oldSave?.();
+  /* 批次 E（2026-09-27 用户拍板）：经典挑战回归首页主推；巡演企划入口在「新建对局」剧情模式卡（直接进入），首页不再放巡演按钮 */
+  $('homeNew').textContent='经典挑战'; $('homeNew').classList.remove('flow-secondary'); $('homeNew').classList.add('flow-primary'); $('homeNew').onclick=oldNew;
+  const oldReset=$('resetBtn').onclick; $('resetBtn').onclick=()=>active()?exitToHome():oldReset?.();
+  const oldSave=$('menuSaveHome').onclick; $('menuSaveHome').onclick=()=>active()?exitToHome():oldSave?.();
   const oldRestart=$('menuRestart').onclick; $('menuRestart').onclick=()=>active()?start(S.solo.mode):oldRestart?.();
   const oldEnd=$('menuEnd').onclick; $('menuEnd').onclick=()=>active()?finish(false):oldEnd?.();
   document.addEventListener('keydown',e=>{if(active()&&S.solo.mode==='puzzle'&&['d','f'].includes(e.key.toLowerCase())){e.preventDefault();e.stopImmediatePropagation();}},true);

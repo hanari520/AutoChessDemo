@@ -1312,7 +1312,7 @@ body.touch .m-only { display:inline-block; }
     单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）<br>
     快捷键：<b>R/A</b> 一键上阵 · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战；点【🏁 结束挑战】收兵结算（需二次确认）
     <span class="is-h">🎮 模式与荣誉</span>
-    开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（与每日挑战共用 12 条规则，单选一条）；✦ <b>巡演企划</b>（剧情模式）在首页主按钮与新建对局卡片<br>
+    开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（与每日挑战共用 12 条规则，单选一条）；✦ <b>巡演企划</b>（剧情模式）在新建对局卡片，点击直接进入<br>
     【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（17 项）· 🏆 本地排行 · 🌍 全球排行<br>
     【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）
   </div>
@@ -7645,9 +7645,10 @@ function renderSetup(){
   }));
   const tourCard=$('setupModes').querySelector('[data-tour]');
   if(tourCard)tourCard.addEventListener('click',()=>{
-    showHome();
-    if(window.SoloHost)SoloHost.openHub();
-    else $('setupFeedback').textContent='剧情模式资源尚未加载完成，请稍后重试。';
+    /* 批次 E：剧情模式卡直接进入巡演企划（有存档继续、无存档新开），不再经过单人大厅 */
+    if(!window.SoloHost){$('setupFeedback').textContent='剧情模式资源尚未加载完成，请稍后重试。';return;}
+    const hasSave=(()=>{try{return !!localStorage.getItem('vc_solo_v1_expedition');}catch(e){return false;}})();
+    if(!(hasSave&&SoloHost.resume('expedition'))&&!SoloHost.start('expedition',hasSave)){$('setupFeedback').textContent='巡演企划启动失败，请重试。';}
   });
   const info=modes.find(m=>m.id===selMode)||modes[0];
   let details=info.desc;
