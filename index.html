@@ -2058,7 +2058,7 @@ function maybeShowGuide(next){
     <span class="stg-step-num">${n}</span>
     <span class="stg-step-body"><b>${t}</b><span>${s}</span></span></div>`;
   ov.innerHTML=`<div class="stg-card">
-    <div class="stg-kicker">FIRST LIVE · 首次上手</div>
+    <div class="stg-kicker">FIRST MATCH · 首次参赛</div>
     <div class="stg-title">三分钟上手</div>
     <div class="stg-sub">一局 = 25 回合 × 4 章；随时可以退出，进度会存下来</div>
     <div>
@@ -2069,6 +2069,7 @@ function maybeShowGuide(next){
     <div class="stg-callout">
       <b>最该记住的一条</b><br>
       把<b>同阵营</b>（左上角图标相同）或<b>同职业</b>的棋子一起上场，就能触发<b>羁绊</b>加成 —— 这是变强的主要方式。
+      <div class="stg-sub">打好每一局，名次自己会说话。</div>
     </div>
     <div class="stg-actions">
       <button type="button" data-go="1" class="stg-btn">开始游戏</button>
@@ -7142,7 +7143,7 @@ function gameOver(win){
   const historySaved=writeRunHistory(win); checkAchievements();
   const saveRemoved=removeRunSave(saveKey());
   const title=(S.daily?'📅 ':'')+(win ? '🏅 常设赛 · 四章通关！' : '💀 赛程止步');
-  const content=(win?'':`在第 ${S.round} 回合倒下。<br>`)+rankedNoteHTML()+reportHTML(win?'win':'lose')+(win?`<div class="gear-drop-cards">${gearDropCardsHTML(S.lastGearDrops||[])}</div>${chapterReviewHTML(S.stats.chapterReview)}`:'')+(S.daily?dailyCodeHTML():'')+globRowHTML();
+  const content=(win?'':`在第 ${S.round} 回合被淘汰。<br>`)+rankedNoteHTML()+reportHTML(win?'win':'lose')+(win?`<div class="gear-drop-cards">${gearDropCardsHTML(S.lastGearDrops||[])}</div>${chapterReviewHTML(S.stats.chapterReview)}`:'')+(S.daily?dailyCodeHTML():'')+globRowHTML();
   showFinalResult(title,content,{historySaved,saveRemoved});
 }
 function endRunEarly(){
