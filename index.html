@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#eaf3ff">
+<meta name="theme-color" content="#f6f8fd">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="assets/ui/star-stage-icon.svg" type="image/svg+xml">
@@ -1053,7 +1053,8 @@ body.touch .m-only { display:inline-block; }
 <link rel="stylesheet" href="tools/idol-redesign.css?v=11">
 <link rel="stylesheet" href="tools/mobile-stage.css?v=2">
 <link rel="stylesheet" href="tools/idol-dark.css?v=4">
-<script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#101a36':'#eaf3ff'</script>
+<link rel="stylesheet" href="tools/stage-themes.css?v=1">
+<script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#0a0d1c':'#f6f8fd'</script>
 </head>
 <body>
 <div id="topbar">
@@ -2050,24 +2051,25 @@ function maybeShowGuide(next){
   if(seen||veteran) return false;
   let ov=document.getElementById('guideOverlay'); if(ov) ov.remove();
   ov=document.createElement('div'); ov.id='guideOverlay';
-  ov.style.cssText='position:fixed;inset:0;z-index:2200;background:rgba(6,8,24,.72);display:flex;align-items:center;justify-content:center;padding:16px';
-  const step=(n,t,s)=>`<div style="display:flex;gap:10px;align-items:flex-start;margin:9px 0">
-    <span style="flex:0 0 24px;height:24px;line-height:24px;text-align:center;border-radius:50%;background:#ffd24a;color:#1b1440;font-weight:700;font-size:13px">${n}</span>
-    <span><b style="color:#dcd6f2;font-size:14px">${t}</b><div style="color:#8a93c4;font-size:12px;margin-top:2px">${s}</div></span></div>`;
-  ov.innerHTML=`<div style="background:#141230;border:1px solid #4a3d6e;border-radius:16px;padding:20px 22px;max-width:440px;width:100%">
-    <div style="color:#ffd24a;font-size:19px;font-weight:700">🎬 三分钟上手</div>
-    <div style="color:#8a93c4;font-size:12px;margin-top:4px">一局 = 25 回合 × 4 章；随时可以退出，进度会存下来</div>
-    <div style="margin-top:12px">
+  ov.className='stg-overlay';
+  const step=(n,t,s)=>`<div class="stg-step">
+    <span class="stg-step-num">${n}</span>
+    <span class="stg-step-body"><b>${t}</b><span>${s}</span></span></div>`;
+  ov.innerHTML=`<div class="stg-card">
+    <div class="stg-kicker">FIRST LIVE · 首次上手</div>
+    <div class="stg-title">三分钟上手</div>
+    <div class="stg-sub">一局 = 25 回合 × 4 章；随时可以退出，进度会存下来</div>
+    <div>
       ${step(1,'在下方商店点卡牌','花金币买入棋子，进入备战席。金币每回合自动增加，别一直攒着')}
-      ${step(2,'把棋子放上棋盘','拖进格子，或直接点「⚡ 一键上阵」自动排兵')}
-      ${step(3,'点「▶ 开战」','打赢拿金币，打输掉生命。生命归零本局结束')}
+      ${step(2,'把棋子放上棋盘','拖进格子，或直接点「一键上阵」自动排兵')}
+      ${step(3,'点「开战」','打赢拿金币，打输掉生命。生命归零本局结束')}
     </div>
-    <div style="margin-top:14px;padding:10px 12px;background:rgba(255,210,74,.10);border-left:3px solid #ffd24a;border-radius:6px;color:#dcd6f2;font-size:12.5px;line-height:1.75">
-      <b style="color:#ffd24a">⭐ 最该记住的一条</b><br>
+    <div class="stg-callout">
+      <b>最该记住的一条</b><br>
       把<b>同阵营</b>（左上角图标相同）或<b>同职业</b>的棋子一起上场，就能触发<b>羁绊</b>加成 —— 这是变强的主要方式。
     </div>
-    <div style="text-align:center;margin-top:16px">
-      <button type="button" data-go="1" style="padding:10px 26px;background:#ffd24a;border:none;border-radius:10px;color:#1b1440;font-weight:700;font-size:14px;cursor:pointer">开始游戏</button>
+    <div class="stg-actions">
+      <button type="button" data-go="1" class="stg-btn">开始游戏</button>
     </div></div>`;
   ov.addEventListener('click',e=>{
     if(!e.target.closest('[data-go]')) return;
@@ -2083,20 +2085,21 @@ function showOpeningPick(){
   const opts=(S.openingOffer||[]).slice(); if(!opts.length) return;
   let ov=document.getElementById('openingOfferOverlay'); if(ov) ov.remove();
   ov=document.createElement('div'); ov.id='openingOfferOverlay';
-  ov.style.cssText='position:fixed;inset:0;z-index:2100;background:rgba(6,8,24,.66);display:flex;align-items:center;justify-content:center';
+  ov.className='stg-overlay';
   const card=(id,i)=>{ const d=byId(id)||{};
     const syn=d.id?[...facsOf(d),...jobsOf(d)].join(' / '):'';
     const role=(typeof skillRole==='function')?skillRole(d):'';
-    return `<button type="button" data-i="${i}" style="min-width:158px;padding:12px 14px;background:#241e3e;border:1px solid #ffd24a;border-radius:12px;color:#dcd6f2;cursor:pointer;text-align:center">
-      <img src="assets/units_big/${id}.webp" alt="" style="width:64px;height:64px;object-fit:contain">
-      <div style="font-size:19px;font-weight:700;color:#ffd24a">${d.name||id}</div>
-      <div style="font-size:11px;color:#8a93c4;margin-top:3px">${d.cost||1} 费 · ${syn}</div>
-      <div style="font-size:11px;color:#9dd3e8;margin-top:3px">${role}</div></button>`; };
-  ov.innerHTML=`<div style="background:#141230;border:1px solid #4a3d6e;border-radius:16px;padding:18px 22px;max-width:94vw">
-    <div style="color:#9dd3e8;font-size:14px;margin-bottom:4px">🎤 开局应援 · 选择你的第一位成员</div>
-    <div style="color:#8a93c4;font-size:11px;margin-bottom:10px">直接进入备战席；不想要可以跳过换 3 金</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">${opts.map(card).join('')}</div>
-    <div style="text-align:center;margin-top:12px"><button type="button" data-skip="1" style="padding:6px 14px;background:transparent;border:1px solid #4a3d6e;border-radius:8px;color:#8a93c4;cursor:pointer;font-size:12px">跳过，+3 金</button></div></div>`;
+    return `<button type="button" data-i="${i}" class="stg-pick">
+      <img src="assets/units_big/${id}.webp" alt="">
+      <div class="stg-pick-name">${d.name||id}</div>
+      <div class="stg-pick-meta">${d.cost||1} 费 · ${syn}</div>
+      <div class="stg-pick-role">${role}</div></button>`; };
+  ov.innerHTML=`<div class="stg-card stg-card--wide">
+    <div class="stg-kicker">OPENING · 开局应援</div>
+    <div class="stg-title">选择你的第一位成员</div>
+    <div class="stg-sub">直接进入备战席；不想要可以跳过换 3 金</div>
+    <div class="stg-picks">${opts.map(card).join('')}</div>
+    <div class="stg-actions"><button type="button" data-skip="1" class="stg-btn stg-btn--ghost">跳过，+3 金</button></div></div>`;
   ov.addEventListener('click',e=>{
     if(e.target.closest('[data-skip]')){ ov.remove(); resolveOpeningPick(null); renderAll(); log('🎤 开局应援：已跳过，+3 金'); return; }
     const b=e.target.closest('button[data-i]'); if(!b) return;
@@ -2110,17 +2113,18 @@ function showDailyOffer(){   // 定向招募三选一：备战期弹出；托管
   const offer=S&&S.pendingDailyOffer; if(!offer)return;
   let ov=document.getElementById('dailyOfferOverlay'); if(ov)ov.remove();
   ov=document.createElement('div');ov.id='dailyOfferOverlay';
-  ov.style.cssText='position:fixed;inset:0;z-index:2100;background:rgba(6,8,24,.66);display:flex;align-items:center;justify-content:center';
+  ov.className='stg-overlay';
   const nm=id=>(byId(id)||{}).name||id;
   const card=(id,i)=>{ const d=byId(id)||{name:id,cost:2};
     const syn=(typeof facsOf==='function'&&d.id)?[...facsOf(d),...jobsOf(d)].join(' / '):'';
-    return `<button type="button" data-i="${i}" style="min-width:150px;padding:12px 14px;background:#241e3e;border:1px solid #4aa8ff;border-radius:12px;color:#dcd6f2;cursor:pointer;text-align:center">
-      <div style="font-size:20px;font-weight:700;color:#ffd24a">${nm(id)}</div>
-      <div style="font-size:11px;color:#8a93c4;margin-top:4px">${d.cost||2} 费 · ${syn}</div></button>`; };
-  ov.innerHTML=`<div style="background:#141230;border:1px solid #4a3d6e;border-radius:16px;padding:18px 22px;max-width:92vw">
-    <div style="color:#9dd3e8;font-size:14px;margin-bottom:10px">🎁 ${offer.text||'定向招募'}</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">${offer.options.map(card).join('')}</div>
-    <div style="text-align:center;margin-top:10px;font-size:11px;color:#8a93c4">择一领取；开战或托管将按默认（${nm(offer.key)}）兑现</div></div>`;
+    return `<button type="button" data-i="${i}" class="stg-pick">
+      <div class="stg-pick-name">${nm(id)}</div>
+      <div class="stg-pick-meta">${d.cost||2} 费 · ${syn}</div></button>`; };
+  ov.innerHTML=`<div class="stg-card stg-card--wide">
+    <div class="stg-kicker">RECRUIT · 定向招募</div>
+    <div class="stg-title">${offer.text||'定向招募'}</div>
+    <div class="stg-picks">${offer.options.map(card).join('')}</div>
+    <div class="stg-sub" style="text-align:center;margin:10px 0 0">择一领取；开战或托管将按默认（${nm(offer.key)}）兑现</div></div>`;
   ov.addEventListener('click',e=>{
     const b=e.target.closest('button[data-i]'); if(!b)return;
     const id=offer.options[Number(b.dataset.i)]||offer.key;
@@ -4824,7 +4828,7 @@ function paintTheme(){
   if(typeof document==='undefined' || !document.documentElement) return;   // sim 无头桩：跳过主题渲染
   const dark=document.documentElement.dataset.theme==='dark';
   const label=dark?'切换浅色模式':'切换暗色模式';
-  document.querySelector('meta[name="theme-color"]').content=dark?'#101a36':'#eaf3ff';
+  document.querySelector('meta[name="theme-color"]').content=dark?'#0a0d1c':'#f6f8fd';
   for(const id of ['themeBtn']){
     const b=$(id); if(!b) continue;
     if(id==='themeBtn') b.innerHTML=`${dark?'☀️':'🌙'}<span class="theme-label">${dark?'浅色':'暗色'}</span>`;
@@ -7841,9 +7845,9 @@ function globRowHTML(){   // 终局结算里的提交行（离线时不显示；
   if(typeof navigator!=='undefined' && navigator.onLine===false) return '';
   return `<div id="globRow" style="margin-top:10px;display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap">
     <input id="nickIn" maxlength="12" placeholder="昵称（12 字内）" value="${lbNick().replace(/"/g,'&quot;')}"
-      style="background:#241e3e;border:1px solid #4a3d6e;border-radius:8px;color:#dcd6f2;padding:6px 10px;font-size:13px;outline:none">
-    <button class="btn" id="globBtn" type="button" style="border-color:#4aa8ff;color:#9dd3e8">🌍 提交全球排行</button></div>
-    <div id="globMsg" style="text-align:center;font-size:11px;color:#8a93c4;margin-top:3px"></div>`;
+      style="background:var(--st-glass-2,#fff);border:1px solid var(--st-line-strong,#ccc);border-radius:8px;color:var(--st-ink,#333);padding:6px 10px;font-size:13px;outline:none">
+    <button class="btn" id="globBtn" type="button" style="border-color:var(--st-accent2,#4aa8ff);color:var(--st-accent2,#9dd3e8)">🌍 提交全球排行</button></div>
+    <div id="globMsg" style="text-align:center;font-size:11px;color:var(--st-muted,#8a93c4);margin-top:3px"></div>`;
 }
 async function submitScore(){
   const btn=$('globBtn'), msg=$('globMsg'), inp=$('nickIn');

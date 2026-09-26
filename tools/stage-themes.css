@@ -1,0 +1,451 @@
+/* ==========================================================================
+   星域棋战 · 双主题系列层（2026-09-26）
+   「A · 星光舞台」浅色（默认） / 「C · 夜幕应援」暗色（html[data-theme="dark"]）
+   同一套舞台 DNA、同一组件结构，仅配色 / 背景 / 光影 / 装饰不同：
+     · 灯带：顶栏下沿与商店栏上沿的双色应援光带（粉 ↔ 青）
+     · 舞台地板：棋盘中央聚光 + 半场边缘光带（我方冷 / 敌方暖）
+     · 主操作：开战按钮呼吸光晕（荧光棒渐变色）
+   加载顺序：必须最后（idol-ui → idol-redesign → mobile-stage → idol-dark → 本文件）
+   ========================================================================== */
+
+/* ---------- 统一语义 token：两套主题的唯一差异点 ---------- */
+:root {
+  /* 文字（浅色：修正对比度至 WCAG AA） */
+  --st-ink: #33405e;
+  --st-muted: #5a6a8f;
+  --st-faint: #7c89a6;
+  /* 强调：应援粉 + 荧光青（稀缺使用） */
+  --st-accent: #e5539a;
+  --st-accent-soft: rgba(229, 83, 154, .12);
+  --st-accent2: #1fae9b;
+  --st-accent2-soft: rgba(31, 174, 155, .12);
+  /* 表面 */
+  --st-glass: rgba(255, 255, 255, .93);
+  --st-glass-2: rgba(244, 248, 255, .9);
+  --st-line: rgba(100, 125, 185, .22);
+  --st-line-strong: rgba(100, 125, 185, .38);
+  /* 功能色 */
+  --st-hp: #d8567c;
+  --st-gold: #b57a17;
+  --st-mp: #6a7fd8;
+  --st-win: #2e9d80;
+  --st-lose: #cf5f7e;
+  /* 光影语言（浅色 = 柔光） */
+  --st-glow-accent: 0 0 14px rgba(229, 83, 154, .35);
+  --st-glow-accent2: 0 0 14px rgba(31, 174, 155, .3);
+  --st-shadow: 0 10px 28px rgba(83, 104, 171, .14);
+  --st-band: linear-gradient(90deg, transparent, #f06a9c 18%, #b07fe8 50%, #3ecab6 82%, transparent);
+  /* 修正旧 token（idol-redesign.css 沿用变量的地方一并受益） */
+  --idol-muted: #5a6a8f;
+  --idol-glass: rgba(255, 255, 255, .93);
+}
+html[data-theme="dark"] {
+  --st-ink: #e9edfb;
+  --st-muted: #93a3c8;
+  --st-faint: #7284ac;
+  --st-accent: #ff6ec7;
+  --st-accent-soft: rgba(255, 110, 199, .16);
+  --st-accent2: #4ae3c1;
+  --st-accent2-soft: rgba(74, 227, 193, .14);
+  --st-glass: rgba(17, 24, 48, .92);
+  --st-glass-2: rgba(24, 32, 60, .88);
+  --st-line: rgba(120, 150, 230, .22);
+  --st-line-strong: rgba(140, 170, 250, .4);
+  --st-hp: #ff7d9c;
+  --st-gold: #f2c464;
+  --st-mp: #8ea0ff;
+  --st-win: #5ee0b8;
+  --st-lose: #ff8ba4;
+  /* 光影语言（暗色 = 霓虹） */
+  --st-glow-accent: 0 0 16px rgba(255, 110, 199, .5);
+  --st-glow-accent2: 0 0 16px rgba(74, 227, 193, .45);
+  --st-shadow: 0 12px 34px rgba(0, 3, 18, .5);
+  --st-band: linear-gradient(90deg, transparent, #ff6ec7 18%, #9d7bff 50%, #4ae3c1 82%, transparent);
+}
+
+/* ---------- 系列共性：灯带（顶栏下沿 / 商店栏上沿） ---------- */
+#topbar::after { background: var(--st-band) !important; opacity: .9; }
+#shopbar::before { background: var(--st-band) !important; opacity: .9; }
+
+/* ==========================================================================
+   A · 星光舞台（浅色，默认）
+   奶白剧场 + 墨青文字 + 应援粉主强调；舞台地板 = 浅色镜面 + 中央聚光
+   ========================================================================== */
+body {
+  color: var(--st-ink);
+  background:
+    linear-gradient(180deg, rgba(246, 248, 253, .5), rgba(250, 246, 251, .62)),
+    url('../assets/ui/idol-arena-v2.png') center 47% / cover fixed,
+    linear-gradient(135deg, #d8f0f2, #ece4fb 52%, #fbdee9);
+}
+
+/* 面板：提高不透明度 + 文字加深，消灭"洗白" */
+.panel, #synCol {
+  color: var(--st-ink);
+  background: linear-gradient(155deg, var(--st-glass), var(--st-glass-2));
+  border-color: rgba(255, 255, 255, .9);
+  box-shadow: var(--st-shadow), inset 0 1px 0 #fff;
+}
+.panel h3, .syn-head { color: #4a5a80; }
+.panel h3::before { background: linear-gradient(var(--st-accent2), #8c9bff); }
+.syn-head .sub, .syn-foot, .syn-empty { color: var(--st-muted); }
+#log { color: #4d5c7d; }
+#log b { color: var(--st-ink); }
+#log .battle-result, #log .important { color: var(--st-accent); }
+#inspect .in-desc, #inspect .in-tag { color: var(--st-muted); }
+.gear-workshop { color: var(--st-ink); }
+.gear-section-head small, .gear-kicker, .gear-item-card > small,
+.gear-route small, .gear-ready-card > em, .gear-item-card > em,
+.gear-empty small, .gear-more { color: var(--st-muted); }
+#statBar { color: var(--st-ink); }
+#statBar .stb-tab { color: var(--st-muted); }
+
+/* 资源 chip：数值加粗等宽，读盘更快 */
+.res .rv, #roundBox .rn, #lvlBox .gd, #goldChipN {
+  font-variant-numeric: tabular-nums; font-weight: 800;
+}
+
+/* 舞台：镜面地板 + 中央聚光带 + 半场边缘光 */
+#boardwrap {
+  background: linear-gradient(145deg, rgba(255,255,255,.55), rgba(240,246,255,.34) 45%, rgba(255,255,255,.5));
+  box-shadow: 0 18px 46px rgba(73, 96, 163, .15), inset 0 1px 0 rgba(255,255,255,.95);
+}
+#board {
+  border-color: rgba(255, 255, 255, .9);
+  background:
+    radial-gradient(58% 30% at 50% 50%, rgba(255, 255, 255, .55), transparent 78%),
+    linear-gradient(180deg, #dfeaf7, #efe9f4 48%, #f6e8ee);
+  box-shadow:
+    0 23px 30px rgba(77, 90, 159, .22),
+    0 0 0 5px rgba(255, 255, 255, .4),
+    inset 0 0 30px rgba(255, 255, 255, .4);
+}
+/* 中线聚光带（已有，统一为应援双色并加强） */
+#board::before {
+  background: linear-gradient(90deg, transparent, var(--st-accent2) 14%, #fff 50%, var(--st-accent) 86%, transparent);
+  box-shadow: 0 0 14px rgba(160, 140, 230, .7);
+}
+/* 格子：灯槽感（内高光 + 细分缝），不再整片色块 */
+.cell {
+  background: linear-gradient(145deg, rgba(63, 202, 182, .16), rgba(255, 255, 255, .6));
+  box-shadow:
+    inset 0 0 0 1px rgba(90, 120, 180, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .85),
+    0 1px 2px rgba(71, 93, 159, .06);
+}
+.cell.enemy-side {
+  background: linear-gradient(145deg, rgba(240, 106, 156, .18), rgba(255, 244, 248, .62));
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 110, 150, .22),
+    inset 0 1px 0 rgba(255, 255, 255, .85);
+}
+.cell.drop-hl { background: rgba(255, 224, 146, .8); box-shadow: inset 0 0 0 2px #e0a94e, 0 0 16px rgba(224, 169, 78, .5); }
+.cell.rng-hl { background: rgba(128, 177, 255, .5); }
+.cell.rng-src { background: rgba(255, 220, 128, .66); }
+
+/* 我方 / 敌方单位：边缘光取代整片染色 */
+.unit.ally { border-color: var(--st-accent2); box-shadow: inset 0 0 0 999px rgba(63, 202, 182, .07), 0 4px 12px rgba(31, 174, 155, .22), 0 0 8px rgba(63, 202, 182, .25); }
+.unit.enemy { border-color: var(--st-accent); box-shadow: inset 0 0 0 999px rgba(240, 106, 156, .07), 0 4px 12px rgba(229, 83, 154, .2), 0 0 8px rgba(240, 106, 156, .22); }
+.unit.sel { border-color: #ffd76a; box-shadow: 0 0 0 2px #fff, 0 0 18px rgba(240, 190, 80, .7); }
+
+/* 商店卡：hover 上浮 + 应援色外发光（系列共性，浅色为柔光） */
+#shop .card:hover:not(.sold) {
+  border-color: var(--st-accent);
+  box-shadow: 0 12px 24px rgba(95, 112, 181, .22), var(--st-glow-accent), inset 0 1px 0 white;
+}
+#shop .card.paircard { border-color: #e5b74f; box-shadow: 0 0 0 1px rgba(229, 183, 79, .3), 0 5px 15px rgba(222, 174, 70, .16); }
+
+/* 开战：荧光棒渐变 + 呼吸光晕（系列主操作签名） */
+#fightBtn {
+  background: linear-gradient(145deg, var(--st-accent), #9a7de8 58%, var(--st-accent2));
+  box-shadow: 0 8px 20px rgba(190, 100, 190, .35), inset 0 1px 0 rgba(255, 255, 255, .75);
+}
+#fightBtn:not(:disabled) { animation: stgFightPulse 2.6s ease-in-out infinite; }
+@keyframes stgFightPulse {
+  0%, 100% { box-shadow: 0 8px 20px rgba(190, 100, 190, .35), 0 0 0 0 rgba(229, 83, 154, .35), inset 0 1px 0 rgba(255,255,255,.75); }
+  50% { box-shadow: 0 8px 24px rgba(190, 100, 190, .45), 0 0 22px 4px rgba(229, 83, 154, .28), inset 0 1px 0 rgba(255,255,255,.75); }
+}
+#fightBtn:disabled { animation: none; background: linear-gradient(145deg, #aab4cd, #bbc6dc); box-shadow: none; }
+
+/* 羁绊徽标：主色收敛为青/粉两档 */
+.syn-badge.on { border-left-color: var(--st-accent2); background: linear-gradient(105deg, #e4faf5, #fff 88%); }
+.syn-badge.t2 { border-left-color: #a584e7; }
+.syn-badge .pips i.on { background: var(--st-accent2); }
+
+/* flow 页面：主按钮统一为应援渐变（与开战同族） */
+.flow-primary { background: linear-gradient(110deg, var(--st-accent2), #7f95e8 55%, var(--st-accent)); box-shadow: 0 5px 16px rgba(160, 110, 200, .28); }
+.flow-actions button:focus-visible, .flow-save-card button:focus-visible { outline-color: var(--st-accent2); }
+.flow-mode-card[aria-checked="true"] { border-color: var(--st-accent2); background: var(--st-accent2-soft); }
+.flow-save-card.recommended { border-color: var(--st-accent2); box-shadow: 0 0 0 2px var(--st-accent2-soft); }
+
+/* ==========================================================================
+   C · 夜幕应援（暗色）
+   深靛剧场 + 霓虹描边 + LED 地板呼吸；夜场 Live 的沉浸感
+   ========================================================================== */
+html[data-theme="dark"] body {
+  color: var(--st-ink);
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(64, 48, 120, .3), transparent 60%),
+    linear-gradient(180deg, rgba(8, 11, 26, .55), rgba(10, 13, 30, .72)),
+    url('../assets/ui/idol-arena-night.png') center 47% / cover fixed,
+    #0a0d1c;
+}
+html[data-theme="dark"] body::before {
+  background:
+    radial-gradient(42% 30% at 22% 12%, rgba(255, 110, 199, .1), transparent 70%),
+    radial-gradient(42% 30% at 78% 12%, rgba(74, 227, 193, .1), transparent 70%);
+}
+
+/* 面板：深玻璃 + 霓虹细边 */
+html[data-theme="dark"] .panel,
+html[data-theme="dark"] #synCol {
+  color: var(--st-ink);
+  border-color: var(--st-line);
+  background: linear-gradient(155deg, rgba(19, 27, 54, .94), rgba(13, 19, 41, .9));
+  box-shadow: var(--st-shadow), inset 0 1px 0 rgba(190, 205, 255, .07);
+}
+html[data-theme="dark"] .panel h3,
+html[data-theme="dark"] .syn-head { color: #cfd9f6; border-color: var(--st-line); }
+html[data-theme="dark"] .panel h3::before { background: linear-gradient(var(--st-accent2), var(--st-accent)); box-shadow: 0 0 8px var(--st-accent2); }
+html[data-theme="dark"] .syn-head .sub,
+html[data-theme="dark"] .syn-foot,
+html[data-theme="dark"] .syn-empty { color: var(--st-muted); }
+html[data-theme="dark"] #log { color: #9fb0d6; }
+html[data-theme="dark"] #log b { color: var(--st-ink); }
+html[data-theme="dark"] #log .battle-result,
+html[data-theme="dark"] #log .important { color: var(--st-accent); }
+html[data-theme="dark"] #inspect .in-desc,
+html[data-theme="dark"] #inspect .in-tag { color: var(--st-muted); }
+html[data-theme="dark"] .gear-workshop { color: var(--st-ink); }
+html[data-theme="dark"] .gear-section-head small,
+html[data-theme="dark"] .gear-kicker,
+html[data-theme="dark"] .gear-item-card > small,
+html[data-theme="dark"] .gear-route small,
+html[data-theme="dark"] .gear-ready-card > em,
+html[data-theme="dark"] .gear-item-card > em,
+html[data-theme="dark"] .gear-empty small,
+html[data-theme="dark"] .gear-more { color: var(--st-muted); }
+
+/* 顶栏：夜空渐变 + 霓虹底线 */
+html[data-theme="dark"] #topbar,
+html[data-theme="dark"] body.touch #topbar {
+  background: linear-gradient(105deg, rgba(13, 17, 38, .98), rgba(18, 22, 48, .95) 55%, rgba(30, 20, 50, .96));
+  border-bottom-color: var(--st-line);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, .5);
+}
+html[data-theme="dark"] .res .rv,
+html[data-theme="dark"] #roundBox .rn,
+html[data-theme="dark"] #lvlBox .gd,
+html[data-theme="dark"] #goldChipN { font-variant-numeric: tabular-nums; font-weight: 800; }
+
+/* 舞台：LED 地板 + 半场霓虹边缘 + 格子呼吸 */
+html[data-theme="dark"] #boardwrap,
+html[data-theme="dark"] body.touch #boardwrap {
+  border-color: var(--st-line-strong);
+  background: linear-gradient(145deg, rgba(16, 22, 46, .85), rgba(12, 17, 38, .8) 55%, rgba(24, 17, 44, .82));
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(200, 214, 255, .1), 0 0 30px rgba(90, 80, 180, .12);
+}
+html[data-theme="dark"] #boardwrap::before,
+html[data-theme="dark"] body.touch #boardwrap::before {
+  border-color: rgba(130, 155, 240, .22);
+  background:
+    radial-gradient(50% 26% at 50% 0%, rgba(157, 123, 255, .12), transparent 75%),
+    linear-gradient(145deg, rgba(24, 34, 66, .7), rgba(15, 22, 46, .62) 53%, rgba(36, 24, 60, .66));
+}
+html[data-theme="dark"] #board,
+html[data-theme="dark"] body.touch #board {
+  border-color: rgba(150, 175, 250, .45);
+  background:
+    radial-gradient(58% 30% at 50% 50%, rgba(120, 110, 210, .16), transparent 80%),
+    linear-gradient(180deg, #141b38, #10152f 48%, #1a1230);
+  box-shadow:
+    inset 0 0 0 1px rgba(180, 198, 255, .16),
+    0 16px 34px rgba(0, 0, 0, .5),
+    0 0 0 4px rgba(110, 130, 220, .1),
+    0 0 26px rgba(100, 90, 200, .16);
+}
+html[data-theme="dark"] #board::before {
+  background: linear-gradient(90deg, transparent, var(--st-accent2) 14%, #eaf2ff 50%, var(--st-accent) 86%, transparent);
+  box-shadow: 0 0 16px rgba(157, 123, 255, .8);
+}
+html[data-theme="dark"] .cell {
+  background: linear-gradient(145deg, rgba(74, 227, 193, .1), rgba(26, 36, 68, .55));
+  box-shadow: inset 0 0 0 1px rgba(74, 227, 193, .2), inset 0 1px 0 rgba(190, 255, 244, .05);
+  animation: stgLedA 3.4s ease-in-out infinite;
+}
+html[data-theme="dark"] .cell.enemy-side {
+  background: linear-gradient(145deg, rgba(255, 110, 199, .12), rgba(48, 26, 54, .5));
+  box-shadow: inset 0 0 0 1px rgba(255, 110, 199, .22), inset 0 1px 0 rgba(255, 200, 228, .05);
+  animation-name: stgLedB;
+}
+html[data-theme="dark"] .cell.drop-hl,
+html[data-theme="dark"] .cell.rng-hl,
+html[data-theme="dark"] .cell.rng-src,
+html[data-theme="dark"] .cell.equip-hl { animation: none; }
+@keyframes stgLedA {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(74, 227, 193, .16), inset 0 1px 0 rgba(190, 255, 244, .04); }
+  50% { box-shadow: inset 0 0 0 1px rgba(74, 227, 193, .34), inset 0 0 10px rgba(74, 227, 193, .1); }
+}
+@keyframes stgLedB {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(255, 110, 199, .18), inset 0 1px 0 rgba(255, 200, 228, .04); }
+  50% { box-shadow: inset 0 0 0 1px rgba(255, 110, 199, .36), inset 0 0 10px rgba(255, 110, 199, .1); }
+}
+
+/* 夜场单位：荧光描边 */
+html[data-theme="dark"] .unit.ally { border-color: var(--st-accent2); box-shadow: inset 0 0 0 999px rgba(74, 227, 193, .08), 0 4px 14px rgba(0, 0, 0, .4), 0 0 12px rgba(74, 227, 193, .4); }
+html[data-theme="dark"] .unit.enemy { border-color: var(--st-accent); box-shadow: inset 0 0 0 999px rgba(255, 110, 199, .08), 0 4px 14px rgba(0, 0, 0, .4), 0 0 12px rgba(255, 110, 199, .38); }
+html[data-theme="dark"] .unit.sel { border-color: #ffd76a; box-shadow: 0 0 0 2px rgba(255, 240, 200, .9), 0 0 22px rgba(255, 210, 100, .65); }
+/* 战斗阶段：棋盘整体聚光提亮（夜场开演） */
+html[data-theme="dark"] body[data-phase="battle"] #board {
+  box-shadow:
+    inset 0 0 0 1px rgba(190, 205, 255, .22),
+    0 16px 34px rgba(0, 0, 0, .5),
+    0 0 0 4px rgba(120, 140, 240, .14),
+    0 0 44px rgba(130, 110, 230, .3);
+}
+/* 血条 / 蓝条：荧光管 */
+html[data-theme="dark"] .unit.battle-unit .hpfill { background: linear-gradient(90deg, #ffe16b, #ffb02e); box-shadow: 0 0 9px rgba(255, 200, 60, .65); }
+html[data-theme="dark"] .unit.battle-unit.enemy .hpfill { background: linear-gradient(90deg, #ff8d8d, #ff4d6e); box-shadow: 0 0 9px rgba(255, 90, 115, .6); }
+html[data-theme="dark"] .unit.battle-unit .mpfill { background: linear-gradient(90deg, var(--st-accent2), var(--st-mp)); box-shadow: 0 0 8px rgba(120, 160, 255, .5); }
+
+/* 商店与操作 */
+html[data-theme="dark"] #shopbar,
+html[data-theme="dark"] body.touch #shopbar {
+  background: linear-gradient(180deg, rgba(16, 22, 46, .94), rgba(11, 16, 36, .98) 28%);
+  border-top-color: var(--st-line);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, .5);
+}
+html[data-theme="dark"] #shop .card { border-color: var(--st-line-strong); }
+html[data-theme="dark"] #shop .card:hover:not(.sold) {
+  border-color: var(--st-accent);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, .5), var(--st-glow-accent);
+}
+html[data-theme="dark"] #fightBtn {
+  background: linear-gradient(145deg, var(--st-accent), #8b5fd6 58%, #1f9e97);
+  box-shadow: 0 8px 22px rgba(150, 60, 160, .45), inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+html[data-theme="dark"] #fightBtn:not(:disabled) { animation: stgFightPulseDark 2.6s ease-in-out infinite; }
+@keyframes stgFightPulseDark {
+  0%, 100% { box-shadow: 0 8px 22px rgba(150, 60, 160, .45), 0 0 0 0 rgba(255, 110, 199, .4), inset 0 1px 0 rgba(255,255,255,.2); }
+  50% { box-shadow: 0 8px 26px rgba(150, 60, 160, .55), 0 0 28px 5px rgba(255, 110, 199, .35), inset 0 1px 0 rgba(255,255,255,.2); }
+}
+html[data-theme="dark"] #fightBtn:disabled { animation: none; background: #2b3552; box-shadow: none; }
+html[data-theme="dark"] .syn-badge.on { border-left-color: var(--st-accent2); background: linear-gradient(100deg, rgba(24, 68, 72, .95), rgba(24, 34, 66, .95)); box-shadow: 0 0 10px rgba(74, 227, 193, .12); }
+html[data-theme="dark"] .syn-badge.t2 { border-left-color: #b494f5; box-shadow: 0 0 10px rgba(180, 148, 245, .12); }
+html[data-theme="dark"] .syn-badge .pips i.on { background: var(--st-accent2); box-shadow: 0 0 6px var(--st-accent2); }
+
+/* flow 页面（夜场） */
+html[data-theme="dark"] .flow-card {
+  border-color: var(--st-line-strong);
+  background: linear-gradient(145deg, rgba(22, 30, 58, .98), rgba(15, 20, 44, .98));
+  box-shadow: 0 26px 70px rgba(0, 0, 0, .6), 0 0 40px rgba(110, 90, 200, .12);
+}
+html[data-theme="dark"] .flow-card h1 { color: #e6d9ff; text-shadow: 0 0 18px rgba(180, 148, 245, .35); }
+html[data-theme="dark"] .flow-eyebrow { color: var(--st-accent); }
+html[data-theme="dark"] .flow-primary { background: linear-gradient(110deg, #1f9e97, #6f5fd0 55%, var(--st-accent)); box-shadow: 0 6px 18px rgba(140, 80, 190, .35), 0 0 16px rgba(255, 110, 199, .15); }
+html[data-theme="dark"] .flow-mode-card[aria-checked="true"] { border-color: var(--st-accent2); background: var(--st-accent2-soft); box-shadow: 0 0 12px rgba(74, 227, 193, .12); }
+html[data-theme="dark"] .flow-save-card.recommended { border-color: var(--st-accent2); box-shadow: 0 0 0 2px var(--st-accent2-soft); }
+
+/* ==========================================================================
+   动态弹窗（JS 生成）：stg-* 类，双主题通吃
+   用于 guideOverlay / openingOfferOverlay / dailyOfferOverlay
+   ========================================================================== */
+.stg-overlay {
+  position: fixed; inset: 0; z-index: 2200; display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(88, 100, 150, .32); backdrop-filter: blur(8px);
+}
+html[data-theme="dark"] .stg-overlay { background: rgba(4, 6, 18, .7); }
+.stg-card {
+  width: min(460px, 100%); max-height: 92dvh; overflow: auto; padding: 22px 24px;
+  color: var(--st-ink); border: 1px solid rgba(255, 255, 255, .9); border-radius: 20px;
+  background: linear-gradient(145deg, var(--st-glass), var(--st-glass-2));
+  box-shadow: var(--st-shadow), inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+html[data-theme="dark"] .stg-card {
+  border-color: var(--st-line-strong);
+  background: linear-gradient(145deg, rgba(22, 30, 58, .97), rgba(15, 20, 44, .97));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 34px rgba(120, 100, 210, .14), inset 0 1px 0 rgba(190, 205, 255, .08);
+}
+.stg-card--wide { width: min(720px, 96vw); }
+.stg-kicker { display: flex; align-items: center; gap: 8px; color: var(--st-accent2); font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+.stg-kicker::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--st-accent); box-shadow: var(--st-glow-accent); }
+.stg-title { margin-top: 6px; color: var(--st-ink); font-size: 20px; font-weight: 800; }
+.stg-sub { margin: 4px 0 14px; color: var(--st-muted); font-size: 12px; line-height: 1.6; }
+.stg-step { display: flex; gap: 11px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--st-line); }
+.stg-step:last-of-type { border-bottom: 0; }
+.stg-step-num {
+  flex: 0 0 26px; width: 26px; height: 26px; display: grid; place-items: center;
+  color: #fff; border-radius: 50%; font-size: 12px; font-weight: 800;
+  background: linear-gradient(145deg, var(--st-accent), #9a7de8);
+  box-shadow: var(--st-glow-accent);
+}
+.stg-step-body b { display: block; color: var(--st-ink); font-size: 13px; }
+.stg-step-body span { color: var(--st-muted); font-size: 12px; line-height: 1.55; }
+.stg-callout {
+  margin-top: 12px; padding: 11px 13px; color: var(--st-ink);
+  border: 1px solid var(--st-line); border-left: 3px solid var(--st-accent); border-radius: 10px;
+  background: var(--st-accent-soft); font-size: 12px; line-height: 1.7;
+}
+.stg-callout > b { color: var(--st-accent); }
+.stg-actions { display: flex; justify-content: center; gap: 10px; margin-top: 16px; }
+.stg-btn {
+  min-height: 40px; padding: 9px 24px; border: 0; border-radius: 12px; cursor: pointer;
+  font: inherit; font-size: 14px; font-weight: 800; color: #fff;
+  background: linear-gradient(110deg, var(--st-accent2), #7f95e8 55%, var(--st-accent));
+  box-shadow: 0 5px 14px rgba(160, 110, 200, .3); transition: transform .15s, box-shadow .15s;
+}
+.stg-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(160, 110, 200, .4), var(--st-glow-accent); }
+.stg-btn--ghost {
+  color: var(--st-muted); border: 1px solid var(--st-line-strong); background: transparent; box-shadow: none;
+  font-size: 12px; font-weight: 600; padding: 7px 15px; min-height: 34px;
+}
+.stg-btn--ghost:hover { color: var(--st-ink); border-color: var(--st-accent2); box-shadow: var(--st-glow-accent2); }
+.stg-picks { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.stg-pick {
+  min-width: 150px; padding: 13px 14px; cursor: pointer; text-align: center; font: inherit;
+  color: var(--st-ink); border: 1px solid var(--st-line-strong); border-radius: 14px;
+  background: linear-gradient(150deg, var(--st-glass), var(--st-glass-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7);
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+html[data-theme="dark"] .stg-pick { background: linear-gradient(150deg, rgba(30, 40, 74, .96), rgba(20, 27, 55, .96)); box-shadow: inset 0 1px 0 rgba(190, 205, 255, .08); }
+.stg-pick:hover { transform: translateY(-3px); border-color: var(--st-accent2); box-shadow: var(--st-glow-accent2); }
+.stg-pick img { width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(0 5px 7px rgba(70, 85, 150, .3)); }
+.stg-pick-name { margin-top: 2px; color: var(--st-accent); font-size: 18px; font-weight: 800; }
+html[data-theme="dark"] .stg-pick-name { text-shadow: 0 0 12px rgba(255, 110, 199, .3); }
+.stg-pick-meta { margin-top: 3px; color: var(--st-muted); font-size: 11px; }
+.stg-pick-role { margin-top: 3px; color: var(--st-accent2); font-size: 11px; }
+
+/* 无障碍：尊重减少动效 */
+@media (prefers-reduced-motion: reduce) {
+  #fightBtn:not(:disabled), html[data-theme="dark"] .cell { animation: none !important; }
+}
+
+/* ==========================================================================
+   内联 style 块遗留深色组件 → 双主题化
+   （level-guide 升级引导 / chapter-review 章节回顾 / pool 卡池提示）
+   ========================================================================== */
+.level-guide-backdrop { background: rgba(88, 100, 150, .32); }
+.level-guide-card {
+  border-color: var(--st-line-strong); color: var(--st-ink);
+  background: linear-gradient(145deg, var(--st-glass), var(--st-glass-2));
+  box-shadow: var(--st-shadow);
+}
+.level-guide-kicker { color: var(--st-accent2); }
+.level-guide-card h2 { color: var(--st-accent); }
+.chapter-review { border-color: var(--st-line); background: var(--st-accent2-soft); color: var(--st-ink); }
+.chapter-review-head { color: var(--st-accent); }
+.chapter-rating-note { color: var(--st-muted); }
+.pool-guide-title { color: var(--st-accent2); }
+.pool-count { color: var(--st-accent); }
+.pool-candidates { color: var(--st-muted); }
+.pool-target { border-top-color: var(--st-line); }
+html[data-theme="dark"] .level-guide-backdrop { background: rgba(4, 6, 18, .7); }
+html[data-theme="dark"] .level-guide-card {
+  border-color: var(--st-line-strong); color: var(--st-ink);
+  background: linear-gradient(145deg, rgba(22, 30, 58, .97), rgba(15, 20, 44, .97));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .6), 0 0 34px rgba(120, 100, 210, .14);
+}
+html[data-theme="dark"] .level-guide-card h2 { color: var(--st-accent); text-shadow: 0 0 14px rgba(255, 110, 199, .3); }
+html[data-theme="dark"] .chapter-review { border-color: var(--st-line); background: rgba(20, 60, 64, .4); color: var(--st-ink); }
+html[data-theme="dark"] .chapter-rating-note { color: var(--st-muted); }
