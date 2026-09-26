@@ -7013,7 +7013,7 @@ async function makeShareCard(){
     g.textAlign='center';
     /* 标题 */
     g.fillStyle='#ffd24a'; g.font='bold 66px '+SHARE_FONT;
-    g.fillText('虚 拟 棋 战', W/2, 118);
+    g.fillText('星 域 棋 战', W/2, 118);
     g.fillStyle='#a79fd0'; g.font='28px '+SHARE_FONT;
     g.fillText((d.daily?'每日挑战':d.curses?'自定义诅咒':'经典模式')+' · '+d.limit+' 回合', W/2, 166);
     /* 结果徽章 */
@@ -7072,7 +7072,7 @@ async function makeShareCard(){
     if(d.mvp){ g.fillStyle='#ffd24a'; g.font='bold 28px '+SHARE_FONT;
       g.fillText('⚔ 本局 MVP：'+d.mvp.name+'（输出 '+d.mvp.deal+'）', W/2, H-96); }
     g.fillStyle='#5f5880'; g.font='22px '+SHARE_FONT;
-    g.fillText('虚拟棋战 · 手机网页 / PWA 可直接游玩', W/2, H-46);
+    g.fillText('星域棋战 · 手机网页 / PWA 可直接游玩', W/2, H-46);
     /* 导出：优先调系统分享（移动端），否则下载。
        toBlob 在画布被跨源污染时会抛 SecurityError，必须显式 catch——否则 Promise 永久 pending、
        按钮看起来「点了没反应」且不给任何提示（无异常反馈是最难排查的失败形态）。 */
@@ -7081,13 +7081,13 @@ async function makeShareCard(){
       catch(e){ reject(new Error('画布被跨源内容污染，无法导出：'+(e&&e.message?e.message:e))); }
     });
     if(!blob){ setMsg('❌ 图片生成失败，请换用 Chrome / Edge 浏览器'); return; }
-    const fname='虚拟棋战-战绩-第'+d.round+'回合.png';
+    const fname='星域棋战-战绩-第'+d.round+'回合.png';
     const file=(typeof File!=='undefined')?new File([blob],fname,{type:'image/png'}):null;
     /* 按设备分流：桌面 Chrome 其实也实现了 navigator.share，点击会弹系统分享面板并一直等待用户选择，
        既不符合「点一下就存图」的预期、也让失败无从判断；因此只在移动端走系统分享，桌面一律直接下载。 */
     const isMobile=/Android|iPhone|iPad|iPod|Mobile|HarmonyOS/i.test(navigator.userAgent||'');
     if(isMobile && file && navigator.canShare && navigator.canShare({files:[file]})){
-      try{ await navigator.share({files:[file],title:'虚拟棋战 战绩'}); setMsg('✅ 已唤起系统分享'); return; }
+      try{ await navigator.share({files:[file],title:'星域棋战 战绩'}); setMsg('✅ 已唤起系统分享'); return; }
       catch(e){ if(e&&e.name==='AbortError'){ setMsg('已取消分享，可再次点击保存图片'); return; } }
     }
     const url=URL.createObjectURL(blob); const a=document.createElement('a');
