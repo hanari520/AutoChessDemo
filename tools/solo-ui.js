@@ -38,6 +38,51 @@
   let fightStartedAt = 0;
   let fightSawBattle = false;
   let focusBeforeHub = null;
+  /* ----- 巡演对白演出层（M4b）：站开场/压轴前后/站末/终场。纯展示层；Set 防重播，存档续玩不重播开场 ----- */
+  const tourPlayed = new Set();
+  let tourDefeats = 0;
+  let tourPrev = null;
+
+  function tourPlay(lines, key) {
+    if (!key || tourPlayed.has(key)) return;
+    tourPlayed.add(key);
+    if (typeof NarrativeBar === 'undefined' || !Array.isArray(lines) || !lines.length) return;
+    NarrativeBar.play(lines);
+  }
+
+  function updateTourPlayback() {
+    if (!latest.active || latest.mode !== 'expedition') { tourPrev = null; return; }
+    const state = latest.state || {};
+    const view = latest.view || {};
+    const prev = tourPrev;
+    const cur = { chapter: state.chapter, node: state.node, phase: state.phase, current: state.current };
+    tourPrev = cur;
+    if (typeof NarrativeTour === 'undefined' || !NarrativeTour.STATIONS) return;
+    const stations = NarrativeTour.STATIONS;
+    if (!stations[cur.chapter]) return;
+    /* 败场观察：fight 结束回到 route 且节点未推进 = 本节点打输了一次（state 不记录败绩，只在展示层计数） */
+    if (prev && prev.phase === 'fight' && cur.phase === 'route' && prev.node === cur.node) tourDefeats++;
+    if (!prev) {
+      /* 全新对局才播第 1 站开场；中途读档（route 已有记录）不重播 */
+      if (cur.chapter === 1 && cur.node === 0 && cur.phase === 'route' && !(state.route || []).length)
+        tourPlay(stations[1].opening, 'station:1');
+      return;
+    }
+    if (prev.chapter !== cur.chapter && stations[prev.chapter] && stations[cur.chapter]) {
+      /* 站末收束 + 新站开场连播（第 3 站 cleared 为空，自然只播开场） */
+      tourPlayed.add('station:' + cur.chapter);
+      tourPlay([].concat(stations[prev.chapter].cleared || [], stations[cur.chapter].opening || []), 'cleared:' + prev.chapter);
+      return;
+    }
+    if (view.canFight && cur.current === 'boss') tourPlay(stations[cur.chapter].nodes.boss.intro, 'boss:' + cur.chapter + ':intro');
+    if (prev.phase === 'fight' && prev.current === 'boss' && cur.phase === 'reward') tourPlay(stations[cur.chapter].nodes.boss.clear, 'boss:' + cur.chapter + ':clear');
+    if (view.finished && view.outcome === 'won') {
+      /* 终场三收尾（纯展示）：hp>=15 且本局失败<=1 安可；hp<15 继续；其余谢幕 */
+      const finale = NarrativeTour.FINALE;
+      const tail = state.hp >= 15 && tourDefeats <= 1 ? finale.encore : state.hp < 15 ? finale.resume : finale.curtain;
+      tourPlay([].concat(finale.opening || [], tail || []), 'finale');
+    }
+  }
   const modeSelections = { hunt: 0, puzzle: 0, conquest: 0 };
 
   function node(tag, className, text) {
@@ -693,6 +738,7 @@
     if (next.handlers && typeof next.handlers === 'object') handlers = next.handlers;
     const inBattle = updateFightState(latest);
     renderPanel(inBattle);
+    updateTourPlayback();
     if (hubNode && !hubNode.hidden) renderHub();
     return window.SoloUI;
   }
