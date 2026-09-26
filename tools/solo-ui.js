@@ -59,9 +59,16 @@
     tourPrev = cur;
     if (typeof NarrativeTour === 'undefined' || !NarrativeTour.STATIONS) return;
     const stations = NarrativeTour.STATIONS;
-    if (!stations[cur.chapter]) return;
     /* 败场观察：fight 结束回到 route 且节点未推进 = 本节点打输了一次（state 不记录败绩，只在展示层计数） */
     if (prev && prev.phase === 'fight' && cur.phase === 'route' && prev.node === cur.node) tourDefeats++;
+    /* 终场三收尾（纯展示）：hp>=15 且本局失败<=1 安可；hp<15 继续；其余谢幕。第 3 站通关后 chapter>3，必须先于站界守卫处理 */
+    if (view.finished && view.outcome === 'won') {
+      const finale = NarrativeTour.FINALE;
+      const tail = state.hp >= 15 && tourDefeats <= 1 ? finale.encore : state.hp < 15 ? finale.resume : finale.curtain;
+      tourPlay([].concat(finale.opening || [], tail || []), 'finale');
+      return;
+    }
+    if (!stations[cur.chapter]) return;
     if (!prev) {
       /* 全新对局才播第 1 站开场；中途读档（route 已有记录）不重播 */
       if (cur.chapter === 1 && cur.node === 0 && cur.phase === 'route' && !(state.route || []).length)
@@ -76,12 +83,6 @@
     }
     if (view.canFight && cur.current === 'boss') tourPlay(stations[cur.chapter].nodes.boss.intro, 'boss:' + cur.chapter + ':intro');
     if (prev.phase === 'fight' && prev.current === 'boss' && cur.phase === 'reward') tourPlay(stations[cur.chapter].nodes.boss.clear, 'boss:' + cur.chapter + ':clear');
-    if (view.finished && view.outcome === 'won') {
-      /* 终场三收尾（纯展示）：hp>=15 且本局失败<=1 安可；hp<15 继续；其余谢幕 */
-      const finale = NarrativeTour.FINALE;
-      const tail = state.hp >= 15 && tourDefeats <= 1 ? finale.encore : state.hp < 15 ? finale.resume : finale.curtain;
-      tourPlay([].concat(finale.opening || [], tail || []), 'finale');
-    }
   }
   const modeSelections = { hunt: 0, puzzle: 0, conquest: 0 };
 
