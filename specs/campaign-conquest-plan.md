@@ -2,6 +2,8 @@
 
 > 2026-09-24 定稿。目标读者：接手执行的 agent。改动范围：`tools/solo-modes.js`（conquest 分支重写）、`tools/solo-host.js`、`tools/solo-ui.js`、`tools/solo-ui.css`、新增 `tools/campaign-map.js` 与 `assets/campaign/`、`index.html`、`sw.js`。
 > 本文件是唯一执行依据；与记忆/口头描述冲突时以本文件为准。
+>
+> **2026-09-28 状态注记**：战役征服已按本计划实施并通过验收（见 `specs/solo-acceptance.md`），但 2026-09-26 批次 E 起 conquest 在单人大厅**暂时隐藏**（`tools/solo-ui.js` 的 `HIDDEN_MODES`，定义与代码保留，随时可恢复），且 `assets/campaign/` 离线美术已移出部署白名单（`.assetsignore`，425bffc）。恢复入口时需同时把该美术目录加回 `.assetsignore` 白名单。
 
 ---
 

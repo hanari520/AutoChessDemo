@@ -118,6 +118,19 @@ module.exports.run = function (A) {
     ok(A.S.board.some(u=>u&&u.uid===geared.uid), '同属性棋子优先保留穿装备者');
   }
 
+  console.log('[b3] 一键上阵触发同名合成');
+  {
+    globalThis.newGame();
+    const a1=mk('ein'), a2=mk('ein'), a3=mk('ein');
+    A.S.board=freshBoard();A.S.board[35]=a1;A.S.board[44]=a2;
+    A.S.bench=Array(8).fill(null);A.S.bench[0]=a3;A.S.lvl=3;
+    globalThis.autoDeploy();
+    const mine=[...A.S.board,...A.S.bench].filter(Boolean).filter(u=>u.id==='ein');
+    ok(mine.length===1&&mine[0].star===2, 'R 键上阵后 3 张同名 1★ 合成为 2★');
+    const uids=new Set([...A.S.board,...A.S.bench].filter(Boolean).map(u=>u.uid));
+    ok(!uids.has(a1.uid)&&!uids.has(a2.uid)&&!uids.has(a3.uid), '合成后旧 1★ uid 不残留');
+  }
+
   /* ---------- c. 整理备战席同名相邻 ---------- */
   console.log('[c] tidyBench 同名组不被拆散');
   {

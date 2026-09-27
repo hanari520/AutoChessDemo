@@ -1972,7 +1972,9 @@ let curseSel=[];   // 自定义诅咒挑战的勾选状态（会话内保留，�
    _solo_tests.js）都走这一个入口——curseSel 是脚本顶层 let，外部 indirect eval 无法直接赋值，
    所以必须保留一个函数入口，不要把它内联回 renderSetup。 */
 function toggleCurse(id){
-  if(!CUSTOM_CURSES.some(c=>c.id===id))return;
+  /* 接受 LEGACY 条目（如 solo 独木桥）：仅为 sim.js CURSE= 钩子与 _solo_tests 注入保留通路；
+     设置弹窗只渲染 CUSTOM_CURSES（v3 规则池），legacy 对玩家不可见、仅用于旧存档。 */
+  if(!CUSTOM_CURSES.some(c=>c.id===id) && !LEGACY_CURSES.some(c=>c.id===id))return;
   curseSel=curseSel[0]===id?[]:[id];
   if(typeof renderSetup==='function') renderSetup();
 }
@@ -4662,8 +4664,11 @@ function autoDeploy(){
   rest.forEach((u,i)=>{if(i<BENCH)S.bench[i]=u;});
   const replaced=oldBoard.filter(u=>!chosen.has(u.uid)).length;
   const moved=team.filter(u=>oldPos.has(u.uid)&&board.indexOf(u)!==oldPos.get(u.uid)).length;
-  if(replaced||moved||team.length>oldBoard.length){sfx('deploy');renderAll();}
-  log(`⚡ 一键上阵：上场 ${team.length} 名，替换 ${replaced} 名，调整站位 ${moved} 名`);
+  const preMerge=S.board.filter(Boolean).length+S.bench.filter(Boolean).length;
+  tryMerge();   // 上阵搬动后可能凑齐 3 个同名，与买棋路径同一入口
+  const merged=preMerge-(S.board.filter(Boolean).length+S.bench.filter(Boolean).length);
+  if(replaced||moved||merged||team.length>oldBoard.length){sfx('deploy');renderAll();}
+  log(`⚡ 一键上阵：上场 ${team.length} 名，替换 ${replaced} 名，调整站位 ${moved} 名`+(merged?`，合成升星 ${merged/2} 次`:''));
 }
 $('deployBtn').onclick=autoDeploy;
 /* 整理备战席：高的星级在前、同名棋子相邻（便于合成）、空位挪到最后 */
@@ -7738,7 +7743,7 @@ const LB_API='https://hanari-d6gjqwx683f6c455d.service.tcloudbase.com';
 /* 榜单规则版本戳（与 autochess-api/cloudbase-functions/lb 的 CAMPAIGN_RULES / DAILY100 保持同步）。
    作用：让"调过难度/经济之后的成绩"不能混进旧版本的榜。
    ⚠ 纪律：任何影响难度或经济产出的改动，都要把 CAMPAIGN_RULES_VER +1，并同步后端常量。 */
-const CAMPAIGN_RULES_VER=4;   // 经典模式（普通 100 回合）
+const CAMPAIGN_RULES_VER=5;   // 经典模式（普通 100 回合）；v5 隔离开局金币 10→5（f448d9d）前的经济版本成绩
 const DAILY_RULES_VER=5;
 function lbHeaders(){ return {'Content-Type':'application/json'}; }
 async function lbFetch(path){ const r=await fetch(LB_API+path,{headers:lbHeaders(),cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }   // no-store：榜单必须实时，禁止 HTTP 层缓存

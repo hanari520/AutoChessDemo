@@ -1,9 +1,11 @@
 'use strict';
 
 /* CloudBase 云函数 lb 契约测试：加载真实源码 autochess-api/cloudbase-functions/lb/index.js，
-   用 fetch 桩模拟 PostgREST 网关（内存表 lb_entries），覆盖 daily100 v3 / normal100v2 规则闸门
+   用 fetch 桩模拟 PostgREST 网关（内存表 lb_entries），覆盖 daily100 v5 / normal100v5 规则闸门
    与旧榜（normal/daily）隔离。这是线上真正部署的工件——daily100_backend.test.js 测的是已下线的
-   Worker 版，不能替代本文件。 */
+   Worker 版，不能替代本文件。2026-09-26 迁移：库内表 normal100v2→normal100v4、daily100v3→daily100v5；
+   2026-09-28 迁移：normal100v4→normal100v5（隔离开局金币 10→5 的经济版本），
+   对外请求参数 board=normal100/daily100 不变，rules 版本现为 5/5。 */
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -65,21 +67,21 @@ function loadLb(stub) {
 
 const validDaily100 = (overrides = {}) => ({
   name: '每日测试', board: 'daily100', round: 100, ch: 5,
-  kills: 321, curses: 1, rules: 3, lineup: ['unit-a', 'unit-b'], ...overrides
+  kills: 321, curses: 1, rules: 5, lineup: ['unit-a', 'unit-b'], ...overrides
 });
 
-test('daily100 GET serves the v3 seed-scoped board, isolated from legacy daily, normal and other days', async () => {
+test('daily100 GET serves the v5 seed-scoped board, isolated from legacy daily, normal and other days', async () => {
   const lb = loadLb(makeStub());
   const seed = serverDaySeed();
   lb.rows.push(
     { id: 1, board: 'daily', seed, name: '旧每日', round: 88, ch: 4, kills: 100, curses: 1, created_at: 't1' },
-    { id: 2, board: 'daily100v3', seed: 20260101, name: '昨天', round: 100, ch: 5, kills: 999, curses: 1, created_at: 't2' },
-    { id: 3, board: 'normal100v2', seed: null, name: '普通', round: 100, ch: 5, kills: 1, curses: 0, created_at: 't3' },
-    { id: 4, board: 'daily100v3', seed, name: '今日', round: 100, ch: 5, kills: 50, curses: 1, created_at: 't4' });
-  const r = await lb.get({ board: 'daily100', rules: '3' });
+    { id: 2, board: 'daily100v5', seed: 20260101, name: '昨天', round: 100, ch: 5, kills: 999, curses: 1, created_at: 't2' },
+    { id: 3, board: 'normal100v5', seed: null, name: '普通', round: 100, ch: 5, kills: 1, curses: 0, created_at: 't3' },
+    { id: 4, board: 'daily100v5', seed, name: '今日', round: 100, ch: 5, kills: 50, curses: 1, created_at: 't4' });
+  const r = await lb.get({ board: 'daily100', rules: '5' });
   assert.equal(r.statusCode, 200);
   const body = lb.read(r);
-  assert.deepEqual([body.ok, body.board, body.rules, body.seed], [true, 'daily100', 3, seed]);
+  assert.deepEqual([body.ok, body.board, body.rules, body.seed], [true, 'daily100', 5, seed]);
   assert.deepEqual(body.list.map(x => x.name), ['今日']);
 });
 
@@ -90,7 +92,7 @@ test('daily100 GET rejects a mismatched rules version without reading', async ()
   assert.equal(lb.read(r).error, 'unsupported daily rules');
 });
 
-test('daily100 POST ranks a valid v3 win and stamps the server-side day seed and versioned board', async () => {
+test('daily100 POST ranks a valid v5 win and stamps the server-side day seed and versioned board', async () => {
   const stub = makeStub();
   const lb = loadLb(stub);
   const seed = serverDaySeed();
@@ -99,7 +101,7 @@ test('daily100 POST ranks a valid v3 win and stamps the server-side day seed and
   const body = lb.read(r);
   assert.deepEqual({ ok: body.ok, rank: body.rank, total: body.total, seed: body.seed }, { ok: true, rank: 1, total: 1, seed });
   assert.deepEqual({ board: lb.rows[0].board, seed: lb.rows[0].seed, curses: lb.rows[0].curses },
-    { board: 'daily100v3', seed, curses: 1 });
+    { board: 'daily100v5', seed, curses: 1 });
   assert.ok(lb.rows[0].lineup.length <= 6);
 });
 
@@ -114,7 +116,7 @@ test('daily100 POST rejects mismatched rules, curse count, round or chapter with
   const stub = makeStub();
   const lb = loadLb(stub);
   const bads = [
-    validDaily100({ rules: 2 }),
+    validDaily100({ rules: 4 }),
     validDaily100({ curses: 0 }),
     validDaily100({ curses: 2 }),
     validDaily100({ round: 101, ch: 5 }),
@@ -136,37 +138,42 @@ test('daily100 rank follows ch.desc, round.desc, kills.desc across two submissio
   assert.deepEqual([first.rank, second.rank], [1, 2]);   // 后提交但击杀更低者排在已有成绩之后
 });
 
-test('normal100 board reads normal100v2 only and enforces the campaign rules gate', async () => {
+test('normal100 board reads normal100v5 only and enforces the campaign rules gate', async () => {
   const stub = makeStub();
   const lb = loadLb(stub);
   lb.rows.push(
     { id: 1, board: 'normal100', name: '旧版成绩', round: 100, ch: 5, kills: 1, curses: 0, created_at: 't1' },
-    { id: 2, board: 'normal100v2', name: '新版成绩', round: 100, ch: 5, kills: 2, curses: 0, created_at: 't2' });
-  const r = await lb.get({ board: 'normal100', rules: '2' });
+    { id: 2, board: 'normal100v5', name: '新版成绩', round: 100, ch: 5, kills: 2, curses: 0, created_at: 't2' });
+  const r = await lb.get({ board: 'normal100', rules: '5' });
   const body = lb.read(r);
-  assert.deepEqual([body.board, body.rules], ['normal100', 2]);
+  assert.deepEqual([body.board, body.rules], ['normal100', 5]);
   assert.deepEqual(body.list.map(x => x.name), ['新版成绩']);
   const rejected = await lb.get({ board: 'normal100', rules: '1' });
   assert.equal(rejected.statusCode, 400);
   assert.equal(lb.read(rejected).error, 'unsupported campaign rules');
+  // v4（金币 10 开局的经济版本）已整体封存：带旧版本号的请求一并拒绝
+  const stale = await lb.get({ board: 'normal100', rules: '4' });
+  assert.equal(stale.statusCode, 400);
+  assert.equal(lb.read(stale).error, 'unsupported campaign rules');
 });
 
-test('normal100 POST stores normal100v2, rejects stale rules, cursed runs and impossible chapters', async () => {
+test('normal100 POST stores normal100v5, rejects stale rules, cursed runs and impossible chapters', async () => {
   const stub = makeStub();
   const lb = loadLb(stub);
-  const ok = lb.read(await lb.post({ name: '普通', board: 'normal100', round: 100, ch: 5, kills: 50, curses: 0, rules: 2 }));
+  const ok = lb.read(await lb.post({ name: '普通', board: 'normal100', round: 100, ch: 5, kills: 50, curses: 0, rules: 5 }));
   assert.deepEqual({ ok: ok.ok, rank: ok.rank }, { ok: true, rank: 1 });
-  assert.equal(stub.rows[0].board, 'normal100v2');
+  assert.equal(stub.rows[0].board, 'normal100v5');
   assert.equal(stub.rows[0].seed, null);
-  // 不带 rules 的旧客户端照常放行（渐进升级），新写入同样落到 normal100v2
+  // 不带 rules 的旧客户端照常放行（渐进升级），新写入同样落到 normal100v5
   const legacy = lb.read(await lb.post({ name: '旧客户端', board: 'normal100', round: 90, ch: 4, kills: 3, curses: 0 }));
   assert.equal(legacy.ok, true);
-  assert.equal(stub.rows[1].board, 'normal100v2');
+  assert.equal(stub.rows[1].board, 'normal100v5');
   const bads = [
     { name: '旧规则', board: 'normal100', round: 100, ch: 5, kills: 1, curses: 0, rules: 1 },
-    { name: '诅咒成绩', board: 'normal100', round: 80, ch: 4, kills: 1, curses: 1, rules: 2 },
-    { name: '假通关', board: 'normal100', round: 80, ch: 5, kills: 1, curses: 0, rules: 2 },
-    { name: '超章', board: 'normal100', round: 80, ch: 6, kills: 1, curses: 0, rules: 2 },
+    { name: '旧经济版本', board: 'normal100', round: 100, ch: 5, kills: 1, curses: 0, rules: 4 },
+    { name: '诅咒成绩', board: 'normal100', round: 80, ch: 4, kills: 1, curses: 1, rules: 5 },
+    { name: '假通关', board: 'normal100', round: 80, ch: 5, kills: 1, curses: 0, rules: 5 },
+    { name: '超章', board: 'normal100', round: 80, ch: 6, kills: 1, curses: 0, rules: 5 },
   ];
   for (const body of bads) {
     const r = await lb.post(body);

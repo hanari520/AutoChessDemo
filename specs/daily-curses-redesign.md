@@ -19,6 +19,8 @@
 
 棋盘诅咒按开战时起始站位计算。裂隙格由日期种子和章节号确定，不消耗商店或战斗随机数；整章保持不变。受影响格在备战棋盘上标出。羁绊偏科目标也在每章开始固定并公告。
 
-规则状态使用 `DailyCurses.VERSION=3`。每日存档与榜单按 v3 隔离；旧每日存档不会被新规则重新解释。旧自定义存档保留旧规则继续运行，新开局列表只显示本页的 12 条。自定义单选诅咒局不进入普通榜。
+规则状态使用 `DailyCurses.VERSION=3`。旧每日存档不会被新规则重新解释；旧自定义存档保留旧规则继续运行，新开局列表只显示本页的 12 条。自定义单选诅咒局不进入普通榜。
 
-验证入口：`node --test tools/daily-curses.test.js tools/daily100_backend.test.js`、`DAILY_CAMPAIGN_TEST=1 node tools/sim.js`、`python tools/daily100_test.py`。
+榜单隔离注意区分两个版本号：诅咒池本身是 `DailyCurses.VERSION=3`；每日成绩提交与查询走榜单规则版本 `DAILY_RULES_VER`（当前为 5，`index.html` 常量），云函数 lb 落库表为 `daily100v5`、规则闸门 `DAILY100_RULES=5`；经典榜对应 `CAMPAIGN_RULES_VER=4` / 库内 `normal100v4`（autochess-api/cloudbase-functions/lb/index.js）。旧表记录保留不可见、可回滚。
+
+验证入口：`node --test tools/daily-curses.test.js tools/lb_cloudfunction.test.js`（lb 契约测试直测云函数源码，当前断言 v5/v4）、`DAILY_CAMPAIGN_TEST=1 node tools/sim.js`、`python tools/daily100_test.py`。`tools/daily100_backend.test.js` 只覆盖已下线的 Cloudflare Worker 版后端，仅作历史参考，不作为线上契约验证。
