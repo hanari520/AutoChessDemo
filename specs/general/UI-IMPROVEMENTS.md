@@ -1,47 +1,39 @@
-# UI improvement review
+# 游戏画面与 2.5D 检查
 
-## 2026-09-23 对局生命周期审查（待实施）
+日期：2026-09-27。仅检查，未修改游戏实现。
 
-- Critical：关闭开局弹窗可能创建对局，读档失败仍可能提示成功。应分离导航与对局动作，校验成功后再恢复。
-- High：重开丢失模式/配置、跨模式误删竞技档、固定优先级隐藏存档、结束确认不清晰。按明确生命周期和存档槽规则统一处理。
-- Medium：首页层级混杂、双主按钮及横向滚动。拆为主菜单与新建设置，说明独立只读。
-- 保留：角色美术、现有模式与经济/战斗规则、战报和排行功能。
-- 完整计划见 [GAME-FLOW-REDESIGN.md](GAME-FLOW-REDESIGN.md)，执行提示词见 [GAME-FLOW-AGENT-PROMPT.md](GAME-FLOW-AGENT-PROMPT.md)。本次只做源码与截图审查，尚未实现或运行交互验证。
+## 检查范围
 
-## Scope
+阅读 index.html 的棋盘、战斗、坐标与特效实现，以及主题和移动端样式。在独立浏览器上下文中启动本地当前源码，查看 1440×1000 备战与战斗，并缩到 390×844 查看窄屏布局。为显示多个人物，在临时会话中提高金币与人口；这不是数值平衡测试。截图位于 F:/demo/out/visual-review/。未验证真实手机触摸、后期满员战斗、全部主题及 Boss 场景。
 
-Refresh the presentation layer for the existing single-player auto-battler. Keep run progression, economy, unit stats, synergies, shop behavior, and individual unit skills intact while making the game feel like a bright virtual-idol concert arena. Equipment-specific combat triggers and crafting routes may change with an equipment redesign.
+## 结论
 
-## Findings and changes
+可以保留现有格子战斗规则，实现固定斜俯视的 2.5D 舞台与直立角色。现有方案为 DOM/CSS 格子与透明人物图，已有轻微棋盘透视、行深度排序、步行动画与技能特效。主要缺口是地面和人物没有独立投影，不是缺少一个更大的 rotateX。
 
-- **High — the portrait phone game screen was visually crowded.** Replaced the stacked toolbar, shop preview, level controls, and repeated action rows with a compact resource header, a centered board and bench, and one bottom action row. Population and experience remain visible in a small strip. Shop operations, deployment, upgrade, equipment, bonds, details, and other settings are available from focused sheets.
-- **High — the board could extend beyond a narrow phone viewport.** Sized the grid from the actual phone width, reduced its inner gap and padding, and checked that all eight columns fit at 390, 360, 375, and 320 pixel widths.
-- **Medium — mobile utility actions were scattered through the header.** Added a More sheet for the unit book, history, autoplay, help, sound, restart, challenge end, and battle speed. The shop sheet now contains its related economy and deployment actions.
-- **High — equipment was presented as bare chips and most items were stat sticks.** Reworked the panel into an armory with loadout, inventory, craftable pairs, a forge, and an expandable route catalog. Cards show the item's stat line and combat trait; the unit book now lists traits and recipes too. Mobile uses a compact card grid and collapses routes until requested.
-- **High — recipe discovery did not communicate why a craft mattered.** Added fixed pair recipes for all 21 combinations of the six components. Component mechanics carry into crafted items, then each crafted item adds its own trigger. The forge previews all four artifact choices and their trait text.
+## 高优先级
 
-- **High — the old dark, metal-heavy palette conflicted with the virtual-idol cast.** Replaced the visible interface with a light sky-blue, mint, lilac, and pink stage palette, translucent panels, clear resource chips, and a generated concert-arena backdrop.
-- **High — the board needed a stronger stage presence.** Reorganized play into a three-column desktop view, added a raised perspective board and separate bench, and gave the shop and battle action a clear bottom-row hierarchy.
-- **High — characters were too small to carry their identity.** Kept the existing individual hero portrait assets in the shop, unit book, and inspect panel. Added a hero-specific hue and a short signature-skill cue using the matching portrait and skill glyph.
-- **Medium — the mobile start screen could exceed the viewport.** Made the mode cards stack on narrow screens and constrained the start card to the viewport width. Checked the result at a 390 × 844 emulated viewport.
-- **High — the portrait phone play area needed a clearer board and touch dock.** Compact the mobile HUD, use the available main-area height when scaling the board, and give the shop/bond/equipment/details controls and battle button larger tap targets. Hide empty desktop control columns after their contents move into the mobile drawer.
-- **High — the bench could overlap the shop in short landscape windows.** Compact the header and shop cards, place the eight bench slots beside the board, size the board to the remaining height, and scale touch layouts against the actual main-area width.
-- **High — desktop top-bar labels disappeared.** A blanket icon-button rule set every control to `font-size: 0` and a fixed 34px width. Keep secondary actions compact, but let 图鉴 and 结束挑战 size to their text on desktop; restore 图鉴 to icon-only on narrow screens. Keep the end-of-run button's inline display mode compatible with its icon and label.
-- **Medium — icon-only controls needed accessible names.** Added title and `aria-label` fallbacks to the top-bar icon buttons, plus a reduced-motion rule for the new animations.
-- **Medium — app identity did not match the refreshed game.** Updated the title, browser theme color, install manifest, stage icon, and offline cache version to “星域棋战”.
+1. 地面与人物分层。index.html:6548 的 renderBattle 把 unitLayer 放在 board 内，人物与血条随地面倾斜。建立统一格子到画面坐标接口，将角色脚底作为锚点；地面、阴影、角色、空中特效、HUD 分层。
+2. 强化人物落地感。当前人物细节密集，仍呈现贴图放在方格上的感觉。统一脚底位置、接触阴影、角色高度和底座；采用有厚度的平台边缘与收敛的舞台光照。
+3. 战斗信息降噪。浅色背景、边框、光晕、角色装饰集中在相近亮度。降低环境对比，提高角色轮廓与血条对比；保留敌我形状标记，区分地面范围与空中弹道。
+4. 窄屏控件。390px 桌面缩窗样本中底部刷新、锁定、自动开战文字拥挤或越出按钮。需在真实触摸布局复测，固定主要按钮尺寸并压缩次要文案；2.5D 不应进一步牺牲选格精度。
 
-## Positive observations
+## 中优先级
 
-- The project already contains 50 individual large hero portraits and 16 skill-effect textures, so the redesigned screens can show distinct performers without substituting generic character art.
-- The existing game is a single-page app with no build step. The presentation layer is split into dedicated CSS and JavaScript files, while the engine and run rules remain in `index.html`.
-- The current board, shop, bonds, player stats, inspect panels, history, and unit book remain available in the single-player flow.
+- 战斗时收起空装备区与次要操作，让战场成为视觉重点，备战恢复完整运营面板。
+- 攻击动作分为蓄力、命中、恢复；先为少数代表角色做方向与动作样本，再扩展素材。现有摇摆位移不能充分表达武器动作。
+- renderBattle 循环内读取布局尺寸并写入样式。改造时集中测量棋盘几何，并评估移动使用 transform；性能收益须通过满员战斗实测，当前未判定存在掉帧。
+- 样式跨内联、idol-ui、idol-redesign、mobile-stage、idol-dark、stage-themes 叠加。先收敛棋盘投影和尺寸的控制入口，避免主题间覆盖不一致。
 
-## Verification
+## 实现边界与顺序
 
-- Checked the redesigned preparation screen at 390 × 844, 360 × 740, 375 × 667, and 320 × 568 touch viewports. The board and bench fit horizontally, and the bottom action row stays within the viewport.
-- Opened the shop and More sheets; all five shop cards rendered, purchase reduced gold and added a bench unit, and no page errors occurred in those viewports. Also reviewed 740 × 360 touch landscape and 1280 × 800 desktop layouts.
-- Reviewed the start screen at desktop and 390 × 844 emulated mobile sizes.
-- Started a new run in a local browser and reviewed the battle preparation screen at 1440 × 900.
-- Checked board, bench, and shop separation at 1305 × 318 and 740 × 360 landscape sizes; the bench stays above the shop in both layouts.
-- For the current portrait/header fixes, reviewed the cascade and mobile drawer node moves statically. Browser visual regression was not run in this iteration.
-- No automated test suite or build step is configured for this project.
+1. 首先做独立视觉原型：8×8 地面、少量既有角色、平台厚度、脚底阴影、按脚底深度遮挡。
+2. 接入备战拖拽、选格、射程预览，再接入战斗移动、弹道、范围技能、浮字和 2×2 Boss。
+3. 保留现有 x/y、占格、距离、寻路与技能规则。统一 boardGeo、unitVisual 和各特效函数使用的显示坐标，避免只改人物导致命中与范围错位。
+4. 桌面采用更明确的固定斜俯视，手机降低透视并扩大点击热区。当前 mobile-stage.css:48 已在对应移动端规则下取消 board transform。
+5. 验收包含前后排遮挡、跨排移动、边缘拖拽、Boss 占格、多人技能、两种主题与窄屏触摸；对照战斗结果确认视觉改造不改变规则。
+
+真正三维模型、自由镜头属于另一档工作量，需要新增模型和动画资产。当前可先复用透明立绘得到显著空间感，再判断是否值得升级渲染器。
+
+## 值得保留
+
+角色美术主题统一，已有敌我区分、技能签名、战斗统计、自动布阵以及坐标辅助函数。应复用这些基础，优先改视觉空间结构。

@@ -1,4 +1,4 @@
-/* Phase 1 断言测试：近战前排优先 / 阵型轮换 / 整理备战席同名相邻 / 开战自动补位。
+/* Phase 1 断言测试：近战前排优先 / 择优上阵稳定性 / 整理备战席 / 开战自动补位。
    由 sim.js 以 T1=1 调起（node 语法：T1=1 node tools/sim.js），复用其 DOM 桩与 API 导出。 */
 module.exports.run = function (A) {
   const fails = [];
@@ -85,10 +85,44 @@ module.exports.run = function (A) {
     const melee = roster.filter(u => ['ein', 'chiharu', 'aza'].includes(u.id));
     ok(melee.every(u => rowOf(A.S.board, u.uid) === 4), '轮换后近战仍在第 4 行（行分配不变）');
     ok(A.S.board.filter(Boolean).length === 6, '布阵后场上 6 人（人口打满）');
-    // autoDeploy（只补位不换人）同样轮换
+    // 玩家按钮改为稳定择优，连续点击不应再无故轮换阵型
+    globalThis.autoDeploy();
     const l0 = roster.map(u => posOf(A.S.board, u.uid).join(',')).join('|');
-    globalThis.autoDeploy(); const l1 = roster.map(u => posOf(A.S.board, u.uid).join(',')).join('|');
-    ok(l0 !== l1, '一键上阵（autoDeploy）同样触发轮换');
+    globalThis.autoDeploy();
+    const l1 = roster.map(u => posOf(A.S.board, u.uid).join(',')).join('|');
+    ok(l0 === l1, '一键上阵连续点击保持同一阵型');
+  }
+
+  console.log('[b2] 满人口换人 / 装备价值 / 仅补位');
+  {
+    globalThis.newGame();
+    const old=mk('ein'), other=mk('yujiu'), strong=mk('goutan');
+    strong.maxhp=650; strong.atk=80;
+    A.S.board=freshBoard();A.S.board[35]=old;A.S.board[46]=other;
+    A.S.bench=Array(8).fill(null);A.S.bench[0]=strong;A.S.lvl=2;
+    globalThis.autoDeploy();
+    ok(A.S.board.some(u=>u&&u.uid===strong.uid), '人口已满时强力备战棋子上场');
+    const ids=[...A.S.board,...A.S.bench].filter(Boolean).map(u=>u.uid);
+    ok(ids.length===3&&new Set(ids).size===3, '换人后场上和备战席无丢失、无重复');
+    const p0=A.S.board.map(u=>u&&u.uid).join(',');
+    globalThis.autoDeploy();
+    ok(A.S.board.map(u=>u&&u.uid).join(',')===p0, '相同条件下再次上阵结果稳定');
+
+    globalThis.newGame();
+    const naked=mk('ein'), geared=mk('ein');
+    const crafted=Object.keys(A.ITEMS).find(k=>A.ITEMS[k].crafted);
+    geared.items=[crafted];
+    A.S.board=freshBoard();A.S.board[35]=naked;
+    A.S.bench=Array(8).fill(null);A.S.bench[0]=geared;A.S.lvl=1;
+    globalThis.autoDeploy();
+    ok(A.S.board.some(u=>u&&u.uid===geared.uid), '同属性棋子优先保留穿装备者');
+
+    globalThis.newGame();
+    const fixed=mk('ein'), addition=mk('goutan');
+    A.S.board=freshBoard();A.S.board[45]=fixed;
+    A.S.bench=Array(8).fill(null);A.S.bench[0]=addition;A.S.lvl=2;
+    globalThis.autoDeployFill();
+    ok(A.S.board[45]===fixed&&A.S.board.some(u=>u&&u.uid===addition.uid), '仅补位保留已有棋子和站位');
   }
 
   /* ---------- c. 整理备战席同名相邻 ---------- */
