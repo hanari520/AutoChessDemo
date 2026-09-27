@@ -15,7 +15,7 @@ module.exports.run = function (A) {
   console.log('[a] 升档公式 soloShopLvl / soloShopNextR（r1-40）');
   // 勾选走游戏自己的 toggleCurse 入口：indirect eval 顶层 let（curseSel）不可从外部 eval 直接赋值
   ev('toggleCurse("solo"); newGame({custom:true}); renderAll()');
-  ok(A.S.curses.includes('solo') && A.S.gold === 30, 'solo 开局：诅咒生效，10+20=30 金（实际 ' + A.S.gold + '）');
+  ok(A.S.curses.includes('solo') && A.S.gold === 25, 'solo 开局：诅咒生效，5+20=25 金（实际 ' + A.S.gold + '）');
   {
     const bad = [];
     for (let r = 1; r <= 40; r++) {

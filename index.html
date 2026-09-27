@@ -1068,7 +1068,7 @@ body.touch .m-only { display:inline-block; }
   </span>
   <span class="tag" id="restTag" style="display:none" aria-live="polite">🌙 休整回合 · 普通野怪失败不扣血</span>
   <span class="res" id="resHp" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 21C7.2 16.7 3 13.4 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 4.4-4.2 7.7-9 12z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="hp">40</span><span class="rl">生命</span></span>
-  <span class="res" id="resGold" title="利息：每10金+1，上限3。下回合利息预览见绿色数字" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/svg%3E&quot;)"><span class="rv" id="gold">10</span><span class="ri" id="interest"></span><span class="rl">金币</span></span>
+  <span class="res" id="resGold" title="利息：每10金+1，上限3。下回合利息预览见绿色数字" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/svg%3E&quot;)"><span class="rv" id="gold">5</span><span class="ri" id="interest"></span><span class="rl">金币</span></span>
   <span class="res" id="resPop" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Ccircle cx='9' cy='8' r='3.2'/%3E%3Cpath d='M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5z'/%3E%3Ccircle cx='17' cy='9' r='2.5'/%3E%3Cpath d='M15.5 14c2.9.3 5.5 2 5.5 5h-4.6z'/%3E%3C/svg%3E&quot;)"><span class="rv"><span id="pop">0</span>/<span id="popMax">11</span></span><span class="rl">人口</span></span>
   <span class="res" id="resStreak" title="连胜/连败 3→+1金、5→+2金、7+→+3金" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3c.5 3-4 5.5-4 9.5a4 4 0 0 0 8 0C16 9 13 8 12 3z'/%3E%3Cpath d='M12 17.5a2.5 2.5 0 0 1-2.5-2.5c0-1.4 1.2-2.3 2.5-3.8 1.3 1.5 2.5 2.4 2.5 3.8a2.5 2.5 0 0 1-2.5 2.5z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="streak">0</span><span class="rl">连胜</span></span>
   <span class="tag" id="curseTag" style="display:none;cursor:help"></span>
@@ -1290,7 +1290,7 @@ body.touch .m-only { display:inline-block; }
     ③ 点【⚔ 开战】——全自动战斗，无需操作<br>
     ④ 胜利拿金币、每 5 回合掉装备；变强后再战
     <span class="is-h">💰 经济</span>
-    开局 10 金；基础收入第 2/3/4 回合为 2/3/4 金，第 5 回合起固定 5 金；胜利 +2 金；利息每 10 金 +1（上限 3，挑战规则可改变）；连胜/连败 3/5/7 → +2/+3/+4 金<br>
+    开局 5 金；基础收入第 2/3/4 回合为 2/3/4 金，第 5 回合起固定 5 金；胜利 +2 金；利息每 10 金 +1（上限 3，挑战规则可改变）；连胜/连败 3/5/7 → +2/+3/+4 金<br>
     刷新商店 2 金；买经验 5 金 +4 经验（每回合自然 +2）；卖棋 1★ 原价、合成折价（<b style="color:#ffd24a">第 1 回合不可买经验</b>）
     <span class="is-h">🏪 商店与卡池</span>
     5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）；共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费（经济封锁诅咒下商店为 4 格）<br>
@@ -2524,7 +2524,7 @@ function newGame(opts){ opts=opts||{}; runSessionId++; autoRunId++; autoBusy=fal
   flowPausedSchedulers=null;flowBattleAutoIntent=null;
   stopTickLoop(); cancelAutoFight();
   if(chapterAutoTimer){clearTimeout(chapterAutoTimer);chapterAutoTimer=null;} chapterAutoPending=false;
-  S = { round:1, hp:40, gold:10, lvl:2, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[], augs:[], tickets:0, tempBuff:null, bondRulesVersion:2,
+  S = { round:1, hp:40, gold:5, lvl:2, xp:0, streak:0, lossStreak:0, phase:'prep', endless:false, lock:false, synDone:[], augs:[], tickets:0, tempBuff:null, bondRulesVersion:2,
     teleLastSaveAt:Date.now(),
     ms:{}, curses:[], cursesData:{}, soloBoost:0, daily:false, dseed:0,
     bench:Array(BENCH).fill(null), board:Array(BOARD_H*BOARD_W).fill(null),
@@ -2552,7 +2552,7 @@ function newGame(opts){ opts=opts||{}; runSessionId++; autoRunId++; autoBusy=fal
   initBannedBonds();
   S.hp=hpMax();   // 🩸 血之契约：生命上限 40 → 25
   beginChapterReview();
-  S.gold = 10 + (hasCurse('nobond')?10:0) + (hasCurse('nojob')?15:0) + (hasCurse('nofac')?15:0)
+  S.gold = 5 + (hasCurse('nobond')?10:0) + (hasCurse('nojob')?15:0) + (hasCurse('nofac')?15:0)
               + (hasCurse('solo')?20:0) + (hasCurse('glass')?5:0) + (hasCurse('dry')?10:0);
   if(hasCurse('shortch')) S.tickets=1;
   if(S.curses.length&&!S.daily){
@@ -2601,7 +2601,7 @@ const ARENA_BOTS=[
 function arenaStats(){ return {wins:0,losses:0,maxStreak:0,maxLossStreak:0,kills:0,dmgTaken:0,goldEarned:0,goldSpent:0,bought:0,
   goldBy:{base:0,interest:0,streak:0,loss:0,win:0,syn:0,sell:0},hpLog:[],mvp:{}}; }
 function makeArenaBotState(profile,pool){ return {
-  round:1,hp:40,gold:10,lvl:2,xp:0,streak:0,lossStreak:0,phase:'prep',endless:false,arena:true,
+  round:1,hp:40,gold:5,lvl:2,xp:0,streak:0,lossStreak:0,phase:'prep',endless:false,arena:true,
   lock:false,synDone:[],augs:[],tickets:0,tempBuff:null,ms:{},curses:[],cursesData:{},soloBoost:0,daily:false,dseed:0,
   bench:Array(BENCH).fill(null),board:Array(BOARD_W*BOARD_H).fill(null),shop:[],enemyBoard:[],uid:1,log:[],items:[],
   selItem:null,selUid:null,pool,stats:arenaStats(),botProfile:profile.style,botName:profile.name,botPlan:null,botDef:false,
