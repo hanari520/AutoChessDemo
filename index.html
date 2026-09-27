@@ -1118,7 +1118,6 @@ body.touch .m-only { display:inline-block; }
     <div id="pbtns">
       <button class="btn" id="lvlBtn">买经验 (F)</button>
       <button class="btn ic" id="deployBtn" title="从场上和备战席择优选人，并稳定调整站位（R）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Crect x='4' y='13' width='16' height='7'/%3E%3Cpath d='M12 3v8M8.5 7.5L12 4l3.5 3.5'/%3E%3C/svg%3E&quot;)">一键上阵 (R)</button>
-      <button class="btn" id="fillDeployBtn" title="保留场上棋子与站位，只从备战席补空位（A）">仅补位 (A)</button>
       <button class="btn ic" id="tidyBtn" title="整理备战席：把棋子按星级与同名聚拢，空位挪到最后（T）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 6h16M4 12h10M4 18h6'/%3E%3C/svg%3E&quot;)">整理 (T)</button>
       <button class="btn ic" id="sellBtn" title="出售：单击棋子后按 E（或 X / Delete）；也可直接把棋子拖到这里或拖到下方商店卡片区松手（1★原价、合成折价；装备卸回装备栏）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M8 12h7M12.5 9.5L15 12l-2.5 2.5'/%3E%3C/svg%3E&quot;)">出售 (E)</button>
     </div>
@@ -1313,7 +1312,7 @@ body.touch .m-only { display:inline-block; }
     ⛓ <b>装备合成</b>：两件基础装合成 1 件成品；每名棋子最多穿 3 件，全部装备与配方见 <b>图鉴 → 📦装备</b>
     <span class="is-h">⌨️ 操作</span>
     单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）<br>
-    快捷键：<b>R</b> 择优上阵 · <b>A</b> 仅补空位 · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战；点【🏁 结束挑战】收兵结算（需二次确认）
+    快捷键：<b>R/A</b> 一键上阵（择优） · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战；点【🏁 结束挑战】收兵结算（需二次确认）
     <span class="is-h">🎮 模式与荣誉</span>
     开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（与每日挑战共用 12 条规则，单选一条）；✦ <b>巡演企划</b>（剧情模式）在新建对局卡片，点击直接进入<br>
     【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（17 项）· 🏆 本地排行 · 🌍 全球排行<br>
@@ -3659,7 +3658,7 @@ function renderTop(){
   if(popTagEl) popTagEl.classList.toggle('pop-warn', !!popLazy);
   $('deployBtn').classList.toggle('pulse', !!popLazy);
   $('deployBtn').title = popLazy
-    ? `⚠ 场上只上了 ${pop}/${S.lvl} 人，还有空位——按 R 择优上阵，或按 A 仅补位`
+    ? `⚠ 场上只上了 ${pop}/${S.lvl} 人，还有空位——按 R 择优上阵（或拖动棋子）`
     : '从场上与备战席择优选人，并稳定调整站位（R）';
   $('streak').textContent=S.streak;
   const need=xpNeed(S.lvl);
@@ -4530,7 +4529,7 @@ function lineupScore(team){
   const balance=team.length>=3?(fronts?Math.min(fronts,2)*16:-38)+(backs?16:-22):0;
   return team.reduce((n,u)=>n+unitLinePower(u),0)+teamSynScore(team)*8+balance;
 }
-/* 场上、备战席共用的确定性选人器。固定成员用于“仅补位”与开战兜底。 */
+/* 场上、备战席共用的确定性选人器。固定成员用于开战兜底补位。 */
 function selectLineup(all,limit,fixed=[]){
   const team=[...fixed], pool=all.filter(u=>!fixed.some(f=>f.uid===u.uid));
   while(team.length<limit&&pool.length){
@@ -4647,12 +4646,6 @@ function fillOpenSlots(){
   S.bench=S.bench.map(u=>u&&up.has(u.uid)?null:u);
   return picked.length;
 }
-function autoDeployFill(){
-  if(S.phase!=='prep') return;
-  const added=fillOpenSlots();
-  if(added){sfx('deploy');renderAll();log(`⚡ 仅补位：补入 ${added} 名棋子，原有站位不变`);}
-  else log('⚡ 仅补位：没有可补的空位');
-}
 function autoDeploy(){
   if(S.phase!=='prep')return;
   const all=[...S.board,...S.bench].filter(Boolean);
@@ -4673,7 +4666,6 @@ function autoDeploy(){
   log(`⚡ 一键上阵：上场 ${team.length} 名，替换 ${replaced} 名，调整站位 ${moved} 名`);
 }
 $('deployBtn').onclick=autoDeploy;
-$('fillDeployBtn').onclick=autoDeployFill;
 /* 整理备战席：高的星级在前、同名棋子相邻（便于合成）、空位挪到最后 */
 function tidyBench(){
   if(S.phase!=='prep') return;
@@ -4715,8 +4707,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='d'||e.key==='D')$('refreshBtn').click();
   if(e.key==='f'||e.key==='F')$('lvlBtn').click();
   if(e.key==='l'||e.key==='L')$('lockBtn').click();
-  if(e.key==='r'||e.key==='R')autoDeploy();
-  if(e.key==='a'||e.key==='A')autoDeployFill();
+  if(e.key==='a'||e.key==='A'||e.key==='r'||e.key==='R')autoDeploy();   // R / A 均可一键上阵
   if(e.key==='t'||e.key==='T')tidyBench();
   if((e.key==='Delete'||e.key==='x'||e.key==='X'||e.key==='e'||e.key==='E')&&S.phase==='prep'&&S.selUid!=null)sellSelected();
   if(e.key===' '&&S.phase==='prep'){ e.preventDefault(); $('fightBtn').click(); }
@@ -5091,7 +5082,7 @@ function applyBoardCurse(units,board=S.board,dm=dailyMods()){
     if(p.reduce)u.dmgReduce=1-(1-(u.dmgReduce||0))*(1-p.reduce);
   }
 }
-/* 开战人口兜底：场上人数 < 人口上限且备战席有货时，复用仅补位规则。
+/* 开战人口兜底：场上人数 < 人口上限且备战席有货时，复用统一补位规则（fillOpenSlots）。
    两条红线：①只往空格放棋子，绝不移动/重排玩家已有站位（不调 placeFormation 全队重排）；
    ②绝不触发 tryMerge（合成会吞掉玩家已在场的同名棋子，等同改阵型）。合成机会留给玩家手动。 */
 function fillBoardBeforeBattle(){
@@ -8065,7 +8056,6 @@ if(IS_TOUCH && typeof document!=='undefined' && document.body){
   document.body.classList.add('touch');
   const rel=(id,txt)=>{ const b=document.getElementById(id); if(b) b.textContent=txt; };
   rel('deployBtn','⚡ 一键上阵');
-  rel('fillDeployBtn','仅补位');
   rel('tidyBtn','🧹 整理备战席');
   rel('refreshBtn','🔄 刷新 -2💰');
   rel('fightBtn','⚔ 开战');

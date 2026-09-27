@@ -93,7 +93,7 @@ module.exports.run = function (A) {
     ok(l0 === l1, '一键上阵连续点击保持同一阵型');
   }
 
-  console.log('[b2] 满人口换人 / 装备价值 / 仅补位');
+  console.log('[b2] 满人口换人 / 装备价值');
   {
     globalThis.newGame();
     const old=mk('ein'), other=mk('yujiu'), strong=mk('goutan');
@@ -116,13 +116,6 @@ module.exports.run = function (A) {
     A.S.bench=Array(8).fill(null);A.S.bench[0]=geared;A.S.lvl=1;
     globalThis.autoDeploy();
     ok(A.S.board.some(u=>u&&u.uid===geared.uid), '同属性棋子优先保留穿装备者');
-
-    globalThis.newGame();
-    const fixed=mk('ein'), addition=mk('goutan');
-    A.S.board=freshBoard();A.S.board[45]=fixed;
-    A.S.bench=Array(8).fill(null);A.S.bench[0]=addition;A.S.lvl=2;
-    globalThis.autoDeployFill();
-    ok(A.S.board[45]===fixed&&A.S.board.some(u=>u&&u.uid===addition.uid), '仅补位保留已有棋子和站位');
   }
 
   /* ---------- c. 整理备战席同名相邻 ---------- */
