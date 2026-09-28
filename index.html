@@ -3112,7 +3112,7 @@ const SFX_SKILL={cleave:'slash',dash:'slash',shred:'slash',rapid:'slash',
 const _sfxLast={}; let _sfxVoices=0, _sfxSeed=0x19a4e317;
 const _sfxActive=[];
 const _sfxBuffers=new Map(),_sfxLoading=new Map();
-const SFX_ASSET_ROOT='assets/audio/v1/';
+const SFX_ASSET_ROOT='assets/audio/v2/';
 function sfxAssetPath(key,unitId){
   if(unitId&&/^[a-zA-Z0-9]+$/.test(unitId))return SFX_ASSET_ROOT+'skills/'+unitId+'.wav';
   return SFX_ASSET_ROOT+'events/'+key+'.wav';
