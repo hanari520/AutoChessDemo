@@ -5,21 +5,24 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const bankRoot = path.join(root, 'assets', 'audio', 'v2');
+const bankRoot = path.join(root, 'assets', 'audio', 'v3');
 const manifest = JSON.parse(fs.readFileSync(path.join(bankRoot, 'manifest.json'), 'utf8'));
-assert.equal(manifest.version, 'dream-magic-orchestral-v2');
-assert.equal(manifest.style.id, 'dream-magic-orchestral');
-assert.deepEqual(manifest.style.layers, ['celesta', 'harp', 'strings', 'brass', 'timpani', 'magic-shimmer']);
+assert.equal(manifest.version, 'retro-arcade-v3');
+assert.equal(manifest.style.id, 'retro-arcade');
+assert.deepEqual(manifest.style.layers, ['square-wave', 'triangle-wave', 'noise-percussion', 'arpeggio', 'pitch-slides', 'bit-reduction']);
 assert.match(manifest.method, /deterministic local synthesis/);
 assert.equal(manifest.skills.length, 50, 'every playable unit has a signature cue');
 assert.ok(manifest.events.length >= 60, 'system and synergy cues are included');
 
 const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-assert.match(page, /const SFX_ASSET_ROOT='assets\/audio\/v2\//);
-assert.match(worker, /const CACHE = 'vcache-v87-dream-orchestral'/);
-assert.match(worker, /\.\/assets\/audio\/v2\/manifest\.json/);
-assert.doesNotMatch(worker, /\.\/assets\/audio\/v1\//);
+assert.match(page, /const SFX_ASSET_ROOT='assets\/audio\/v3\//);
+const fallbackDefs = page.match(/const SFX_DEF=\{[\s\S]*?\n\};/)?.[0];
+assert.ok(fallbackDefs, 'fallback sound definitions should be available');
+assert.doesNotMatch(fallbackDefs, /type:'sine'/, 'fallback tones should keep the retro arcade timbre');
+assert.match(worker, /const CACHE = 'vcache-v88-retro-arcade'/);
+assert.match(worker, /\.\/assets\/audio\/v3\/manifest\.json/);
+assert.doesNotMatch(worker, /\.\/assets\/audio\/v[12]\//);
 
 const ids = [
   ...manifest.skills.map(id => ['skills', id]),
