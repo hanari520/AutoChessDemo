@@ -1136,6 +1136,24 @@ body.touch .m-only { display:inline-block; }
   #bench { grid-template-columns:var(--bcell); grid-template-rows:repeat(8,var(--bcell)); }
 }
 
+/* ==== 玩法说明分段卡片 ==== */
+.help-doc { max-width:640px; margin:0 auto; display:flex; flex-direction:column; gap:9px; font-size:14px; text-align:left; }
+.help-intro { margin:0; color:#69799d; text-align:center; line-height:1.65; }
+.help-sec { margin:0; padding:11px 14px; border:1px solid rgba(119,145,206,.24); border-radius:15px; background:rgba(247,250,255,.86); }
+.help-h { margin:0 0 5px; color:#6674b8; font-size:15px; font-weight:800; letter-spacing:.02em; }
+.help-sec p { margin:0 0 5px; }
+.help-sec p:last-child { margin-bottom:0; }
+.help-list { margin:0; padding-left:1.3em; display:flex; flex-direction:column; gap:4px; }
+.help-list li { margin:0; }
+.help-list li::marker { color:#957ec5; }
+.help-ol { list-style: none; counter-reset: helpstep; padding-left:0; }
+.help-ol li { counter-increment: helpstep; padding-left:1.6em; position:relative; }
+.help-ol li::before { content:counter(helpstep); position:absolute; left:0; top:.15em; width:1.15em; height:1.15em; border-radius:50%; color:#fff; background:linear-gradient(135deg,#63cbbb,#8498ed); font-size:11px; font-weight:800; line-height:1.15em; text-align:center; }
+html[data-theme="dark"] .help-intro { color:#adbbda; }
+html[data-theme="dark"] .help-sec { border-color:rgba(149,171,227,.22); background:rgba(35,49,83,.8); }
+html[data-theme="dark"] .help-h { color:#c3c9ff; }
+
+
 </style>
 <link rel="stylesheet" href="tools/idol-ui.css?v=2">
 <link rel="stylesheet" href="tools/idol-redesign.css?v=11">
@@ -1156,7 +1174,7 @@ body.touch .m-only { display:inline-block; }
   <span class="res" id="resHp" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 21C7.2 16.7 3 13.4 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 4.4-4.2 7.7-9 12z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="hp">40</span><span class="rl">生命</span></span>
   <span class="res" id="resGold" title="利息：每10金+1，上限3。下回合利息预览见绿色数字" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/svg%3E&quot;)"><span class="rv" id="gold">5</span><span class="ri" id="interest"></span><span class="rl">金币</span></span>
   <span class="res" id="resPop" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Ccircle cx='9' cy='8' r='3.2'/%3E%3Cpath d='M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5z'/%3E%3Ccircle cx='17' cy='9' r='2.5'/%3E%3Cpath d='M15.5 14c2.9.3 5.5 2 5.5 5h-4.6z'/%3E%3C/svg%3E&quot;)"><span class="rv"><span id="pop">0</span>/<span id="popMax">11</span></span><span class="rl">人口</span></span>
-  <span class="res" id="resStreak" title="连胜/连败 3→+1金、5→+2金、7+→+3金" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3c.5 3-4 5.5-4 9.5a4 4 0 0 0 8 0C16 9 13 8 12 3z'/%3E%3Cpath d='M12 17.5a2.5 2.5 0 0 1-2.5-2.5c0-1.4 1.2-2.3 2.5-3.8 1.3 1.5 2.5 2.4 2.5 3.8a2.5 2.5 0 0 1-2.5 2.5z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="streak">0</span><span class="rl">连胜</span></span>
+  <span class="res" id="resStreak" title="连胜/连败 3→+2金、5→+3金、7+→+4金" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3c.5 3-4 5.5-4 9.5a4 4 0 0 0 8 0C16 9 13 8 12 3z'/%3E%3Cpath d='M12 17.5a2.5 2.5 0 0 1-2.5-2.5c0-1.4 1.2-2.3 2.5-3.8 1.3 1.5 2.5 2.4 2.5 3.8a2.5 2.5 0 0 1-2.5 2.5z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="streak">0</span><span class="rl">连胜</span></span>
   <span class="tag" id="curseTag" style="display:none;cursor:help"></span>
   <span class="tag" id="ticketTag" style="cursor:help" title="升星券：把一名 3★ 棋子升为 4★。来源：守关胜利、挑战规则补偿。用法：点击 3★ 棋子 → 详情面板金色按钮">券 ×0</span>
   <span class="spacer"></span>
@@ -1366,43 +1384,94 @@ body.touch .m-only { display:inline-block; }
 </div>
 <div id="inspect" class="hidden"></div>
 <div id="helpTemplate" hidden>
-  <div id="helpTemplateContent" style="max-width:560px;line-height:1.7;font-size:14px;text-align:left">
-    单机自动战斗棋局 · VirtuaReal + P-SP 50 名主播 · 限量卡池 · 普通模式四章共 100 回合
-    <span class="is-h">🎯 目标</span>
-    买棋 → 上阵 → 自动战斗。普通模式在第 25、50、75 回合击败章节首领并选择增强，第 100 回合击败最终首领即通关并结算排名。
-    <span class="is-h">🕹 上手四步</span>
-    ① 在下方商店买棋子（同名收 3 个自动升星：1★→2★→3★）<br>
-    ② 点【⚡ 一键上阵】自动布阵，或把棋子拖到棋盘（人口 = 等级，11 级封顶）<br>
-    ③ 点【⚔ 开战】——全自动战斗，无需操作<br>
-    ④ 胜利拿金币、每 5 回合掉装备；变强后再战
-    <span class="is-h">💰 经济</span>
-    开局 5 金；基础收入第 2/3/4 回合为 2/3/4 金，第 5 回合起固定 5 金；胜利 +2 金；利息每 10 金 +1（上限 3，挑战规则可改变）；连胜/连败 3/5/7 → +2/+3/+4 金<br>
-    刷新商店 2 金；买经验 5 金 +4 经验（每回合自然 +2）；卖棋 1★ 原价、合成折价（<b style="color:#ffd24a">第 1 回合不可买经验</b>）
-    <span class="is-h">🏪 商店与卡池</span>
-    5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）；共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费（经济封锁诅咒下商店为 4 格）<br>
-    卡片速读：左侧<b>色条</b> = 费用；<span style="color:#ffd24a">金边 = 对子</span>（买到即升星）；徽章并列 <span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span>
-    <span class="is-h">🔗 羁绊（12 阵营 + 10 职业）</span>
-    按<b>不同棋子</b>计数、达标触发 T1/T2；<b style="color:#8dff9a">首次达成每档 +1 金</b>。左侧竖栏看进度，棋子右上角显示所属羁绊图标，完整效果在<b>图鉴 → 🔗羁绊</b>。
-    <span class="is-h">⚔ 战斗规则</span>
-    蓝量 50（开局双方各 +15），靠攻击 / 受击回蓝（受击回蓝占所受伤害 20%~40%；沉默期间减半但不归零）；战斗采用固定速度，<b>全场至少错峰 800ms、同一方</b>技能至少错峰 1200ms 释放；护甲边际递减、魔抗百分比乘算、任意伤害 5% 保底<br>
-    克制关系：烧蓝/沉默克法师 · 破盾克护盾 · 减疗克奶妈 · 嘲讽克刺客 · 净化克控制
-    <span class="is-h">🎁 野怪回合（每 5 回合）</span>
-    胜利掉 2 件装备、失败也保底 1 件；不扣血、不影响连胜。头目真实占据 2×2 格（近战可从任意相邻格攻击它）。
-    普通模式每逢第 10 回合的非守关野怪战，可在备战期选择精英挑战：敌方攻血 +25%；胜利多得 2 件装备和 3 金，失败失去 3 生命。
-    <span class="is-h">👑 守关魔王（每 25 回合）</span>
-    普通模式第 25、50、75 回合必须击败章节首领，再 <b>3 选 1 全局增强</b>；第 50 回合额外获得一张升星券，每局只可拥有一枚 4★ 棋子。第 100 回合最终首领决定通关或失败。
-    第四章第 82、92 回合会有 2★ 精英棋子带队，备战期可在敌方信息栏提前看到。
-    <span class="is-h">📈 变强的手段</span>
-    🎫 <b>升星券</b>（普通模式第 50 回合守关奖励）：把一名 3★ 升为 4★——顶栏 🎫 看余量，点击 3★ 棋子使用<br>
-    🧪 <b>临时增益</b>：备战期花金币买（攻/血 +15%、开场齐射），仅本场生效、每回合限 1 个<br>
-    ⛓ <b>装备合成</b>：两件基础装合成 1 件成品；每名棋子最多穿 3 件，全部装备与配方见 <b>图鉴 → 📦装备</b>
-    <span class="is-h">⌨️ 操作</span>
-    单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）<br>
-    快捷键：<b>R/A</b> 一键上阵（择优） · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战；点【🏁 结束挑战】收兵结算（需二次确认）
-    <span class="is-h">🎮 模式与荣誉</span>
-    开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（与每日挑战共用 12 条规则，单选一条）；✦ <b>巡演企划</b>（剧情模式）在新建对局卡片，点击直接进入<br>
-    【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（17 项）· 🏆 本地排行 · 🌍 全球排行<br>
-    【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）
+  <div id="helpTemplateContent" class="help-doc">
+<p class="help-intro">单机自动战斗棋局 · VirtuaReal + P-SP 50 名主播 · 限量卡池 · 普通模式四章共 100 回合</p>
+<section class="help-sec">
+    <h3 class="help-h">🎯 目标</h3>
+    <p>买棋 → 上阵 → 自动战斗。普通模式在第 25、50、75 回合击败章节首领并选择增强，第 100 回合击败最终首领即通关并结算排名。</p>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">🕹 上手四步</h3>
+    <ol class="help-list help-ol">
+      <li>在下方商店买棋子（同名收 3 个自动升星：1★→2★→3★）</li>
+      <li>点【⚡ 一键上阵】自动布阵，或把棋子拖到棋盘（人口 = 等级，11 级封顶）</li>
+      <li>点【⚔ 开战】——全自动战斗，无需操作</li>
+      <li>胜利拿金币、每 5 回合掉装备；变强后再战</li>
+    </ol>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">💰 经济</h3>
+    <ul class="help-list">
+      <li>开局 5 金；基础收入第 2/3/4 回合为 2/3/4 金，第 5 回合起固定 5 金</li>
+      <li>胜利 +2 金；连胜/连败 3/5/7 → +2/+3/+4 金</li>
+      <li>利息每 10 金 +1（上限 3，挑战规则可改变）</li>
+      <li>刷新商店 2 金；买经验 5 金 +4 经验（每回合自然 +2）</li>
+      <li>卖棋 1★ 原价、合成折价；<b style="color:#ffd24a">第 1 回合不可买经验</b></li>
+    </ul>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">🏪 商店与卡池</h3>
+    <ul class="help-list">
+      <li>5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）</li>
+      <li>共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费（经济封锁诅咒下商店为 4 格）</li>
+      <li>卡片速读：左侧<b>色条</b> = 费用；<span style="color:#ffd24a">金边 = 对子</span>（买到即升星）</li>
+      <li>徽章并列 <span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span></li>
+    </ul>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">🔗 羁绊（12 阵营 + 10 职业）</h3>
+    <p>按<b>不同棋子</b>计数、达标触发 T1/T2；<b style="color:#8dff9a">首次达成每档 +1 金</b>。</p>
+    <p>左侧竖栏看进度，棋子右上角显示所属羁绊图标，完整效果在<b>图鉴 → 🔗羁绊</b>。</p>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">⚔ 战斗规则</h3>
+    <ul class="help-list">
+      <li>蓝量 50（开局双方各 +15），靠攻击 / 受击回蓝（受击回蓝占所受伤害 20%~40%；沉默期间减半但不归零）</li>
+      <li>战斗采用固定速度：<b>全场相邻施法至少间隔 800ms，同一方技能至少间隔 1200ms</b></li>
+      <li>护甲边际递减、魔抗百分比乘算、任意伤害 5% 保底</li>
+      <li>克制关系：烧蓝/沉默克法师 · 破盾克护盾 · 减疗克奶妈 · 嘲讽克刺客 · 净化克控制</li>
+    </ul>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">🎁 野怪回合（每 5 回合）</h3>
+    <ul class="help-list">
+      <li>胜利掉 2 件装备、失败也保底 1 件；不扣血、不影响连胜</li>
+      <li>头目真实占据 2×2 格（近战可从任意相邻格攻击它）</li>
+      <li>普通模式每逢第 10 回合的非守关野怪战，可在备战期选择精英挑战：敌方攻血 +25%；胜利多得 2 件装备和 3 金，失败失去 3 生命</li>
+    </ul>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">👑 守关魔王（每 25 回合）</h3>
+    <ul class="help-list">
+      <li>普通模式第 25、50、75 回合必须击败章节首领，再 <b>3 选 1 全局增强</b></li>
+      <li>第 50 回合额外获得一张升星券，每局只可拥有一枚 4★ 棋子</li>
+      <li>第 100 回合最终首领决定通关或失败</li>
+      <li>第四章第 82、92 回合会有 2★ 精英棋子带队，备战期可在敌方信息栏提前看到</li>
+    </ul>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">📈 变强的手段</h3>
+    <ul class="help-list">
+      <li>🎫 <b>升星券</b>（普通模式第 50 回合守关奖励）：把一名 3★ 升为 4★——顶栏 🎫 看余量，点击 3★ 棋子使用</li>
+      <li>🧪 <b>临时增益</b>：备战期花金币买（攻/血 +15%、开场齐射），仅本场生效、每回合限 1 个</li>
+      <li>⛓ <b>装备合成</b>：两件基础装合成 1 件成品；每名棋子最多穿 3 件，全部装备与配方见 <b>图鉴 → 📦装备</b></li>
+    </ul>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">⌨️ 操作</h3>
+    <p>单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）。</p>
+    <p>快捷键：<b>R/A</b> 一键上阵（择优） · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 开战</p>
+    <p>点【🏁 结束挑战】收兵结算（需二次确认）。</p>
+  </section>
+<section class="help-sec">
+    <h3 class="help-h">🎮 模式与荣誉</h3>
+    <ul class="help-list">
+      <li>开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（与每日挑战共用 12 条规则，单选一条）</li>
+      <li>✦ <b>巡演企划</b>（剧情模式）在新建对局卡片，点击直接进入</li>
+      <li>【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（17 项）· 🏆 本地排行 · 🌍 全球排行</li>
+      <li>【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）</li>
+    </ul>
+  </section>
   </div>
 </div>
 <script src="tools/daily-curses.js?v=4"></script>

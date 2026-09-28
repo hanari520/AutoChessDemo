@@ -21,7 +21,7 @@ assert.match(page, /const SFX_WAV_BANK=false/, 'wav bank stays disabled until ex
 const fallbackDefs = page.match(/const SFX_DEF=\{[\s\S]*?\n\};/)?.[0];
 assert.ok(fallbackDefs, 'fallback sound definitions should be available');
 assert.match(fallbackDefs, /type:'sine'/, 'fallback tones keep the original v79 timbre (soft sine waves present)');
-assert.match(worker, /const CACHE = 'vcache-v90-plain-tone'/);
+assert.match(worker, /const CACHE = 'vcache-v91-help-sections'/);
 assert.doesNotMatch(worker, /assets\/audio\//, 'disabled wav bank is not precached by the service worker');
 assert.doesNotMatch(worker, /\.\/assets\/audio\/v[12]\//);
 
