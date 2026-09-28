@@ -17,11 +17,12 @@ assert.ok(manifest.events.length >= 60, 'system and synergy cues are included');
 const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 assert.match(page, /const SFX_ASSET_ROOT='assets\/audio\/v3\//);
+assert.match(page, /const SFX_WAV_BANK=false/, 'wav bank stays disabled until explicitly re-enabled (2026-09-29 revert)');
 const fallbackDefs = page.match(/const SFX_DEF=\{[\s\S]*?\n\};/)?.[0];
 assert.ok(fallbackDefs, 'fallback sound definitions should be available');
-assert.doesNotMatch(fallbackDefs, /type:'sine'/, 'fallback tones should keep the retro arcade timbre');
-assert.match(worker, /const CACHE = 'vcache-v88-retro-arcade'/);
-assert.match(worker, /\.\/assets\/audio\/v3\/manifest\.json/);
+assert.match(fallbackDefs, /type:'sine'/, 'fallback tones keep the original v79 timbre (soft sine waves present)');
+assert.match(worker, /const CACHE = 'vcache-v90-plain-tone'/);
+assert.doesNotMatch(worker, /assets\/audio\//, 'disabled wav bank is not precached by the service worker');
 assert.doesNotMatch(worker, /\.\/assets\/audio\/v[12]\//);
 
 const ids = [

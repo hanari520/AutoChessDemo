@@ -3039,68 +3039,68 @@ let _actx=null, _sfxOn=true;
 try{ _sfxOn = localStorage.getItem('vc_sfx')!=='0'; }catch(e){}
 const SFX_BUS={ui:.5, battle:.42, global:.6};   // 分类音量总线（默认克制）
 const SFX_DEF={
-  buy:{t:'ui',f:[880,1318],dur:.10,type:'square',vol:.5},        // 购买：清脆金币叮
-  sell:{t:'ui',f:[520,340],dur:.13,type:'triangle',vol:.45},     // 出售：金币回笼（低沉）
-  roll:{t:'ui',f:[320,230],dur:.07,type:'square',vol:.12,noise:.25}, // 刷新：轻纸声
-  lvlup:{t:'ui',f:[440,660,880],dur:.28,type:'triangle',vol:.45},// 买经验：上扬短音
-  pop:{t:'ui',f:[392,523,659,784],dur:.45,type:'triangle',vol:.5},// 人口升级：更隆重
-  equip:{t:'ui',f:[1250,940],dur:.06,type:'square',vol:.18},     // 装备穿戴：金属轻扣
-  deploy:{t:'ui',f:[500,720],dur:.11,type:'sawtooth',vol:.2,noise:.18}, // 一键上阵：唰
-  tidy:{t:'ui',noise:.7,dur:.09,type:'noise',vol:.2},            // 整理备战席：轻刷
-  drag:{t:'ui',f:[700],dur:.045,type:'square',vol:.16},          // 拿起棋子
-  sellhint:{t:'ui',f:[900,1250],dur:.08,type:'square',vol:.28},  // 进入出售区
-  merge2:{t:'ui',f:[523,659,784],dur:.3,type:'triangle',vol:.5},     // 2★ 升星琶音
-  merge3:{t:'ui',f:[523,659,784,1046,1318],dur:.65,type:'triangle',vol:.55}, // 3★ 长琶音
-  cast:{t:'battle',f:[480,720],dur:.16,type:'square',vol:.16,priority:1}, // 蓄力环：低音量预兆
-  impactBlade:{t:'battle',noise:.45,f:[860,260],dur:.19,type:'sawtooth',vol:.34,priority:3},
-  impactArc:{t:'battle',f:[760,390],dur:.23,type:'triangle',vol:.30,noise:.13,priority:3},
-  impactWater:{t:'battle',f:[540,260],dur:.26,type:'triangle',vol:.26,noise:.24,priority:3},
-  impactPoison:{t:'battle',f:[230,135],dur:.28,type:'triangle',vol:.24,noise:.20,priority:3},
-  battleStart:{t:'global',f:[196,294,392],dur:.38,type:'triangle',vol:.36,priority:4},
-  slash:{t:'battle',noise:.5,f:[900,320],dur:.13,type:'sawtooth',vol:.3},   // 斩击 whoosh
-  spellFire:{t:'battle',f:[210,90],dur:.24,type:'sawtooth',vol:.32,noise:.25}, // 爆裂
-  spellIce:{t:'battle',f:[1500,950,620],dur:.22,type:'triangle',vol:.28},      // 冰晶
-  spellZap:{t:'battle',f:[1800,420],dur:.09,type:'square',vol:.22},            // 电弧
-  spellDark:{t:'battle',f:[300,150,80],dur:.3,type:'triangle',vol:.3,noise:.2},// 暗雾
-  heal:{t:'battle',f:[620,930],dur:.18,type:'triangle',vol:.28},  // 治疗：柔和上扬
-  shield:{t:'battle',f:[220,330],dur:.2,type:'square',vol:.3},    // 护盾：能量罩嗡
-  stunHit:{t:'battle',f:[150,80],dur:.15,type:'square',vol:.32,noise:.15}, // 控制命中：闷响
-  crit:{t:'battle',f:[1000,1650],dur:.1,type:'square',vol:.42},    // 暴击：更响更高
-  die:{t:'battle',f:[220,110],dur:.2,type:'triangle',vol:.28},     // 死亡：低沉（限流防齐响）
-  win:{t:'global',f:[523,659,784,1046],dur:.5,type:'triangle',vol:.5,priority:5},   // 胜利 jingle
-  lose:{t:'global',f:[420,300,200],dur:.5,type:'triangle',vol:.45,priority:5},      // 失败 jingle
-  finalWin:{t:'global',f:[523,659,784,1046,1318],dur:1.0,type:'triangle',vol:.55,priority:5}, // 通关
-  horn:{t:'global',f:[262,262,330],dur:.55,type:'sawtooth',vol:.32},     // 野怪号角预警
-  settle:{t:'global',f:[740],dur:.06,type:'square',vol:.16},     // 回合结算轻提示
-  splash:{t:'battle',f:[620,300],dur:.12,type:'triangle',vol:.2,noise:.3},
-  zone:{t:'battle',f:[240,360],dur:.5,type:'sawtooth',vol:.24},
-  rockcrack:{t:'battle',noise:.7,f:[180,110],dur:.18,type:'square',vol:.3},
-  dodgeleaf:{t:'battle',noise:.6,f:[900,1250],dur:.13,type:'noise',vol:.2},
-  vampbite:{t:'battle',f:[300,170],dur:.12,type:'sawtooth',vol:.16},
-  bounce:{t:'battle',f:[840,640],dur:.08,type:'square',vol:.15},
-  bleat:{t:'battle',f:[560,420,520],dur:.3,type:'sawtooth',vol:.26},
-  stShenhai:{t:'global',f:[300,210],dur:.4,type:'triangle',vol:.28,noise:.4},
-  stXingji:{t:'global',f:[700,1050,1400],dur:.4,type:'square',vol:.26},
-  stMaorong:{t:'global',f:[160,240],dur:.3,type:'sawtooth',vol:.26,noise:.3},
-  stYinlv:{t:'global',f:[880,1174],dur:.25,type:'triangle',vol:.26},
-  stSixi:{t:'global',f:[196,262,196],dur:.3,type:'triangle',vol:.26},
-  stXueyuan:{t:'global',noise:.6,dur:.15,type:'noise',vol:.2},
-  stYemu:{t:'global',f:[180,120],dur:.5,type:'sawtooth',vol:.26,noise:.3},
-  stHuayu:{t:'global',f:[1046,1318],dur:.3,type:'square',vol:.24},
-  stModao:{t:'global',f:[140,90],dur:.4,type:'sawtooth',vol:.28},
-  stSenzhi:{t:'global',noise:.6,f:[400,600],dur:.25,type:'noise',vol:.2},
-  stGongzao:{t:'global',f:[500,660],dur:.2,type:'square',vol:.2},
-  stPSP:{t:'global',f:[900,600],dur:.2,type:'square',vol:.2},
-  stDaoke:{t:'global',f:[700,520],dur:.2,type:'square',vol:.26},
-  stShouhu:{t:'global',f:[330,440],dur:.35,type:'square',vol:.28},
-  stGeshi:{t:'global',f:[660,880],dur:.35,type:'square',vol:.26},
-  stYouxia:{t:'global',noise:.5,dur:.12,type:'noise',vol:.18},
-  stFashi:{t:'global',f:[240,360,480],dur:.4,type:'square',vol:.26},
-  stZhoushu:{t:'global',f:[200,100],dur:.4,type:'triangle',vol:.26},
-  stCike:{t:'global',f:[1200,800],dur:.15,type:'square',vol:.24},
-  stKuangzhan:{t:'global',f:[150,100],dur:.35,type:'sawtooth',vol:.28,noise:.3},
-  stYizhe:{t:'global',f:[740,988],dur:.3,type:'triangle',vol:.24},
-  stOuxiang:{t:'global',f:[659,784,988],dur:.35,type:'triangle',vol:.28},
+  buy:{t:'ui',f:[880,1318],dur:.10,type:'sine',vol:.5},          // 购买：清脆金币叮
+  sell:{t:'ui',f:[520,340],dur:.13,type:'sine',vol:.45},     // 出售：金币回笼（低沉）
+  roll:{t:'ui',f:[320,230],dur:.07,type:'sine',vol:.12}, // 刷新：轻纸声
+  lvlup:{t:'ui',f:[440,660,880],dur:.28,type:'sine',vol:.45},// 买经验：上扬短音
+  pop:{t:'ui',f:[392,523,659,784],dur:.45,type:'sine',vol:.5},// 人口升级：更隆重
+  equip:{t:'ui',f:[1250,940],dur:.06,type:'sine',vol:.18},     // 装备穿戴：金属轻扣
+  deploy:{t:'ui',f:[500,720],dur:.11,type:'sine',vol:.2}, // 一键上阵：唰
+  tidy:{t:'ui',f:[520,660],dur:.09,type:'sine',vol:.2},            // 整理备战席：轻刷
+  drag:{t:'ui',f:[700],dur:.045,type:'sine',vol:.16},            // 拿起棋子
+  sellhint:{t:'ui',f:[900,1250],dur:.08,type:'sine',vol:.28},    // 进入出售区
+  merge2:{t:'ui',f:[523,659,784],dur:.3,type:'sine',vol:.5},     // 2★ 升星琶音
+  merge3:{t:'ui',f:[523,659,784,1046,1318],dur:.65,type:'sine',vol:.55}, // 3★ 长琶音
+  cast:{t:'battle',f:[480,720],dur:.16,type:'sine',vol:.16,priority:1}, // 蓄力环：低音量预兆
+  impactBlade:{t:'battle',f:[860,260],dur:.19,type:'sine',vol:.34,priority:3},
+  impactArc:{t:'battle',f:[760,390],dur:.23,type:'sine',vol:.30,priority:3},
+  impactWater:{t:'battle',f:[540,260],dur:.26,type:'sine',vol:.26,priority:3},
+  impactPoison:{t:'battle',f:[230,135],dur:.28,type:'sine',vol:.24,priority:3},
+  battleStart:{t:'global',f:[196,294,392],dur:.38,type:'sine',vol:.36,priority:4},
+  slash:{t:'battle',f:[900,320],dur:.13,type:'sine',vol:.3},   // 斩击 whoosh
+  spellFire:{t:'battle',f:[210,90],dur:.24,type:'sine',vol:.32}, // 爆裂
+  spellIce:{t:'battle',f:[1500,950,620],dur:.22,type:'sine',vol:.28},          // 冰晶
+  spellZap:{t:'battle',f:[1800,420],dur:.09,type:'sine',vol:.22},            // 电弧
+  spellDark:{t:'battle',f:[300,150,80],dur:.3,type:'sine',vol:.3},// 暗雾
+  heal:{t:'battle',f:[620,930],dur:.18,type:'sine',vol:.28},       // 治疗：柔和上扬
+  shield:{t:'battle',f:[220,330],dur:.2,type:'sine',vol:.3},       // 护盾：能量罩嗡
+  stunHit:{t:'battle',f:[150,80],dur:.15,type:'sine',vol:.32}, // 控制命中：闷响
+  crit:{t:'battle',f:[1000,1650],dur:.1,type:'sine',vol:.42},    // 暴击：更响更高
+  die:{t:'battle',f:[220,110],dur:.2,type:'sine',vol:.28},     // 死亡：低沉（限流防齐响）
+  win:{t:'global',f:[523,659,784,1046],dur:.5,type:'sine',vol:.5,priority:5},   // 胜利 jingle
+  lose:{t:'global',f:[420,300,200],dur:.5,type:'sine',vol:.45,priority:5},      // 失败 jingle
+  finalWin:{t:'global',f:[523,659,784,1046,1318],dur:1.0,type:'sine',vol:.55,priority:5}, // 通关
+  horn:{t:'global',f:[262,262,330],dur:.55,type:'sine',vol:.32},     // 野怪号角预警
+  settle:{t:'global',f:[740],dur:.06,type:'sine',vol:.16},       // 回合结算轻提示
+  splash:{t:'battle',f:[620,300],dur:.12,type:'sine',vol:.2},
+  zone:{t:'battle',f:[240,360],dur:.5,type:'sine',vol:.24},
+  rockcrack:{t:'battle',f:[180,110],dur:.18,type:'sine',vol:.3},
+  dodgeleaf:{t:'battle',f:[900,1250],dur:.13,type:'sine',vol:.2},
+  vampbite:{t:'battle',f:[300,170],dur:.12,type:'sine',vol:.16},
+  bounce:{t:'battle',f:[840,640],dur:.08,type:'sine',vol:.15},
+  bleat:{t:'battle',f:[560,420,520],dur:.3,type:'sine',vol:.26},
+  stShenhai:{t:'global',f:[300,210],dur:.4,type:'sine',vol:.28},
+  stXingji:{t:'global',f:[700,1050,1400],dur:.4,type:'sine',vol:.26},
+  stMaorong:{t:'global',f:[160,240],dur:.3,type:'sine',vol:.26},
+  stYinlv:{t:'global',f:[880,1174],dur:.25,type:'sine',vol:.26},
+  stSixi:{t:'global',f:[196,262,196],dur:.3,type:'sine',vol:.26},
+  stXueyuan:{t:'global',f:[420,560],dur:.15,type:'sine',vol:.2},
+  stYemu:{t:'global',f:[180,120],dur:.5,type:'sine',vol:.26},
+  stHuayu:{t:'global',f:[1046,1318],dur:.3,type:'sine',vol:.24},
+  stModao:{t:'global',f:[140,90],dur:.4,type:'sine',vol:.28},
+  stSenzhi:{t:'global',f:[400,600],dur:.25,type:'sine',vol:.2},
+  stGongzao:{t:'global',f:[500,660],dur:.2,type:'sine',vol:.2},
+  stPSP:{t:'global',f:[900,600],dur:.2,type:'sine',vol:.2},
+  stDaoke:{t:'global',f:[700,520],dur:.2,type:'sine',vol:.26},
+  stShouhu:{t:'global',f:[330,440],dur:.35,type:'sine',vol:.28},
+  stGeshi:{t:'global',f:[660,880],dur:.35,type:'sine',vol:.26},
+  stYouxia:{t:'global',f:[520,700],dur:.12,type:'sine',vol:.18},
+  stFashi:{t:'global',f:[240,360,480],dur:.4,type:'sine',vol:.26},
+  stZhoushu:{t:'global',f:[200,100],dur:.4,type:'sine',vol:.26},
+  stCike:{t:'global',f:[1200,800],dur:.15,type:'sine',vol:.24},
+  stKuangzhan:{t:'global',f:[150,100],dur:.35,type:'sine',vol:.28},
+  stYizhe:{t:'global',f:[740,988],dur:.3,type:'sine',vol:.24},
+  stOuxiang:{t:'global',f:[659,784,988],dur:.35,type:'sine',vol:.28},
 };
 const SFX_SKILL={cleave:'slash',dash:'slash',shred:'slash',rapid:'slash',
   fireball:'spellFire',burn:'spellFire',volley:'spellFire',
@@ -3112,12 +3112,14 @@ const SFX_SKILL={cleave:'slash',dash:'slash',shred:'slash',rapid:'slash',
 const _sfxLast={}; let _sfxVoices=0, _sfxSeed=0x19a4e317;
 const _sfxActive=[];
 const _sfxBuffers=new Map(),_sfxLoading=new Map();
+const SFX_WAV_BANK=false;   // 2026-09-29 用户反馈生成音效太吵：停用 wav 音频库；SFX_DEF 全部统一为纯 sine 普通提示音（无 square/sawtooth/噪声层）；改 true 恢复 wav 库
 const SFX_ASSET_ROOT='assets/audio/v3/';
 function sfxAssetPath(key,unitId){
   if(unitId&&/^[a-zA-Z0-9]+$/.test(unitId))return SFX_ASSET_ROOT+'skills/'+unitId+'.wav';
   return SFX_ASSET_ROOT+'events/'+key+'.wav';
 }
 function warmSfxAsset(path,ctx=sfxCtx()){
+  if(!SFX_WAV_BANK)return;
   if(!ctx||typeof fetch!=='function'||typeof ctx.decodeAudioData!=='function'||_sfxBuffers.has(path)||_sfxLoading.has(path))return;
   const pending=fetch(path).then(res=>res.ok?res.arrayBuffer():null)
     .then(data=>data?ctx.decodeAudioData(data):null)

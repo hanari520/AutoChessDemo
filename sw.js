@@ -1,20 +1,12 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v88-retro-arcade';
-const INDEX_ASSET = './index.html?v=88';
+const CACHE = 'vcache-v90-plain-tone';
+const INDEX_ASSET = './index.html?v=89';
 const ASSETS = ['./tools/daily-curses.js?v=4', './tools/bond-runtime.js?v=1', './tools/narrative-tour.js?v=1', './tools/narrative-bar.js?v=1', './tools/narrative-bar.css?v=2', './tools/solo-ui.css?v=3', './tools/solo-modes.js?v=4', './tools/campaign-map.js?v=2', './tools/solo-ui.js?v=4', './tools/solo-host.js?v=6', './', INDEX_ASSET, './manifest.json', './icon-192.png', './icon-512.png', './assets/redraw_manifest.json', './assets/skill_signature_manifest.json', './assets/syn/synergy-atlas.png', './assets/fx/v3-blade.png', './assets/fx/v3-arc.png', './assets/fx/v3-ward.png', './assets/fx/v3-void.png', './assets/fx/skill-skate-trail.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js?v=9', './tools/idol-ui.css?v=2', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=11', './tools/idol-ui-redesign.js?v=5', './tools/mobile-stage.css?v=2', './tools/idol-dark.css?v=4', './tools/stage-themes.css?v=2', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png', './assets/ui/idol-arena-night.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(async c => {
     await c.addAll(ASSETS);
-    try {
-      const response = await fetch('./assets/audio/v3/manifest.json');
-      if (response.ok) {
-        const bank = await response.json();
-        const audio = ['./assets/audio/v3/manifest.json',
-          ...(bank.skills || []).map(id => `./assets/audio/v3/skills/${id}.wav`),
-          ...(bank.events || []).map(key => `./assets/audio/v3/events/${key}.wav`)];
-        await c.addAll(audio);
-      }
-    } catch (err) { /* 音频缓存失败时仍保留可离线运行的游戏主体 */ }
+    /* 2026-09-29：wav 音频库已停用（SFX_WAV_BANK=false，回退 v79 原始合成音效），
+       不再预缓存对应 wav 目录；素材保留在仓库，改回开关后按需懒加载即可。 */
   }).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
