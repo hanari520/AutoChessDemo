@@ -1315,6 +1315,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
     <div class="flow-actions flow-home-actions">
       <button id="homeContinue" class="flow-primary" type="button" hidden>继续对局</button>
       <button id="homeNew" class="flow-secondary" type="button">新建对局</button>
+      <button id="homeOnline" class="flow-secondary" type="button">八人联机原型 · 好友房间</button>
       <button id="homeHelp" class="flow-link" type="button">玩法说明</button>
       <button id="homeHistory" class="flow-link" type="button">战绩与荣誉</button>
       <button id="homeTheme" class="flow-link" type="button" aria-label="切换显示主题">切换主题</button>
@@ -7742,6 +7743,7 @@ function trapFlowKeys(e){
 document.addEventListener('keydown',trapFlowKeys,true);
 $('homeContinue').onclick=()=>continueRecommendedSave();
 $('homeNew').onclick=()=>{selMode='normal';selRunChallenge='';curseSel=[];openSetup();};
+$('homeOnline').onclick=()=>{window.location.href='./online.html';};
 $('homeHelp').onclick=showHelp;
 $('homeTheme').onclick=toggleTheme;
 $('homeHistory').onclick=()=>{histTab='log';renderHistTab();$('flowShell').classList.add('is-hidden');$('flowShell').setAttribute('aria-hidden','true');$('histModal').classList.remove('hidden');flowPage='home';historyFromHome=true;};

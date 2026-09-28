@@ -1,7 +1,8 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v91-help-sections';
-const INDEX_ASSET = './index.html?v=90';
-const ASSETS = ['./tools/daily-curses.js?v=4', './tools/bond-runtime.js?v=1', './tools/narrative-tour.js?v=1', './tools/narrative-bar.js?v=1', './tools/narrative-bar.css?v=2', './tools/solo-ui.css?v=3', './tools/solo-modes.js?v=4', './tools/campaign-map.js?v=2', './tools/solo-ui.js?v=4', './tools/solo-host.js?v=6', './', INDEX_ASSET, './manifest.json', './icon-192.png', './icon-512.png', './assets/redraw_manifest.json', './assets/skill_signature_manifest.json', './assets/syn/synergy-atlas.png', './assets/fx/v3-blade.png', './assets/fx/v3-arc.png', './assets/fx/v3-ward.png', './assets/fx/v3-void.png', './assets/fx/skill-skate-trail.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js?v=9', './tools/idol-ui.css?v=2', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=11', './tools/idol-ui-redesign.js?v=5', './tools/mobile-stage.css?v=2', './tools/idol-dark.css?v=4', './tools/stage-themes.css?v=2', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png', './assets/ui/idol-arena-night.png'];
+const CACHE = 'vcache-v94-online-battle';
+const INDEX_ASSET = './index.html?v=92';
+const ONLINE_ASSET = './online.html?v=2';
+const ASSETS = [ONLINE_ASSET, './online/client.css?v=3', './online/client.js?v=2', './tools/daily-curses.js?v=4', './tools/bond-runtime.js?v=1', './tools/narrative-tour.js?v=1', './tools/narrative-bar.js?v=1', './tools/narrative-bar.css?v=2', './tools/solo-ui.css?v=3', './tools/solo-modes.js?v=4', './tools/campaign-map.js?v=2', './tools/solo-ui.js?v=4', './tools/solo-host.js?v=6', './', INDEX_ASSET, './manifest.json', './icon-192.png', './icon-512.png', './assets/redraw_manifest.json', './assets/skill_signature_manifest.json', './assets/syn/synergy-atlas.png', './assets/fx/v3-blade.png', './assets/fx/v3-arc.png', './assets/fx/v3-ward.png', './assets/fx/v3-void.png', './assets/fx/skill-skate-trail.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js?v=9', './tools/idol-ui.css?v=2', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=11', './tools/idol-ui-redesign.js?v=5', './tools/mobile-stage.css?v=2', './tools/idol-dark.css?v=4', './tools/stage-themes.css?v=2', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png', './assets/ui/idol-arena-night.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(async c => {
     await c.addAll(ASSETS);
@@ -23,10 +24,11 @@ self.addEventListener('fetch', e => {
   // 托管策略文件：网络优先（策略常改，必须刷新即生效；离线才回退缓存）
   const isBot = e.request.url.includes('bot_strategy.js');
   if (isNav || isBot) { // 页面：网络优先，失败回退缓存（离线可玩，更新即时生效）
+    const fallback = new URL(e.request.url).pathname.endsWith('/online.html') ? ONLINE_ASSET : INDEX_ASSET;
     e.respondWith(fetch(e.request).then(res => {
-      const copy = res.clone(); caches.open(CACHE).then(c => c.put(isBot ? e.request : INDEX_ASSET, copy)).catch(() => {});
+      const copy = res.clone(); caches.open(CACHE).then(c => c.put(isBot ? e.request : fallback, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match(isBot ? e.request : INDEX_ASSET)));
+    }).catch(() => caches.match(isBot ? e.request : fallback)));
     return;
   }
   // 同源静态资源：缓存优先，按完整 URL 匹配（含 query）——不再用 ignoreSearch，避免不同参数互相覆盖

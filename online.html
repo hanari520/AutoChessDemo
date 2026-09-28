@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#eef4ff">
+  <link rel="icon" href="assets/ui/star-stage-icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="online/client.css?v=3">
+  <title>八人联机 · 星域棋战</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="index.html" aria-label="返回单机游戏">← 单机模式</a>
+    <div class="brand"><span class="brand-mark">✦</span><span>星域棋战</span><span class="brand-sub">八人联机原型</span></div>
+    <div id="connection" class="connection" role="status" aria-live="polite"><span class="status-dot"></span><span>未连接</span></div>
+  </header>
+
+  <main>
+    <section id="entryScreen" class="entry-screen" aria-labelledby="entryTitle">
+      <div class="entry-intro">
+        <p class="eyebrow">八人联机原型 · 8 SEATS</p>
+        <h1 id="entryTitle">与七位玩家<br><em>同台对弈</em></h1>
+        <p>创建房间，邀请朋友入座。八人就绪后开始同一场自走棋对局。</p>
+        <p class="prototype-note">房间、卡池、配对与战斗均由服务端控制。战斗已接入确定性技能模拟器，棋子专属效果仍在逐项对照单机规则。</p>
+        <div class="entry-steps" aria-label="联机流程"><span>01 创建或加入</span><span>02 八人就绪</span><span>03 对局开演</span></div>
+      </div>
+      <div class="entry-panel panel">
+        <h2>进入房间</h2>
+        <label for="playerName">你的昵称</label>
+        <input id="playerName" name="playerName" maxlength="20" autocomplete="nickname" placeholder="输入昵称">
+        <details class="advanced-settings"><summary>高级设置 · 联机服务地址</summary><label for="apiBase">联机服务地址</label><input id="apiBase" name="apiBase" type="url" inputmode="url" spellcheck="false" placeholder="http://localhost:8787"><p class="field-note">本地开发默认 http://localhost:8787；部署后填写联机 Worker 地址。</p></details>
+        <div class="entry-actions">
+          <button id="createBtn" class="button primary" type="button">创建八人房间</button>
+          <div class="join-row"><input id="roomCodeInput" aria-label="房间码" maxlength="12" autocapitalize="characters" placeholder="房间码"><button id="joinBtn" class="button" type="button">加入房间</button></div>
+        </div>
+        <p id="entryError" class="error-message" role="alert" hidden></p>
+        <div id="resumeBox" class="resume-box" hidden><span>找到上次对局</span><button id="resumeBtn" class="button text-button" type="button">重连房间 →</button></div>
+      </div>
+    </section>
+
+    <section id="roomScreen" class="room-screen" aria-label="联机房间" hidden>
+      <div class="room-heading">
+        <div><p class="eyebrow" id="roomCaption">ROOM LOBBY</p><h1>房间 <span id="roomCode">------</span></h1><p id="roomHint" class="muted">等待玩家入座</p></div>
+        <div class="room-controls"><button id="copyInviteBtn" class="button" type="button">复制邀请链接</button><button id="leaveBtn" class="button quiet" type="button">返回入口</button></div>
+      </div>
+      <div id="roomAlert" class="room-alert" role="alert" hidden></div>
+      <div id="lobbySection" class="lobby-layout">
+        <section class="panel"><div class="section-heading"><h2>席位</h2><span id="occupancy">0 / 8</span></div><ol id="lobbySeats" class="seat-grid" aria-label="八个玩家席位"></ol></section>
+        <aside class="panel lobby-aside"><h2>开局准备</h2><p>八名玩家都入座并点击就绪后，对局自动开始。</p><button id="lobbyReadyBtn" class="button primary wide" type="button" disabled>我已准备</button><p id="lobbyNotice" class="muted">连接房间中…</p><div class="rule-note"><strong>八人联机模式</strong><span>服务端管理共享卡池、商店、确定性战斗和淘汰。战斗事件会同步播放；棋子技能和羁绊仍在逐项对照单机规则。刷新页面可使用本机保存的令牌重连。</span></div></aside>
+      </div>
+
+      <div id="gameSection" class="game-layout" hidden>
+        <aside class="panel scoreboard-panel"><div class="section-heading"><h2>八席战况</h2><span id="aliveCount">8 人存活</span></div><ol id="scoreboard" class="scoreboard"></ol></aside>
+        <div class="game-center">
+          <section class="panel round-panel"><div class="round-head"><div><p class="eyebrow" id="phaseLabel">备战</p><h2 id="roundTitle">第 1 回合</h2></div><div id="playerStats" class="stat-row"></div></div><div id="pairingText" class="pairing-text">等待配对</div></section>
+          <section id="combatPanel" class="panel combat-panel" hidden><div class="section-heading"><h2 id="combatTitle">本轮战斗</h2><span id="combatCaption">同步服务端战斗</span></div><div id="battleArena" class="battle-arena" aria-label="战斗棋盘"></div><p id="battleFeed" class="battle-feed" aria-live="polite">等待战斗事件…</p></section>
+          <section class="panel arena-panel"><div class="section-heading"><h2 id="arenaTitle">上阵棋盘</h2><span id="boardCount">0 / 1</span></div><p class="muted small">选择一名棋子，再点击空位移动；选择棋子后也可出售。</p><div id="boardGrid" class="unit-grid board-grid" aria-label="上阵棋盘"></div></section>
+          <section class="panel bench-panel"><div class="section-heading"><h2>备战席</h2><span>8 格</span></div><div id="benchGrid" class="unit-grid bench-grid" aria-label="备战席"></div></section>
+          <section class="panel inventory-panel"><div class="section-heading"><h2>装备道具</h2><span>简化加成</span></div><div id="inventoryList" class="inventory-list"></div></section>
+          <div id="selectionBar" class="selection-bar" hidden><span id="selectionText"></span><button id="sellBtn" class="button danger" type="button">出售</button><button id="cancelSelectionBtn" class="button quiet" type="button">取消选择</button></div>
+          <section class="panel results-panel"><div class="section-heading"><h2>本回合对战</h2><span id="resultCaption">实时结算</span></div><div id="resultsList" class="results-list"></div></section>
+        </div>
+        <aside class="panel shop-panel"><div class="section-heading"><h2>商店</h2><span>共享卡池</span></div><div id="shopList" class="shop-list"></div><div class="shop-actions"><button id="rerollBtn" class="button wide" type="button">刷新 · 2 金币</button><button id="buyXpBtn" class="button wide" type="button">升级经验 · 4 金币</button><button id="gameReadyBtn" class="button primary wide" type="button">完成备战</button></div><p id="actionHint" class="muted small">等待对局开始</p></aside>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="online/client.js?v=2"></script>
+</body>
+</html>

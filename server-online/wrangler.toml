@@ -1,0 +1,15 @@
+name = "autochess-online"
+main = "src/index.js"
+compatibility_date = "2026-09-29"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "GameRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]
+
+[vars]
+# Comma-separated exact browser origins. Override for production deployment.
+ALLOWED_ORIGINS = "http://localhost:8787,http://127.0.0.1:8787,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000,http://localhost:8081,http://127.0.0.1:8081,http://localhost:5500,http://127.0.0.1:5500,https://autochess.hanari520.cn"
