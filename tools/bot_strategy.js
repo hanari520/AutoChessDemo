@@ -324,7 +324,7 @@ function botAugScore(off){
   const rarity=typeof augRarity==='function'?augRarity(off.id):1;
   let score=rarity===3?42:rarity===2?25:12;
   const carry=botBoard().slice().sort((a,b)=>botPower(b)-botPower(a))[0];
-  if(['atk','asp','skillhaste','atkmana','killmana'].includes(off.id)&&carry)score+=18;
+  if(['atk','asp','skillhaste'].includes(off.id)&&carry)score+=18;
   if(['hp','ar','mr','regen','startshield'].includes(off.id)&&S.hp<22)score+=22;
   if(off.id==='gold')score+=S.gold<40?17:6;
   if(off.weak)score*=.65;

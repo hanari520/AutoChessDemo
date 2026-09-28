@@ -37,7 +37,7 @@ module.exports.run = function (A, driveBattle) {
     close(t('sagestaff').atk, b0.atk * 1.5, 1, '贤者遗杖 +50% 攻击');
     ok(t('sagestaff').skMul >= 1.18, '贤者遗杖 技伤 +18%');
     ok(t('hexdrinker').skillVamp === 0.15, '噬魔之拥 技能吸血 15%');
-    // 2026-09-25：开局蓝量基准已从 0 改为全局 BATTLE_START_MANA（+25），
+    // 2026-09-25：开局蓝量基准已从 0 改为全局 BATTLE_START_MANA（+15），
     // 故此处断言"相对无装备基准的增量"而不是绝对值——避免常量调整后测试再次失效。
     close(t('tidejewel').mana - b0.mana, 20, 0, '蓝玉潮涌 开局 +20 蓝（相对无装备基准）');
     close(t('aegis').maxhp, b0.maxhp * 1.45, 1, '不朽圣盾 +45% 生命');

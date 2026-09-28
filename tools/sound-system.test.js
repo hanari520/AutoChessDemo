@@ -150,7 +150,7 @@ function harness({ muted = false, audio = true } = {}) {
     assert.ok(Math.abs(starts[1] - (1 + delay)) < 1e-6, `${id} impact should match effect onset`);
     assert.ok(starts[1] < 1.1, `${id} synchronous effect must sound before 260ms charge ring finishes`);
   }
-  assert.match(html, /castV3Skill[\s\S]*?skillSound\(v3Impact\(k,u\)\)/, 'V3 cast must emit mapped sound');
+  assert.match(html, /function castV3Skill[\s\S]*?const soundKey=v3Impact\(k,u\);[\s\S]*?skillSound\(soundKey,u,audioAtArrival\)/, 'V3 cast must emit its mapped sound and defer detached impacts');
   assert.match(html, /function castSkill[\s\S]*?skillSound\(skillImpact\(arch\)\)/, 'legacy cast must emit mapped sound');
   console.log('✅ V3 护盾、治疗、冰、控制、近战、雷击音色及同步效果落点');
 }

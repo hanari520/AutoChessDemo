@@ -1,6 +1,6 @@
 {
   "version": "combat-v3",
-  "description": "Runtime-linked signature and combat manifest for all 50 unique unit kits. Each unit has a bespoke skill resolver, attack profile, glyph, silhouette, accent colour, and AI-painted VFX family.",
+  "description": "Runtime-linked signature and combat manifest for all 50 unique unit kits and their skill VFX families.",
   "aiAssets": [
     "assets/fx/skill-prism.png",
     "assets/fx/skill-skate-trail.png",
@@ -9,7 +9,83 @@
     "assets/fx/v3-blade.png",
     "assets/fx/v3-arc.png",
     "assets/fx/v3-ward.png",
-    "assets/fx/v3-void.png"
+    "assets/fx/v3-void.png",
+    "assets/skill_frames/yua-projectile.webp",
+    "assets/skill_projectiles/agari-flight.webp",
+    "assets/skill_projectiles/agari-impact.webp",
+    "assets/skill_projectiles/aza-flight.webp",
+    "assets/skill_projectiles/aza-impact.webp",
+    "assets/skill_projectiles/diansu-flight.webp",
+    "assets/skill_projectiles/diansu-impact.webp",
+    "assets/skill_projectiles/goutan-flight.webp",
+    "assets/skill_projectiles/goutan-impact.webp",
+    "assets/skill_projectiles/huali-flight.webp",
+    "assets/skill_projectiles/huali-impact.webp",
+    "assets/skill_projectiles/huize-flight.webp",
+    "assets/skill_projectiles/huize-impact.webp",
+    "assets/skill_projectiles/kroya-flight.webp",
+    "assets/skill_projectiles/kroya-impact.webp",
+    "assets/skill_projectiles/likou-flight.webp",
+    "assets/skill_projectiles/likou-impact.webp",
+    "assets/skill_projectiles/miki-flight.webp",
+    "assets/skill_projectiles/miki-impact.webp",
+    "assets/skill_projectiles/miting-flight.webp",
+    "assets/skill_projectiles/miting-impact.webp",
+    "assets/skill_projectiles/mumu-flight.webp",
+    "assets/skill_projectiles/mumu-impact.webp",
+    "assets/skill_projectiles/nana7mi-flight.webp",
+    "assets/skill_projectiles/nana7mi-impact.webp",
+    "assets/skill_projectiles/pako-flight.webp",
+    "assets/skill_projectiles/pako-impact.webp",
+    "assets/skill_projectiles/ruiya-flight.webp",
+    "assets/skill_projectiles/ruiya-impact.webp",
+    "assets/skill_projectiles/sanli-flight.webp",
+    "assets/skill_projectiles/sanli-impact.webp",
+    "assets/skill_projectiles/shengge-flight.webp",
+    "assets/skill_projectiles/shengge-impact.webp",
+    "assets/skill_projectiles/sishi-flight.webp",
+    "assets/skill_projectiles/sishi-impact.webp",
+    "assets/skill_projectiles/suiji-flight.webp",
+    "assets/skill_projectiles/suiji-impact.webp",
+    "assets/skill_projectiles/tiandou-flight.webp",
+    "assets/skill_projectiles/tiandou-impact.webp",
+    "assets/skill_projectiles/xuezhu-flight.webp",
+    "assets/skill_projectiles/xuezhu-impact.webp",
+    "assets/skill_projectiles/yua-impact.webp",
+    "assets/skill_projectiles/yujiu-flight.webp",
+    "assets/skill_projectiles/yujiu-impact.webp",
+    "assets/skill_projectiles/zeyin-flight.webp",
+    "assets/skill_projectiles/zeyin-impact.webp",
+    "assets/skill_slashes/chiharu-impact.webp",
+    "assets/skill_slashes/chiharu-slash.webp",
+    "assets/skill_slashes/haruka-impact.webp",
+    "assets/skill_slashes/haruka-slash.webp",
+    "assets/skill_slashes/hoshimi-impact.webp",
+    "assets/skill_slashes/hoshimi-slash.webp",
+    "assets/skill_slashes/kouichi-impact.webp",
+    "assets/skill_slashes/kouichi-slash.webp",
+    "assets/skill_slashes/lianshiye-impact.webp",
+    "assets/skill_slashes/lianshiye-slash.webp",
+    "assets/skill_slashes/mahiru-impact.svg",
+    "assets/skill_slashes/mahiru-slash.svg",
+    "assets/skill_slashes/miyue-impact.webp",
+    "assets/skill_slashes/miyue-slash.webp",
+    "assets/skill_slashes/nox-impact.webp",
+    "assets/skill_slashes/nox-slash.webp",
+    "assets/skill_slashes/rinco-impact.svg",
+    "assets/skill_slashes/rinco-slash.svg",
+    "assets/skill_slashes/shadow-impact.webp",
+    "assets/skill_slashes/shadow-slash.webp",
+    "assets/skill_slashes/shiliu-impact.webp",
+    "assets/skill_slashes/shiliu-slash.webp",
+    "assets/skill_slashes/songlv-impact.svg",
+    "assets/skill_slashes/songlv-slash.svg",
+    "assets/skill_slashes/youyu-impact.webp",
+    "assets/skill_slashes/youyu-slash.webp",
+    "assets/skill_slashes/yukie-impact.webp",
+    "assets/skill_slashes/yukie-slash.webp",
+    "assets/skill_slashes/zhijin-impact.webp",
+    "assets/skill_slashes/zhijin-slash.webp"
   ],
   "units": [
     {
@@ -38,7 +114,9 @@
       "attackStyle": "blade",
       "attackEffect": "bleed",
       "attackMultiplier": 1.005,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/kouichi-impact.webp",
+      "slashArt": "assets/skill_slashes/kouichi-slash.webp"
     },
     {
       "id": "yua",
@@ -48,11 +126,13 @@
       "shape": "gear",
       "color": "#b989ff",
       "skillMode": "single",
+      "projectileFrames": "assets/skill_frames/yua-projectile.webp",
       "description": "向最远敌人发射记忆碎片，造成 225% 法术伤害，烧毁 45% 当前法力并沉默 1.8 秒。",
       "attackStyle": "arc",
       "attackEffect": "spark",
       "attackMultiplier": 1.03,
-      "aiVfx": "assets/fx/v3-void.png"
+      "aiVfx": "assets/fx/v3-void.png",
+      "projectileImpact": "assets/skill_projectiles/yua-impact.webp"
     },
     {
       "id": "goutan",
@@ -66,7 +146,9 @@
       "attackStyle": "blade",
       "attackEffect": "slow",
       "attackMultiplier": 1.055,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/goutan-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/goutan-impact.webp"
     },
     {
       "id": "yujiu",
@@ -80,7 +162,9 @@
       "attackStyle": "shot",
       "attackEffect": "mana",
       "attackMultiplier": 1.105,
-      "aiVfx": "assets/fx/v3-arc.png"
+      "aiVfx": "assets/fx/v3-arc.png",
+      "projectileFlight": "assets/skill_projectiles/yujiu-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/yujiu-impact.webp"
     },
     {
       "id": "songlv",
@@ -94,7 +178,9 @@
       "attackStyle": "blade",
       "attackEffect": "spark",
       "attackMultiplier": 1.105,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/songlv-impact.svg",
+      "slashArt": "assets/skill_slashes/songlv-slash.svg"
     },
     {
       "id": "likou",
@@ -108,7 +194,9 @@
       "attackStyle": "arc",
       "attackEffect": "bleed",
       "attackMultiplier": 0.955,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/likou-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/likou-impact.webp"
     },
     {
       "id": "agari",
@@ -122,7 +210,9 @@
       "attackStyle": "pulse",
       "attackEffect": "mana",
       "attackMultiplier": 0.98,
-      "aiVfx": "assets/fx/v3-arc.png"
+      "aiVfx": "assets/fx/v3-arc.png",
+      "projectileFlight": "assets/skill_projectiles/agari-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/agari-impact.webp"
     },
     {
       "id": "hoshimi",
@@ -136,7 +226,9 @@
       "attackStyle": "blade",
       "attackEffect": "slow",
       "attackMultiplier": 1.005,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/hoshimi-impact.webp",
+      "slashArt": "assets/skill_slashes/hoshimi-slash.webp"
     },
     {
       "id": "chiharu",
@@ -150,7 +242,9 @@
       "attackStyle": "blade",
       "attackEffect": "none",
       "attackMultiplier": 1.08,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/chiharu-impact.webp",
+      "slashArt": "assets/skill_slashes/chiharu-slash.webp"
     },
     {
       "id": "suiji",
@@ -164,7 +258,9 @@
       "attackStyle": "pulse",
       "attackEffect": "bleed",
       "attackMultiplier": 1.03,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/suiji-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/suiji-impact.webp"
     },
     {
       "id": "kanban",
@@ -220,7 +316,9 @@
       "attackStyle": "arc",
       "attackEffect": "slow",
       "attackMultiplier": 1.08,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/tiandou-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/tiandou-impact.webp"
     },
     {
       "id": "aza",
@@ -234,7 +332,9 @@
       "attackStyle": "pulse",
       "attackEffect": "mana",
       "attackMultiplier": 0.93,
-      "aiVfx": "assets/fx/v3-arc.png"
+      "aiVfx": "assets/fx/v3-arc.png",
+      "projectileFlight": "assets/skill_projectiles/aza-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/aza-impact.webp"
     },
     {
       "id": "pako",
@@ -248,7 +348,9 @@
       "attackStyle": "arc",
       "attackEffect": "none",
       "attackMultiplier": 0.93,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/pako-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/pako-impact.webp"
     },
     {
       "id": "zhijin",
@@ -262,7 +364,9 @@
       "attackStyle": "blade",
       "attackEffect": "none",
       "attackMultiplier": 1.08,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/zhijin-impact.webp",
+      "slashArt": "assets/skill_slashes/zhijin-slash.webp"
     },
     {
       "id": "sishi",
@@ -276,7 +380,9 @@
       "attackStyle": "shot",
       "attackEffect": "slow",
       "attackMultiplier": 0.93,
-      "aiVfx": "assets/fx/v3-arc.png"
+      "aiVfx": "assets/fx/v3-arc.png",
+      "projectileFlight": "assets/skill_projectiles/sishi-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/sishi-impact.webp"
     },
     {
       "id": "sumi",
@@ -304,7 +410,9 @@
       "attackStyle": "blade",
       "attackEffect": "mana",
       "attackMultiplier": 1.105,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/yukie-impact.webp",
+      "slashArt": "assets/skill_slashes/yukie-slash.webp"
     },
     {
       "id": "miting",
@@ -318,7 +426,9 @@
       "attackStyle": "arc",
       "attackEffect": "bleed",
       "attackMultiplier": 1.13,
-      "aiVfx": "assets/fx/v3-arc.png"
+      "aiVfx": "assets/fx/v3-arc.png",
+      "projectileFlight": "assets/skill_projectiles/miting-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/miting-impact.webp"
     },
     {
       "id": "xuezhu",
@@ -332,7 +442,9 @@
       "attackStyle": "arc",
       "attackEffect": "mana",
       "attackMultiplier": 0.98,
-      "aiVfx": "assets/fx/v3-arc.png"
+      "aiVfx": "assets/fx/v3-arc.png",
+      "projectileFlight": "assets/skill_projectiles/xuezhu-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/xuezhu-impact.webp"
     },
     {
       "id": "zeyin",
@@ -346,7 +458,9 @@
       "attackStyle": "pulse",
       "attackEffect": "slow",
       "attackMultiplier": 1.005,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/zeyin-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/zeyin-impact.webp"
     },
     {
       "id": "sanli",
@@ -360,7 +474,9 @@
       "attackStyle": "pulse",
       "attackEffect": "spark",
       "attackMultiplier": 0.93,
-      "aiVfx": "assets/fx/v3-arc.png"
+      "aiVfx": "assets/fx/v3-arc.png",
+      "projectileFlight": "assets/skill_projectiles/sanli-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/sanli-impact.webp"
     },
     {
       "id": "diansu",
@@ -374,7 +490,9 @@
       "attackStyle": "arc",
       "attackEffect": "slow",
       "attackMultiplier": 1.03,
-      "aiVfx": "assets/fx/v3-void.png"
+      "aiVfx": "assets/fx/v3-void.png",
+      "projectileFlight": "assets/skill_projectiles/diansu-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/diansu-impact.webp"
     },
     {
       "id": "lianshiye",
@@ -388,7 +506,9 @@
       "attackStyle": "blade",
       "attackEffect": "none",
       "attackMultiplier": 1.105,
-      "aiVfx": "assets/fx/v3-void.png"
+      "aiVfx": "assets/fx/v3-void.png",
+      "slashImpact": "assets/skill_slashes/lianshiye-impact.webp",
+      "slashArt": "assets/skill_slashes/lianshiye-slash.webp"
     },
     {
       "id": "huize",
@@ -402,7 +522,9 @@
       "attackStyle": "arc",
       "attackEffect": "slow",
       "attackMultiplier": 0.98,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/huize-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/huize-impact.webp"
     },
     {
       "id": "shengge",
@@ -416,7 +538,9 @@
       "attackStyle": "pulse",
       "attackEffect": "spark",
       "attackMultiplier": 1.055,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/shengge-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/shengge-impact.webp"
     },
     {
       "id": "shadow",
@@ -430,7 +554,9 @@
       "attackStyle": "blade",
       "attackEffect": "mana",
       "attackMultiplier": 1.005,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/shadow-impact.webp",
+      "slashArt": "assets/skill_slashes/shadow-slash.webp"
     },
     {
       "id": "nox",
@@ -444,7 +570,9 @@
       "attackStyle": "blade",
       "attackEffect": "mana",
       "attackMultiplier": 1.105,
-      "aiVfx": "assets/fx/v3-void.png"
+      "aiVfx": "assets/fx/v3-void.png",
+      "slashImpact": "assets/skill_slashes/nox-impact.webp",
+      "slashArt": "assets/skill_slashes/nox-slash.webp"
     },
     {
       "id": "miyue",
@@ -458,7 +586,9 @@
       "attackStyle": "blade",
       "attackEffect": "bleed",
       "attackMultiplier": 1.005,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/miyue-impact.webp",
+      "slashArt": "assets/skill_slashes/miyue-slash.webp"
     },
     {
       "id": "huali",
@@ -472,7 +602,9 @@
       "attackStyle": "arc",
       "attackEffect": "mana",
       "attackMultiplier": 0.98,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/huali-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/huali-impact.webp"
     },
     {
       "id": "youyu",
@@ -486,7 +618,9 @@
       "attackStyle": "blade",
       "attackEffect": "none",
       "attackMultiplier": 1.105,
-      "aiVfx": "assets/fx/v3-void.png"
+      "aiVfx": "assets/fx/v3-void.png",
+      "slashImpact": "assets/skill_slashes/youyu-impact.webp",
+      "slashArt": "assets/skill_slashes/youyu-slash.webp"
     },
     {
       "id": "quanrong",
@@ -514,7 +648,9 @@
       "attackStyle": "arc",
       "attackEffect": "slow",
       "attackMultiplier": 1.105,
-      "aiVfx": "assets/fx/v3-void.png"
+      "aiVfx": "assets/fx/v3-void.png",
+      "projectileFlight": "assets/skill_projectiles/ruiya-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/ruiya-impact.webp"
     },
     {
       "id": "mumu",
@@ -528,7 +664,9 @@
       "attackStyle": "pulse",
       "attackEffect": "none",
       "attackMultiplier": 1.105,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/mumu-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/mumu-impact.webp"
     },
     {
       "id": "kroya",
@@ -542,7 +680,9 @@
       "attackStyle": "arc",
       "attackEffect": "spark",
       "attackMultiplier": 0.93,
-      "aiVfx": "assets/fx/v3-void.png"
+      "aiVfx": "assets/fx/v3-void.png",
+      "projectileFlight": "assets/skill_projectiles/kroya-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/kroya-impact.webp"
     },
     {
       "id": "shiliu",
@@ -556,7 +696,9 @@
       "attackStyle": "blade",
       "attackEffect": "slow",
       "attackMultiplier": 1.055,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/shiliu-impact.webp",
+      "slashArt": "assets/skill_slashes/shiliu-slash.webp"
     },
     {
       "id": "seki",
@@ -584,7 +726,9 @@
       "attackStyle": "blade",
       "attackEffect": "mana",
       "attackMultiplier": 1.055,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/haruka-impact.webp",
+      "slashArt": "assets/skill_slashes/haruka-slash.webp"
     },
     {
       "id": "mahiru",
@@ -598,7 +742,9 @@
       "attackStyle": "blade",
       "attackEffect": "mana",
       "attackMultiplier": 1.005,
-      "aiVfx": "assets/fx/v3-blade.png"
+      "aiVfx": "assets/fx/v3-blade.png",
+      "slashImpact": "assets/skill_slashes/mahiru-impact.svg",
+      "slashArt": "assets/skill_slashes/mahiru-slash.svg"
     },
     {
       "id": "nana7mi",
@@ -612,7 +758,9 @@
       "attackStyle": "blade",
       "attackEffect": "none",
       "attackMultiplier": 1.005,
-      "aiVfx": "assets/fx/v3-arc.png"
+      "aiVfx": "assets/fx/v3-arc.png",
+      "projectileFlight": "assets/skill_projectiles/nana7mi-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/nana7mi-impact.webp"
     },
     {
       "id": "liAn",
@@ -682,7 +830,9 @@
       "attackStyle": "arc",
       "attackEffect": "mana",
       "attackMultiplier": 0.98,
-      "aiVfx": "assets/fx/v3-ward.png"
+      "aiVfx": "assets/fx/v3-ward.png",
+      "projectileFlight": "assets/skill_projectiles/miki-flight.webp",
+      "projectileImpact": "assets/skill_projectiles/miki-impact.webp"
     },
     {
       "id": "rei",
@@ -710,7 +860,9 @@
       "attackStyle": "blade",
       "attackEffect": "slow",
       "attackMultiplier": 0.955,
-      "aiVfx": "assets/fx/v3-void.png"
+      "aiVfx": "assets/fx/v3-void.png",
+      "slashImpact": "assets/skill_slashes/rinco-impact.svg",
+      "slashArt": "assets/skill_slashes/rinco-slash.svg"
     }
   ],
   "combatSystems": {

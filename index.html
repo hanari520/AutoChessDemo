@@ -192,10 +192,37 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
   transition:left calc(.45s/var(--spd)) ease, top calc(.45s/var(--spd)) ease, transform calc(.12s/var(--spd)) ease; overflow:visible; }
 .unit.battle-unit.lunge { animation:lungeanim calc(.3s/var(--spd)) ease; z-index:80 !important; }
 @keyframes lungeanim { 0%{ transform:none } 35%{ transform:translate(var(--lx,0px),var(--ly,0px)) scale(1.07) } 100%{ transform:none } }
-.unit.battle-unit.walking .pt { animation:walkbob calc(.34s/var(--spd)) ease-in-out infinite alternate; }
+.unit.battle-unit.walking:not(.skill-acting) .pt { animation:walkbob calc(.34s/var(--spd)) ease-in-out infinite alternate; }
 @keyframes walkbob { from{ transform:translateX(-50%) translateY(0) rotate(-2.5deg) } to{ transform:translateX(-50%) translateY(-7%) rotate(2.5deg) } }
 .unit.battle-unit.hitfx .pt { animation:hitshake .18s linear; }
 @keyframes hitshake { 0%,100%{ transform:translateX(-50%) } 30%{ transform:translateX(-57%) } 65%{ transform:translateX(-43%) } }
+/* 技能只驱动立绘层，不占用棋子定位的 transform；普攻仍使用 lunge。 */
+.unit.battle-unit.skill-acting .pt { animation-duration:calc(var(--skill-dur,.62s)/var(--spd)); animation-timing-function:cubic-bezier(.22,.7,.18,1); animation-iteration-count:1; }
+.unit.battle-unit.skill-acting[data-gesture="brace"] .pt { animation-name:skillBrace; }
+.unit.battle-unit.skill-acting[data-gesture="skate"] .pt { animation-name:skillSkate; }
+.unit.battle-unit.skill-acting[data-gesture="leap"] .pt { animation-name:skillLeap; }
+.unit.battle-unit.skill-acting[data-gesture="sweep"] .pt { animation-name:skillSweep; }
+.unit.battle-unit.skill-acting[data-gesture="spin"] .pt { animation-name:skillSpin; }
+.unit.battle-unit.skill-acting[data-gesture="strike"] .pt { animation-name:skillStrike; }
+.unit.battle-unit.skill-acting[data-gesture="cast"] .pt { animation-name:skillCast; }
+.unit.battle-unit.skill-acting[data-gesture="wave"] .pt { animation-name:skillWave; }
+.unit.battle-unit.skill-acting[data-gesture="bloom"] .pt { animation-name:skillBloom; }
+.unit.battle-unit.skill-acting[data-gesture="stomp"] .pt { animation-name:skillStomp; }
+.unit.battle-unit.skill-acting[data-gesture="veil"] .pt { animation-name:skillVeil; }
+.unit.battle-unit.skill-acting[data-gesture="aim"] .pt { animation-name:skillAim; }
+@keyframes skillFrames4 { 0%,24.99%{background-position:0 0} 25%,49.99%{background-position:100% 0} 50%,74.99%{background-position:0 100%} 75%,100%{background-position:100% 100%} }
+@keyframes skillBrace { 0%,100%{transform:translateX(-50%)} 35%{transform:translateX(-50%) rotate(var(--skill-lean-in,-12deg)) scale(var(--skill-compress,.86),1.08)} 65%{transform:translateX(-50%) rotate(var(--skill-lean-out,8deg)) scale(1.09,.95)} }
+@keyframes skillSkate { 0%,100%{transform:translateX(-50%) rotate(0)} 18%{transform:translateX(-50%) translateY(6%) rotate(var(--skill-lean-in,-13deg)) scale(var(--skill-compress,.92))} 52%{transform:translateX(-43%) translateY(var(--skill-rise,-8%)) rotate(var(--skill-lean-out,12deg)) scale(1.1)} 74%{transform:translateX(-46%) rotate(var(--skill-lean-in,-8deg))} }
+@keyframes skillLeap { 0%,100%{transform:translateX(-50%) translateY(0)} 26%{transform:translateX(-50%) translateY(7%) scale(var(--skill-compress,.9))} 58%{transform:translateX(-50%) translateY(var(--skill-rise,-20%)) rotate(var(--skill-lean-out,8deg)) scale(1.12)} }
+@keyframes skillSweep { 0%,100%{transform:translateX(-50%) rotate(0)} 28%{transform:translateX(-55%) rotate(var(--skill-lean-in,-15deg))} 61%{transform:translateX(-43%) rotate(var(--skill-lean-out,17deg)) scale(1.08)} }
+@keyframes skillSpin { 0%,100%{transform:translateX(-50%) rotate(0)} 50%{transform:translateX(-50%) rotate(var(--skill-spin,180deg)) scale(1.1)} 85%{transform:translateX(-50%) rotate(var(--skill-spin-end,350deg))} }
+@keyframes skillStrike { 0%,100%{transform:translateX(-50%)} 25%{transform:translateX(-58%) translateY(5%) rotate(var(--skill-lean-in,-12deg)) scale(var(--skill-compress,.9))} 55%{transform:translateX(-42%) translateY(var(--skill-rise,-9%)) rotate(var(--skill-lean-out,8deg)) scale(var(--skill-release-scale,1.14))} }
+@keyframes skillCast { 0%,100%{transform:translateX(-50%)} 40%{transform:translateX(-50%) translateY(var(--skill-rise,-12%)) scale(var(--skill-release-scale,1.1))} 68%{transform:translateX(-50%) translateY(-5%) rotate(var(--skill-lean-out,7deg))} }
+@keyframes skillWave { 0%,100%{transform:translateX(-50%)} 25%{transform:translateX(-55%) rotate(var(--skill-lean-in,-9deg))} 50%{transform:translateX(-45%) rotate(var(--skill-lean-out,9deg)) scale(1.08)} 75%{transform:translateX(-53%) rotate(var(--skill-lean-in,-5deg))} }
+@keyframes skillBloom { 0%,100%{transform:translateX(-50%) scale(1)} 30%{transform:translateX(-50%) scale(var(--skill-charge-scale,.82)) rotate(var(--skill-lean-in,-5deg))} 68%{transform:translateX(-50%) translateY(var(--skill-rise,-9%)) scale(var(--skill-release-scale,1.18)) rotate(var(--skill-lean-out,6deg))} }
+@keyframes skillStomp { 0%,100%{transform:translateX(-50%)} 35%{transform:translateX(-50%) translateY(var(--skill-rise,-12%)) scale(1.04)} 65%{transform:translateX(-50%) translateY(7%) rotate(var(--skill-lean-in,-5deg)) scale(1.16,.82)} }
+@keyframes skillVeil { 0%,100%{transform:translateX(-50%);opacity:.94} 35%{transform:translateX(-58%) translateY(var(--skill-rise,-9%)) rotate(var(--skill-lean-in,-8deg));opacity:.38} 68%{transform:translateX(-43%) translateY(-5%) rotate(var(--skill-lean-out,8deg));opacity:.7} }
+@keyframes skillAim { 0%,100%{transform:translateX(-50%)} 38%{transform:translateX(-55%) scale(var(--skill-compress,.93)) rotate(var(--skill-lean-in,-6deg))} 70%{transform:translateX(-45%) translateY(var(--skill-rise,-3%)) scale(var(--skill-release-scale,1.12)) rotate(var(--skill-lean-out,4deg))} }
 .unit.battle-unit.big, #board .unit.preview.big { width:calc(var(--cell)*2 + var(--gap) - 8px); height:calc(var(--cell)*2 + var(--gap) - 8px); z-index:13; }
 #board .unit.preview.big { top:auto; bottom:4px; }
 .unit.battle-unit.big .nm { font-size:15px; }
@@ -318,12 +345,13 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .unit.enemy .hpfill { background:#b03a30; }
 .unit.enemy .mpfill { background:var(--arc); }
 .unit.frozen { filter:brightness(1.3) hue-rotate(40deg); }
-.unit.battle-unit { border-color:transparent; background:transparent; }
+.unit.battle-unit { border-color:transparent; background:transparent; --bvg:none; }
 .unit.battle-unit .syn, .unit.battle-unit .its, .unit.battle-unit .nm, .unit.battle-unit .st, .unit.battle-unit .sk { display:none; }
 /* 战斗阵营用颜色和形状双重区分，标记跟随移动中的棋子。 */
 .unit.battle-unit.ally { --team-color:#ffd34f; }
 .unit.battle-unit.enemy { --team-color:#ff5d53; }
-.unit.battle-unit.ally, .unit.battle-unit.enemy { border-color:transparent; box-shadow:none; }
+.unit.battle-unit.ally, .unit.battle-unit.enemy { border-color:transparent; background:transparent; box-shadow:none; }
+html[data-theme="dark"] .unit.battle-unit.ally, html[data-theme="dark"] .unit.battle-unit.enemy { border-color:transparent; box-shadow:none; }
 .unit.battle-unit::after { width:92%; height:24%; bottom:-4%; z-index:-1;
   border:2px solid var(--team-color); box-sizing:border-box;
   background:radial-gradient(ellipse at center, color-mix(in srgb,var(--team-color) 52%,transparent), transparent 75%);
@@ -601,6 +629,8 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .vfx.ring.heal { border-color:var(--heal); }
 .vfx.ring.frost { border-color:#9fe8ff; }
 .vfx.ring.shield { border-color:var(--mp); }
+.vfx.attached.ring.heal { scale:.72; }
+.vfx.attached.ring.shield { scale:.78; }
 .vfx.ring.drain { border-color:var(--arc); }
 .vfx.aoe { border:3px solid var(--gold); border-radius:50%; animation:aoePop calc(.7s/var(--spd)) ease-out forwards; z-index:60; }
 .vfx.aoe.frost { border-color:#9fe8ff; }
@@ -608,7 +638,6 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 @keyframes aoePop { from{ transform:scale(.3); opacity:.95; } to{ transform:scale(1.1); opacity:0; } }
 @keyframes ringPop { from{transform:scale(.25);opacity:1} to{transform:scale(1.5);opacity:0} }
 @keyframes boom { from{transform:scale(.2);opacity:1} to{transform:scale(1.9);opacity:0} }
-@keyframes beamFade { 0%{opacity:.95} 100%{opacity:0} }
 .vfx[class*='tex-'] { background-size:contain; background-position:center; background-repeat:no-repeat;
   filter:drop-shadow(0 0 6px rgba(255,255,255,.35)); }
 .vfx.tex-fireball { background-image:url(assets/fx/fireball.png); animation:texSpin calc(.6s/var(--spd)) ease-out forwards; }
@@ -664,7 +693,59 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .vfx.boom { border-radius:50%; background:radial-gradient(circle,rgba(255,206,84,.6) 20%,rgba(255,123,51,.27) 55%,transparent 75%);
   animation:boom calc(.65s/var(--spd)) ease-out forwards; }
 .vfx.flash { background:radial-gradient(circle,rgba(255,255,255,.8) 15%,rgba(255,255,255,.27) 45%,transparent 70%); animation:boom calc(.55s/var(--spd)) forwards; }
-.vfx.beam { height:5px; border-radius:3px; transform-origin:0 50%; opacity:.95; animation:beamFade calc(.45s/var(--spd)) forwards; box-shadow:0 0 8px 1px currentColor; }
+.vfx.skill-cue { width:calc(var(--cell)*.62); height:calc(var(--cell)*.62); border:2px solid var(--cue-color); border-radius:var(--cue-radius,50%); color:var(--cue-color); display:grid; place-items:center; font-size:calc(var(--cell)*.29); font-weight:900; text-shadow:0 0 8px #fff; box-shadow:0 0 12px var(--cue-color); z-index:46; animation:skillCue calc(var(--cue-dur,.7s)/var(--spd)) ease-out forwards; }
+.vfx.skill-cue::after { content:attr(data-glyph); }
+@keyframes skillCue { 0%{transform:translate(-50%,-50%) scale(.3) rotate(-24deg);opacity:0} 30%{opacity:1} 100%{transform:translate(-50%,-95%) scale(1.3) rotate(22deg);opacity:0} }
+.vfx.skill-projectile { width:calc(var(--cell)*.62);height:calc(var(--cell)*.62);z-index:48;color:var(--shot-color,#9eeeff);transform:translate(-50%,-50%);filter:drop-shadow(0 0 8px var(--shot-color,#9eeeff));animation:skillProjectileTravel calc(var(--shot-time,.48s)/var(--spd)) cubic-bezier(.22,.72,.28,1) forwards; }
+.vfx.skill-projectile::before { content:'';position:absolute;inset:7%;border:2px solid currentColor;border-radius:28% 72% 40% 60%;background:radial-gradient(circle at 35% 35%,#fff 0 5%,color-mix(in srgb,currentColor 72%,transparent) 10%,transparent 70%);box-shadow:0 0 10px currentColor,inset 0 0 7px currentColor;animation:skillProjectileCore calc(.22s/var(--spd)) ease-in-out infinite alternate; }
+.vfx.skill-projectile::after { content:attr(data-glyph);font-size:calc(var(--cell)*.27);font-weight:900;color:#fff;text-shadow:0 0 7px var(--shot-color),0 0 12px var(--shot-color); }
+.vfx.skill-projectile[data-shape="seal"]::before { border-radius:14%;clip-path:polygon(50% 0,100% 25%,84% 84%,50% 100%,16% 84%,0 25%); }
+.vfx.skill-projectile[data-shape="star"]::before { clip-path:polygon(50% 0,61% 35%,100% 40%,69% 59%,80% 100%,50% 74%,20% 100%,31% 59%,0 40%,39% 35%); }
+.vfx.skill-projectile.healing::before { border-radius:50%;clip-path:none;background:radial-gradient(circle,#fff 0 10%,#aaffd5 17%,transparent 72%); }
+.vfx.skill-projectile.healing::after { content:'+';font-size:calc(var(--cell)*.33); }
+.vfx.skill-projectile.tide { width:calc(var(--cell)*1.05);height:calc(var(--cell)*.62); }
+.vfx.skill-projectile.tide::before { inset:4%;border:0;border-radius:48%;clip-path:polygon(0 50%,24% 17%,58% 5%,96% 27%,100% 50%,96% 73%,58% 95%,24% 83%);background:linear-gradient(180deg,#d8ffff 0%,#71e4ed 28%,#328ec8 57%,#b4f7ff 78%,transparent 100%);box-shadow:0 0 14px #70dff8; }
+.vfx.skill-projectile.memory::before { inset:0;border:0;border-radius:0;background:url(assets/skill_frames/yua-projectile.webp) 0 0/200% 200% no-repeat;box-shadow:none;animation:skillFrames4 calc(var(--shot-time,.48s)/var(--spd)) steps(1,end) both; }
+.vfx.skill-projectile.memory::after { content:''; }
+.vfx.skill-projectile.skill-art { width:calc(var(--cell)*.95);height:calc(var(--cell)*.95);border:0;background:var(--skill-art) center/contain no-repeat; }
+.vfx.skill-projectile.skill-art::before,.vfx.skill-projectile.skill-art::after { display:none; }
+.vfx.skill-projectile.healing.skill-art { width:calc(var(--cell)*.65);height:calc(var(--cell)*.65); }
+.vfx.skill-projectile-impact { width:calc(var(--cell)*1.05);height:calc(var(--cell)*1.05);border:2px solid var(--shot-color,#9eeeff);border-radius:50%;background:radial-gradient(circle,#fff 0 7%,color-mix(in srgb,var(--shot-color) 54%,transparent) 25%,transparent 72%);box-shadow:0 0 18px var(--shot-color);animation:skillProjectileImpact .24s ease-out forwards;z-index:49; }
+.vfx.skill-projectile-impact.skill-art,.vfx.skill-field-impact.skill-art,.vfx.skill-shield-impact.skill-art { width:calc(var(--cell)*1.35);height:calc(var(--cell)*1.35);border:0;border-radius:0;clip-path:none;background:var(--skill-art) center/contain no-repeat;box-shadow:none;filter:drop-shadow(0 0 10px var(--shot-color)); }
+.vfx.skill-projectile-impact.healing { width:calc(var(--cell)*.75);height:calc(var(--cell)*.75); }
+.vfx.skill-projectile-impact.skill-art.healing,.vfx.skill-shield-impact.skill-art { width:calc(var(--cell)*.85);height:calc(var(--cell)*.85); }
+.vfx.skill-shield-wave.skill-art,.vfx.skill-field-wave.skill-art { background-image:var(--skill-art);background-position:center;background-size:contain;background-repeat:no-repeat; }
+.vfx.support-wave.skill-art { background-size:62%; }
+.vfx.skill-slash-art { width:calc(var(--cell)*1.55);height:calc(var(--cell)*1.55);z-index:49;background:var(--skill-art) center/contain no-repeat;filter:drop-shadow(0 0 9px var(--shot-color));animation:skillSlashArt calc(.34s/var(--spd)) ease-out forwards; }
+@keyframes skillSlashArt { from{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(.55);opacity:0} 28%{opacity:1} to{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1.18);opacity:0} }
+.vfx.skill-shield-wave { width:var(--wave-size,120px);height:var(--wave-size,120px);border:2px solid var(--shot-color,#9eeeff);border-radius:50%;background:radial-gradient(circle,transparent 48%,color-mix(in srgb,var(--shot-color) 22%,transparent) 51%,transparent 64%);box-shadow:0 0 14px var(--shot-color),inset 0 0 12px var(--shot-color);transform:translate(-50%,-50%) scale(.08);z-index:44;animation:skillShieldWave calc(.58s/var(--spd)) cubic-bezier(.18,.7,.2,1) forwards; }
+.vfx.skill-shield-impact { width:calc(var(--cell)*.76);height:calc(var(--cell)*.76);border:2px solid var(--shot-color,#9eeeff);border-radius:50%;background:radial-gradient(circle,transparent 42%,color-mix(in srgb,var(--shot-color) 42%,transparent) 49%,transparent 72%);box-shadow:0 0 12px var(--shot-color),inset 0 0 7px var(--shot-color);transform:translate(-50%,-50%) scale(.35);z-index:47;animation:skillShieldImpact calc(.42s/var(--spd)) ease-out forwards; }
+.vfx.skill-field-wave { width:var(--wave-size,120px);height:var(--wave-size,120px);border:2px solid var(--shot-color,#9eeeff);border-radius:50%;background:radial-gradient(circle,transparent 55%,color-mix(in srgb,var(--shot-color) 30%,transparent) 59%,transparent 72%);box-shadow:0 0 18px var(--shot-color);transform:translate(-50%,-50%) scale(.08);z-index:43;animation:skillShieldWave calc(.52s/var(--spd)) ease-out forwards; }
+.vfx.skill-field-impact { width:calc(var(--cell)*.76);height:calc(var(--cell)*.76);border:2px solid var(--shot-color,#9eeeff);border-radius:50%;box-shadow:0 0 12px var(--shot-color);transform:translate(-50%,-50%) scale(.3);z-index:46;animation:skillShieldImpact calc(.38s/var(--spd)) ease-out forwards; }
+.vfx.skill-field-wave.sound { border:0;background:transparent;box-shadow:none; }
+.vfx.skill-field-wave.tide { border:0;background:radial-gradient(circle,transparent 48%,rgba(218,252,255,.68) 51%,rgba(65,178,226,.40) 57%,transparent 70%);box-shadow:0 0 22px #70dff8,inset 0 0 12px #baf7ff; }
+.vfx.skill-field-wave.tide::before { content:'';position:absolute;inset:10%;border:3px solid rgba(225,253,255,.92);border-left-color:transparent;border-radius:50%;box-shadow:0 0 12px #70dff8;transform:rotate(-25deg); }
+.vfx.skill-field-wave.sound::before,.vfx.skill-field-wave.sound::after { content:'';position:absolute;inset:12%;border:3px solid var(--shot-color);border-radius:50%;box-shadow:0 0 14px var(--shot-color),inset 0 0 10px var(--shot-color);animation:skillSoundRing calc(.58s/var(--spd)) ease-out forwards; }
+.vfx.skill-field-wave.sound::after { inset:31%;animation-delay:calc(.07s/var(--spd)); }
+.vfx.skill-field-wave.gate { border-color:color-mix(in srgb,var(--shot-color) 78%,#fff);box-shadow:0 0 22px var(--shot-color),inset 0 0 18px var(--shot-color); }
+.vfx.skill-field-wave.ice { border-color:#e7fbff;background:radial-gradient(circle,transparent 51%,rgba(211,248,255,.42) 55%,transparent 68%);box-shadow:0 0 20px #a8eeff; }
+.vfx.skill-field-wave.void { border-style:dashed;box-shadow:0 0 22px var(--shot-color),inset 0 0 18px var(--shot-color); }
+.vfx.skill-field-wave.void::before { content:'';position:absolute;inset:22%;border:1px dotted var(--shot-color);border-radius:50%;animation:skillVoidSpin calc(.62s/var(--spd)) linear; }
+.vfx.skill-field-impact.sound { border:0;background:radial-gradient(circle,#fff 0 7%,color-mix(in srgb,var(--shot-color) 62%,transparent) 16%,transparent 68%); }
+.vfx.skill-field-impact.tide { border:0;background:radial-gradient(circle,#fff 0 8%,rgba(212,251,255,.86) 16%,rgba(75,187,235,.60) 35%,transparent 74%);box-shadow:0 0 20px #70dff8; }
+.vfx.skill-field-impact.gate { border-style:dotted;background:radial-gradient(circle,#fff 0 7%,color-mix(in srgb,var(--shot-color) 54%,transparent) 22%,transparent 74%);box-shadow:0 0 18px var(--shot-color),inset 0 0 8px #fff; }
+.vfx.skill-field-impact.ice { border-radius:22%;clip-path:polygon(50% 0,88% 21%,100% 58%,68% 100%,28% 91%,0 52%,19% 15%);background:radial-gradient(circle,#fff 0 9%,rgba(178,245,255,.62) 28%,transparent 74%);box-shadow:0 0 18px #c4f6ff; }
+.vfx.skill-field-impact.void { border-style:dotted;background:radial-gradient(circle,transparent 28%,color-mix(in srgb,var(--shot-color) 45%,transparent) 47%,transparent 72%); }
+.vfx.skill-field-gate { width:calc(var(--cell)*.8);height:calc(var(--cell)*1.2);border:2px solid var(--shot-color,#b78cff);border-radius:50% 50% 20% 20%;background:radial-gradient(ellipse,#f8efff 0, color-mix(in srgb,var(--shot-color) 72%,transparent) 36%,transparent 76%);box-shadow:0 0 18px var(--shot-color),inset 0 0 12px #fff;transform:translate(-50%,-50%) scale(.2);z-index:45;animation:skillGateOpen calc(.48s/var(--spd)) cubic-bezier(.2,.7,.2,1) forwards; }
+.vfx.skill-field-gate::before { content:'';position:absolute;inset:10% 22%;border:1px solid rgba(255,255,255,.9);border-radius:50% 50% 18% 18%;box-shadow:0 0 12px #fff; }
+@keyframes skillProjectileTravel { 0%{transform:translate(-50%,-50%) translate(0,0) scale(.45) rotate(-20deg);opacity:0} 14%{opacity:1} 78%{opacity:1} 100%{transform:translate(-50%,-50%) translate(var(--shot-dx),var(--shot-dy)) scale(1.05) rotate(210deg);opacity:.96} }
+@keyframes skillProjectileCore { from{transform:scale(.72) rotate(-12deg)} to{transform:scale(1.1) rotate(12deg)} }
+@keyframes skillProjectileImpact { from{transform:translate(-50%,-50%) scale(.2);opacity:1} to{transform:translate(-50%,-50%) scale(1.45);opacity:0} }
+@keyframes skillShieldWave { 20%{opacity:.92} to{transform:translate(-50%,-50%) scale(1);opacity:0} }
+@keyframes skillShieldImpact { 15%{opacity:1} to{transform:translate(-50%,-50%) scale(1.25);opacity:0} }
+@keyframes skillSoundRing { from{transform:scale(.35);opacity:.95} to{transform:scale(1.5);opacity:0} }
+@keyframes skillGateOpen { 28%{opacity:1} to{transform:translate(-50%,-50%) scale(1);opacity:0} }
+@keyframes skillVoidSpin { to{transform:rotate(1turn)} }
 .vfx.proj { width:9px; height:9px; border-radius:50%; transition:left calc(.4s/var(--spd)) linear, top calc(.4s/var(--spd)) linear; z-index:41; }
 .vfx.slash { border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.8) 8%,rgba(255,255,255,.27) 38%,transparent 62%);
   animation:boom calc(.4s/var(--spd)) ease-out forwards; }
@@ -689,6 +770,7 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .vfx.signature[data-shape="ribbon"] { border-radius:50%; border-width:3px; border-left-color:transparent; border-right-color:transparent; }
 .vfx.signature[data-shape="gear"] { clip-path:polygon(50% 0,60% 16%,79% 8%,80% 27%,100% 36%,84% 50%,100% 64%,80% 73%,79% 92%,60% 84%,50% 100%,40% 84%,21% 92%,20% 73%,0 64%,16% 50%,0 36%,20% 27%,21% 8%,40% 16%); }
 .vfx.signature[data-art="combat"] { width:138%;height:138%;border:0;border-radius:0;clip-path:none!important;background-color:transparent;background-size:contain;background-position:center;background-repeat:no-repeat;box-shadow:none;filter:drop-shadow(0 0 9px color-mix(in srgb,var(--sig-color,#fff) 80%,transparent)); }
+.vfx.signature.support-cast[data-art="combat"] { width:95%;height:95%; }
 .vfx.signature-hit[data-art="combat"] { width:calc(var(--cell)*1.45);height:calc(var(--cell)*1.45);border:0;clip-path:none!important;background-size:contain;background-position:center;background-repeat:no-repeat;box-shadow:none;filter:drop-shadow(0 0 9px color-mix(in srgb,var(--sig-color,#fff) 88%,transparent));animation:sigHitV2 calc(var(--sig-hit-dur,.58s)/var(--spd)) ease-out forwards; }
 .vfx.signature.kit-art::after { font-size:calc(var(--cell)*.2);opacity:.95; }
 .vfx.signature-hit { width:calc(var(--cell)*.86); height:calc(var(--cell)*.86); position:absolute; z-index:45; transform:translate(-50%,-50%); animation:sigHit calc(.54s/var(--spd)) ease-out forwards; }
@@ -1009,6 +1091,10 @@ body.touch .m-only { display:inline-block; }
   .tag.pop-warn, #deployBtn.pulse, #endBtn.arm-flash { animation:none; }
   .unit .pt, .unit.battle-unit.walking .pt, .unit.bv-yemu-fog::before,
   .unit.hexed::after, .unit.stunned { animation:none; }
+  .unit.battle-unit.skill-acting .pt, .vfx.skill-cue,
+  .vfx.skill-projectile, .vfx.skill-projectile-impact, .vfx.skill-slash-art, .vfx.skill-shield-wave, .vfx.skill-shield-impact,
+  .vfx.skill-field-wave, .vfx.skill-field-wave::before, .vfx.skill-field-wave::after,
+  .vfx.skill-field-impact, .vfx.skill-field-gate, .vfx.skill-field-gate::before { animation:none !important; }
 }
 
 /* ===== ⑯ 骨架增量：图标通用化 / 顶栏状态件 ===== */
@@ -1055,7 +1141,7 @@ body.touch .m-only { display:inline-block; }
 <link rel="stylesheet" href="tools/idol-redesign.css?v=11">
 <link rel="stylesheet" href="tools/mobile-stage.css?v=2">
 <link rel="stylesheet" href="tools/idol-dark.css?v=4">
-<link rel="stylesheet" href="tools/stage-themes.css?v=1">
+<link rel="stylesheet" href="tools/stage-themes.css?v=2">
 <link rel="stylesheet" href="tools/narrative-bar.css?v=2">
 <link rel="stylesheet" href="tools/solo-ui.css?v=3">
 <script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#0a0d1c':'#f6f8fd'</script>
@@ -1298,7 +1384,7 @@ body.touch .m-only { display:inline-block; }
     <span class="is-h">🔗 羁绊（12 阵营 + 10 职业）</span>
     按<b>不同棋子</b>计数、达标触发 T1/T2；<b style="color:#8dff9a">首次达成每档 +1 金</b>。左侧竖栏看进度，棋子右上角显示所属羁绊图标，完整效果在<b>图鉴 → 🔗羁绊</b>。
     <span class="is-h">⚔ 战斗规则</span>
-    蓝量 50（开局双方各 +25），靠攻击 / 受击回蓝（受击回蓝占所受伤害 20%~40%；沉默期间减半但不归零）；战斗采用固定速度，<b>同一方</b>技能至少错峰 800ms 释放；护甲边际递减、魔抗百分比乘算、任意伤害 5% 保底<br>
+    蓝量 50（开局双方各 +15），靠攻击 / 受击回蓝（受击回蓝占所受伤害 20%~40%；沉默期间减半但不归零）；战斗采用固定速度，<b>全场至少错峰 800ms、同一方</b>技能至少错峰 1200ms 释放；护甲边际递减、魔抗百分比乘算、任意伤害 5% 保底<br>
     克制关系：烧蓝/沉默克法师 · 破盾克护盾 · 减疗克奶妈 · 嘲讽克刺客 · 净化克控制
     <span class="is-h">🎁 野怪回合（每 5 回合）</span>
     胜利掉 2 件装备、失败也保底 1 件；不扣血、不影响连胜。头目真实占据 2×2 格（近战可从任意相邻格攻击它）。
@@ -1693,7 +1779,8 @@ function v3MoveBeside(u,target,units){
   cellsOf(target).forEach(([x,y])=>spots.push([x-1,y],[x+1,y],[x,y-1],[x,y+1]));
   const spot=spots.filter(([x,y])=>u.big?bigFits(units,u,x,y):freeCell(units,x,y))
     .sort((a,b)=>Math.abs(a[0]-u.x)+Math.abs(a[1]-u.y)-Math.abs(b[0]-u.x)-Math.abs(b[1]-u.y))[0];
-  if(spot){u.x=spot[0];u.y=spot[1]; const el=document.querySelector('#unitLayer [data-uid="'+u.uid+'"]');
+  if(spot){
+    u.x=spot[0];u.y=spot[1]; const el=document.querySelector('#unitLayer [data-uid="'+u.uid+'"]');
     if(el){el.classList.add('dashing');setTimeout(()=>el.classList.remove('dashing'),460/Math.max(1,SPEED));}}
 }
 function v3Cleanse(t){
@@ -1768,13 +1855,14 @@ function v3AttackFx(u,tgt,p){
   else if(p.style==='pulse'){const q=unitVisual(tgt),el=fxNode('atk-pulse',q.x,q.y,480);if(el)el.style.setProperty('--atk-color',p.color);}
   else {const q=unitVisual(tgt),el=fxNode('atk-burst',q.x,q.y,520);if(el)el.style.setProperty('--atk-color',p.color);fxSparks(tgt,p.color,3,18);}
 }
-function v3RainTrigger(u){if(!u||u.id!=='yuji')return;v3AddShield(u,u.maxhp*.08);u.v3RainReady=true;vfxAt(u,'ring frost shield',650);dmgPopup(null,u,'🌧雨幕','cast');}
+function v3RainTrigger(u){if(!u||u.id!=='yuji')return;v3AddShield(u,u.maxhp*.08);u.v3RainReady=true;skillAct(u);vfxAt(u,'ring frost shield',650);dmgPopup(null,u,'🌧雨幕','cast');}
 function applyV3Attack(u,tgt,p,units,dealt,dmg){
   if(!p||!tgt) return;
   if(u.rainMax){ u.rainHits=(u.rainHits||0)+1; if(u.rainHits%(u.rainEvery||2)===0) u.rainStacks=Math.min(u.rainMax,(u.rainStacks||0)+1); }   // 雨纪：普攻凝雨露（自生成，不依赖被攻击）
   if(p.onHit==='rainveil'){
     if(u.v3RainReady){tgt.slowA=Math.max(tgt.slowA||0,.2);tgt.slowT=Math.max(tgt.slowT||0,1600);u.v3RainReady=false;}
   } else if(p.onHit==='soulmate'){
+    skillAct(u);
     const mate=units.filter(v=>v.hp>0&&v.side===u.side&&v!==u).sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0];
     const pair=[u,mate].filter(Boolean);pair.forEach(v=>{const h=Math.round(v.maxhp*.03),r=Math.min(v.maxhp-v.hp,h);v.hp+=r;bsHeal(u,r);});
     if((pair.some(v=>v.hp/v.maxhp<.22))&&(u.v3SoulShieldCd||0)<=0){pair.forEach(v=>v3AddShield(v,v.maxhp*.2));u.v3SoulShieldCd=8000;vfxAt(u,'tex-barrier ring shield',800);dmgPopup(u,u,'♥共护','cast');}
@@ -1815,13 +1903,45 @@ function castV3Skill(u,units,skMul,k){
   const injuredAtCast=allies.filter(t=>t.hp<t.maxhp).length;
   showCutin(u,k.name,k.mode);u._casting=true;u._skillArch=k.mode;
   if(u.id==='rinco'&&k.lifesteal)u.vamp=Math.max(u.vamp||0,k.lifesteal);
-  dmgPopup(u,u,'✦'+k.name,'cast');vfxAt(u,'charge',260);signatureFx(u,foes.length?primary:null);
-  if(!k.passive&&k.mode!=='passive')skillSound(v3Impact(k,u));
+  dmgPopup(u,u,'✦'+k.name,'cast');vfxAt(u,'charge',260);
+  const selfStage=['heal','team','teamShield','guard','guardLink','support','cleave'].includes(k.mode)
+    || (k.mode==='field'&&u.id!=='liAn') || (k.mode==='burst'&&u.id==='songlv');
+  const detachedTarget=skillIsDetached(u,k);
+  skillAct(u,(selfStage||detachedTarget)?null:target);
+  const detachedVisual=skillCastFx(u,units,k,target);
+  const noSignatureHit=detachedVisual||['heal','team','teamShield','support','guard','guardLink','passive'].includes(k.mode)
+    || (k.mode==='field'&&u.id!=='liAn') || (k.mode==='burst'&&u.id==='songlv') || k.mode==='dash';
+  signatureFx(u,!noSignatureHit&&foes.length?primary:null);
+  const soundKey=v3Impact(k,u);
+  const audioAtArrival=!!(detachedTarget&&target || detachedVisual&&['heal','team','support'].includes(k.mode));
+  if(!k.passive&&k.mode!=='passive')skillSound(soundKey,u,audioAtArrival);
   log('✨ '+(u.side===0?'我方':'敌方')+d.name+' 发动【'+k.name+'】！');shakeCell(u.x,u.y);
   const hit=(f,m)=>v3ApplyHit(u,f,power,k,units,m);
   const healSet=(n)=>allies.slice().sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp).slice(0,n||allies.length);
-  const doHeal=(arr)=>arr.forEach(t=>v3Heal(u,t,power*(k.heal||0),k,units));
+  const doHeal=(arr,stagger)=>arr.forEach((t,i)=>{
+    const apply=()=>withCasting(()=>{if(t!==u&&detachedVisual&&['heal','team','support'].includes(k.mode))skillHitSound(soundKey,u);v3Heal(u,t,power*(k.heal||0),k,units);});
+    if(t!==u)queueSkillImpact(i*stagger+skillFlightDuration(u,t),apply);
+    else apply();
+  });
+  const finish=hitList=>{
+    if(k.dr&&k.mode==='team')v3BuffAllies(allies,k);
+    if(k.enemyHealDown&&['field','single','burst','chain','cleave','dash','dashCleave'].includes(k.mode))
+      (hitList.length?hitList:foes).filter(f=>f.hp>0).forEach(f=>{f.healDownA=Math.max(f.healDownA||0,k.enemyHealDown);f.healDownT=Math.max(f.healDownT||0,4000);});
+    if(k.wound&&hitList.length)hitList.filter(f=>f.hp>0).forEach(f=>{f.v3Vuln=k.wound;f.v3VulnT=4000;f.v3VulnBasicOnly=true;});
+    if(k.noShield&&hitList.length)hitList.filter(f=>f.hp>0).forEach(f=>f.noShieldT=Math.max(f.noShieldT||0,k.noShield*1000));
+    if(k.pull&&hitList.length)hitList.forEach(f=>{if(f.hp>0&&!f.big){const dx=Math.sign(u.x-f.x),dy=Math.sign(u.y-f.y);if(freeCell(units,f.x+dx,f.y+dy)){f.x+=dx;f.y+=dy;}}});
+    if(u.id==='lianshiye'&&target&&target.hp>0){target.v3CastEcho={owner:u,amp:k.echo||.35,left:5000};}
+    if(u.id==='rei'&&hitList.length)hitList.forEach(f=>{f.healDownA=Math.max(f.healDownA||0,k.enemyHealDown||.4);f.healDownT=4000;f.v3HealBomb={owner:u,amp:k.enemyHealDown||.4,left:4000};});
+    if(mark){const offense=hitList.find(f=>f&&f.hp>0);if(offense)placeSigMark(offense,u,mark,false);else placeSigMark(u,u,mark,true);}
+  };
+  const withCasting=resolve=>{
+    const wasCasting=u._casting,wasArch=u._skillArch;
+    u._casting=true;u._skillArch=k.mode;
+    try{resolve();}finally{u._casting=wasCasting;u._skillArch=wasArch;}
+  };
+  const resolve=()=>{
   let hitList=[];
+  if(detachedTarget&&target&&k.mode!=='chain')skillHitSound(soundKey,u);
   if(k.passive||k.mode==='passive'){}
   else if(k.mode==='guard'){
     v3AddShield(u,u.maxhp*(k.shield||0));u.tauntT=Math.max(u.tauntT||0,(k.taunt||0)*1000);
@@ -1832,10 +1952,13 @@ function castV3Skill(u,units,skMul,k){
   } else if(k.mode==='guardLink'){
     const mate=allies.filter(v=>v!==u).sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0];
     v3AddShield(u,u.maxhp*(k.selfShield||0));u.tauntT=Math.max(u.tauntT||0,(k.taunt||0)*1000);
-    if(mate){v3AddShield(mate,mate.maxhp*(k.allyShield||0));mate.v3LinkTo=u.uid;mate.v3LinkShare=k.link||0;mate.v3LinkT=3500;beam(mate,u,k.color);}
+    if(mate)queueSkillImpact(90+skillFlightDuration(u,mate),()=>{
+      v3AddShield(mate,mate.maxhp*(k.allyShield||0));
+      if(mate.hp>0){mate.v3LinkTo=u.uid;mate.v3LinkShare=k.link||0;mate.v3LinkT=3500;}
+    });
     vfxAt(u,'tex-barrier ring shield',1000);
   } else if(k.mode==='dash'||k.mode==='dashCleave'){
-    if(target){v3MoveBeside(u,target,units);beam(u,target,k.color);}
+    if(target)v3MoveBeside(u,target,units);
     if(u.id==='hoshimi')u.killReset=true;
     if(k.mode==='dashCleave')hitList=foes.filter(f=>nearCells(f,u,1));
     else if(target){hitList=[target];if(k.splash){const splash=v3NearestFoes(target,foes,1,3);splash.forEach(f=>{hit(f,k.splash);hitList.push(f);});}}
@@ -1845,7 +1968,7 @@ function castV3Skill(u,units,skMul,k){
     if(k.phase){u.phaseT=k.phase*1000;u.phaseDodge=.55;}
     if(k.afterimage&&target&&target.hp>0)target.v3Afterimage={left:2000,owner:u,damage:Math.round(power*.72),x:target.x,y:target.y};
   } else if(k.mode==='single'){
-    if(target){beam(u,target,k.color);hit(target,k.mult);hitList=[target];}
+    if(target){hit(target,k.mult);hitList=[target];}
     if(k.bounce)u.bounceReady=true;
   } else if(k.mode==='burst'){
     if(u.id==='songlv')hitList=foes.filter(f=>nearCells(f,u,1));
@@ -1861,16 +1984,24 @@ function castV3Skill(u,units,skMul,k){
   } else if(k.mode==='combo'){
     if(target){for(let i=0;i<(k.hits||1);i++){const m=(k.mults||[])[i]||1,strike=i===(k.hits||1)-1?k:Object.assign({},k,{stun:0,bleed:0});v3ApplyHit(u,target,power,strike,units,m);hitList=[target];v3AttackFx(u,target,{style:'blade',color:k.color});if(target.hp<=0)break;}}
   } else if(k.mode==='chain'){
-    let from=target, remaining=foes.slice();
     const chainLength=Math.min(k.targets||3,foes.length);
-    for(let i=0;i<chainLength&&from;i++){
-      const curr=from;remaining=remaining.filter(f=>f!==curr&&f.hp>0);
+    const chainHit=(curr,i,remaining)=>{
+      if(!curr||curr.hp<=0){finish(hitList);return;}
+      remaining=remaining.filter(f=>f!==curr&&f.hp>0);
+      if(i===0)skillHitSound(soundKey,u);else sfx(soundKey,{scale:true});
       const strike=u.id==='sanli'&&i<chainLength-1?Object.assign({},k,{stun:0}):k;
       v3ApplyHit(u,curr,power,strike,units,(k.mults||[])[i]||k.mult||1);
-      hitList.push(curr);if(i<chainLength-1&&remaining.length){from=remaining.sort((a,b)=>unitDist(a,curr)-unitDist(b,curr))[0];boltFx(curr,from,false);}else from=null;
+      hitList.push(curr);
       if(k.season&&curr.hp>0){const types=['slow','manaBurn','bleed','freeze'];const effect=types[i%4];if(effect==='slow'){curr.slowA=.25;curr.slowT=2000;}if(effect==='manaBurn')curr.mana=Math.max(0,curr.mana-Math.round(curr.maxmana*.3));if(effect==='bleed'){curr.poisonT=3000;curr.poisonDmg=Math.round(curr.maxhp*.02);}if(effect==='freeze')curr.frozen=Math.max(curr.frozen,1000);dmgPopup(u,curr,['🌸春','☀夏','🍂秋','❄冬'][i%4],'cast');}
-    }
+      if(i<chainLength-1&&remaining.length){
+        const next=remaining.sort((a,b)=>unitDist(a,curr)-unitDist(b,curr))[0];
+        launchSkillProjectile(curr,next,k,'attack',0,u.id);
+        queueSkillImpact(skillFlightDuration(curr,next),()=>withCasting(()=>chainHit(next,i+1,remaining)));
+      }else finish(hitList);
+    };
+    chainHit(target,0,foes.slice());
     vfxAt(u,'tex-chain',500);
+    return;
   } else if(k.mode==='field'){
     const anchor=u.id==='liAn'?(foes.slice().sort((a,b)=>eatk(b)-eatk(a))[0]||target):u;
     const radius=u.id==='liAn'?4:3;
@@ -1888,24 +2019,19 @@ function castV3Skill(u,units,skMul,k){
     allies.forEach(t=>{if(k.cleanse){v3Cleanse(t);t.v3ControlWard=1;}v3AddShield(t,t.maxhp*(k.shield||0));});
     v3BuffAllies(allies,k);u.tauntT=Math.max(u.tauntT||0,(k.taunt||0)*1000);vfxAt(u,'tex-barrier ring shield',1100);
   } else if(k.mode==='heal'){
-    doHeal(healSet(k.healN||1));
+    doHeal(healSet(k.healN||1),80);
   } else if(k.mode==='team'||k.mode==='support'){
     const recipients=u.id==='suiji'?allies.filter(t=>t!==u):allies;
     const cleansed=u.id==='shengge'?recipients.filter(t=>t.stun>0||t.frozen>0||t.silenceT>0||t.hexT>0||t.petrifyT>0):[];
-    doHeal(recipients);v3BuffAllies(u.id==='suiji'?[u]:u.id==='shengge'?cleansed:allies,k);
+    doHeal(recipients,65);v3BuffAllies(u.id==='suiji'?[u]:u.id==='shengge'?cleansed:allies,k);
     if(k.enemyHealDown)foes.forEach(f=>{f.healDownA=Math.max(f.healDownA||0,k.enemyHealDown);f.healDownT=Math.max(f.healDownT||0,4000);});
     if(k.zone)spawnZone(u,u.x,u.y,k.zone);
     if(u.id==='zeyin')Array.from({length:Math.min(4,injuredAtCast)}).forEach(()=>{const f=v3PickTarget(u,foes,{target:'near'});if(f)dealDamage(u,f,Math.round(power*.35),units,'magic');});
   }
-  if(k.dr&&k.mode==='team')v3BuffAllies(allies,k);
-  if(k.enemyHealDown&&['field','single','burst','chain','cleave','dash','dashCleave'].includes(k.mode))
-    (hitList.length?hitList:foes).filter(f=>f.hp>0).forEach(f=>{f.healDownA=Math.max(f.healDownA||0,k.enemyHealDown);f.healDownT=Math.max(f.healDownT||0,4000);});
-  if(k.wound&&hitList.length)hitList.filter(f=>f.hp>0).forEach(f=>{f.v3Vuln=k.wound;f.v3VulnT=4000;f.v3VulnBasicOnly=true;});
-  if(k.noShield&&hitList.length)hitList.filter(f=>f.hp>0).forEach(f=>f.noShieldT=Math.max(f.noShieldT||0,k.noShield*1000));
-  if(k.pull&&hitList.length)hitList.forEach(f=>{if(f.hp>0&&!f.big){const dx=Math.sign(u.x-f.x),dy=Math.sign(u.y-f.y);if(freeCell(units,f.x+dx,f.y+dy)){f.x+=dx;f.y+=dy;}}});
-  if(u.id==='lianshiye'&&target&&target.hp>0){target.v3CastEcho={owner:u,amp:k.echo||.35,left:5000};}
-  if(u.id==='rei'&&hitList.length)hitList.forEach(f=>{f.healDownA=Math.max(f.healDownA||0,k.enemyHealDown||.4);f.healDownT=4000;f.v3HealBomb={owner:u,amp:k.enemyHealDown||.4,left:4000};});
-  if(mark){const offense=hitList.find(f=>f&&f.hp>0);if(offense)placeSigMark(offense,u,mark,false);else placeSigMark(u,u,mark,true);}
+  finish(hitList);
+  };
+  if(detachedTarget&&target)queueSkillImpact(skillFlightDuration(u,target),()=>withCasting(resolve));
+  else withCasting(resolve);
   u._casting=false;u._skillArch=null;
 }
 /* 装备：6 件基础装（野怪掉落池）+ 21 条双件配方。
@@ -2906,7 +3032,7 @@ function recordRoundEndTelemetry(){
   if(S.hp<=hpMax()*0.6)tele('lifePressureRound',1,{round:S.round,health:S.hp});
   flushTelemetry();
 }
-/* ================= 声音系统（Web Audio 程序化合成，纯表现层） =================
+/* ================= 声音系统（舞台电子 WAV 素材 + Web Audio 程序化回退） =================
    sfx(key,{delay,scale}) 的 delay 是视觉时间（秒），战斗声随 SPEED 缩放。
    一个音效事件占一个并发位；合成噪声使用独立确定性序列，不触及战斗 RNG。 */
 let _actx=null, _sfxOn=true;
@@ -2985,6 +3111,25 @@ const SFX_SKILL={cleave:'slash',dash:'slash',shred:'slash',rapid:'slash',
   petrify:'stunHit',massstun:'stunHit',slam:'stunHit'};
 const _sfxLast={}; let _sfxVoices=0, _sfxSeed=0x19a4e317;
 const _sfxActive=[];
+const _sfxBuffers=new Map(),_sfxLoading=new Map();
+const SFX_ASSET_ROOT='assets/audio/v1/';
+function sfxAssetPath(key,unitId){
+  if(unitId&&/^[a-zA-Z0-9]+$/.test(unitId))return SFX_ASSET_ROOT+'skills/'+unitId+'.wav';
+  return SFX_ASSET_ROOT+'events/'+key+'.wav';
+}
+function warmSfxAsset(path,ctx=sfxCtx()){
+  if(!ctx||typeof fetch!=='function'||typeof ctx.decodeAudioData!=='function'||_sfxBuffers.has(path)||_sfxLoading.has(path))return;
+  const pending=fetch(path).then(res=>res.ok?res.arrayBuffer():null)
+    .then(data=>data?ctx.decodeAudioData(data):null)
+    .then(buffer=>{if(buffer)_sfxBuffers.set(path,buffer);})
+    .catch(()=>{}).finally(()=>_sfxLoading.delete(path));
+  _sfxLoading.set(path,pending);
+}
+function warmSoundBank(unitIds=[]){
+  const ctx=sfxCtx();if(!ctx)return;
+  Object.keys(SFX_DEF).forEach(key=>warmSfxAsset(sfxAssetPath(key),ctx));
+  [...new Set(unitIds)].forEach(id=>warmSfxAsset(sfxAssetPath('',id),ctx));
+}
 function sfxNoise(){ _sfxSeed=(_sfxSeed*1664525+1013904223)>>>0; return _sfxSeed/4294967296; }
 function skillImpact(arch){ return SFX_SKILL[arch]||'impactArc'; }
 function v3Impact(k,u){
@@ -3005,13 +3150,16 @@ function v3Impact(k,u){
   if(k.mode==='chaos')return 'spellDark';
   return 'impactArc';
 }
-function skillSound(key){
+function skillSound(key,u,impactAtArrival=false){
   // 技能数值命中和主体 VFX 同步创建；charge 环持续 260ms 只是前景动画，
   // 不能把伤害声推到它结束。刀锋/爆裂首帧，护盾/治疗取扩张环早期主峰。
   const delay=key==='heal'?.07:key==='shield'?.06:key==='zone'?.03:
     key==='spellIce'?.045:key==='spellDark'?.04:key==='impactArc'?.035:0;
   sfx('cast',{scale:true});
-  sfx(key,{delay,scale:true,finishOnResult:true});
+  if(!impactAtArrival)sfx(key,{delay,scale:true,finishOnResult:true,unitId:u?.id});
+}
+function skillHitSound(key,u){
+  sfx(key,{scale:true,finishOnResult:true,unitId:u?.id});
 }
 function sfxCtx(){
   if(_actx!==null) return _actx;
@@ -3026,7 +3174,8 @@ function sfx(key,opt={}){
   const d=SFX_DEF[key]; if(!d) return;
   const now=ctx.currentTime;
   const when=now+Math.max(0,Number(opt.delay)||0)/(opt.scale?Math.max(1,typeof SPEED==='number'?SPEED:1):1);
-  if(_sfxLast[key]!=null && when-_sfxLast[key]<.11) return;
+  const path=sfxAssetPath(key,opt.unitId),limitKey=opt.unitId?key+':'+opt.unitId:key;
+  if(_sfxLast[limitKey]!=null && when-_sfxLast[limitKey]<.11) return;
   if(_sfxVoices>=8){
     const victim=_sfxActive.filter(v=>v.priority<(d.priority||2)).sort((a,b)=>a.priority-b.priority)[0];
     if(!victim)return;
@@ -3042,7 +3191,16 @@ function sfx(key,opt={}){
     this.sources.forEach(src=>{try{src.stop();}catch(e){}});
   }};
   try{
-    if(d.noise){   // 噪声层（纸声/whoosh/闷响颗粒）
+    const clip=_sfxBuffers.get(path);
+    if(clip){
+      const src=ctx.createBufferSource(),g=ctx.createGain();
+      src.buffer=clip;
+      if(src.playbackRate)src.playbackRate.value=speed;
+      g.gain.value=Math.min(.32,vol*1.45);
+      src.connect(g);g.connect(ctx.destination);
+      const end=when+clip.duration/speed;
+      src.start(when);src.stop(end+.01);event.sources.push(src);event.until=end+.01;event.tail=src;
+    }else if(d.noise){   // 音频素材加载前的低延迟合成回退
       const len=Math.max(1,Math.ceil(ctx.sampleRate*dur));
       const buf=ctx.createBuffer(1,len,ctx.sampleRate), ch=buf.getChannelData(0);
       for(let i=0;i<len;i++) ch[i]=(sfxNoise()*2-1)*Math.pow(1-i/len,1.6);
@@ -3053,7 +3211,7 @@ function sfx(key,opt={}){
       src.start(when); src.stop(end);event.sources.push(src);
       if(end>event.until){event.until=end;event.tail=src;}
     }
-    if(d.type && d.type!=='noise' && (d.f||[]).length){
+    if(!clip&&d.type && d.type!=='noise' && (d.f||[]).length){
       (d.f).forEach((f0,i)=>{
         const o=ctx.createOscillator(), g=ctx.createGain();
         o.type=d.type; o.frequency.value=Math.max(30,f0);
@@ -3070,7 +3228,8 @@ function sfx(key,opt={}){
     }
     if(!event.sources.length)return;
     event.tail.onended=()=>event.stop();
-    _sfxActive.push(event);event.registered=true;_sfxVoices++;_sfxLast[key]=when;
+    _sfxActive.push(event);event.registered=true;_sfxVoices++;_sfxLast[limitKey]=when;
+    if(!clip)warmSfxAsset(path,ctx);
     if(typeof window!=='undefined'){
       if(window.__sfxCount)window.__sfxCount[key]=(window.__sfxCount[key]||0)+1;
       if(window.__sfxPlayed!=null)window.__sfxPlayed++;
@@ -3079,7 +3238,7 @@ function sfx(key,opt={}){
 }
 /* 自动播放策略：首次用户手势 resume（此前静默不报错） */
 if(typeof document!=='undefined' && document.addEventListener){
-  const _sfxUnlock=()=>{ const c=sfxCtx(); if(c&&c.state==='suspended'){ try{c.resume();}catch(e){} } };
+  const _sfxUnlock=()=>{ const c=sfxCtx(); if(c&&c.state==='suspended'){ try{c.resume();}catch(e){} } warmSoundBank(); };
   document.addEventListener('pointerdown',_sfxUnlock,{passive:true});
   document.addEventListener('keydown',_sfxUnlock,{passive:true});
 }
@@ -4862,15 +5021,25 @@ function starExpMul(r){
 }
 let battleTimer=null, currentTick=null, tickWorker=null;
 const SPEED=1;              // 固定播放速度，供现有动画时长计算使用
+let skillImpactClock=0, skillImpactQueue=[];
+function queueSkillImpact(delay,resolve){
+  if(!S||S.phase!=='battle'||!currentTick){resolve();return;}
+  skillImpactQueue.push({at:skillImpactClock+(Number.isFinite(delay)?Math.max(0,delay):280)/Math.max(1,SPEED),session:runSessionId,resolve});
+}
+function flushSkillImpacts(){
+  const ready=skillImpactQueue.filter(entry=>entry.at<=skillImpactClock);
+  skillImpactQueue=skillImpactQueue.filter(entry=>entry.at>skillImpactClock);
+  ready.forEach(entry=>{if(entry.session===runSessionId&&S.phase==='battle')entry.resolve();});
+}
 const BATTLE_DELAY = 800;   // 开战前留出观察双方站位的时间
 const ATTACK_INTERVAL = 1450;
 const SKILL_CD = 3000;
 const SKILL_RECOVERY = 850; // 施法后留出特效展示时间，再进行下一次普攻
-const SKILL_STAGGER = 800;  // 分边施法间隔：同一方相邻两次技能至少隔这么久（保证特效不堆叠）
-/* 开局蓝量（2026-09-25 新增）：原为 0，导致首技能需约 4 次普攻 ≈ 5.8 秒才出手，而战斗平均只有
-   5.9–8.2 秒——大量棋子整场放不出技能。给双方同时 +25 蓝，把首技能提前到约 2 次普攻（≈2.5–3 秒）。
-   双方同加，属于对称调整（不单方面削弱一方）；真正的 TTK 补偿用 BATTLE_HP_MUL。 */
-const BATTLE_START_MANA = 25;
+const SKILL_STAGGER = 1200; // 分边施法间隔：拉开同一方技能演出，降低特效重叠
+const SKILL_GLOBAL_STAGGER = 800; // 全场相邻施法至少间隔800ms
+const SKILL_PRESENTATION_SCALE = 1.25; // 技能动作、提示与飞行统一放慢25%
+/* 开局蓝量保留一段蓝，但避免棋子一上场就快速放出首技；双方同值。 */
+const BATTLE_START_MANA = 15;
 const ASSASSIN_CRIT_MULT = 1.5;   // 刺客切入后首次攻击的暴击倍率
 function startTickLoop(ms){ // 用 Worker 驱动战斗时钟，避免后台标签页被浏览器节流
   stopTickLoop();
@@ -5063,7 +5232,6 @@ function makeBattleUnit(u, side, x, y){
     b.spdMul+=augTotal('asp')/100;
     b.ar+=augTotal('ar');
     b.mr=Math.min(0.75,(b.mr||0)+augTotal('mr')/100);
-    b.manaStart=Math.max(b.manaStart||0, Math.min(b.maxmana, augTotal('mana')));   // 🔵 蓝能核心：累加到 manaStart（下方 b.mana=b.manaStart||0 统一结算）
     b.augRegen=augTotal('regen');   // 每秒回复 %maxhp（currentTick 消费）
     if(hasCurse('glass')){ b.atk=Math.round(b.atk*1.3); b.maxhp=Math.round(b.maxhp*0.7); }   // 🔮 玻璃大炮
     if(dm&&(dm.allyHpMultiplier!==1||dm.allyAtkMultiplier!==1)){   // 脆晶军团：我方生命 -25% / 攻击 +25%
@@ -5111,6 +5279,7 @@ function startBattle(){
   closeDrawer();   // 抽屉（商店/详情）开着时开战：先收起，不挡战斗画面
   const _sl=document.getElementById('synBadgeLayer'); if(_sl) _sl.remove();   // 徽章悬浮层只属于备战棋盘
   stopTickLoop(); // 关闭任何残余的战斗时钟
+  skillImpactQueue=[];skillImpactClock=0;
   fillBoardBeforeBattle();   // 人口不满先自动补位（只上场、不动阵型、不合成）；全空则维持原拦截
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
   if(challengeAvailable()&&S.challengeRound!==S.round)tele('eliteDecline',1,{round:S.round,health:S.hp});
@@ -5146,6 +5315,7 @@ function startBattle(){
   battleStats={units:{}};   // 本场战斗统计容器（endBattle 消费后置空）
   S.board.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,0,i%BOARD_W,Math.floor(i/BOARD_W))); });
   S.enemyBoard.forEach((u,i)=>{ if(u) units.push(makeBattleUnit(u,1,i%BOARD_W,Math.floor(i/BOARD_W))); });
+  warmSoundBank(units.map(u=>u.id));
   applyBoardCurse(units);
   // 刺客的"切入后排"不再是开局瞬移：留在大部队中，开战后的第一次移动同步切入敌方最后一排（见 currentTick）
   // —— 双方羁绊结算（分级强化） ——
@@ -5306,11 +5476,12 @@ function startBattle(){
       log(`🧪 临时增益生效：${tb.e} ${tb.n}（${tb.desc}）`);
     }
   }
-  let t=0, delayLeft=BATTLE_DELAY, released=false, lastCastAt0=-SKILL_STAGGER, lastCastAt1=-SKILL_STAGGER, nextCastSide=rand()<.5?0:1; const TICK=100;
+  let t=0, delayLeft=BATTLE_DELAY, released=false, lastCastAt0=-SKILL_STAGGER, lastCastAt1=-SKILL_STAGGER, lastCastAt=-SKILL_GLOBAL_STAGGER, nextCastSide=rand()<.5?0:1; const TICK=100;
   currentTick=()=>{
     if(session!==runSessionId || S.phase!=='battle') return;  // 跨局迟到时钟不得推进新局
     if(S.solo&&flowPage!=='game')return;  // 单人模式打开菜单/说明时暂停舞台演算
     t+=TICK;
+    skillImpactClock=t;flushSkillImpacts();
     if(S.solo)SoloHost.tick(units,t,TICK);
     // 开战缓冲：先看清双方站位，之后双方同步开始行动（刺客的切入也在此时发生）
     if(!released){
@@ -5330,19 +5501,15 @@ function startBattle(){
         if(u.thornsT>0){ u.thornsT-=1000; if(u.thornsT<=0){ u.thorns=0; u.thornsT=0; } } // 荆棘增益到期
       }
     }
-    /* 施法闸门（2026-09-25 重构）：原为单个全局 lastCastAt，全场每 800ms 只能放 1 次技能，
-       实测一场 6–8 秒战斗上限 6–9 次，而双方在场 16–20 人 → 技能覆盖率约 45%，
-       50 套专属技能与"印记二段"大面积不可见。改为「分边闸门」：每方各自 800ms 一次，
-       吞吐翻倍，同时保留"同一方不会同时冒出两个技能"的可读性（CUTIN_ENABLED=false，
-       技能名特写当前本就是关的，闸门只需保证特效与跳字不堆叠）。 */
+    /* 施法展示闸门：全场相邻两次至少间隔 800ms，同一方至少间隔 1200ms。 */
     const sideReady=side=>t-(side?lastCastAt1:lastCastAt0)>=SKILL_STAGGER;
-    /* 性能：只在至少一侧闸门打开时才扫描候选（量与改造前的"每 800ms 扫一次"同量级）。
-       闸门未开时任何单位都不可能施法，跳过扫描不改变行为。 */
-    const readyCasters=(sideReady(0)||sideReady(1))
+    const castGateOpen=t-lastCastAt>=SKILL_GLOBAL_STAGGER&&(sideReady(0)||sideReady(1));
+    /* 闸门未开时跳过候选筛选；闸门打开后每个战斗心跳筛选一次。 */
+    const readyCasters=castGateOpen
       ? units.filter(v=>v.hp>0&&!v.isPassiveFlag&&v.stun<=0&&v.frozen<=0&&v.silenceT<=0&&v.hexT<=0&&v.mana>=v.maxmana&&v.skillCd<=0)
       : [];
-    const nextCaster=readyCasters.find(v=>v.side===nextCastSide&&sideReady(v.side))
-      || readyCasters.find(v=>sideReady(v.side)) || null;
+    const nextCaster=castGateOpen&&(readyCasters.find(v=>v.side===nextCastSide&&sideReady(v.side))
+      || readyCasters.find(v=>sideReady(v.side))) || null;
     for(const u of units){
       if(u.v3Afterimage){const ai=u.v3Afterimage;ai.left-=TICK;if(ai.left<=0){u.v3Afterimage=null;vfxAt(u,'tex-memexp boom',700);
         if(ai.owner&&ai.owner.hp>0&&u.hp>0)dealDamage(ai.owner,u,ai.damage,units,'magic');
@@ -5490,7 +5657,8 @@ function startBattle(){
         if(bondModern())BondRuntime.cast(u,units);
         { const _bc=bsRec(u); if(_bc) _bc.casts++; }   // 施法计数（只读埋点）
         u.cd=Math.max(u.cd,SKILL_RECOVERY);
-        if(u.side===0) lastCastAt0=t; else lastCastAt1=t;   // 分边记录，见上方闸门说明
+        if(u.side===0) lastCastAt0=t; else lastCastAt1=t;
+        lastCastAt=t;   // 全场施法间隔
         nextCastSide=1-u.side;
       }
       if(unitDist(tgt,u)<=d.rng){   // 距离按占据格集合算：贴 2×2 头目任意一格即在射程内
@@ -5501,7 +5669,7 @@ function startBattle(){
           let dmg = Math.round(eatk(u)*(profile.mult||1)*(u.rapid>0?2:1));
           let itemCritHit=false;
           const hadShield=tgt.shield>0;
-          if(profile.onHit==='shieldbreak'&&!hadShield&&u.v3BreakReady){dmg=Math.round(dmg*1.8);u.v3BreakReady=false;}
+          if(profile.onHit==='shieldbreak'&&!hadShield&&u.v3BreakReady){dmg=Math.round(dmg*1.8);u.v3BreakReady=false;skillAct(u,tgt);}
           if(u.rapid>0)u.rapid--;
           if(u.crit>0 && rand()<u.crit){   // 常驻暴击：刺客羁绊（紫）/ 专属与装备（金）
             itemCritHit=true;
@@ -5598,11 +5766,10 @@ function startBattle(){
           // 保留"脱控反打"的翻盘路径；受击回蓝则仍被沉默全封，避免持续伤害反过来喂蓝。
           if(!isPassive(u) && u.hexT<=0 && dealt>0){
             const cap30 = d.job==='法师'||d.job==='咒术'||d.job==='医者';
-            const amUp = u.side===0 ? (1+augTotal('atkmana')/100) : 1;   // 🎼 回蓝协奏（仅我方）
             const silMul = u.silenceT>0 ? 0.5 : 1;
             /* 攻击回蓝去相关：原为纯「伤害/1.25」，低攻单位（守护 6 攻）一击只回 4 点左右，
                几乎永远攒不满蓝、技能形同不存在。改为「固定基数 8 + 伤害/6」：攻速型与低攻前排都有稳定通道。 */
-            u.mana=Math.min(u.maxmana, u.mana+Math.min(8+dealt/6, cap30?30:15)*(u.manaRegenMul||1)*amUp*silMul);
+            u.mana=Math.min(u.maxmana, u.mana+Math.min(8+dealt/6, cap30?30:15)*(u.manaRegenMul||1)*silMul);
           }
         }
       } else if(u.moveCd<=0){
@@ -5628,7 +5795,7 @@ function startBattle(){
     });
     const alive0=units.filter(u=>u.hp>0&&u.side===0).length;
     const alive1=units.filter(u=>u.hp>0&&u.side===1).length;
-    if(alive0===0||alive1===0||t>60000){
+    if((alive0===0||alive1===0||t>60000)&&(t>60000||!skillImpactQueue.length)){
       stopTickLoop();
       if(t>60000&&alive0>0&&alive1>0) log(`⏱ 战斗超时（60 秒）：按存活数判定 —— 我方 ${alive0} : 敌方 ${alive1}，${alive0>=alive1?'我方判胜':'我方判负'}（与常规判定同口径：存活数不少于敌方即为胜）`);
       showResultBanner(S.solo?SoloHost.battleWon(alive0,alive1):alive0>0&&alive0>=alive1, ()=>{ if(session===runSessionId) endBattle(alive0,alive1); });
@@ -5769,8 +5936,6 @@ function dealDamage(src,tgt,dmg,units,dtype){
     if(bondModern())BondRuntime.kill(src,tgt,units);
     if(src && src.side===0) S.stats.kills++;
     if(src){ const rk=bsRec(src); if(rk) rk.kills++; }
-    if(src && src.side===0){ const km=augTotal('killmana');   // 💀 灵魂虹吸：击杀回蓝
-      if(km) src.mana=Math.min(src.maxmana, src.mana+km); }
     sfx('die');
     log(`💀 ${src&&src.side===0?'我方':'敌方'}${src?byId(src.id).name:'?'} 击败 ${byId(tgt.id).name}`);
     if(src && src.killHeal && src.hp>0 && src.hp<src.maxhp){   // 饮魂战刃：击杀回复自身生命
@@ -5860,6 +6025,163 @@ const SIG_ART={
   nana7mi:'ink', liAn:'prism', youyi:'ink', azi:'prism', taodai:'ink', miki:'lotus', rei:'prism', rinco:'ink'
 };
 const V3_SIGNATURES={"ein":{"glyph":"✿","shape":"seal","color":"#78efff"},"kouichi":{"glyph":"⌁","shape":"leaf","color":"#ff7bd4"},"yua":{"glyph":"◈","shape":"gear","color":"#b989ff"},"goutan":{"glyph":"❖","shape":"gear","color":"#ffb36b"},"yujiu":{"glyph":"☄","shape":"ribbon","color":"#8fe8ff"},"songlv":{"glyph":"♣","shape":"star","color":"#9be36a"},"likou":{"glyph":"✚","shape":"seal","color":"#ff9ab6"},"agari":{"glyph":"✦","shape":"orbit","color":"#ff6fae"},"hoshimi":{"glyph":"☾","shape":"orbit","color":"#dca3ff"},"chiharu":{"glyph":"〰","shape":"orbit","color":"#8fbcff"},"suiji":{"glyph":"❀","shape":"petal","color":"#8ddc9b"},"kanban":{"glyph":"⌂","shape":"seal","color":"#7ed7d9"},"zhouyi":{"glyph":"◉","shape":"petal","color":"#c77dff"},"yuji":{"glyph":"◇","shape":"petal","color":"#72c9ff"},"tiandou":{"glyph":"☂","shape":"ribbon","color":"#ffc56d"},"aza":{"glyph":"♪","shape":"gear","color":"#ff8b8b"},"pako":{"glyph":"✧","shape":"leaf","color":"#73d6e8"},"zhijin":{"glyph":"⚙","shape":"leaf","color":"#e69bff"},"sishi":{"glyph":"☁","shape":"petal","color":"#ffd27d"},"sumi":{"glyph":"✜","shape":"orbit","color":"#a58bff"},"yukie":{"glyph":"♢","shape":"gear","color":"#ff9b7b"},"miting":{"glyph":"❋","shape":"gear","color":"#ffe49b"},"xuezhu":{"glyph":"✤","shape":"leaf","color":"#9fe8ff"},"zeyin":{"glyph":"◌","shape":"seal","color":"#79e6d5"},"sanli":{"glyph":"✺","shape":"leaf","color":"#f29eff"},"diansu":{"glyph":"♧","shape":"leaf","color":"#d9c8a6"},"lianshiye":{"glyph":"♠","shape":"petal","color":"#c99dff"},"huize":{"glyph":"✷","shape":"seal","color":"#ff83cf"},"shengge":{"glyph":"✹","shape":"wave","color":"#fff2a6"},"shadow":{"glyph":"⚡","shape":"leaf","color":"#ffad66"},"nox":{"glyph":"✣","shape":"leaf","color":"#ad8dff"},"miyue":{"glyph":"◍","shape":"star","color":"#c39bff"},"huali":{"glyph":"❂","shape":"orbit","color":"#ffb7d0"},"youyu":{"glyph":"✥","shape":"star","color":"#78d9ff"},"quanrong":{"glyph":"✪","shape":"orbit","color":"#d7a76b"},"ruiya":{"glyph":"✽","shape":"orbit","color":"#a8b9ff"},"mumu":{"glyph":"✶","shape":"star","color":"#9cffb4"},"kroya":{"glyph":"❁","shape":"leaf","color":"#ff8dce"},"shiliu":{"glyph":"⬡","shape":"seal","color":"#f5b46b"},"seki":{"glyph":"☼","shape":"gear","color":"#7e75ff"},"haruka":{"glyph":"❉","shape":"seal","color":"#f6f3ff"},"mahiru":{"glyph":"☯","shape":"orbit","color":"#ff6b75"},"nana7mi":{"glyph":"✵","shape":"gear","color":"#67d4e8"},"liAn":{"glyph":"✸","shape":"leaf","color":"#e6fbff"},"youyi":{"glyph":"✼","shape":"wave","color":"#ff9f9f"},"azi":{"glyph":"✧","shape":"leaf","color":"#ffbd6a"},"taodai":{"glyph":"❦","shape":"petal","color":"#ffb1c9"},"miki":{"glyph":"⟡","shape":"orbit","color":"#8fd9ff"},"rei":{"glyph":"✴","shape":"ribbon","color":"#b78cff"},"rinco":{"glyph":"♢","shape":"star","color":"#ff5f70"}};
+/* 每人指定起手动作与节拍；图腾和颜色取现有签名配置。这里只管画面。 */
+const SKILL_ACTIONS={
+  ein:['brace',1],kouichi:['skate',2],yua:['cast',2],goutan:['brace',2],yujiu:['aim',2],
+  songlv:['stomp',1],likou:['bloom',2],agari:['wave',2],hoshimi:['leap',1],chiharu:['sweep',2],
+  suiji:['cast',1],kanban:['brace',1],zhouyi:['strike',1],yuji:['veil',1],tiandou:['bloom',2],
+  aza:['stomp',2],pako:['bloom',1],zhijin:['skate',1],sishi:['spin',3],sumi:['wave',1],
+  yukie:['strike',3],miting:['aim',1],xuezhu:['cast',1],zeyin:['wave',3],sanli:['cast',3],
+  diansu:['stomp',1],lianshiye:['veil',2],huize:['bloom',1],shengge:['wave',2],shadow:['leap',2],
+  nox:['veil',2],miyue:['spin',2],huali:['bloom',3],youyu:['veil',1],quanrong:['brace',2],
+  ruiya:['cast',2],mumu:['wave',1],kroya:['cast',3],shiliu:['strike',2],seki:['spin',1],
+  haruka:['sweep',1],mahiru:['spin',3],nana7mi:['stomp',2],liAn:['cast',1],youyi:['brace',1],
+  azi:['wave',3],taodai:['brace',3],miki:['bloom',3],rei:['veil',3],rinco:['sweep',2]
+};
+const SKILL_PROJECTILE_ART=new Set('agari aza diansu goutan huali huize kroya likou miki miting mumu nana7mi pako ruiya sanli shengge sishi suiji tiandou xuezhu yua yujiu zeyin'.split(' '));
+const SKILL_SLASH_ART=new Set('chiharu haruka hoshimi kouichi lianshiye mahiru miyue nox rinco shadow shiliu songlv youyu yukie zhijin'.split(' '));
+const SKILL_SLASH_SVG=new Set(['mahiru','rinco','songlv']);
+function skillArt(id,kind){
+  if(kind==='flight'||kind==='impact')return SKILL_PROJECTILE_ART.has(id)&&(kind!=='flight'||id!=='yua')?`assets/skill_projectiles/${id}-${kind}.webp`:null;
+  if(kind==='slash'||kind==='slash-impact')return SKILL_SLASH_ART.has(id)?`assets/skill_slashes/${id}-${kind.replace('slash-','')}.${SKILL_SLASH_SVG.has(id)?'svg':'webp'}`:null;
+  return null;
+}
+function setSkillArt(el,path){if(el&&path){el.classList.add('skill-art');el.style.setProperty('--skill-art',`url("${path}")`);}return el;}
+const DETACHED_SKILL_MODES=new Set(['single','chain','zone','chaos']);
+function skillIsDetached(u,k){
+  if(k.mode==='single'&&!SKILL_PROJECTILE_ART.has(u.id)&&(k.attackStyle==='blade'||byId(u.id).rng<=1))return false;
+  return DETACHED_SKILL_MODES.has(k.mode)||(k.mode==='burst'&&u.id!=='songlv');
+}
+function skillFlightDuration(u,target){
+  const a=unitVisual(u),b=unitVisual(target);
+  const visualDistance=Math.hypot(b.x-a.x,b.y-a.y);
+  const distance=Number.isFinite(visualDistance)?visualDistance:Math.hypot((target.x-u.x)*64,(target.y-u.y)*64);
+  return Math.round(Math.min(580,Math.max(280,180+distance*1000/900))*SKILL_PRESENTATION_SCALE);
+}
+function launchSkillProjectile(u,target,k,kind='attack',delay=0,artId=u?.id||'',duration=skillFlightDuration(u,target)){
+  if(typeof document==='undefined'||!u||!target)return;
+  const sig=sigFor({id:artId}),shotColor=k.color||sig.color;
+  const fire=()=>{
+    const a=unitVisual(u),b=unitVisual(target),dx=b.x-a.x,dy=b.y-a.y;
+    const travel=duration/1000;
+    const memory=artId==='yua'&&kind==='attack';
+    const el=fxNode('skill-projectile'+(kind==='healing'?' healing':'')+(memory?' memory':'')+(artId==='nana7mi'?' tide':''),a.x,a.y,travel*1000+100);
+    if(!el)return;
+    const flightArt=memory?null:skillArt(artId,'flight');
+    if(flightArt)setSkillArt(el,flightArt);
+    const visualColor=flightArt||memory?shotColor:kind==='healing'?'#aaffd5':shotColor;
+    el.dataset.glyph=kind==='healing'?'+':sig.glyph;el.dataset.shape=sig.shape;
+    el.style.setProperty('--shot-dx',dx+'px');el.style.setProperty('--shot-dy',dy+'px');
+    el.style.setProperty('--shot-color',visualColor);el.style.setProperty('--shot-time',travel+'s');
+    setTimeout(()=>{
+      const p=unitVisual(target),hit=setSkillArt(fxNode('skill-projectile-impact'+(kind==='healing'?' healing':''),p.x,p.y,300),skillArt(artId,'impact'));
+      if(hit){hit.style.setProperty('--shot-color',visualColor);if(kind==='healing'&&!hit.classList.contains('skill-art'))hit.style.borderRadius='50%';}
+      if(kind==='healing'&&(k.shield||k.allyShield))spawnShieldImpact(target,shotColor,artId);
+    },travel*1000/Math.max(1,SPEED));
+  };
+  if(delay>0)setTimeout(fire,delay/Math.max(1,SPEED));else fire();
+}
+function spawnShieldImpact(target,color,artId=''){
+  const p=unitVisual(target),el=setSkillArt(fxNode('skill-shield-impact',p.x,p.y,500),skillArt(artId,'impact'));
+  if(el)el.style.setProperty('--shot-color',color);
+}
+function spawnSkillWave(u,targets,color,shield=false,style='',impacts=true,artId=u?.id||''){
+  if(typeof document==='undefined'||!u)return;
+  const a=unitVisual(u),g=boardGeo();
+  const supportWave=shield||style==='support';
+  const fullRadius=Math.max(g.cw*1.3,...targets.map(t=>{const p=unitVisual(t);return Math.hypot(p.x-a.x,p.y-a.y);}),0);
+  const radius=supportWave?Math.min(fullRadius,g.cw*.95):fullRadius;
+  const wave=setSkillArt(fxNode((shield?'skill-shield-wave':'skill-field-wave')+(supportWave?' support-wave':'')+(style?' '+style:''),a.x,a.y,650),skillArt(artId,'flight'));
+  if(wave){wave.style.setProperty('--shot-color',color);wave.style.setProperty('--wave-size',(radius*2+g.cw*.55)+'px');}
+  if(style==='gate'){
+    const gate=fxNode('skill-field-gate',a.x,a.y,550);
+    if(gate)gate.style.setProperty('--shot-color',color);
+  }
+  if(impacts)targets.forEach((t,i)=>setTimeout(()=>{
+    if(shield)spawnShieldImpact(t,color,artId);
+    else {const p=unitVisual(t),el=setSkillArt(fxNode('skill-field-impact'+(style?' '+style:''),p.x,p.y,440),skillArt(artId,'impact'));if(el)el.style.setProperty('--shot-color',color);}
+  },(100+i*70)/Math.max(1,SPEED)));
+}
+function spawnSkillSlash(u,target,color,index=0,artId=u.id){
+  const a=unitVisual(u),b=unitVisual(target),ang=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI+(index%2?32:-24);
+  const slashArt=skillArt(artId,'slash');
+  const slash=setSkillArt(fxNode(slashArt?'skill-slash-art':'slashline',b.x,b.y,360),slashArt);
+  if(slash){slash.style.setProperty('--rot',ang+'deg');slash.style.setProperty('--shot-color',color);if(!slashArt){slash.style.width=(boardGeo().cw*1.25)+'px';slash.style.background=`linear-gradient(90deg,transparent,#fff 26%,${color} 62%,transparent)`;slash.style.boxShadow=`0 0 9px ${color}`;}}
+  const impactArt=skillArt(artId,'slash-impact');
+  const impact=setSkillArt(fxNode('skill-projectile-impact',b.x,b.y,300),impactArt);
+  if(impact){impact.style.setProperty('--shot-color',color);if(!impactArt){impact.style.width=(boardGeo().cw*.68)+'px';impact.style.height=(boardGeo().cw*.68)+'px';}}
+}
+function skillCastFx(u,units,k,target){
+  const allies=units.filter(t=>t.hp>0&&t.side===u.side),foes=units.filter(t=>t.hp>0&&t.side!==u.side),sig=sigFor(u),color=k.color||sig.color;
+  let detached=false;
+  const detachedHit=skillIsDetached(u,k);
+  if(detachedHit&&target){launchSkillProjectile(u,target,k);detached=true;}
+  else if(k.mode==='single'&&target)setTimeout(()=>spawnSkillSlash(u,target,color),120/Math.max(1,SPEED));
+  if(k.mode==='combo'&&target){for(let i=0;i<(k.hits||1);i++)setTimeout(()=>spawnSkillSlash(u,target,color,i),(i*90)/Math.max(1,SPEED));}
+  else if(k.mode==='dash'&&target)setTimeout(()=>spawnSkillSlash(u,target,color),260/Math.max(1,SPEED));
+  else if(k.mode==='cleave'||k.mode==='dashCleave'){
+    const strike=()=>units.filter(t=>t.hp>0&&t.side!==u.side&&nearCells(t,u,1)).slice(0,5).forEach((t,i)=>spawnSkillSlash(u,t,color,i));
+    if(k.mode==='dashCleave')setTimeout(strike,100/Math.max(1,SPEED));else strike();
+  }else if(k.mode==='burst'&&u.id==='songlv'){
+    const near=foes.filter(t=>nearCells(t,u,1));spawnSkillWave(u,near,color,false,'',false);
+    near.forEach((t,i)=>setTimeout(()=>spawnSkillSlash(u,t,color,i),100/Math.max(1,SPEED)));
+  }else if(k.mode==='burst'&&u.id==='nana7mi'&&target){
+    const hitList=[target,...v3NearestFoes(target,foes,1,2)];
+    setTimeout(()=>spawnSkillWave(target,hitList,color,false,'tide'),skillFlightDuration(u,target)/Math.max(1,SPEED));
+  }
+  if(k.mode==='guard')spawnShieldImpact(u,color);
+  else if(k.mode==='guardLink'){
+    const mate=allies.filter(t=>t!==u).sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0];
+    spawnSkillWave(u,mate?[u,mate]:[u],color,true,'',false);
+    spawnShieldImpact(u,color);
+    if(mate)launchSkillProjectile(u,mate,k,'healing',90);
+  }else if(k.mode==='teamShield')spawnSkillWave(u,allies,color,true);
+  if(k.mode==='heal'){
+    const recipients=allies.slice().sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp).slice(0,k.healN||1);
+    if(recipients.length>1)spawnSkillWave(u,recipients,color,!!k.shield,'support',false);
+    recipients.forEach((t,i)=>{if(t!==u)launchSkillProjectile(u,t,k,'healing',i*80);else if(k.shield)spawnShieldImpact(t,color);});
+    detached=recipients.some(t=>t!==u);
+  }else if(k.mode==='team'||k.mode==='support'){
+    const recipients=u.id==='suiji'?allies.filter(t=>t!==u):allies;
+    if(recipients.length>1)spawnSkillWave(u,recipients,color,!!k.shield,'support',false);
+    recipients.forEach((t,i)=>{if(t!==u)launchSkillProjectile(u,t,k,'healing',i*65);else if(k.shield)spawnShieldImpact(t,color);});
+    detached=recipients.some(t=>t!==u);
+  }
+  if(k.mode==='field'){
+    const anchor=u.id==='liAn'?(foes.slice().sort((a,b)=>eatk(b)-eatk(a))[0]||target):u;
+    const style=u.id==='azi'?'sound':u.id==='rei'?'gate':u.id==='liAn'?'ice':u.id==='seki'?'void':'';
+    if(anchor)spawnSkillWave(anchor,foes.filter(t=>unitDist(t,anchor)<= (u.id==='liAn'?4:3)),color,false,style,true,u.id);
+  }
+  return detached;
+}
+function skillAct(u,tgt){
+  const spec=SKILL_ACTIONS[u.id],host=unitVisual(u).el;
+  if(!spec||!host)return;
+  const [gesture,beats]=spec, sig=sigFor(u), duration=(.44+beats*.12)*SKILL_PRESENTATION_SCALE;
+  const motionIndex=Math.max(0,UNITS.findIndex(v=>v.id===u.id));
+  host.style.setProperty('--skill-lean-in',`${(-12+(motionIndex*1.37)%18).toFixed(1)}deg`);
+  host.style.setProperty('--skill-lean-out',`${(8+(motionIndex*1.91)%17).toFixed(1)}deg`);
+  host.style.setProperty('--skill-rise',`${(-6-(motionIndex*.27)%10).toFixed(1)}%`);
+  host.style.setProperty('--skill-compress',`${(.80+motionIndex*.0023).toFixed(3)}`);
+  host.style.setProperty('--skill-spin',`${(152+motionIndex*4.1).toFixed(1)}deg`);
+  host.style.setProperty('--skill-spin-end',`${(285+motionIndex*3.2).toFixed(1)}deg`);
+  host.style.setProperty('--skill-charge-scale',`${(.82+motionIndex*.0025).toFixed(3)}`);
+  host.style.setProperty('--skill-release-scale',`${(1.13+motionIndex*.0029).toFixed(3)}`);
+  host.dataset.gesture=gesture;host.style.setProperty('--skill-dur',duration+'s');
+  host.classList.remove('skill-acting');void host.offsetWidth;host.classList.add('skill-acting');
+  clearTimeout(host._skillTimer);
+  host._skillTimer=setTimeout(()=>host.classList.remove('skill-acting'),duration*1000/Math.max(1,SPEED));
+  const cueTarget=tgt&&tgt.hp>0?tgt:u;
+  for(let i=0;i<beats;i++)setTimeout(()=>{
+    const p=unitVisual(cueTarget),cue=fxNode('skill-cue',p.x,p.y,700);
+    if(!cue)return;
+    cue.dataset.glyph=sig.glyph;
+    cue.style.setProperty('--cue-color',sig.color);
+    cue.style.setProperty('--cue-radius',sig.shape==='seal'?'20%':sig.shape==='petal'?'45% 20% 50% 25%':'50%');
+    cue.style.setProperty('--cue-dur',(.55+i*.06)*SKILL_PRESENTATION_SCALE+'s');
+    cue.style.marginLeft=((i-(beats-1)/2)*12)+'px';
+  },i*115*SKILL_PRESENTATION_SCALE/Math.max(1,SPEED));
+}
 function sigFor(u){
   const id=String(u&&u.id||''),cfg=V3_SIGNATURES[id]||{};let h=0;
   for(const c of id)h=(h*31+c.charCodeAt(0))>>>0;
@@ -5868,14 +6190,15 @@ function sigFor(u){
     rot:((h%37)-18),scale:(.88+(h%17)/100).toFixed(2),dur:(.66+(h%5)*.07).toFixed(2),hitDur:(.48+(h%4)*.07).toFixed(2)};
 }
 function signatureFx(u,tgt){
-  const s=sigFor(u), kit=COMBAT_KITS[u.id], art=kit?'combat':s.art, el=vfxAt(u,'signature',850);
+  const s=sigFor(u), kit=COMBAT_KITS[u.id], art=kit&&u.id!=='kouichi'?'combat':s.art, el=vfxAt(u,'signature',850);
   if(el){el.dataset.glyph=s.glyph;el.dataset.shape=s.shape;el.dataset.art=art;el.dataset.unit=u.id;
+    if(['heal','team','support','guard','guardLink','teamShield'].includes(u._skillArch))el.classList.add('support-cast');
     el.style.setProperty('--sig-color',kit?kit.color:s.color);el.style.setProperty('--sig-rot',s.rot+'deg');el.style.setProperty('--sig-scale',s.scale);el.style.setProperty('--sig-dur',s.dur+'s');
-    if(kit&&kit.asset){el.style.setProperty('background-image','url("'+kit.asset+'")','important');el.classList.add('kit-art');}}
+    if(kit&&kit.asset&&u.id!=='kouichi'){el.style.setProperty('background-image','url("'+kit.asset+'")','important');el.classList.add('kit-art');}}
   if(tgt&&tgt.hp>0){const p=unitVisual(tgt),hit=fxNode('signature',p.x,p.y,560);
     if(hit){hit.classList.add('signature-hit');hit.dataset.glyph=s.glyph;hit.dataset.shape=s.shape;hit.dataset.art=art;hit.dataset.unit=u.id;
       hit.style.setProperty('--sig-color',kit?kit.color:s.color);hit.style.setProperty('--sig-rot',s.rot+'deg');hit.style.setProperty('--sig-scale',s.scale);hit.style.setProperty('--sig-hit-dur',s.hitDur+'s');
-      if(kit&&kit.asset){hit.style.setProperty('background-image','url("'+kit.asset+'")','important');hit.classList.add('kit-art');}}}
+      if(kit&&kit.asset&&u.id!=='kouichi'){hit.style.setProperty('background-image','url("'+kit.asset+'")','important');hit.classList.add('kit-art');}}}
   fxSparks(u,kit?kit.color:s.color,3+(Math.abs(Number(s.rot))%2),20+(Math.abs(Number(s.rot))%14));
 }
 function markBurst(u,mark){
@@ -5929,21 +6252,6 @@ function shakeCell(x,y){
   if(!c) return;
   c.classList.add('shake');
   setTimeout(()=>c.classList.remove('shake'),380/SPEED);
-}
-function beam(u1,u2,color){
-  if(_vfxN>=40) return;
-  const a=unitVisual(u1), b=unitVisual(u2);
-  const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
-  if(len<1) return;
-  const el=document.createElement('div');
-  el.className='vfx beam';
-  el.style.width=len+'px';
-  el.style.color=color; el.style.background=color;
-  el.style.left=a.x+'px'; el.style.top=(a.y-2.5)+'px';
-  el.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`;
-  _vfxN++;
-  $('board').appendChild(el);
-  setTimeout(()=>{ el.remove(); _vfxN--; },480/SPEED);
 }
 function freeCell(units,nx,ny){
   return nx>=0&&nx<BOARD_W&&ny>=0&&ny<BOARD_H && !cellOccupied(units,nx,ny);
@@ -6318,7 +6626,6 @@ function castSkill(u,tgt,units,skMul){
       const spot = u.big ? spots.find(([x,y])=>bigFits(units,u,x,y))   // 2×2 突进者整块落地
                          : spots.find(([x,y])=>freeCell(units,x,y));
       if(spot){u.x=spot[0];u.y=spot[1];}
-      beam(u,far,facTint(u));
       vfxAt(u,'flash',600);
       vfxAt(far,'ring',900);
       const dd=dealDamage(u,far,Math.round(power*2),units);
@@ -6354,7 +6661,6 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'fireball': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f,facTint(u));
       vfxAt(f,'tex-fireball boom',750);
       { const pf=unitVisual(f); fxNode('shock',pf.x,pf.y,520); }   // 落点爆炸冲击波
       fxSparks(f,facTint(u),4,26); fxChips(f,facTint(u),3);        // + 碎屑（阵营色）
@@ -6363,7 +6669,6 @@ function castSkill(u,tgt,units,skMul){
       shakeCell(f.x,f.y); break; }
     case 'frost': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f,'#9fe8ff');
       vfxAt(f, sv.zone?'tex-frost':'tex-time',900);                 // 雪烛冰晶绽放 / 瑞娅时间漩涡
       fxShards(f,'ice',4);                                          // 浅蓝冰晶碎裂
       const dd=dealDamage(u,f,Math.round(power*1.5),units);
@@ -6372,7 +6677,6 @@ function castSkill(u,tgt,units,skMul){
       if(sv.zone) spawnZone(u,f.x,f.y,sv.zone); break; }
     case 'break': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f,'#ffb14a');
       const stripped=f.shield; f.shield=0; f.noShieldT=3000;
       vfxAt(f,'boom',750);
       fxShards(f,'gl',5);                                           // 蓝色护盾玻璃渣碎裂
@@ -6392,7 +6696,6 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'purebolt': { if(!foes.length)break;   // 纯粹伤害：无视护甲与魔抗（多多文档 11.4.3）
       const f=pickFoe(foes,u,sv);
-      beam(u,f,facTint(u));
       vfxAt(f,'boom',780);
       const dd=dealDamage(u,f,Math.round(power*1.8),units,'pure');
       applyFx(u,f,sv,units,allies,foes,power,dd);
@@ -6400,7 +6703,6 @@ function castSkill(u,tgt,units,skMul){
     case 'shred': case 'sunder': case 'hex': {   // 破甲 / 减魔抗 / 变形（多多文档破防与控制体系）
       if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f, arch==='hex'?'#c77dff':facTint(u));   // 变形保持紫色识别，破甲/减抗走阵营色
       if(arch==='shred') fxChips(f,'#ffb14a',3);      // 橙色护甲碎屑
       else if(arch==='sunder') boltFx(u,f,true);      // 紫色电弧
       else hexFx(f);                                  // 烟雾团包裹 + 变形落地弹性
@@ -6410,7 +6712,6 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'petrify': { if(!foes.length)break;   // 石化符（按 SKILL_INFO：130% 伤害 + 石化，受物理伤害提高由 dealDamage 的 petrifyT 结算）
       const f=pickFoe(foes,u,sv);
-      beam(u,f,'#d9c8a6');
       crackFx(f);                                      // 石化裂纹 + 石屑
       vfxAt(f,'tex-petrify ring',900);
       const dd=dealDamage(u,f,Math.round(power*1.3),units);
@@ -6421,7 +6722,6 @@ function castSkill(u,tgt,units,skMul){
       shakeCell(f.x,f.y); break; }
     case 'curse': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f,facTint(u));
       vfxAt(f,'tex-jelly ring drain',950);   // 果冻封印：Q弹封印球
       const dd=dealDamage(u,f,Math.round(power*1.0),units);
       applyFx(u,f,sv,units,allies,foes,power,dd);
@@ -6429,7 +6729,6 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'burn': { if(!foes.length)break;
       const f=pickFoe(foes,u,sv);
-      beam(u,f,facTint(u));
       fxRise(f,'ember',3);                                          // 余烬火星上飘
       vfxAt(f,'tex-poison boom',750);
       const dd=dealDamage(u,f,Math.round(power*1.5),units);
@@ -6492,7 +6791,6 @@ function castSkill(u,tgt,units,skMul){
       break; }
     case 'silence': { if(!foes.length)break;   // 沉默：克制回蓝施法阵容
       const f=pickFoe(foes,u,sv);
-      beam(u,f,facTint(u));
       vfxAt(f,'tex-hush',850);                           // 静默符印
       staticFx(f);                                     // 静电环
       const dd=dealDamage(u,f,Math.round(power*1.4),units);
@@ -6662,15 +6960,12 @@ const AUGS=[
   {id:'atk',  n:'⚡ 强攻令',   d:v=>`全体我方棋子攻击 +${v}%`,            s:25,  w:12, r:1},
   {id:'hp',   n:'❤️ 生命图腾', d:v=>`全体我方棋子生命 +${v}%`,            s:30,  w:15, r:1},
   {id:'asp',  n:'🌪️ 疾风号角', d:v=>`全体我方棋子攻速 +${v}%`,            s:20,  w:10, r:1},
-  {id:'mana', n:'🔵 蓝能核心', d:v=>`我方棋子开局蓝量 +${v} 点`,          s:25,  w:12, r:1},
   {id:'ar',   n:'🛡️ 荆棘重甲', d:v=>`全体我方棋子护甲 +${v}`,             s:8,   w:4,  r:1},
   {id:'mr',   n:'✨ 秘法屏障', d:v=>`全体我方棋子魔抗 +${v}%`,            s:25,  w:12, r:1},
   {id:'regen',n:'🌿 再生之泉', d:v=>`我方棋子每秒回复 ${v}% 最大生命`,    s:2.5, w:1.2,r:1},
   {id:'gold', n:'💰 生财经纬', d:v=>`每回合额外收入 +${v} 金`,            s:3,   w:1,  r:1},
-  {id:'atkmana',  n:'🎼 回蓝协奏', d:v=>`我方棋子攻击回蓝效率 +${v}%`,     s:30,  w:15, r:1},
   {id:'dropplus', n:'🐾 野怪宝库', d:v=>`野怪回合掉落装备 +${v} 件`,       s:1,   w:1,  r:1},
   {id:'sellup',   n:'🪙 奸商契约', d:v=>`出售棋子所得 +${v}%`,             s:40,  w:20, r:1},
-  {id:'killmana', n:'💀 灵魂虹吸', d:v=>`我方棋子击杀敌人回复 ${v} 点蓝量`, s:20,  w:10, r:2},
   {id:'startshield',n:'🔰 先祖庇护', d:v=>`开战时全体我方获得 ${v}% 最大生命护盾`, s:18, w:10, r:2},
   {id:'skillhaste', n:'⏱️ 技能急速', d:v=>`我方棋子技能冷却 -${v}%`,        s:30,  w:18, r:2},
   {id:'synres',   n:'🔗 羁绊共鸣', d:v=>`每个已激活羁绊档位为全队提供 +${v}% 攻击与生命（开战结算）`, s:4, w:2, r:3},
@@ -6783,6 +7078,7 @@ function autoSettle(){   // 托管：自动选增强（③ 稀有度>局面适�
   setTimeout(()=>{ if(session===runSessionId&&S.auto&&S.phase==='chapter'&&flowPage==='chapter') chapterContinue(); }, 800);
 }
 function endBattle(alive0,alive1){
+  skillImpactQueue=[];
   BondRuntime.state=null;
   if(S.solo&&!['battle','settle'].includes(S.phase))return;
   if(S.phase==='over') return;     // 已终局，忽略迟到的结算
