@@ -1164,6 +1164,8 @@ html[data-theme="dark"] .help-sec { border-color:rgba(149,171,227,.22); backgrou
 html[data-theme="dark"] .help-h { color:#c3c9ff; }
 
 
+/* 八人联机入口暂时置灰：功能仍在开发中 */
+#homeOnline[disabled]{opacity:.5;filter:grayscale(.85);cursor:not-allowed;}
 </style>
 <link rel="stylesheet" href="tools/idol-ui.css?v=2">
 <link rel="stylesheet" href="tools/idol-redesign.css?v=12">
@@ -1325,7 +1327,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
     <div class="flow-actions flow-home-actions">
       <button id="homeContinue" class="flow-primary" type="button" hidden>继续对局</button>
       <button id="homeNew" class="flow-secondary" type="button">新建对局</button>
-      <button id="homeOnline" class="flow-secondary" type="button">八人联机原型 · 好友房间</button>
+      <button id="homeOnline" class="flow-secondary" type="button" disabled title="联机仍在开发中，敬请期待">八人联机原型 · 好友房间（开发中）</button>
       <button id="homeHelp" class="flow-link" type="button">玩法说明</button>
       <button id="homeHistory" class="flow-link" type="button">战绩与荣誉</button>
       <button id="homeTheme" class="flow-link" type="button" aria-label="切换显示主题">切换主题</button>
