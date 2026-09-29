@@ -1156,9 +1156,9 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
 
 </style>
 <link rel="stylesheet" href="tools/idol-ui.css?v=2">
-<link rel="stylesheet" href="tools/idol-redesign.css?v=11">
+<link rel="stylesheet" href="tools/idol-redesign.css?v=12">
 <link rel="stylesheet" href="tools/mobile-stage.css?v=2">
-<link rel="stylesheet" href="tools/idol-dark.css?v=4">
+<link rel="stylesheet" href="tools/idol-dark.css?v=5">
 <link rel="stylesheet" href="tools/stage-themes.css?v=2">
 <link rel="stylesheet" href="tools/narrative-bar.css?v=2">
 <link rel="stylesheet" href="tools/solo-ui.css?v=3">
@@ -3767,8 +3767,9 @@ function renderShop(){
     ].filter(Boolean).join('');
     if(u){
       c.innerHTML=`<div class="costbar"></div>`+
+        `<div class="artbg" style="background-image:url('assets/units_big/${u.id}.webp')" aria-hidden="true"></div>`+
+        `<div class="art"></div>`+
         `<div class="cn">${u.name}</div>`+
-        `<div class="art"><img class="cnpt" src="assets/units_big/${u.id}.webp" alt="" draggable="false"></div>`+
         `<div class="tis">${traitIcons(u)}</div>`+
         `<div class="stb"><span class="stat hp"><i></i>${u.hp}</span><span class="stat atk"><i></i>${u.atk}</span><b class="cc2">${u.cost}</b></div>`+
         (bds?`<div class="badges">${bds}</div>`:'');

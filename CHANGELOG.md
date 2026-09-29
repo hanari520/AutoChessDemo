@@ -1,5 +1,10 @@
 # 更新日志
 
+## 2026-09-29 · 商店卡立绘满幅背景（sw v96→v97）
+
+- 普通模式商店卡改为满幅立绘背景：立绘以 cover 满铺整卡（焦点 center 22%，与八人模式上阵棋盘一致），费用色条与状态徽章保留原位，悬停立绘轻微放大。
+- 亮色主题采用白字压图 + 深色渐变（方案 B），夜幕应援暗色主题采用渐变更靠下的暗色版（方案 A）；idol-redesign.css 升 v12、idol-dark.css 升 v5，Service Worker 缓存 v97。
+
 ## 2026-09-29 · 八人联机迁移至 CloudBase（sw v95→v96）
 
 - 八人房间服务由 Cloudflare Durable Objects 原型迁至腾讯 CloudBase 云托管单实例 Node 容器，国内玩家可连接公网 HTTPS 服务；房主可添加、移除机器人，补足八席开局。

@@ -232,3 +232,8 @@ html[data-theme="dark"] .gear-more { color: #aebfe3; }
   html[data-theme="dark"] body.touch { background: linear-gradient(180deg,rgba(6,12,32,.38),rgba(8,14,35,.65)),url('../assets/ui/idol-arena-night.png') center/cover scroll,#090f22; }
   html[data-theme="dark"] body.touch::before { background: radial-gradient(circle at 50% 44%,rgba(29,43,83,.15),transparent 62%); }
 }
+
+/* ===== 商店卡·满幅立绘背景（夜幕主题=方案A 暗色：渐变更靠下、文字贴近卡底） ===== */
+html[data-theme="dark"] #shop .card .artbg { background-color:#1c2750; }
+html[data-theme="dark"] #shop .card .artbg::after { top:38%; background:linear-gradient(180deg,transparent,rgba(22,33,65,.6) 30%,rgba(17,26,52,.97) 58%); }
+html[data-theme="dark"] #shop .card .cn { text-shadow:0 1px 6px rgba(8,12,32,.6); }

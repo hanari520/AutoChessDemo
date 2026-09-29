@@ -691,3 +691,25 @@ html[data-theme="dark"] .flow-danger { color:#ffb4c2; background:rgba(117,48,67,
   .gear-worn, .gear-bag { padding: 8px; }
   .gear-worn .in-item-chip { min-height: 30px; }
 }
+
+/* ===== 商店卡·满幅立绘背景（亮色=白字压图；夜幕暗色版见 idol-dark.css） ===== */
+#shop .card { display:flex; flex-direction:column; justify-content:flex-end; min-height:168px; padding:0; overflow:hidden; }
+#shop .card .artbg { position:absolute; inset:0; z-index:0; background:#e3eaff center 22%/cover no-repeat; transition:transform .25s cubic-bezier(.2,.8,.2,1); }
+#shop .card:hover:not(.sold) .artbg { transform:scale(1.05); }
+#shop .card .artbg::after { content:""; position:absolute; left:0; right:0; top:32%; bottom:0; background:linear-gradient(180deg,transparent,rgba(18,24,48,.36) 42%,rgba(14,19,40,.9) 74%); }
+#shop .card .art { height:104px; flex:none; margin:0; }
+#shop .card .costbar { z-index:3; }
+#shop .card .badges { z-index:4; top:6px; right:6px; }
+#shop .card .cn { position:relative; z-index:2; padding:0 8px 0 10px; color:#fff; text-shadow:0 1px 8px rgba(8,12,32,.7),0 1px 2px rgba(8,12,32,.55); }
+#shop .card .tis { position:relative; z-index:2; margin:0; padding:2px 8px 0 10px; }
+#shop .card .tis .tb { color:#e8edff; background:rgba(24,32,62,.55); border-color:rgba(190,205,255,.35); backdrop-filter:blur(3px); }
+#shop .card .stb { position:relative; z-index:2; margin:5px 0 0; padding:4px 9px 3px; border-color:rgba(190,205,255,.22); border-radius:0 0 14px 14px; background:linear-gradient(90deg,rgba(22,30,58,.94),rgba(30,36,66,.94)); }
+#shop .card .stat { color:#c9d4f4; }
+#shop .card .stat.hp { color:#ff9fba; } #shop .card .stat.atk { color:#f5c780; }
+body.touch #shop .card { padding:0; }
+body.touch #shop .card .art { height:84px; }
+@media (orientation:landscape) and (max-height:540px){
+  #shop .card { min-height:96px; }
+  #shop .card .art { height:44px; }
+  body.touch #shop .card .art { height:56px; }
+}
