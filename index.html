@@ -234,6 +234,16 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
 .unit.battle-unit.dashing::after { content:''; position:absolute; inset:-6px; border-radius:8px;
   border:2px solid var(--arc); animation:dashRing calc(.45s/var(--spd)) ease-out forwards; }
 @keyframes dashRing { from{ transform:scale(.7); opacity:1; } to{ transform:scale(1.6); opacity:0; } }
+/* ===== 战斗渲染性能档（与 JS __TRANS_STYLE 同门）：支持独立 translate 属性的浏览器，
+   棋子定位/弹道飞行改走合成器插值（写 translate 不触发布局），画面与动画曲线不变。
+   不支持的浏览器不命中此块，走上方 left/top 原路径。 ===== */
+@supports (translate: 0px) {
+  #unitLayer .unit.battle-unit { left:0; top:0;
+    transition: translate calc(.45s/var(--spd)) ease, transform calc(.12s/var(--spd)) ease; }
+  #unitLayer .unit.battle-unit.dashing { transition: translate calc(.45s/var(--spd)) cubic-bezier(.3,.9,.3,1), transform calc(.45s/var(--spd)) ease; }
+  #board .vfx.proj { transition: translate calc(.4s/var(--spd)) linear; }
+  .unit.battle-unit .pt { will-change: transform; }
+}
 .vfx.attached { left:-4px !important; top:-4px !important; width:var(--cell); height:var(--cell); }
 .unit.item-ghost { display:flex; align-items:center; justify-content:center; font-size:10px; text-align:center;
   background:rgba(29,42,32,.9); border:1px solid var(--heal); border-radius:4px; color:var(--heal); padding:2px; }
@@ -3054,9 +3064,17 @@ function arenaSettleHuman(won,alive0,alive1){
 
 /* ================= 工具 ================= */
 const $=id=>document.getElementById(id);
+let _logFlushQueued=false;
+function _flushLog(){ _logFlushQueued=false; $('log').innerHTML = S.log.map(x=>'· '+x).join('<br>'); }
 function log(t){ S.log.unshift(t); if(S.log.length>60)S.log.pop();   // 上限 60：结算块 6~9 行/回合，40 会把上回合块冲掉太快
   if(ARENA_SILENT) return;
-  $('log').innerHTML = S.log.map(x=>'· '+x).join('<br>'); }
+  /* 战斗期间每 tick 可有多条日志，旧实现每条全量重建 60 行 innerHTML；浏览器改为每帧最多刷一次。
+     无头桩（sim 测试同步读 log DOM，rAF/setTimeout 都是假定时器）保持同步刷。 */
+  if(globalThis.__HEADLESS){ _flushLog(); return; }
+  if(_logFlushQueued) return;
+  _logFlushQueued=true;
+  if(typeof requestAnimationFrame==='function') requestAnimationFrame(_flushLog);
+  else setTimeout(_flushLog,0); }
 /* 体验遥测：只记录决策与进度数据；localStorage 仅在回合结算/终局批量落盘。 */
 const TELE_KEY='vc_tele_v1';
 function tele(name,n=1,detail=null){
@@ -5094,6 +5112,16 @@ function starExpMul(r){
 }
 let battleTimer=null, currentTick=null, tickWorker=null;
 const SPEED=1;              // 固定播放速度，供现有动画时长计算使用
+/* 战斗渲染性能档：支持独立 translate 属性的浏览器走合成器位移（零布局），老浏览器维持 left/top 原路径。
+   CSS 侧 @supports 块与本探测必须同门：两边条件一致才切换。 */
+const __TRANS_STYLE=(typeof CSS!=='undefined'&&CSS.supports&&CSS.supports('translate','0px'))?'translate':'legacy';
+function unitSizeOf(u,el){   // 元素实测尺寸（创建/geo 变化时测一次并缓存；border-box：=格子边-8）
+  const fp=(_geo&&_geo.fp)||'';
+  if(el&&el._owFp!==fp){ el._ow=el.offsetWidth; el._oh=el.offsetHeight; el._owFp=fp; }
+  if(el&&el._ow) return { w:el._ow, h:el._oh };
+  const g=boardGeo();
+  return { w:u.big?2*g.cw+g.gx-8:g.cw-8, h:u.big?2*g.ch+g.gy-8:g.ch-8 };
+}
 let skillImpactClock=0, skillImpactQueue=[];
 function queueSkillImpact(delay,resolve){
   if(!S||S.phase!=='battle'||!currentTick){resolve();return;}
@@ -6076,6 +6104,17 @@ function unitVisual(u){
   const g=boardGeo(), layer=document.getElementById('unitLayer');
   const el=layer&&layer.querySelector(`[data-uid="${u.uid}"]`);
   if(!el){ return { x:g.cellX+u.x*g.sx+g.cw/2, y:g.cellY+u.y*g.sy+g.ch/2, el:null }; }
+  if(__TRANS_STYLE==='translate'){
+    /* 性能档：读 computed translate（合成器插值，零布局）；层偏移用 g.cellX 等价替代
+      （#unitLayer left/top=var(--pad)，与首格 offsetLeft 同源），尺寸用 unitSizeOf 缓存。 */
+    let tx=u.x*g.sx+4, ty=u.y*g.sy+4;   // 未渲染过 translate 时的落点
+    try{
+      const tr=getComputedStyle(el).translate;
+      if(tr&&tr!=='none'){ const p=tr.split(' '); tx=parseFloat(p[0])||0; ty=p.length>1?(parseFloat(p[1])||0):0; }
+    }catch(e){}
+    const sz=unitSizeOf(u,el);
+    return { x:g.cellX+tx+sz.w/2, y:g.cellY+ty+sz.h/2, el };
+  }
   // 棋子 offsetParent 是 unitLayer：层内偏移 + 层在棋盘内的偏移 = 棋盘坐标系中心
   return { x:layer.offsetLeft+el.offsetLeft+el.offsetWidth/2, y:layer.offsetTop+el.offsetTop+el.offsetHeight/2, el };
 }
@@ -6425,7 +6464,11 @@ function deathFx(el,layer){            // 死亡：灰化淡出 + 消散粒子�
   if(el.dataset.dead) return;
   el.dataset.dead='1';
   el.classList.add('dying');
-  const x=layer.offsetLeft+el.offsetLeft+el.offsetWidth/2, y=layer.offsetTop+el.offsetTop+el.offsetHeight/2;
+  /* 性能档/旧路径统一走公式：格坐标（dataset 记录的最后一次落格）+ 实测缓存尺寸；
+     layer 偏移用 boardGeo().cellX/cellY 等价替代（#unitLayer 与首格同原点）。 */
+  const g=boardGeo(), gx=+el.dataset.gx||0, gy=+el.dataset.gy||0, big=el.classList.contains('big');
+  const sz=unitSizeOf({big},el);
+  const x=g.cellX+gx*g.sx+4+sz.w/2, y=g.cellY+gy*g.sy+4+sz.h/2;
   for(let i=0;i<4;i++){ const p=fxNode('pt',x+(rand()*18-9),y+(rand()*10-5),540); if(!p) break;
     p.style.background='#b9b3c9';
     p.style['--dx']=(rand()*14-7).toFixed(1)+'px';
@@ -6503,7 +6546,19 @@ function fireProjectile(src,tgt,color,profile){
   _vfxN++;
   $('board').appendChild(el);
   const s=unitVisual(src), flight=420/SPEED, t0=performance.now();
-  (function step(){
+  if(__TRANS_STYLE==='translate'){
+    /* 性能档：起点固定在 left/top，位移写入 translate（带 *k 插值因子，写入序列与旧 left/top 完全一致，
+       由合成器过渡插值，零布局）；目标追踪走 unitVisual 的 computed translate 路径。 */
+    el.style.left=(s.x-4)+'px'; el.style.top=(s.y-4)+'px';
+    (function step(){
+      const k=Math.min(1,(performance.now()-t0)/flight);
+      const t=unitVisual(tgt); // 每帧读取目标实时视觉位置 → 追踪移动中的目标
+      el.style.translate=((t.x-s.x)*k)+'px '+((t.y-s.y)*k)+'px';
+      tail.style.transform='rotate('+Math.atan2(t.y-s.y,t.x-s.x)+'rad)';   // 拖尾始终指向来源
+      if(k<1) requestAnimationFrame(step);
+      else { el.remove(); _vfxN--; impactFx(tgt,color); }   // 命中：小型爆裂圈
+    })();
+  } else (function step(){
     const k=Math.min(1,(performance.now()-t0)/flight);
     const t=unitVisual(tgt); // 每帧读取目标实时视觉位置 → 追踪移动中的目标
     el.style.left=(s.x+(t.x-s.x)*k-4)+'px';
@@ -6936,6 +6991,8 @@ function spawnZone(u,x,y,z){   // 持续区域按 tick 结算伤害和附加控�
 function renderBattle(units){
   let layer=document.getElementById('unitLayer');
   if(!layer){ layer=document.createElement('div'); layer.id='unitLayer'; $('board').appendChild(layer); }
+  const g=boardGeo();   // 每 tick 取一次几何缓存；循环内零布局读（尺寸走 unitSizeOf 缓存，定位走公式）
+  const TRANS=__TRANS_STYLE==='translate';
   const seen=new Set();
   for(const u of units){
     if(u.hp<=0) continue;
@@ -6952,22 +7009,27 @@ function renderBattle(units){
       const pe=el.querySelector('.pt'); if(pe) pe.style.animationDelay=(-((u.uid*137)%2600)/1000)+'s';   // 待机呼吸相位错开
       layer.appendChild(el);
     }
-    const g=boardGeo();
-    const lx=g.cellX-layer.offsetLeft, ly=g.cellY-layer.offsetTop;   // 格子原点在棋子图层坐标系
     el.classList.toggle('big',!!u.big);   // 2×2 头目：锚点格定位 + CSS 放大，布阵已保证整块在界内
-    const bw=u.big?2*g.cw+g.gx:g.cw, bh=u.big?2*g.ch+g.gy:g.ch;
-    el.style.left=(lx+u.x*g.sx+(bw-el.offsetWidth)/2)+'px';    // 用元素实测尺寸居中，兼容任意格子宽度
-    el.style.top =(ly+u.y*g.sy+(bh-el.offsetHeight)/2)+'px';
-    el.style.zIndex=String(10+u.y*2+(u.big?1:0));  // 层内行遮挡：y 大=靠下=靠前；boss 加 1 压住本行、让位于下一行（脚部不再盖住下排棋子）
+    const sz=unitSizeOf(u,el);   // 元素实测尺寸（创建/geo 变化时测一次；与旧每 tick 实测同值）
+    const px=u.x*g.sx+((u.big?2*g.cw+g.gx:g.cw)-sz.w)/2,   // (格步-实测宽)/2，与旧 offsetWidth 实测口径逐像素同值
+          py=u.y*g.sy+((u.big?2*g.ch+g.gy:g.ch)-sz.h)/2;
+    if(TRANS){
+      const pk=px+'px '+py+'px';
+      if(el._tvk!==pk){ el.style.translate=pk; el._tvk=pk; }
+    }else {
+      el.style.left=px+'px'; el.style.top=py+'px';
+    }
+    const z=String(10+u.y*2+(u.big?1:0));  // 层内行遮挡：y 大=靠下=靠前；boss 加 1 压住本行、让位于下一行（脚部不再盖住下排棋子）
+    if(el._zk!==z){ el.style.zIndex=z; el._zk=z; }
     if(el.dataset.gx!==undefined && (+el.dataset.gx!==u.x || +el.dataset.gy!==u.y)){
       el.classList.add('walking');
       clearTimeout(el._wt); el._wt=setTimeout(()=>el.classList.remove('walking'), 520/SPEED);
     }
     el.dataset.gx=u.x; el.dataset.gy=u.y;
     const hp=el.querySelector('.hpfill');
-    if(hp) hp.style.width=Math.max(0,u.hp/u.maxhp*100)+'%';
+    if(hp){ const hw=Math.max(0,u.hp/u.maxhp*100)+'%'; if(el._hw!==hw){ el._hw=hw; hp.style.width=hw; } }
     const mp=el.querySelector('.mpfill');
-    if(mp) mp.style.width=Math.min(100,u.mana/u.maxmana*100)+'%';
+    if(mp){ const mw=Math.min(100,u.mana/u.maxmana*100)+'%'; if(el._mw!==mw){ el._mw=mw; mp.style.width=mw; } }
     // 🎬 大招就绪：蓝满 + 未在冷却 + 非被动 + 存活且未被控 → 亮金环（E3）
     el.classList.toggle('ult-ready',
       u.hp>0 && !u.isPassiveFlag && u.mana>=u.maxmana && u.skillCd<=0 && u.stun<=0 && u.frozen<=0 && u.silenceT<=0 && u.hexT<=0);
@@ -6993,14 +7055,15 @@ function renderBattle(units){
       +(u.noShieldT>0?'🔨':'')+(u.healDownT>0?'💉':'')+(u.silenceT>0?'🔇':'')+(u.tauntT>0?'🎯':'');
     if(stTxt){
       if(!fz){ fz=document.createElement('span'); fz.className='fz'; el.appendChild(fz); }
-      fz.textContent=stTxt;
+      if(el._fz!==stTxt){ el._fz=stTxt; fz.textContent=stTxt; }
     } else if(fz) fz.remove();
   }
   layer.querySelectorAll('.unit').forEach(el=>{ if(!seen.has(el.dataset.uid)) deathFx(el,layer); });
   const ab=document.getElementById('aliveBar');   // 双方存活实时计数
   if(ab){ const mb=ab.querySelector('.ab-me b'), fb=ab.querySelector('.ab-foe b');
-    if(mb) mb.textContent=units.filter(u=>u.hp>0&&u.side===0).length;
-    if(fb) fb.textContent=units.filter(u=>u.hp>0&&u.side===1).length; }
+    const mc=String(units.filter(u=>u.hp>0&&u.side===0).length), fc=String(units.filter(u=>u.hp>0&&u.side===1).length);
+    if(mb&&ab._mc!==mc){ ab._mc=mc; mb.textContent=mc; }
+    if(fb&&ab._fc!==fc){ ab._fc=fc; fb.textContent=fc; } }
   statBarTick();   // ⚔🛡💚 统计条实时刷新（500ms 节流）
 }
 function showResultBanner(won,cb){

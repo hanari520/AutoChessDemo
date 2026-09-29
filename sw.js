@@ -1,6 +1,6 @@
 /* 虚拟棋战 Service Worker：离线可玩；页面与托管策略走网络优先（保证更新），其余同源静态资源缓存优先 */
-const CACHE = 'vcache-v97-shop-artbg';
-const INDEX_ASSET = './index.html?v=92';
+const CACHE = 'vcache-v98-battle-perf';
+const INDEX_ASSET = './index.html?v=93';
 const ONLINE_ASSET = './online.html?v=4';
 const ASSETS = [ONLINE_ASSET, './online/client.css?v=4', './online/client.js?v=4', './tools/daily-curses.js?v=4', './tools/bond-runtime.js?v=1', './tools/narrative-tour.js?v=1', './tools/narrative-bar.js?v=1', './tools/narrative-bar.css?v=2', './tools/solo-ui.css?v=3', './tools/solo-modes.js?v=4', './tools/campaign-map.js?v=2', './tools/solo-ui.js?v=4', './tools/solo-host.js?v=6', './', INDEX_ASSET, './manifest.json', './icon-192.png', './icon-512.png', './assets/redraw_manifest.json', './assets/skill_signature_manifest.json', './assets/syn/synergy-atlas.png', './assets/fx/v3-blade.png', './assets/fx/v3-arc.png', './assets/fx/v3-ward.png', './assets/fx/v3-void.png', './assets/fx/skill-skate-trail.png', './assets/ui/star-stage-icon.svg', './tools/bot_strategy.js?v=9', './tools/idol-ui.css?v=2', './tools/idol-ui.js?v=1', './tools/idol-redesign.css?v=12', './tools/idol-ui-redesign.js?v=5', './tools/mobile-stage.css?v=2', './tools/idol-dark.css?v=5', './tools/stage-themes.css?v=2', './assets/ui/idol-sky-stage.png', './assets/ui/idol-arena-v2.png', './assets/ui/idol-arena-night.png'];
 self.addEventListener('install', e => {
