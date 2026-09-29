@@ -83,6 +83,7 @@ export function lobbyFor(room, connectedSeats = new Set()) {
     players: room.players.map(player => ({
       seat: player.seat,
       name: player.name,
+      bot: !!player.bot,
       ready: !!player.ready,
       connected: connectedSeats.has(player.seat),
     })),

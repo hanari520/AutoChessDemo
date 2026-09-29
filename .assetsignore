@@ -16,6 +16,7 @@ online/core.js
 online/core.test.js
 online/combat.js
 online/combat.test.js
+online/skills.test.js
 assets/units_redraw
 assets/campaign
 # tools 中仅以下运行时文件需要对外提供；测试、部署脚本和素材草稿不上传。

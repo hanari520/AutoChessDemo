@@ -654,12 +654,12 @@ export function createGame({ seed, players } = {}) {
   assert(players.every(p => p && typeof p.id === 'string' && p.id.length && typeof p.name === 'string' && p.name.length), 'Invalid player');
   assert(new Set(players.map(p => p.id)).size === 8, 'Duplicate player id');
   const state = {
-    version: 1, ruleset: 'deterministic-battle-v2',
+    version: 1, ruleset: 'deterministic-battle-v3',
     seed: String(seed ?? 'online'), rng: seed32(seed ?? 'online'),
     phase: 'prep', round: 1, complete: false, nextUid: 1,
     pool: Object.fromEntries(ROSTER.map(([id, , cost]) => [id, STOCK[+cost]])),
     pairings: [], battles: [], results: [], seats: players.map((p, seat) => ({
-      seat, id: p.id, name: p.name.slice(0, 32), hp: 40, gold: 5, level: 2, xp: 0,
+      seat, id: p.id, name: p.name.slice(0, 32), bot: !!p.bot, hp: 40, gold: 5, level: 2, xp: 0,
       alive: true, place: null, ready: false, wins: 0, losses: 0, streak: 0,
       lastOpponent: null, items: [],
       shop: Array(SHOP).fill(null),
@@ -771,7 +771,7 @@ export function viewFor(state, seatIndex) {
   return {
     ruleset: state.ruleset, round: state.round, phase: state.phase,
     complete: state.complete, seat: seatIndex,
-    players: state.seats.map(s => ({ seat: s.seat, id: s.id, name: s.name,
+    players: state.seats.map(s => ({ seat: s.seat, id: s.id, name: s.name, bot: !!s.bot,
       hp: s.hp, level: s.level, alive: s.alive, place: s.place, ready: s.ready,
       wins: s.wins, losses: s.losses,
       board: s.board.map(publicUnit) })),

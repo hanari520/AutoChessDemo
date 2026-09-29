@@ -246,3 +246,21 @@ input:focus-visible { border-color: #7fa9ed; box-shadow: 0 0 0 3px rgba(122,155,
   .battle-piece { border-width:1px; border-radius:5px; min-height:19px; }
   .battle-piece span { padding:1px 2px; font-size:.43rem; }
 }
+.bot-badge {
+  margin-right:4px;
+  font-size:.9em;
+}
+.seat-kick {
+  flex:none;
+  width:24px;
+  height:24px;
+  margin-left:auto;
+  border:1px solid #d5def0;
+  border-radius:6px;
+  background:#fff;
+  color:#8b98b8;
+  cursor:pointer;
+  font-size:.72rem;
+  line-height:1;
+}
+.seat-kick:hover { border-color:#e08a8a; color:#d06060; }

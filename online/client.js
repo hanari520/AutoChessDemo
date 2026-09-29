@@ -2,7 +2,7 @@ const $ = (id) => document.getElementById(id);
 const STORAGE = 'star-stage-online-session-v1';
 const API_STORAGE = 'star-stage-online-api-v1';
 const NAME_STORAGE = 'star-stage-online-name-v1';
-const DEFAULT_API = 'http://localhost:8787';
+const DEFAULT_API = 'https://autochess-online-321604-12-1450980602.sh.run.tcloudbase.com'; // CloudBase 云托管（上海）
 
 const state = {
   api: localStorage.getItem(API_STORAGE) || DEFAULT_API,
@@ -13,6 +13,13 @@ const state = {
   reconnectTimer: null, reconnectAttempts: 0, stopped: true,
   battlePlayback: null, battleFrame: null,
 };
+
+// 旧会话保存的本地默认地址在 DEFAULT_API 变更后自动迁移，避免残留 localhost。
+if (state.api !== DEFAULT_API && state.api === 'http://localhost:8787') {
+  state.api = DEFAULT_API;
+  localStorage.setItem(API_STORAGE, DEFAULT_API);
+}
+
 
 function readSession() {
   try { return JSON.parse(localStorage.getItem(STORAGE) || 'null'); }
@@ -168,6 +175,31 @@ async function resumeRoom() {
   await enterRoom('join');
 }
 
+async function addBot() {
+  if (!state.session?.token || !state.code || state.busy) return;
+  state.busy = true;
+  $('addBotBtn').disabled = true;
+  try {
+    const result = await request(`/api/rooms/${encodeURIComponent(state.code)}/bots`, {token: state.session.token});
+    if (result.lobby) { state.lobby = result.lobby; render(); }
+  } catch (error) {
+    toast(error.message || '添加机器人失败。');
+  } finally {
+    state.busy = false;
+    $('addBotBtn').disabled = false;
+  }
+}
+
+async function removeBot(seat) {
+  if (!state.session?.token || !state.code) return;
+  try {
+    const result = await request(`/api/rooms/${encodeURIComponent(state.code)}/bots/remove`, {token: state.session.token, seat});
+    if (result.lobby) { state.lobby = result.lobby; render(); }
+  } catch (error) {
+    toast(error.message || '移除机器人失败。');
+  }
+}
+
 function closeSocket() {
   state.stopped = true;
   clearTimeout(state.reconnectTimer);
@@ -283,15 +315,19 @@ function render() {
 function renderLobby() {
   const lobby = state.lobby;
   const players = lobby?.players || [];
+  const canManageBots = state.seat === 0 && lobby?.status === 'waiting';
   $('occupancy').textContent = `${players.length} / ${lobby?.capacity || 8}`;
   $('lobbySeats').innerHTML = Array.from({length: lobby?.capacity || 8}, (_, seat) => {
     const player = players.find(p => p.seat === seat);
-    const status = !player ? '等待入座' : !player.connected ? '暂时离线' : player.ready ? '已就绪' : '准备中';
-    return `<li class="seat ${seat === state.seat ? 'mine' : ''}"><span class="seat-number">${seat + 1}</span><div class="seat-info"><div class="seat-name">${player ? escapeHtml(player.name) : '空席位'}${seat === state.seat ? ' · 你' : ''}</div><div class="seat-status ${player?.ready ? 'ready' : ''}">${status}</div></div></li>`;
+    const status = !player ? '等待入座' : player.bot ? (player.ready ? '机器人 · 已就绪' : '机器人') : !player.connected ? '暂时离线' : player.ready ? '已就绪' : '准备中';
+    const kick = player?.bot && canManageBots ? `<button type="button" class="seat-kick" data-kickbot="${player.seat}" aria-label="移除机器人 ${escapeHtml(player.name)}">✕</button>` : '';
+    return `<li class="seat ${seat === state.seat ? 'mine' : ''}"><span class="seat-number">${seat + 1}</span><div class="seat-info"><div class="seat-name">${player?.bot ? '<span class="bot-badge" title="机器人替补">🤖</span>' : ''}${player ? escapeHtml(player.name) : '空席位'}${seat === state.seat ? ' · 你' : ''}</div><div class="seat-status ${player?.ready ? 'ready' : ''}">${status}</div></div>${kick}</li>`;
   }).join('');
   const mine = players.find(p => p.seat === state.seat);
   $('lobbyReadyBtn').textContent = mine?.ready ? '取消就绪' : '我已准备';
-  $('lobbyNotice').textContent = players.length < 8 ? `还差 ${8 - players.length} 人入座` : '等待所有玩家就绪';
+  $('lobbyNotice').textContent = players.length < 8 ? `还差 ${8 - players.length} 人入座（可用机器人补位）` : '等待所有玩家就绪';
+  $('addBotBtn').hidden = !(state.connected && canManageBots && players.length < (lobby?.capacity || 8));
+  $('addBotBtn').textContent = players.length <= 1 ? '添加机器人替补（可连点补满）' : '再添一名机器人';
 }
 
 function phaseName(phase) {
@@ -341,7 +377,7 @@ function makeBattlePlayback(view, battle) {
     key: `${view.round}:${battle.a}:${battle.b}`,
     battle, units, cursor: 0, elapsed, duration,
     startedAt: performance.now() - elapsed,
-    lastPaint: 0, feed: '双方阵容已锁定，战斗由服务器模拟。',
+    lastPaint: 0, feed: '双方阵容已锁定，战斗由服务器模拟。', feedHoldUntil: 0,
     flash: null,
   };
 }
@@ -355,8 +391,14 @@ function applyBattleEvent(playback, event, view) {
     if (unit) unit.alive = false;
   }
   if (['attack', 'skill', 'bounce', 'cast', 'heal', 'shield', 'death', 'dodge'].includes(event.type)) {
-    playback.feed = battleEventText(event, view, playback.battle);
-    playback.flash = {event, at: performance.now()};
+    const now = performance.now();
+    // A cast and its damage often share one server tick. Keep the cast visible
+    // through subsequent replay frames instead of replacing it immediately.
+    if (event.type === 'cast') playback.feedHoldUntil = now + 700;
+    if (event.type === 'cast' || now >= playback.feedHoldUntil) {
+      playback.feed = battleEventText(event, view, playback.battle);
+    }
+    playback.flash = {event, at: now};
   }
 }
 
@@ -549,6 +591,11 @@ $('roomCodeInput').addEventListener('keydown', event => { if (event.key === 'Ent
 $('lobbyReadyBtn').addEventListener('click', () => {
   const mine = state.lobby?.players?.find(p => p.seat === state.seat);
   send({type:'ready', ready:!mine?.ready, id:crypto.randomUUID?.() || String(Date.now())});
+});
+$('addBotBtn').addEventListener('click', addBot);
+$('lobbySeats').addEventListener('click', event => {
+  const button = event.target.closest('[data-kickbot]');
+  if (button) removeBot(Number(button.dataset.kickbot));
 });
 $('rerollBtn').addEventListener('click', () => sendAction({type:'reroll'}));
 $('buyXpBtn').addEventListener('click', () => sendAction({type:'buyXp'}));

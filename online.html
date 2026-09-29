@@ -5,30 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eef4ff">
   <link rel="icon" href="assets/ui/star-stage-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="online/client.css?v=3">
+  <link rel="stylesheet" href="online/client.css?v=4">
   <title>八人联机 · 星域棋战</title>
 </head>
 <body>
   <header class="topbar">
     <a class="back" href="index.html" aria-label="返回单机游戏">← 单机模式</a>
-    <div class="brand"><span class="brand-mark">✦</span><span>星域棋战</span><span class="brand-sub">八人联机原型</span></div>
+    <div class="brand"><span class="brand-mark">✦</span><span>星域棋战</span><span class="brand-sub">八人联机</span></div>
     <div id="connection" class="connection" role="status" aria-live="polite"><span class="status-dot"></span><span>未连接</span></div>
   </header>
 
   <main>
     <section id="entryScreen" class="entry-screen" aria-labelledby="entryTitle">
       <div class="entry-intro">
-        <p class="eyebrow">八人联机原型 · 8 SEATS</p>
+        <p class="eyebrow">八人联机 · 8 SEATS</p>
         <h1 id="entryTitle">与七位玩家<br><em>同台对弈</em></h1>
         <p>创建房间，邀请朋友入座。八人就绪后开始同一场自走棋对局。</p>
-        <p class="prototype-note">房间、卡池、配对与战斗均由服务端控制。战斗已接入确定性技能模拟器，棋子专属效果仍在逐项对照单机规则。</p>
+        <p class="prototype-note">房间、卡池、配对与战斗均由服务端控制。棋子技能由确定性战斗模拟器结算，并同步战斗播报。</p>
         <div class="entry-steps" aria-label="联机流程"><span>01 创建或加入</span><span>02 八人就绪</span><span>03 对局开演</span></div>
       </div>
       <div class="entry-panel panel">
         <h2>进入房间</h2>
         <label for="playerName">你的昵称</label>
         <input id="playerName" name="playerName" maxlength="20" autocomplete="nickname" placeholder="输入昵称">
-        <details class="advanced-settings"><summary>高级设置 · 联机服务地址</summary><label for="apiBase">联机服务地址</label><input id="apiBase" name="apiBase" type="url" inputmode="url" spellcheck="false" placeholder="http://localhost:8787"><p class="field-note">本地开发默认 http://localhost:8787；部署后填写联机 Worker 地址。</p></details>
+        <details class="advanced-settings"><summary>高级设置 · 联机服务地址</summary><label for="apiBase">联机服务地址</label><input id="apiBase" name="apiBase" type="url" inputmode="url" spellcheck="false" placeholder="https://autochess-online-321604-12-1450980602.sh.run.tcloudbase.com"><p class="field-note">默认连接腾讯 CloudBase 云托管；本地联调可填写 http://localhost:3000。</p></details>
         <div class="entry-actions">
           <button id="createBtn" class="button primary" type="button">创建八人房间</button>
           <div class="join-row"><input id="roomCodeInput" aria-label="房间码" maxlength="12" autocapitalize="characters" placeholder="房间码"><button id="joinBtn" class="button" type="button">加入房间</button></div>
@@ -46,7 +46,7 @@
       <div id="roomAlert" class="room-alert" role="alert" hidden></div>
       <div id="lobbySection" class="lobby-layout">
         <section class="panel"><div class="section-heading"><h2>席位</h2><span id="occupancy">0 / 8</span></div><ol id="lobbySeats" class="seat-grid" aria-label="八个玩家席位"></ol></section>
-        <aside class="panel lobby-aside"><h2>开局准备</h2><p>八名玩家都入座并点击就绪后，对局自动开始。</p><button id="lobbyReadyBtn" class="button primary wide" type="button" disabled>我已准备</button><p id="lobbyNotice" class="muted">连接房间中…</p><div class="rule-note"><strong>八人联机模式</strong><span>服务端管理共享卡池、商店、确定性战斗和淘汰。战斗事件会同步播放；棋子技能和羁绊仍在逐项对照单机规则。刷新页面可使用本机保存的令牌重连。</span></div></aside>
+        <aside class="panel lobby-aside"><h2>开局准备</h2><p>八名玩家都入座并点击就绪后，对局自动开始。人不够时，房主可以添加机器人替补。</p><button id="lobbyReadyBtn" class="button primary wide" type="button" disabled>我已准备</button><button id="addBotBtn" class="button wide" type="button" hidden>添加机器人替补</button><p id="lobbyNotice" class="muted">连接房间中…</p><div class="rule-note"><strong>八人联机模式</strong><span>服务端管理共享卡池、商店、确定性战斗和淘汰。战斗事件会同步播放；棋子技能已逐项审计，部分羁绊和数值设计与单人模式不同。刷新页面可使用本机保存的令牌重连。</span></div></aside>
       </div>
 
       <div id="gameSection" class="game-layout" hidden>
@@ -65,6 +65,6 @@
     </section>
   </main>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  <script type="module" src="online/client.js?v=2"></script>
+  <script type="module" src="online/client.js?v=4"></script>
 </body>
 </html>

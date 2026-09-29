@@ -92,13 +92,14 @@ const COMPONENTS = {
 };
 // Current solo COMBAT_KITS (index.html). Modes and unusual secondary mechanics
 // are reduced to the supported deterministic effects in applySkill below.
-const SKILLS = {
+// Exported for the skills audit tests only; resolveBattle stays the sole runtime entry.
+export const SKILLS = {
   ein:{mode:'guard',shield:.34,taunt:2200}, kouichi:{mode:'dash',target:'far',mult:2.15,splash:.5,lifesteal:.18},
   yua:{mode:'single',target:'far',mult:2.25,dtype:'magic',manaBurn:.45,silence:1800},
   goutan:{mode:'guardLink',shield:.20,allyShield:.30,taunt:1800,link:.30},
   yujiu:{mode:'single',target:'far',mult:1.8,shred:24,bounce:true},
   songlv:{mode:'cleave',mult:1.5,stun:800,lifesteal:.20},
-  likou:{mode:'heal',heal:2.1,shield:.10}, agari:{mode:'team',heal:.9,shield:.08},
+  likou:{mode:'heal',heal:2.1,shield:.10,cleanse:true}, agari:{mode:'team',heal:.9,shield:.08},
   hoshimi:{mode:'dash',target:'low',mult:2.35,bleed:.018}, chiharu:{mode:'cleave',mult:1.65,wound:.25},
   suiji:{mode:'support',heal:.6,mana:28,haste:.18}, kanban:{mode:'guard',shield:.45,block:.35,slow:.20},
   zhouyi:{mode:'passive',passive:'shieldbreak'}, yuji:{mode:'passive',passive:'rainveil'},
@@ -106,7 +107,7 @@ const SKILLS = {
   pako:{mode:'heal',heal:2.3,shield:.18}, zhijin:{mode:'dash',target:'far',mult:2.4,lifesteal:.18,noShield:2000},
   sishi:{mode:'chain',targets:4,mults:[1.25,1.05,.88,.72],season:true},
   sumi:{mode:'teamShield',shield:.18,dr:.10,cleanse:true}, yukie:{mode:'combo',target:'near',hits:3,mults:[1,1.1,1.6],stun:450,bleed:.015},
-  miting:{mode:'single',target:'hi',mult:2.05,dtype:'magic',sunder:.35},
+  miting:{mode:'single',target:'hi',mult:2.05,dtype:'magic',sunder:.35,reflectSkill:.30},
   xuezhu:{mode:'zone',target:'far',mult:1.7,freeze:2000}, zeyin:{mode:'team',heal:1,enemyHealDown:.25},
   sanli:{mode:'chain',targets:3,mults:[1.6,1.2,.9],stun:600,dtype:'magic'},
   diansu:{mode:'single',target:'hi',mult:2,petrify:2200,shieldbreak:true},
@@ -122,11 +123,11 @@ const SKILLS = {
   shiliu:{mode:'single',mult:2.15,stealShield:true,stun:600},
   seki:{mode:'cleave',mult:1.5,silence:2600,manaBurn:.35},
   haruka:{mode:'cleave',mult:1.8,weaken:.25,mana:4}, mahiru:{mode:'cleave',mult:.9,hits:3,lifesteal:.25,bleed:.02},
-  nana7mi:{mode:'cleave',mult:2.1,slow:.35,execute:.6}, liAn:{mode:'field',mult:1.25,freeze:1400,dtype:'magic'},
+  nana7mi:{mode:'cleave',mult:2.1,slow:.35,lowHPBoost:.6}, liAn:{mode:'field',mult:1.25,freeze:1400,dtype:'magic'},
   youyi:{mode:'passive',passive:'soulmate'}, azi:{mode:'cleave',mult:1.3,stun:1500,dtype:'magic'},
   taodai:{mode:'teamShield',shield:.22,dr:.20,taunt:2700},
   miki:{mode:'heal',heal:1.5,healN:3,shield:.12,mana:12},
-  rei:{mode:'cleave',mult:1.35,silence:2400,dtype:'magic'}, rinco:{mode:'cleave',mult:2.1,silence:1800,lifesteal:.25}
+  rei:{mode:'cleave',mult:1.35,silence:2400,enemyHealDown:.40,dtype:'magic'}, rinco:{mode:'cleave',mult:2.1,silence:1800,lifesteal:.25}
 };
 function hash(id, seed) { let h=seed; for (const ch of id) h=(Math.imul(h,31)+ch.charCodeAt(0))>>>0; return h; }
 function seed32(value) { let h=2166136261; for (const c of String(value)) { h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0 || 1; }
@@ -165,7 +166,7 @@ function entries(board, side) {
       atk,maxhp:hp,hp,ar:Math.round((ARMOR[d.job]||5)*jitter),mr:Math.round((RESIST[d.job]||0)*jitter*100)/100,
       shield:0,mana:15,maxmana:50,cd:0,skillCd:0,stun:0,silence:0,slow:0,dodge:0,crit:0,critM:1.5,vamp:0,
       manaRegen:1,manaPerSec:0,skillMul:1,skillVamp:0,regen:0,thorns:0,bounce:0,killHeal:0,shieldTick:0,
-      taunt:0,block:0,blockT:0,dr:0,drT:0,haste:0,hasteT:0,attackBuff:0,attackBuffT:0,poison:0,bleed:0,
+      taunt:0,block:0,blockT:0,dr:0,drT:0,haste:0,hasteT:0,attackBuff:0,attackBuffT:0,poison:0,bleed:0,slowPct:0,
       wound:0,woundT:0,weaken:0,weakenT:0,freeze:0,noShield:0,healDown:0,healDownT:0,
       arDown:0,arDownT:0,mrDown:0,mrDownT:0,reflect:0,reflectT:0,linkShare:0,linkTarget:null,
       startShield:0,firstSnare:false,killMana:0,edgePips:0,manaGift:0,stormStun:false,poisonItem:0,
@@ -306,7 +307,7 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
     if(dtype!=='pure')amount=Math.max(amount,Math.ceil(raw*.05));
     amount=Math.max(1,Math.round(amount*(1-(tgt.dr||0))));
     const blocked=tgt.block>0&&random()<tgt.block;
-    if(blocked){amount=Math.ceil(amount*.5);if(src&&tgt.blockSlow)src.slow=Math.max(src.slow,1200);emit('block',{from:src?.uid||null,target:tgt.uid});}
+    if(blocked){amount=Math.ceil(amount*.5);if(src&&tgt.blockSlow){src.slow=Math.max(src.slow,1200);src.slowPct=Math.max(src.slowPct||0,.20);}emit('block',{from:src?.uid||null,target:tgt.uid});}
     const shieldBefore=tgt.shield,absorbed=Math.min(tgt.shield,amount);tgt.shield-=absorbed;amount-=absorbed;
     tgt.hp=Math.max(0,tgt.hp-amount);
     if(amount>0&&src&&tgt.silence<=0){const lo=Math.min(amount/5,15),hi=Math.min(amount/2.5,30);tgt.mana=clamp(tgt.mana+(lo+random()*(hi-lo))*tgt.manaRegen,0,tgt.maxmana);}
@@ -317,8 +318,9 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
       if(gain){const actual=heal(src,src,gain);if(actual<gain&&src.overflowShield)shield(src,(gain-actual)*src.overflowShield);}
     }
     if(tgt.thorns&&src&&src.hp>0&&kind!=='thorns')damage(tgt,src,Math.max(1,Math.round(tgt.maxhp*tgt.thorns)),'pure','thorns');
-    if(tgt.thornsSlow&&src){src.slow=Math.max(src.slow,1400);}
-    if(tgt.reflect&&kind==='skill'&&src?.hp>0)damage(tgt,src,raw*tgt.reflect,'magic','reflect');
+    if(tgt.thornsSlow&&src){src.slow=Math.max(src.slow,1400);src.slowPct=Math.max(src.slowPct||0,.18);}
+    // reflectSkill marks the caster: its own next skill backfires (solo castSkill v3Reflect).
+    if(src&&src.reflect>0&&kind==='skill'&&src.hp>0){const back=raw*src.reflect;src.reflect=0;damage(src,src,back,'magic','reflect');}
     if(tgt.hp===0)die(tgt,src);
     return amount+absorbed;
   }
@@ -328,7 +330,9 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
     if(k.freeze)t.freeze=Math.max(t.freeze,k.freeze);
     if(k.petrify)t.stun=Math.max(t.stun,k.petrify);
     if(k.silence)t.silence=Math.max(t.silence,k.silence);
-    if(k.slow)t.slow=Math.max(t.slow,typeof k.slow==='number'&&k.slow<1?2000:1200);
+    // k.slow carries the solo slow amount (<1) or a plain duration; the amount feeds slowPct, which
+    // lengthens the attack cooldown while t.slow > 0 (solo: cd*(1+slowA) while slowed).
+    if(k.slow){const pct=typeof k.slow==='number'&&k.slow<1?k.slow:.3;t.slow=Math.max(t.slow,typeof k.slow==='number'&&k.slow<1?2000:1200);t.slowPct=Math.max(t.slowPct||0,pct);}
     if(k.weaken){t.weaken=Math.max(t.weaken,k.weaken);t.weakenT=Math.max(t.weakenT,3000);}
     if(k.wound){t.wound=Math.max(t.wound,k.wound);t.woundT=Math.max(t.woundT,4000);}
     if(k.noShield)t.noShield=Math.max(t.noShield,k.noShield);
@@ -338,15 +342,14 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
     if(k.reflectSkill){t.reflect=Math.max(t.reflect,k.reflectSkill);t.reflectT=Math.max(t.reflectT,5000);}
     if(k.manaBurn){const lost=Math.round(t.mana*k.manaBurn);t.mana=Math.max(0,t.mana-lost);if(lost)emit('manaBurn',{from:u.uid,target:t.uid,amount:lost});}
     if(k.bleed){t.poisonDmg=Math.max(t.poisonDmg||0,Math.round(t.maxhp*k.bleed));t.poison=Math.max(t.poison,3000);}
-    if(k.stealShield&&t.shield){const stolen=t.shield;t.shield=0;shield(u,stolen);}
-    if(k.shieldbreak&&t.shield){const stripped=t.shield;t.shield=0;emit('shieldBreak',{target:t.uid,by:u.uid,amount:stripped});}
     if(k.execute&&t.hp/t.maxhp<.4)damage(u,t,power*k.execute,k.dtype||u.dtype,'skill');
   }
   function castSkill(u) {
     const k=SKILLS[u.id];if(!k||k.mode==='passive')return false;
     if(u.mana<u.maxmana||u.skillCd>0||u.stun>0||u.silence>0)return false;
     const team=allies(u),enemies=foes(u),cost=ROSTER[u.id].cost;
-    const power=u.atk*u.skillMul*(.82+.10*cost)*({1:1.30,2:1.25,3:1.20,4:1.15,5:1.12}[u.star]||1);
+    // Solo: power scales with SKILL_STAR_M[cost]^(star-1); the table is keyed by COST, not star.
+    const power=u.atk*u.skillMul*(.82+.10*cost)*Math.pow(({1:1.30,2:1.25,3:1.20,4:1.15,5:1.12})[cost]||1.1,u.star-1);
     u.mana=0;u.skillCd=3000;u.cd=Math.max(u.cd,850);u.casts++;
     emit('cast',{from:u.uid,skill:u.id,mode:k.mode});
     const healN=k.healN||1;
@@ -379,11 +382,15 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
         let raw=power*(k.mults?.[i]||k.mult||1.5);
         if(k.lowHPBoost)raw*=1+k.lowHPBoost*(1-u.hp/u.maxhp);
         for(let h=0;h<hits&&t.hp>0;h++){
+          // Solo strips or steals shields before the hit lands (v3ApplyHit pre-damage check);
+          // doing it after damage() would leave nothing to steal once the shield is consumed.
+          if(k.stealShield&&t.shield>0){const stolen=t.shield;t.shield=0;shield(u,stolen);}
+          if(k.shieldbreak&&t.shield>0){const stripped=t.shield;t.shield=0;t.noShield=Math.max(t.noShield,2500);emit('shieldBreak',{target:t.uid,by:u.uid,amount:stripped});}
           const dealt=damage(u,t,raw,k.dtype||u.dtype,'skill');
           applyHitEffects(u,t,k,t,power);
           if(k.lifesteal&&dealt)heal(u,u,dealt*k.lifesteal);
           if(k.splash){for(const near of sortDist(t,enemies.filter(x=>x!==t&&x.hp>0&&dist(x,t)<=1)).slice(0,2))damage(u,near,raw*k.splash,k.dtype||u.dtype,'skill');}
-          if(k.season&&t.hp>0){const season=Math.floor(random()*4);if(season===0)t.slow=Math.max(t.slow,2000);else if(season===1)t.mana=Math.max(0,t.mana-15);else if(season===2){t.poison=3000;t.poisonDmg=Math.round(t.maxhp*.02);}else t.freeze=Math.max(t.freeze,1000);}
+          if(k.season&&t.hp>0){const season=Math.floor(random()*4);if(season===0){t.slow=Math.max(t.slow,2000);t.slowPct=Math.max(t.slowPct||0,.25);}else if(season===1)t.mana=Math.max(0,t.mana-15);else if(season===2){t.poison=3000;t.poisonDmg=Math.round(t.maxhp*.02);}else t.freeze=Math.max(t.freeze,1000);}
         }
       }
     }
@@ -401,7 +408,7 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
   function onAttack(u,t,raw,critical) {
     u.attacks++;
     if(u.edgePips){const every=u.edgePips>=2?3:4;if(u.attacks%every===0)damage(u,t,raw*(u.edgePips>=2?.35:.25),'pure','item');}
-    if(u.firstSnare){u.firstSnare=false;t.slow=Math.max(t.slow,1200);emit('slow',{from:u.uid,target:t.uid,source:'item'});}
+    if(u.firstSnare){u.firstSnare=false;t.slow=Math.max(t.slow,1200);t.slowPct=Math.max(t.slowPct||0,.20);emit('slow',{from:u.uid,target:t.uid,source:'item'});}
     if(u.stormStun&&u.attacks%3===0&&t.hp>0)t.stun=Math.max(t.stun,450);
     if(u.poisonItem&&t.hp>0){t.poison=Math.max(t.poison,3000);t.poisonDmg=Math.max(t.poisonDmg||0,Math.round(t.maxhp*u.poisonItem));}
     if(u.bondSilence&&random()<u.bondSilence)t.silence=Math.max(t.silence,3000);
@@ -432,6 +439,7 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
       if(u.hp<=0)continue;
       for(const key of ['cd','skillCd','stun','silence','slow','freeze','taunt','hasteT','attackBuffT','drT','blockT','poison','noShield','healDownT','arDownT','mrDownT','reflectT','woundT','weakenT'])if(u[key]>0)u[key]=Math.max(0,u[key]-tickMs);
       if(!u.hasteT)u.haste=0;if(!u.attackBuffT)u.attackBuff=0;if(!u.drT)u.dr=0;if(!u.blockT)u.block=0;
+      if(!u.slow)u.slowPct=0;
       if(!u.healDownT)u.healDown=0;if(!u.arDownT)u.arDown=0;if(!u.mrDownT)u.mrDown=0;if(!u.reflectT)u.reflect=0;
       if(!u.weakenT)u.weaken=0;if(!u.woundT)u.wound=0;
       if(u.regen)heal(u,u,u.regen*tickMs/1000);
@@ -446,7 +454,8 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
       const taunted=enemy.filter(v=>v.taunt>0),target=choose(u,taunted.length?taunted:enemy);
       if(dist(u,target)>u.range){if(tick%3===0){const step=nextStep(u,target,units);if(step){u.x=step.x;u.y=step.y;emit('move',{unit:u.uid,x:u.x,y:u.y});}}continue;}
       if(u.cd>0)continue;
-      u.cd=1450/Math.max(.1,u.speed*(1+u.haste));
+      // Slowed units swing slower (solo: ATTACK_INTERVAL/aspd*(1+slowA) while slowed).
+      u.cd=1450/Math.max(.1,u.speed*(1+u.haste))*(1+(u.slow>0?u.slowPct||.3:0));
       let raw=u.atk*(1+u.attackBuff)*(1-(u.weaken||0));
       if(u.nextAttackAmp){raw*=1+u.nextAttackAmp;u.nextAttackAmp=0;}
       if(u.passive==='shieldbreak'&&u.shieldBreakReady){raw*=1.8;u.shieldBreakReady=false;}
@@ -457,7 +466,7 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
       if(target.passive==='rainveil'&&random()<.25){raw=Math.ceil(raw*.5);emit('block',{from:u.uid,target:target.uid,reason:'rainveil'});}
       const amount=damage(u,target,raw,u.dtype,'attack');
       if(amount>0)u.mana=clamp(u.mana+(u.job==='法师'||u.job==='咒术'||u.job==='医者'?30:15)*u.manaRegen,0,u.maxmana);
-      if(u.passive==='rainveil'&&u.rainSlowReady&&target.hp>0){target.slow=Math.max(target.slow,1200);u.rainSlowReady=false;}
+      if(u.passive==='rainveil'&&u.rainSlowReady&&target.hp>0){target.slow=Math.max(target.slow,1200);target.slowPct=Math.max(target.slowPct||0,.20);u.rainSlowReady=false;}
       onAttack(u,target,raw,critical);
       if(u.passive==='soulmate'&&!u.soulmateShieldGiven&&allies(u).some(t=>t.hp/t.maxhp<=.2)){for(const mate of allies(u))shield(mate,mate.maxhp*.2,u.uid);u.soulmateShieldGiven=true;}
     }

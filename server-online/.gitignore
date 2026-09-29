@@ -1,5 +1,6 @@
 node_modules/
 .npm-cache/
-.wrangler/
 .env
 .dev.vars
+src/core.js
+src/combat.js

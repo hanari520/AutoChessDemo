@@ -1,5 +1,11 @@
 # 更新日志
 
+## 2026-09-29 · 八人联机迁移至 CloudBase（sw v95→v96）
+
+- 八人房间服务由 Cloudflare Durable Objects 原型迁至腾讯 CloudBase 云托管单实例 Node 容器，国内玩家可连接公网 HTTPS 服务；房主可添加、移除机器人，补足八席开局。
+- 联机规则升级至 `deterministic-battle-v3`。逐棋技能审计修正星级倍率、减速、护盾结算、反噬和被动效果；技能覆盖及设计差异见 `specs/online-skills-audit-2026-09-29.md`。
+- 修复战斗播报中技能释放被同帧伤害事件立即覆盖的问题；浏览器实测建房、七机器人、购买上阵及技能播报通过。联机页面与 Service Worker 缓存更新至 v96。
+
 ## 2026-09-29 · 音效纯 sine 化 + 玩法说明分段化（sw v88→v91）
 
 - 音效最终态：全部 62 个 `SFX_DEF` 音色统一为纯 sine 正弦提示音（清除 square/sawtooth/triangle 与白噪声层，3 个无音高的纯噪声音色补短音高），保留原音高语义与克制音量（9e351b2）。当日先行上线的 retro-arcade 生成 wav 音频库（fdc05df / 2bbdd9d，v88）先后收到「太吵」「不要电子合成音」反馈后停用：`SFX_WAV_BANK=false`，素材与 manifest 保留在 `assets/audio/v3`，改 true 即恢复懒加载（c6e3d81 同步 INDEX_ASSET 缓存键 ?v=90）。

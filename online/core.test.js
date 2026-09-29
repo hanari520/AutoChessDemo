@@ -32,7 +32,7 @@ test('seed replay, eight seats and private shop/bench', () => {
   assert.equal(own.players[1].gold, undefined);
   assert.equal(serialized(own).includes('"pool"'), false);
   assert.equal(Object.keys(a.pool).length, 50);
-  assert.equal(own.ruleset, 'deterministic-battle-v2');
+  assert.equal(own.ruleset, 'deterministic-battle-v3');
   assert.equal(own.me.items.length, 1);
   assert.equal(own.players[1].items, undefined);
 });

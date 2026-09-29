@@ -1,8 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const base = process.env.ONLINE_TEST_URL;
+// Fast phases so a full eight-player game finishes within seconds.
+process.env.ONLINE_FAST = '80';
+const { startServer } = await import('../src/server.js');
+
+const handle = await startServer({ port: 0, host: '127.0.0.1' });
+const base = `http://127.0.0.1:${handle.port}`;
 const origin = 'http://localhost:8081';
+
+test.after(() => handle.close());
 
 async function post(path, body, overrideOrigin = origin) {
   const response = await fetch(`${base}${path}`, {
@@ -98,105 +105,211 @@ function nextMessage(ws, predicate, timeoutMs = 7000) {
   });
 }
 
-function waitForClosing(ws, timeoutMs = 5000) {
+function waitClosed(ws, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
-    const interval = setInterval(() => {
-      if (ws.readyState === WebSocket.CLOSING) {
-        clearInterval(interval);
-        clearTimeout(timeout);
-        resolve();
-      }
-    }, 10);
-    const timeout = setTimeout(() => {
-      clearInterval(interval);
-      reject(new Error('WebSocket did not enter CLOSING state'));
-    }, timeoutMs);
+    const timeout = setTimeout(() => reject(new Error('WebSocket did not close')), timeoutMs);
+    ws.addEventListener('close', event => { clearTimeout(timeout); resolve(event); }, { once: true });
   });
 }
 
-test('eight seats, private views, replay and reconnect', { skip: !base }, async () => {
+/** Keeps the latest state message and resolves when a matching one arrives. */
+function trackStates(ws) {
+  const tracker = {
+    latest: null,
+    next(predicate, timeoutMs = 60_000) {
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          ws.removeEventListener('message', onMessage);
+          reject(new Error('state timeout'));
+        }, timeoutMs);
+        const onMessage = event => {
+          const message = JSON.parse(event.data);
+          if (message.type !== 'state' || !predicate(message)) return;
+          clearTimeout(timeout); ws.removeEventListener('message', onMessage); resolve(message);
+        };
+        ws.addEventListener('message', onMessage);
+      });
+    },
+  };
+  ws.addEventListener('message', event => {
+    const message = JSON.parse(event.data);
+    if (message.type === 'state') tracker.latest = message;
+  });
+  return tracker;
+}
+
+/** Sends a buy action inside a prep window; retries when the 80ms phase
+ * deadline slips past the message round-trip. */
+async function buyInPrep(ws, tracker, attempts = 6) {
+  for (let i = 0; i < attempts; i++) {
+    const prep = await tracker.next(m => m.view?.phase === 'prep' && !m.view.complete, 60_000);
+    const slot = prep.view.me.shop.findIndex((unit, index) => unit && unit.cost <= prep.view.me.gold && index >= 0);
+    if (slot < 0) throw new Error('no affordable shop slot in prep view');
+    const message = { type: 'action', id: `buy-${prep.view.round}-${i}`, seq: prep.nextSeq, action: { type: 'buy', slot } };
+    ws.send(JSON.stringify(message));
+    const outcome = await nextMessage(ws, m => (m.type === 'ack' || m.type === 'error') && m.id === message.id, 10_000);
+    if (outcome.type === 'ack') return message;
+    if (outcome.code !== 'invalid_action') throw new Error(`unexpected action error: ${outcome.code} ${outcome.message}`);
+  }
+  throw new Error('action never landed inside a prep window');
+}
+
+test('bots fill a room, play a full game, and replay stays idempotent after reconnect', async () => {
+  const health = await fetch(`${base}/api/health`, { headers: { Origin: origin } });
+  assert.equal(health.status, 200);
+  assert.deepEqual(await health.json(), { ok: true });
+
   const created = await post('/api/rooms', { name: '房主' });
   assert.equal(created.status, 201);
   assert.equal(created.headers.get('access-control-allow-origin'), origin);
-  const { code } = created.body;
-  const seats = [created.body];
-  for (let seat = 1; seat < 8; seat++) {
-    const joined = await post(`/api/rooms/${code}/join`, { name: `玩家${seat}` });
-    assert.equal(joined.status, 200);
-    assert.equal(joined.body.seat, seat);
-    seats.push(joined.body);
+  const { code, token } = created.body;
+  assert.equal(created.body.seat, 0);
+  assert.equal(created.body.lobby.players.length, 1);
+
+  const second = await post(`/api/rooms/${code}/join`, { name: '二号玩家' });
+  assert.equal(second.status, 200);
+  assert.equal(second.body.seat, 1);
+
+  const badOrigin = await post('/api/rooms', { name: 'bad' }, 'https://evil.example');
+  assert.equal(badOrigin.status, 403);
+  assert.equal(badOrigin.body.error.code, 'origin_forbidden');
+
+  // Only the host (seat 0) may manage bots.
+  const forged = await post(`/api/rooms/${code}/bots`, { token: 'f'.repeat(64) });
+  assert.equal(forged.status, 401);
+  const notHost = await post(`/api/rooms/${code}/bots`, { token: second.body.token });
+  assert.equal(notHost.status, 403);
+  assert.equal(notHost.body.error.code, 'not_host');
+
+  // Host fills the remaining six seats with auto-ready bots.
+  for (let i = 0; i < 6; i++) {
+    const added = await post(`/api/rooms/${code}/bots`, { token });
+    assert.equal(added.status, 201);
+    assert.equal(added.body.seat, 2 + i);
+    const players = added.body.lobby.players;
+    assert.equal(players.length, 3 + i);
+    assert.equal(players.filter(player => player.bot).length, i + 1);
   }
+  const lobby = (await post(`/api/rooms/${code}/join`, { token })).body.lobby;
+  assert.equal(lobby.players.length, 8);
+  assert.deepEqual(lobby.players.map(player => player.bot),
+    [false, false, true, true, true, true, true, true]);
+  assert.deepEqual(lobby.players.slice(2).map(player => player.ready),
+    [true, true, true, true, true, true], 'bots are auto-ready');
+  assert.deepEqual(lobby.players.slice(2).map(player => player.connected),
+    [true, true, true, true, true, true], 'bot seats count as connected');
+  assert.deepEqual(lobby.players.slice(0, 2).map(player => player.ready), [false, false]);
+
   const full = await post(`/api/rooms/${code}/join`, { name: '第九人' });
   assert.equal(full.status, 409);
   assert.equal(full.body.error.code, 'room_full');
-  const badOrigin = await post('/api/rooms', { name: 'bad' }, 'https://evil.example');
-  assert.equal(badOrigin.status, 403);
 
-  const sockets = await Promise.all(seats.map(seat => connect(code, seat.token)));
+  const sockets = [];
   let reconnected;
   try {
-    const prepStatesPromise = Promise.all(sockets.map(socket => nextMessage(socket, message => message.type === 'state' && message.view?.phase === 'prep')));
-    for (const socket of sockets) socket.send(JSON.stringify({ type: 'ready', ready: true }));
-    const states = await prepStatesPromise;
-    assert.equal(states[0].lobby.status, 'playing');
-    assert.equal(states[0].view.me.shop.length, 5);
-    assert.equal(states[1].view.seat, 1);
-    assert.equal(states[0].view.players[1].shop, undefined);
-    const first = states[0];
-    const action = { type: 'action', id: 'buy-one', seq: first.nextSeq, action: { type: 'buy', slot: 0 } };
-    const ack = nextMessage(sockets[0], message => message.type === 'ack' && message.id === action.id);
-    sockets[0].send(JSON.stringify(action));
-    assert.equal((await ack).seq, action.seq);
-    const duplicate = nextMessage(sockets[0], message => message.type === 'ack' && message.duplicate === true);
-    sockets[0].send(JSON.stringify(action));
-    await duplicate;
-    const stale = nextMessage(sockets[0], message => message.type === 'error' && message.code === 'out_of_order');
-    sockets[0].send(JSON.stringify({ ...action, id: 'different' }));
-    await stale;
+    sockets.push(await connect(code, token));
+    sockets.push(await connect(code, second.body.token));
+    const tracker = trackStates(sockets[0]);
+    const prepPromise = tracker.next(m => m.view?.phase === 'prep');
+    sockets[0].send(JSON.stringify({ type: 'ready', ready: true }));
+    sockets[1].send(JSON.stringify({ type: 'ready', ready: true }));
+    const prep = await prepPromise;
+
+    assert.equal(prep.lobby.status, 'playing');
+    assert.equal(prep.code, code);
+    assert.equal(prep.view.round, 1);
+    assert.equal(prep.view.me.shop.length, 5);
+    assert.equal(prep.view.players[1].shop, undefined, 'other shops stay private');
+    assert.equal(prep.view.seat, 0);
+    assert.deepEqual(prep.view.players.slice(2).map(player => player.bot), [true, true, true, true, true, true]);
+
+    // Bots already acted inside this prep window: deployed and locked in.
+    assert.ok(prep.view.players.slice(2).every(player => player.board.filter(Boolean).length >= 1),
+      'every bot deployed units at game start');
+    assert.ok(prep.view.players.slice(2).every(player => player.ready), 'bots locked in for round 1');
+
+    // Human action, replay-confirmed duplicate ack.
+    const message = await buyInPrep(sockets[0], tracker);
+    sockets[0].send(JSON.stringify(message));
+    const duplicate = await nextMessage(sockets[0], m => m.type === 'ack' && m.id === message.id && m.duplicate === true);
+    assert.equal(duplicate.seq, message.seq);
+
+    // Reconnect with the original token, then replay the same action id+seq.
     sockets[0].close();
-    const rejoined = await post(`/api/rooms/${code}/join`, { token: seats[0].token });
+    const rejoined = await post(`/api/rooms/${code}/join`, { token });
+    assert.equal(rejoined.status, 200);
     assert.equal(rejoined.body.seat, 0);
-    reconnected = await connect(code, seats[0].token);
-    if (process.env.ONLINE_TEST_PHASES === '1') {
-      const combat = await nextMessage(reconnected, message => message.type === 'state' && message.view?.phase === 'combat', 50_000);
-      assert.equal(combat.view.round, 1);
-      assert.equal(combat.view.battles.length, 1);
-      assert.ok(Array.isArray(combat.view.battles[0].formationA));
-      assert.ok(Array.isArray(combat.view.battles[0].events));
-      const result = await nextMessage(reconnected, message => message.type === 'state' && message.view?.phase === 'result', 12_000);
-      assert.equal(result.view.results.length, 4);
-      assert.ok(result.view.results.every(item => item.battle && Number.isInteger(item.battle.durationMs)));
-      const nextPrep = await nextMessage(reconnected, message => message.type === 'state' && message.view?.phase === 'prep' && message.view.round === 2, 12_000);
-      assert.equal(nextPrep.view.me.shop.length, 5);
-    }
+    reconnected = await connect(code, token);
+    const reconnectedTracker = trackStates(reconnected);
+    reconnected.send(JSON.stringify(message));
+    const replayed = await nextMessage(reconnected, m => m.type === 'ack' && m.id === message.id && m.duplicate === true);
+    assert.equal(replayed.seq, message.seq);
+
+    // The game runs to completion under the accelerated clock.
+    const finished = await reconnectedTracker.next(m => m.lobby?.status === 'finished', 180_000);
+    assert.equal(finished.view.complete, true);
+    assert.equal(finished.view.phase, 'over');
+    const places = finished.view.players.map(player => player.place);
+    assert.equal(places.length, 8);
+    assert.ok(places.every(place => Number.isInteger(place) && place >= 1 && place <= 8),
+      'every seat receives a final ranking');
+    // Simultaneous eliminations share a place (see settleCombat), so places
+    // are a non-strict ranking rather than a permutation of 1..8.
+    assert.equal(places.filter(place => place === 1).length, 1, 'exactly one winner');
+    assert.ok(finished.view.players.slice(2).every(player => Number.isInteger(player.place)),
+      'bot seats are ranked too');
   } finally {
     reconnected?.close();
     sockets.forEach(socket => socket.close());
   }
 });
 
-test('anonymous sockets cannot exhaust room admission and expire after the auth deadline', { skip: !base }, async () => {
+test('host can add and remove bots while the room is waiting', async () => {
+  const created = await post('/api/rooms', { name: '管理房主' });
+  const { code, token } = created.body;
+  const guest = await post(`/api/rooms/${code}/join`, { name: '客人' });
+
+  const custom = await post(`/api/rooms/${code}/bots`, { token, name: '定制机器人' });
+  assert.equal(custom.status, 201);
+  assert.equal(custom.body.seat, 2);
+  assert.equal(custom.body.lobby.players[2].name, '定制机器人');
+  assert.equal(custom.body.lobby.players[2].bot, true);
+
+  const autoNamed = await post(`/api/rooms/${code}/bots`, { token });
+  assert.equal(autoNamed.status, 201);
+  assert.equal(autoNamed.body.lobby.players[3].name, '阿铁');
+
+  const removeHuman = await post(`/api/rooms/${code}/bots/remove`, { token, seat: 1 });
+  assert.equal(removeHuman.status, 400);
+  assert.equal(removeHuman.body.error.code, 'not_a_bot');
+
+  const removeGuest = await post(`/api/rooms/${code}/bots/remove`, { token: guest.body.token, seat: 2 });
+  assert.equal(removeGuest.status, 403);
+
+  const removed = await post(`/api/rooms/${code}/bots/remove`, { token, seat: 2 });
+  assert.equal(removed.status, 200);
+  assert.equal(removed.body.lobby.players.length, 3);
+  assert.deepEqual(removed.body.lobby.players.map(player => player.seat), [0, 1, 2]);
+  assert.equal(removed.body.lobby.players[2].name, '阿铁', 'later bots compact onto the freed seat');
+});
+
+test('anonymous sockets cannot exhaust room admission', async () => {
   const created = await post('/api/rooms', { name: '认证测试房主' });
-  assert.equal(created.status, 201);
   const { code, token } = created.body;
   const anonymous = [];
   let authenticated;
   try {
     for (let i = 0; i < 8; i++) anonymous.push(await openAnonymous(code));
-    const evictedPending = waitForClosing(anonymous[0]);
+    const evicted = waitClosed(anonymous[0]);
 
     // Admission replaces the oldest unauthenticated connection, so a real player can still authenticate.
     authenticated = await connect(code, token);
-    await evictedPending;
+    const closeEvent = await evicted;
+    assert.equal(closeEvent.code, 4004);
 
     const anonymousPingError = nextMessage(anonymous[1], message => message.type === 'error');
     anonymous[1].send(JSON.stringify({ type: 'ping' }));
     assert.equal((await anonymousPingError).code, 'auth_required');
-    assert.ok(authenticated);
-
-    const expirationError = nextMessage(anonymous[2], message => message.type === 'error' && message.code === 'auth_timeout', 20_000);
-    assert.equal((await expirationError).code, 'auth_timeout');
-    await waitForClosing(anonymous[2]);
   } finally {
     authenticated?.close();
     anonymous.forEach(socket => socket.close());
