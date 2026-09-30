@@ -7,7 +7,9 @@ const game = seed => createGame({ seed, players });
 const serialized = value => JSON.stringify(value);
 
 function ownedCount(state, id) {
-  return state.seats.reduce((n, s) => n + [...s.shop, ...s.bench, ...s.board]
+  // openingOffer cards are drawn from the shared pool at createGame and stay
+  // frozen on the seat until granted (unpicked copies return at pre-lock).
+  return state.seats.reduce((n, s) => n + [...s.shop, ...s.bench, ...s.board, ...(s.openingOffer || [])]
     .filter(u => u?.id === id).reduce((m, u) => m + 3 ** (u.star - 1), 0), 0);
 }
 function assertPool(state, stock) {

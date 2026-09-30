@@ -1,0 +1,32 @@
+export const EQUIPMENT = {
+  sword:{n:'裂星刃', e:'🗡', role:'attack', desc:'+40% 攻击', trait:'破锋：每第 4 次普攻追加真实伤害'},
+  staff:{n:'回响法典', e:'📘', role:'magic', desc:'+25% 攻击', trait:'奥能：技能命中留下易伤印记'},
+  armor:{n:'晨辉胸甲', e:'🛡', role:'guard', desc:'+30% 生命', trait:'护幕：开战时获得最大生命护盾'},
+  bow:  {n:'逐风弓', e:'🏹', role:'attack', desc:'+35% 攻速', trait:'先机：首次普攻令目标减速'},
+  vamp: {n:'猩红獠牙', e:'🩸', role:'attack', desc:'攻击吸血 20%', trait:'收割：击杀回复法力'},
+  mana: {n:'潮汐法螺', e:'🔮', role:'magic', desc:'攻击/受击回蓝效率 +100%', trait:'共鸣：施法为低法力队友充能'},
+  /* —— 合成成品 —— */
+  flamejudge:{n:'炽焰裁决', e:'⚡', role:'attack', crafted:1, from:['sword','sword'], desc:'+80% 攻击 · 20% 暴击（暴伤 2.5×）', trait:'处决：暴击撕开破绽，队友下一击增伤'},
+  galehunt:  {n:'疾风猎杀', e:'🌪', role:'attack', crafted:1, from:['sword','bow'], desc:'+25% 攻击 · +35% 攻速', trait:'追猎：击杀后攻速提升，可叠 3 层'},
+  soulblade: {n:'饮魂战刃', e:'💀', role:'attack', crafted:1, from:['sword','vamp'], desc:'+40% 攻击 · 吸血 20% · 击杀回复 15% 生命', trait:'噬魂：击杀后额外获得护盾'},
+  sagestaff: {n:'贤者遗杖', e:'📜', role:'magic', crafted:1, from:['staff','staff'], desc:'+50% 攻击 · 技能伤害 +18%', trait:'庇佑：每次施法为自身与低血队友加盾'},
+  hexdrinker:{n:'噬魔之拥', e:'🪄', role:'magic', crafted:1, from:['staff','vamp'], desc:'+25% 攻击 · 技能伤害 15% 吸血', trait:'噬蓝：技能命中削减敌方法力'},
+   tidejewel: {n:'蓝玉潮涌', e:'💠', role:'magic', crafted:1, from:['staff','mana'], desc:'+25% 攻击 · 开局 +20 蓝', trait:'潮汐：施法后压低最近敌人魔抗'},
+  aegis:     {n:'不朽圣盾', e:'🛡', role:'guard', crafted:1, from:['armor','armor'], desc:'+45% 生命 · 每 3 秒获得 8% 生命护盾', trait:'不屈：开战先得护盾，随后周期再生'},
+  bramble:   {n:'荆棘反甲', e:'🌵', role:'guard', crafted:1, from:['armor','vamp'], desc:'+30% 生命 · 受击反弹 4% 最大生命', trait:'荆棘：反弹伤害并为反击者施加减速'},
+  windmail:  {n:'灵风甲胄', e:'🍃', role:'guard', crafted:1, from:['armor','bow'], desc:'+30% 生命 · +35% 攻速 · 闪避 12%', trait:'卸力：闪避后下一次攻击强化'},
+  twinbows:  {n:'旋风连弩', e:'🎯', role:'attack', crafted:1, from:['bow','bow'], desc:'+70% 攻速 · 普攻 25% 概率弹射', trait:'连射：弹射命中会继续传导少量伤害'},
+  swiftecho: {n:'迅影回响', e:'💠', role:'magic', crafted:1, from:['bow','mana'], desc:'+35% 攻速 · 每秒回 3 蓝', trait:'蓄势：施法后下一箭强化'},
+  bloodcore: {n:'血魔之心', e:'❤', role:'attack', crafted:1, from:['vamp','vamp'], desc:'吸血 35% · 技能伤害 15% 吸血', trait:'溢血：过量吸血转化为护盾'},
+   twinshell: {n:'双生海螺', e:'🐚', role:'magic', crafted:1, from:['mana','mana'], desc:'攻击/受击回蓝效率 +200%', trait:'潮声：施法为低蓝队友充能并为全队加盾'},
+  spellblade:{n:'星咏剑', e:'🗡', role:'attack', crafted:1, from:['sword','staff'], desc:'+65% 攻击 · 技能伤害 +12%', trait:'咏刃：奥能印记被引爆时为持有者加盾'},
+  stormbreaker:{n:'雷鸣壁垒', e:'⛈', role:'guard', crafted:1, from:['sword','armor'], desc:'+40% 攻击 · +30% 生命', trait:'震荡：每第 3 次普攻短暂眩晕目标'},
+   soulstring:{n:'灵魂弦刃', e:'🎼', role:'attack', crafted:1, from:['sword','mana'], desc:'+40% 攻击 · 回蓝效率 +100%', trait:'蓄弦：施法后下一击强化并溅射'},
+  runeguard:{n:'秘文壁垒', e:'🔷', role:'guard', crafted:1, from:['staff','armor'], desc:'+25% 攻击 · +30% 生命', trait:'符盾：技能命中印记被引爆时为队友加盾'},
+   astralbow:{n:'星轨长弓', e:'🌌', role:'attack', crafted:1, from:['staff','bow'], desc:'+25% 攻击 · +35% 攻速', trait:'折光：施法后下一箭额外弹射一道星矢'},
+  bastioncoil:{n:'堡垒线圈', e:'🌀', role:'guard', crafted:1, from:['armor','mana'], desc:'+30% 生命 · 回蓝效率 +100%', trait:'过载：护盾破裂时立刻回蓝'},
+  venomshot:{n:'毒羽连弩', e:'☠️', role:'attack', crafted:1, from:['bow','vamp'], desc:'+35% 攻速 · 攻击吸血 20%', trait:'蚀羽：普攻施加持续毒伤'},
+  stormfang:{n:'风暴獠牙', e:'🌩', role:'attack', crafted:1, from:['vamp','mana'], desc:'攻击吸血 20% · 回蓝效率 +100%', trait:'回流：过量吸血凝成护盾'},
+};
+export { SHOP_ODDS } from './economy.js';
+export function recipe(a,b) { return Object.entries(EQUIPMENT).find(([,item])=>item.from && [...item.from].sort().join('|')===[a,b].sort().join('|'))?.[0] || null; }

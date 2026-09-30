@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { WebSocket } from 'ws';
 process.env.ONLINE_FAST='2500';
 const {startServer}=await import('../src/server.js');
 
 test('eight independent humans receive four matching public battles with private inventories and resume the same fight',async()=>{
   const server=await startServer({port:0,host:'127.0.0.1'}),base=`http://127.0.0.1:${server.port}`,clients=[];
-  async function post(path,body){const response=await fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});assert.ok(response.ok);return response.json();}
+  async function post(path,body){const response=await fetch(base+path,{method:'POST',headers:{'content-type':'application/json',Origin:'http://localhost:8081'},body:JSON.stringify(body)});assert.ok(response.ok);return response.json();}
   function wait(client,predicate) {
     if(client.latest&&predicate(client.latest))return Promise.resolve(client.latest);
     return new Promise((resolve,reject)=>{
@@ -14,7 +15,7 @@ test('eight independent humans receive four matching public battles with private
     });
   }
   async function connect(code,token){
-    const ws=new WebSocket(`${base.replace('http:','ws:')}/api/rooms/${code}/ws`),client={ws,latest:null,waiters:new Set(),token};clients.push(client);
+    const ws=new WebSocket(`${base.replace('http:','ws:')}/api/rooms/${code}/ws`,{headers:{Origin:'http://localhost:8081'}}),client={ws,latest:null,waiters:new Set(),token};clients.push(client);
     ws.addEventListener('open',()=>ws.send(JSON.stringify({type:'auth',token})));
     ws.addEventListener('message',event=>{const msg=JSON.parse(event.data);if(msg.type==='state')client.latest=msg;for(const waiter of [...client.waiters])waiter(msg);});
     await wait(client,msg=>msg.type==='state');return client;

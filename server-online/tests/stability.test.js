@@ -20,12 +20,12 @@ class DurableTestStore {
 
 async function post(instance, path, data, token) {
   const response = await fetch(`http://127.0.0.1:${instance.port}${path}`, {
-    method:'POST', headers:{'content-type':'application/json', ...(token ? {authorization:`Bearer ${token}`} : {})}, body:JSON.stringify(data),
+    method:'POST', headers:{'content-type':'application/json', Origin:'http://localhost:8081', ...(token ? {authorization:`Bearer ${token}`} : {})}, body:JSON.stringify(data),
   });
   return {status:response.status, body:await response.json()};
 }
 async function client(instance, room) {
-  const ws = new WebSocket(`ws://127.0.0.1:${instance.port}/api/rooms/${room.code}/ws`);
+  const ws = new WebSocket(`ws://127.0.0.1:${instance.port}/api/rooms/${room.code}/ws`, { headers: { Origin: 'http://localhost:8081' } });
   const messages = [];
   ws.on('message', raw => messages.push(JSON.parse(raw)));
   ws.on('error', () => {});

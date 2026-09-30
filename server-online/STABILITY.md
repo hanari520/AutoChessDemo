@@ -8,8 +8,10 @@
 - 前台页面每 15 秒发送应用层心跳，10 秒没有 pong 就重连。回到前台和网络恢复主动同步。重连使用指数退避加随机偏移。
 - 操作确认丢失时用服务端 `nextSeq + lastActionId` 判断是否执行；仅在原备战回合重发原始 `id + seq`。服务端校验新客户端发送的回合字段，跨回合操作拒绝执行。
 - 每连接每秒最多 20 条消息，单消息 4096 字节，房间队列最多 32 项，发送缓冲超过 256 KiB 断开慢连接。建房/加入按 socket 来源地址每分钟最多 120 次（不直接信任 forwarded headers）；最多 200 个保留房间，可用 `MAX_ROOMS` 修改。代理出口共用 IP 时需按实际负载调整策略。
+- **来源强校验（2026-10-01 起）**：所有非 GET 的房间接口（建房/加入/退出/机器人）与 WebSocket 升级必须携带白名单内的 `Origin`，缺失或不匹配返回 403 `origin_forbidden`；无 Origin 的非浏览器脚本不再放行。`GET /api/health`、`GET /api/ready` 与 `/api/admin/*`（已有 Bearer 令牌鉴权，供维护脚本调用）不要求 Origin。**部署此版本前必须确认容器 `ALLOWED_ORIGINS` 已包含线上页面来源**（如 `https://autochess.hanari520.cn`），否则线上客户端全部 403。
 - 持久化模式下，房间写入、阶段推进与断线处理串行执行，完整状态成功提交后才发送确认和快照。写入失败停止房间，关闭连接 1012，生产进程自动退出由平台重启。提交结果不明确时不继续用旧内存写入。
 - 恢复保存的卡池、随机状态、棋盘、经济、战斗事件、令牌摘要与操作序号。备战恢复给予一个完整备战阶段，战斗恢复保留完整回放窗口且至少 15 秒。大厅重新就绪并提供 90 秒断线保留。
+- **恢复隔离（2026-10-01 起）**：单个永远无法恢复的快照（结构损坏、或规则版本低于当前 `SUPPORTED_RULESET` 的进行中对局）不再让启动整体失败进入 crash loop，而是记一条 `room_restore_quarantine` 日志（含房码与原因）、从存储中删除该房间后继续恢复其余房间。存储层（PostgreSQL/CloudBase 文档库）同样逐房隔离损坏快照。被隔离的对局本就无法在新规则下继续，玩家侧表现为房间不存在（404）。
 
 ## CloudBase 生产配置
 
@@ -56,9 +58,12 @@ API Key 是环境级服务端权限，需要指定轮换负责人，轮换后重
 npm test
 
 # autochess 目录
+node --test online/core.test.js online/combat.test.js online/runtime-sync.test.js
 node --test tools/online_connection.test.mjs
 python tools/online_stability_browser.py
 ```
+
+共享规则运行时的服务端拷贝（`src/core.js`、`src/combat.js` 等）**随源入库**：干净克隆即可构建可用镜像，`npm run sync`（`scripts/sync-runtime.mjs`）在 dev/test/predeploy 前刷新它们，根套件的 `online/runtime-sync.test.js` 在拷贝落后于 `online/`、`tools/` 源时直接失败——改规则源后忘记同步无法通过测试。
 
 开发默认使用 `ROOM_STORE=memory`。可用 `ROOM_STORE=file` 和 `ROOM_STORE_DIR` 测试文件恢复，必须是单写者持久挂载卷，不能使用 CloudBase 容器临时目录。POSIX 文件保存会 fsync 数据与目录，Windows 不支持目录 fsync。文件模式异常退出后保留 `.owner.lock`，须核实旧进程已结束后由操作员清理；CloudBase 生产应使用数据库租约模式。
 

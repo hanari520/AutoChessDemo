@@ -1,5 +1,12 @@
 # 更新日志
 
+## 2026-10-01 · 风险审计修复：恢复隔离、Origin 强校验、运行时拷贝入库（服务端）
+
+- **恢复不再全有或全无**：启动恢复遇到永远无法恢复的快照（结构损坏、或规则版本低于 `deterministic-battle-v6` 的进行中对局）时，不再整体抛错进入 crash loop，而是记 `room_restore_quarantine` 日志（房码+原因）、删除该房间后继续恢复其余房间；PostgreSQL 与 CloudBase 文档库存储层同样逐房隔离损坏快照。新增 `tests/restore.test.js` 与两个存储层坏快照测试。
+- **来源强校验**：建房/加入/退出/机器人等非 GET 房间接口与 WebSocket 升级必须携带白名单内 `Origin`，缺失即 403 `origin_forbidden`（浏览器始终发送，此前无 Origin 的非浏览器脚本被直接放行）；`health`/`ready` 探针与已带 Bearer 令牌的 `/api/admin/*` 维护接口不要求 Origin。部署前必须确认线上 `ALLOWED_ORIGINS` 含页面来源。测试客户端迁移到 `ws` 库以携带 Origin 头，并新增 403 回归测试。
+- **服务端运行时拷贝入库**：`server-online/src` 的 6 个生成拷贝（core/combat/economy/equipment/skill-catalog/bond-runtime）随源提交，干净克隆即可构建镜像；新增根套件 `online/runtime-sync.test.js` 拦截拷贝漂移，`npm run sync` 成为独立脚本。
+- 修复 v118 遗留的两处过期测试断言（共享池账本未计入开局三选一冻结卡、classic-parity 在首回合买经验）；服务端 49 项测试、根套件 73 项、单机效果审计 182 断言全部通过。**本条目为服务端变更，需按 STABILITY.md 排空交接后重新部署云托管才生效。**
+
 ## 2026-10-01 · 联机操作逻辑对齐经典六项（sw v118）
 
 - R 键一键上阵换用经典同款择优算法：战力+装备价值+羁绊进度+前后排平衡的边际贪心加严格增益换人（连续点击结果稳定），不再按星级费用粗排；站位按职业梯队前排/后排填充。

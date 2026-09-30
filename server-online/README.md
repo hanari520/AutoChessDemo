@@ -1,6 +1,6 @@
 # 八人联机房间服务（Node / 腾讯云托管版）
 
-这是《星域棋战》的**八人联机服务**，代码位于 `server-online/`。一个 Node.js（`node:http` + `ws`）单进程服务：每个邀请码对应一个房间对象，由服务端独占写入共享卡池、经济、布阵和阶段结算。规则核心由 `scripts/sync-runtime.mjs` 从 `../online/core.js`、`../online/combat.js` 复制为 `src/core.js`、`src/combat.js`（生成物，不入库），每轮对战由确定性模拟器结算并把战斗事件发给对应玩家回放。
+这是《星域棋战》的**八人联机服务**，代码位于 `server-online/`。一个 Node.js（`node:http` + `ws`）单进程服务：每个邀请码对应一个房间对象，由服务端独占写入共享卡池、经济、布阵和阶段结算。规则核心由 `scripts/sync-runtime.mjs`（`npm run sync`）从 `../online/core.js`、`../online/combat.js` 等复制为 `src/` 下的生成拷贝（**随源入库**，保证干净克隆即可构建镜像；根套件 `online/runtime-sync.test.js` 会拦截拷贝漂移），每轮对战由确定性模拟器结算并把战斗事件发给对应玩家回放。
 
 2026-09-30 新增客户端超时恢复、限流监控、维护排空与 CloudBase 数据库持久化。**生产上线必须先配置PostgreSQL 持久化表和服务端凭证**，具体设置、发布交接和验证见 [STABILITY.md](STABILITY.md)。下文的内存模式仅适用于本地开发。
 
@@ -58,7 +58,7 @@ npm run dev
 npm test
 ```
 
-测试套件（`node --test`）覆盖：协议层校验（`tests/protocol.test.js`）、无定时器的机器人完整对局（`tests/bots.test.js`，直接驱动规则核心）、以及真实 HTTP+WebSocket 服务器全流程（`tests/remote.test.js`，随机端口启动本地服务、`ONLINE_FAST=80` 加速：建房→加 bot→自动开局→bot 自动买牌上阵→打完整局到排名→token 重连与重复动作幂等）。仓库根下 `node --test online/core.test.js online/combat.test.js` 也必须保持通过。
+测试套件（`node --test`）覆盖：协议层校验（`tests/protocol.test.js`）、无定时器的机器人完整对局（`tests/bots.test.js`，直接驱动规则核心）、以及真实 HTTP+WebSocket 服务器全流程（`tests/remote.test.js`，随机端口启动本地服务、`ONLINE_FAST=80` 加速：建房→加 bot→自动开局→bot 自动买牌上阵→打完整局到排名→token 重连与重复动作幂等，并校验非白名单/缺失 Origin 的变更请求被 403）。仓库根下 `node --test online/core.test.js online/combat.test.js online/runtime-sync.test.js` 也必须保持通过（最后一项拦截服务端运行时拷贝漂移）。
 
 ## 房主与退出生命周期（v113）
 

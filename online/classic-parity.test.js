@@ -26,7 +26,9 @@ test('classic XP, shop odds, upgraded refunds and 11 population work through aut
   assert.equal(JSON.stringify(XP_NEED),JSON.stringify(xp));assert.equal(JSON.stringify(SHOP_ODDS),JSON.stringify(odds));
   assert.equal(MAX_LEVEL,11);assert.equal(interestGain(100),3);assert.equal(streakGain(-7),4);
   const state=createGame({seed:'population-parity',players:Array.from({length:8},(_,i)=>({id:`p${i}`,name:`P${i}`}))}),seat=state.seats[0];
-  seat.level=10;seat.xp=71;seat.gold=100;applyAction(state,0,{type:'buyXp'});assert.equal(seat.level,11);assert.equal(seat.gold,95);
+  seat.level=10;seat.xp=71;seat.gold=100;
+  assert.throws(()=>applyAction(state,0,{type:'buyXp'}),/首回合不可买经验/);   // v118：round 1 禁买经验
+  state.round=2;applyAction(state,0,{type:'buyXp'});assert.equal(seat.level,11);assert.equal(seat.gold,95);
   const snapshot=JSON.stringify(state);assert.throws(()=>applyAction(state,0,{type:'buyXp'}),/Maximum level/);assert.equal(JSON.stringify(state),snapshot);
   for(const star of [1,2,3])assert.equal(sellRefund({cost:4,star}),4*3**(star-1)-(star-1));
   for(let i=0;i<11;i++)seat.board[32+i]={uid:100+i,id:'ein',star:1,cost:1,items:[]};

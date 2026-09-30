@@ -69,3 +69,22 @@ test('failed CloudBase transaction preserves saved state and blocks later writes
   await assert.rejects(store.save({code:'ABCDEFGH', value:3}), /unavailable/);
   db.failWrite = false; await store.close();
 });
+
+test('CloudBase restore drops a corrupt snapshot and keeps the healthy rooms', async t => {
+  const db = database();
+  const first = new CloudBaseRoomStore({database:db});
+  await first.open();
+  await first.save({code:'GOODABCD', players:[{tokenHash:'digest', lastSeq:2}]});
+  await first.close();
+  const control = db.documents.get('online_room_state/room-service-owner');
+  control.rooms.push('BADABCD1');
+  db.documents.set('online_room_state/room-BADABCD1', {schema:1, snapshot:'{"code":"GOODABCD"}'});   // identity mismatch
+  const second = new CloudBaseRoomStore({database:db});
+  const rooms = await second.open();
+  t.after(() => second.close());
+  assert.equal(rooms.length, 1);
+  assert.equal(rooms[0].code, 'GOODABCD');
+  assert.equal(rooms[0].players[0].lastSeq, 2);
+  assert.equal(db.documents.has('online_room_state/room-BADABCD1'), false);
+  assert.equal(db.documents.get('online_room_state/room-service-owner').rooms.includes('BADABCD1'), false);
+});

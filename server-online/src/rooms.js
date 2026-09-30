@@ -583,7 +583,20 @@ export class RoomManager {
   async restore() {
     const rooms = await this.store.open();
     for (const room of rooms) {
-      if (!room || !room.code || !Array.isArray(room.players)) throw new Error('invalid persisted room');
+      // One unrecoverable snapshot must not crash-loop the whole service on
+      // startup: quarantine it (log + drop from storage) and keep restoring.
+      const quarantine = !room || typeof room !== 'object' || typeof room.code !== 'string' || !Array.isArray(room.players)
+        ? 'invalid room snapshot'
+        : room.status === 'playing' && (!room.game || room.game.ruleset !== SUPPORTED_RULESET || room.game.version !== 1)
+          ? `unsupported ruleset ${room.game?.ruleset ?? 'none'}`
+          : null;
+      if (quarantine) {
+        console.error(JSON.stringify({ event: 'room_restore_quarantine', code: typeof room?.code === 'string' ? room.code : null, reason: quarantine }));
+        if (typeof room?.code === 'string') {
+          try { await this.store.remove(room.code); } catch (error) { console.error('room_restore_quarantine removal failed:', error.message); }
+        }
+        continue;
+      }
       const expiry = cleanupAt(room);
       if (expiry !== null && expiry <= Date.now()) { await this.store.remove(room.code); continue; }
       if (room.status === 'playing') {

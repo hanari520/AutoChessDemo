@@ -86,15 +86,20 @@ export class CloudBaseRoomStore {
       const rooms = [];
       // Loading one room per transaction keeps below CloudBase's 100-operation
       // transaction limit and extends the lease throughout large restores.
+      // Data-level corruption is dropped, not thrown: one bad snapshot must
+      // not brick startup. Storage-level failures still fail open().
       for (const code of control.rooms) {
         this.validateCode(code);
-        const room = await this.ownedTransaction(async transaction => {
+        const snapshot = await this.ownedTransaction(async transaction => {
           const document = await readDocument(this.reference(transaction, `room-${code}`));
-          if (!document || document.schema !== 1 || typeof document.snapshot !== 'string') throw new Error('Missing room snapshot');
-          const restored = JSON.parse(document.snapshot);
-          if (restored.code !== code) throw new Error('Room snapshot identity mismatch');
-          return restored;
+          return document?.schema === 1 && typeof document.snapshot === 'string' ? document.snapshot : null;
         });
+        let room = null;
+        try { room = JSON.parse(snapshot); } catch { room = null; }
+        if (!room || room.code !== code) {
+          await this.remove(code);
+          continue;
+        }
         rooms.push(room);
       }
       this.scheduleRenewal();

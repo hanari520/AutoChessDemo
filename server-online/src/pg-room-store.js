@@ -44,8 +44,13 @@ export class PgRoomStore {
       for (const code of control.rooms) {
         this.validateCode(code);
         const { snapshot } = await this.owned('load', code);
-        const room = JSON.parse(snapshot);
-        if (room.code !== code) throw new Error('Room snapshot identity mismatch');
+        let room = null;
+        try { room = JSON.parse(snapshot); } catch { room = null; }
+        if (!room || room.code !== code) {
+          // One corrupt snapshot must not brick startup: drop it and continue.
+          await this.owned('remove', code);
+          continue;
+        }
         rooms.push(room);
       }
       this.renew();

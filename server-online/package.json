@@ -4,9 +4,10 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node scripts/sync-runtime.mjs && ONLINE_FAST=0 node src/server.js",
-    "test": "node scripts/sync-runtime.mjs && node --test tests/*.test.js",
-    "predeploy": "node scripts/sync-runtime.mjs"
+    "sync": "node scripts/sync-runtime.mjs",
+    "dev": "npm run sync && ONLINE_FAST=0 node src/server.js",
+    "test": "npm run sync && node --test tests/*.test.js",
+    "predeploy": "npm run sync"
   },
   "dependencies": {
     "@cloudbase/node-sdk": "4.1.0",

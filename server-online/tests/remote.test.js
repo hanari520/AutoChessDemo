@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { WebSocket } from 'ws';
 
 // Fast phases so a full eight-player game finishes within seconds.
 process.env.ONLINE_FAST = '80';
@@ -21,7 +22,7 @@ async function post(path, body, overrideOrigin = origin) {
 
 function connect(code, token, timeoutMs = 15_000) {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${base.replace(/^http/, 'ws')}/api/rooms/${code}/ws`);
+    const ws = new WebSocket(`${base.replace(/^http/, 'ws')}/api/rooms/${code}/ws`, { headers: { Origin: origin } });
     let settled = false;
     const cleanup = () => {
       clearTimeout(timeout);
@@ -63,7 +64,7 @@ function connect(code, token, timeoutMs = 15_000) {
 
 function openAnonymous(code, timeoutMs = 15_000) {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${base.replace(/^http/, 'ws')}/api/rooms/${code}/ws`);
+    const ws = new WebSocket(`${base.replace(/^http/, 'ws')}/api/rooms/${code}/ws`, { headers: { Origin: origin } });
     let settled = false;
     const cleanup = () => {
       clearTimeout(timeout);
@@ -326,4 +327,25 @@ test('anonymous sockets cannot exhaust room admission', async () => {
     authenticated?.close();
     anonymous.forEach(socket => socket.close());
   }
+});
+
+test('mutations without an allowlisted Origin are rejected, probes stay open', async () => {
+  const noOrigin = await fetch(`${base}/api/rooms`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: '无源请求' }),
+  });
+  assert.equal(noOrigin.status, 403);
+  assert.equal((await noOrigin.json()).error.code, 'origin_forbidden');
+
+  const spoofed = await post('/api/rooms', { name: '伪造来源' }, 'https://evil.example');
+  assert.equal(spoofed.status, 403);
+
+  const health = await fetch(`${base}/api/health`);
+  assert.equal(health.status, 200);
+
+  await new Promise(resolve => {
+    const ws = new WebSocket(`${base.replace(/^http/, 'ws')}/api/rooms/ABCDEFGH/ws`);   // no Origin header
+    ws.addEventListener('error', () => resolve());
+    ws.addEventListener('close', () => resolve());
+    setTimeout(resolve, 3000);
+  });
 });

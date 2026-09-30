@@ -2,10 +2,7 @@ node_modules/
 .npm-cache/
 .env
 .dev.vars
-src/core.js
-src/combat.js
-
-src/economy.js
-src/equipment.js
-src/skill-catalog.js
-src/bond-runtime.js
+# The generated runtime copies (src/core.js, src/combat.js, src/economy.js,
+# src/equipment.js, src/skill-catalog.js, src/bond-runtime.js) are committed so
+# a clean clone builds a working image; scripts/sync-runtime.mjs refreshes them
+# and online/runtime-sync.test.js fails the root suite when they drift.

@@ -26,14 +26,20 @@ test('PostgreSQL request errors fail closed and release preserves the owner fenc
   assert.equal(calls.at(-1).args.p_owner, calls[0].args.p_owner);
 });
 
-test('PostgreSQL restore rejects a snapshot with a different room identity', async () => {
+test('PostgreSQL restore drops an unrecoverable snapshot instead of failing startup', async () => {
+  const operations = [];
   const database = { rpc(name, args) {
+    operations.push({ operation: args.p_operation, code: args.p_code });
     return { abortSignal() { return Promise.resolve({ error: null, data:
-      args.p_operation === 'acquire' ? { epoch: 1, rooms: ['TEST123'] } :
-      args.p_operation === 'load' ? { snapshot: '{"code":"OTHER123"}' } : {},
+      args.p_operation === 'acquire' ? { epoch: 1, rooms: ['TEST123', 'GOOD1234'] } :
+      args.p_operation === 'load' ? { snapshot: args.p_code === 'TEST123' ? '{"code":"OTHER123"}' : JSON.stringify({ code: 'GOOD1234', players: [] }) } : {},
     }); } };
   } };
   const store = new PgRoomStore({ database });
-  await assert.rejects(store.open(), /identity mismatch/);
-  assert.equal(store.health().healthy, false);
+  const rooms = await store.open();
+  assert.equal(rooms.length, 1);
+  assert.equal(rooms[0].code, 'GOOD1234');
+  assert.ok(operations.some(entry => entry.operation === 'remove' && entry.code === 'TEST123'), 'corrupt room is dropped from storage');
+  assert.equal(store.health().healthy, true);
+  await store.close();
 });

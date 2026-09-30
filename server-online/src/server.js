@@ -117,6 +117,12 @@ async function handleRequest(manager, request, response) {
     const url = new URL(request.url || '/', 'http://localhost');
     if (manager.stopping && !['/api/health','/api/ready','/api/admin/metrics','/api/admin/handoff'].includes(url.pathname)) throw new RoomError('maintenance', '服务正在重启，请稍后重连', 503);
     if (request.method === 'OPTIONS') { response.writeHead(204, headers); response.end(); return; }
+    if (request.method !== 'GET' && !origin && !url.pathname.startsWith('/api/admin/')) {
+      // Room-mutating requests must carry an allowlisted Origin (browsers
+      // always send one). Admin endpoints rely on the bearer token instead,
+      // so maintenance scripts can call them without a browser Origin.
+      throw new RoomError('origin_forbidden', '此页面来源未获准访问联机服务', 403);
+    }
     if (url.pathname === '/api/health' && request.method === 'GET') {
       respondJson(response, { ok: true, ruleset: SUPPORTED_RULESET, boardCells:64, deployStart:32 }, 200, headers);
       return;
@@ -231,7 +237,10 @@ function handleUpgrade(manager, wss, request, socket, head) {
   };
   try {
     if (manager.stopping) throw new RoomError('maintenance', '服务正在重启', 503);
-    allowedOrigin(request);
+    // Browser WebSocket clients always send Origin; a socket without one is a
+    // non-browser client and gets the same origin gate as mutating HTTP.
+    const origin = allowedOrigin(request);
+    if (!origin) throw new RoomError('origin_forbidden', '此页面来源未获准访问联机服务', 403);
     const url = new URL(request.url || '/', 'http://localhost');
     const match = /^\/api\/rooms\/([A-Za-z0-9]+)\/ws$/.exec(url.pathname);
     if (!match || request.method !== 'GET') throw new RoomError('not_found', '接口不存在', 404);
