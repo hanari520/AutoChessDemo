@@ -1,12 +1,12 @@
 import '../tools/preparation-presentation.js?v=1';
 import { postJson, reconnectDelay, reconcileAction } from './connection.js';
-import { MAX_LEVEL, xpNeeded, interestGain } from './economy.js';
+import { MAX_LEVEL, xpNeeded, interestGain, sellRefund } from './economy.js';
 import { createBattleEffects } from './battle-effects.js?v=1';
 import { mountClassicMatchLayout, closeMatchPanel } from './layout.js?v=2';
 import { bondSummary, previewUnit } from './combat.js';
 import { SKILL_NAMES } from './skill-names.js';
 import { EQUIPMENT, recipe, SHOP_ODDS } from './equipment.js';
-import { mountDragControls } from './interactions.js';
+import { mountDragControls } from './interactions.js?v=2';
 import { mountCodex } from './codex.js?v=1';
 import { CLASSIC_SKILLS, CLASSIC_MARKS, classicAttackProfile } from './skill-catalog.js';
 import '../tools/battle-audio.js?v=1';
@@ -42,7 +42,56 @@ const state = {
   actionTimer: null, synced: false, lastMessageAt: 0, awaitingSync: false,
   battlePlayback: null, battleFrame: null, inspected: null,
 };
-mountDragControls({getSeat:()=>state.view?.me,canAct,sendAction,isBoardReadOnly:()=>state.spectateSeat!=null&&state.spectateSeat!==state.seat});
+mountDragControls({getSeat:()=>state.view?.me,canAct,sendAction,isBoardReadOnly:()=>state.spectateSeat!=null&&state.spectateSeat!==state.seat,
+  onHover:paintDragHover,sfx:name=>audio.sfx(name)});
+
+/* —— 拖拽悬停反馈（对齐经典：拖到哪显示哪的攻击范围 / 落点与可穿高亮 / 出售横幅）——
+   只切换既有格子的 class、不重建 DOM；渲染函数每次重排后用 refreshDragPaint() 补画。 */
+let dragHoverInfo=null,dragPainted=[];
+function clearDragPaint(){
+  dragPainted.forEach(el=>el.classList.remove('rng-hl','rng-src','drop-hl','equip-hl'));
+  dragPainted=[];
+  document.querySelectorAll('#boardGrid .rng-hl, #boardGrid .rng-src').forEach(el=>el.classList.remove('rng-hl','rng-src'));   // 剥掉拖拽前渲染残留的查看层
+  document.querySelector('.shop-panel')?.classList.remove('online-sell-zone');
+  const banner=$('dragSellBanner');if(banner)banner.hidden=true;
+}
+function paintDragHover(info){
+  dragHoverInfo=info;
+  clearDragPaint();
+  if(!info)return;
+  const boardCell=i=>$('boardGrid')?.children?.[i]||null;
+  const benchCell=slot=>document.querySelector(`#benchGrid [data-zone="bench"][data-slot="${slot}"]`);
+  if(info.cell){
+    const {zone,slot}=info.cell;
+    const wrap=zone==='board'?boardCell(slot):benchCell(slot);
+    if(wrap){wrap.classList.add('drop-hl');dragPainted.push(wrap);}
+    if(!info.isItem&&info.unit&&zone==='board'){
+      const reach=previewUnit(info.unit)?.range||0;
+      const sx=slot%8,sy=Math.floor(slot/8);
+      const src=boardCell(slot);
+      if(src){src.classList.add('rng-src');dragPainted.push(src);}
+      for(let i=0;i<64;i++){
+        if(i===slot)continue;
+        if(Math.abs(i%8-sx)+Math.abs(Math.floor(i/8)-sy)<=reach){
+          const cell=boardCell(i);
+          if(cell){cell.classList.add('rng-hl');dragPainted.push(cell);}
+        }
+      }
+    }
+    if(info.isItem&&state.view?.me?.[zone]?.[slot]&&wrap){wrap.classList.add('equip-hl');dragPainted.push(wrap);}
+  }
+  if(info.sell&&!info.isItem&&info.unit){
+    const panel=document.querySelector('.shop-panel');
+    panel?.classList.add('online-sell-zone');
+    const banner=$('dragSellBanner');
+    if(banner){
+      banner.textContent=`松手出售 +${sellRefund(info.unit)} 金`;
+      banner.hidden=false;
+      if(panel){const r=panel.getBoundingClientRect();banner.style.left=Math.max(8,Math.min(innerWidth-220,r.left+r.width/2-100))+'px';banner.style.top=Math.max(6,r.top-40)+'px';}
+    }
+  }
+}
+function refreshDragPaint(){if(dragHoverInfo)paintDragHover({...dragHoverInfo});}
 const audio=globalThis.ClassicBattleAudio.create({speed:()=>state.battlePlayback?.speed||1,silent:()=>false});
 $('sfxBtn').addEventListener('click',()=>audio.toggleSfx());audio.paintSfxBtn();
 
@@ -800,7 +849,7 @@ function renderUnitSlot(unit, zone, slot) {
 
 // The server stores all 64 stage cells; only the lower 32 are deployable.
 function renderBoard(board,readOnly=false) {
-  const focus=(board||[]).findIndex(unit=>unit&&String(unit.uid)===state.inspected?.uid&&!state.inspected?.battle);const reach=focus>=0?previewUnit(board[focus])?.range||0:0;
+  const focus=dragHoverInfo?-1:(board||[]).findIndex(unit=>unit&&String(unit.uid)===state.inspected?.uid&&!state.inspected?.battle);const reach=focus>=0?previewUnit(board[focus])?.range||0:0;
   const rangeClass=cell=>focus<0?'':cell===focus?' rng-src':Math.abs(cell%8-focus%8)+Math.abs(Math.floor(cell/8)-Math.floor(focus/8))<=reach?' rng-hl':'';
   return Array.from({length:64}, (_, cell) => {
     const side = cell < 32 ? 'enemy-side' : 'own-side';
@@ -854,6 +903,7 @@ function renderGame() {
   $('arenaTitle').textContent = watched ? `观战 · ${watched.name}${view.phase === 'prep' ? '（上回合阵容）' : ''}` : '上阵棋盘';
   $('boardCount').textContent = `${(boardOwner.board || []).filter(Boolean).length} / ${boardOwner.level || 1}`;
   $('boardGrid').innerHTML = renderBoard(boardOwner.board || Array(64).fill(null),!!watched&&watched.seat!==state.seat);
+  refreshDragPaint();   // 重排会清掉拖拽高亮，按最近一次悬停补画
   $('benchGrid').innerHTML = (me.bench || Array(8).fill(null)).map((unit,slot) => renderUnitSlot(unit,'bench',slot)).join('');
   const bonds = bondSummary(boardOwner.board);
   $('bondList').innerHTML = bonds.length ? bonds.map(bond=>{

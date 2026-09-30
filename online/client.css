@@ -416,3 +416,13 @@ input:focus-visible { border-color: #7fa9ed; box-shadow: 0 0 0 3px rgba(122,155,
 /* ===== 锁定按钮三态 ===== */
 #gameReadyBtn.locked:not(:disabled){background:linear-gradient(135deg,#5f9e8f,#49cdb8);border-color:#3ab5a1;color:#fff}
 #gameReadyBtn.autolocked{background:linear-gradient(135deg,#8a94b8,#7180a3);border-color:#7180a3;color:#fff;cursor:default;opacity:1}
+
+/* ===== 拖拽悬停反馈（对齐经典手感）===== */
+.board-grid .battle-cell.drop-hl{box-shadow:inset 0 0 0 2px var(--green),inset 0 0 12px rgba(38,159,136,.25)}
+.board-grid .battle-cell.equip-hl{box-shadow:inset 0 0 0 2px var(--lilac),inset 0 0 12px rgba(167,133,233,.25)}
+.unit-slot.drop-hl{border-color:var(--green)!important;box-shadow:inset 0 0 0 2px rgba(38,159,136,.5)}
+.unit-slot.equip-hl{border-color:var(--lilac)!important;box-shadow:inset 0 0 0 2px rgba(167,133,233,.5)}
+.online-sell-zone{outline:2px dashed var(--red);outline-offset:-5px;border-radius:8px}
+.drag-sell-banner{position:fixed;z-index:70;pointer-events:none;background:var(--gold);color:#fff;padding:6px 16px;border-radius:999px;font-weight:700;font-size:.84rem;letter-spacing:.03em;box-shadow:0 8px 22px rgba(30,40,80,.3)}
+.online-drag-ghost{position:fixed;z-index:80;pointer-events:none;transform:translate(-50%,-60%);padding:4px 8px;border-radius:10px;background:rgba(30,38,66,.85);color:#fff;font-size:.76rem;font-weight:700}
+.online-drag-ghost img{display:block;width:62px;height:86px;object-fit:cover;object-position:top;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.35)}
