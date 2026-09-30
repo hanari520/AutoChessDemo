@@ -41,7 +41,6 @@ export function botPolicy(game, seatIndex) {
   const attempt = action => { try { applyAction(game, seatIndex, action); return true; } catch { return false; } };
   const ownedUnits = () => [...seat.board, ...seat.bench].filter(Boolean);
   const boardCount = () => seat.board.filter(Boolean).length;
-  const capacity = Math.min(8, seat.level);
   // Deterministic tie-breaker between equally rated pieces.
   const jitter = new Map();
   const rank = unit => {
@@ -50,11 +49,13 @@ export function botPolicy(game, seatIndex) {
   };
 
   // 1. Levels: from round 2, spend surplus gold on XP while keeping a buffer.
-  if (game.round >= 2 && seat.level < 9) {
+  if (game.round >= 2 && seat.level < 11) {
     for (let times = 0; times < 2 && seat.gold >= 12; times++) {
       if (!attempt({ type: 'buyXp' })) break;
     }
   }
+
+  const capacity = Math.min(11, seat.level);
 
   // 2. Shop: keep pairs of owned ids, otherwise fill the bench while the
   //    total roster is still below the board capacity.
@@ -78,11 +79,12 @@ export function botPolicy(game, seatIndex) {
     if (!target || !attempt({ type: 'equip', uid: target.uid, itemIndex: 0 })) break;
   }
 
-  // 4. Deploy: strongest bench pieces fill the first free board slots.
+  // 4. Deploy near the center, keeping each unit's position deterministic.
+  const preferredSlots = [51, 52, 43, 44, 59, 60, 50, 53, 42, 45, 58];
   while (boardCount() < capacity) {
     const strongest = seat.bench.filter(Boolean).sort((a, b) => rank(b) - rank(a))[0];
-    const slot = seat.board.indexOf(null);
-    if (!strongest || slot < 0 || !attempt({ type: 'move', uid: strongest.uid, to: { zone: 'board', slot } })) break;
+    const slot = preferredSlots.find(index => !seat.board[index]);
+    if (!strongest || slot === undefined || !attempt({ type: 'move', uid: strongest.uid, to: { zone: 'board', slot } })) break;
   }
 
   // 5. Reroll once when the shop offered nothing worth buying.

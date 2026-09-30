@@ -12,7 +12,7 @@ const BOND_NEW_DESC={
   '森之国':['森之国成员获得 18% 普攻闪避；闪避后获得幻影护层','幻影同时保护最近的友军'],
   '工造':['战前为一名友军装配可被击破的装置，抵挡伤害','为两名友军装配更坚固的装置'],
   'P-SP':['敌方蓝量最高者即将施法时，P-SP 打断并使其短暂沉默（每场 1 次）','每场可打断 2 次'],
-  '刀客':['相邻刀客形成防线；同伴受击时刀客反击攻击者','反击时为同伴加盾','反击再波及攻击者邻近敌人'],
+  '刀客':['相邻刀客形成防线；同伴受击时刀客反击攻击者（每名刀客每场最多 3 次）','反击时为同伴加盾','反击再波及攻击者邻近敌人'],
   '守护':['守护成员战前认领相邻队友，队友首次受击时援护加盾','援护同时保护守护者','援护同时解除被认领者的沉默'],
   '歌势':['不同歌势成员施法组成合唱，为全队回复生命','合唱同时为最低蓝队友回蓝'],
   '游侠':['游侠每 3 次命中将箭弹向未被本次命中的另一名敌人','箭矢再弹向第二名敌人'],
@@ -21,11 +21,13 @@ const BOND_NEW_DESC={
   '刺客':['刺客击杀孤立目标后潜行，短暂闪避普攻','潜行后下一次普攻强化'],
   '狂战':['狂战低于 45% 生命后，普攻横扫目标邻近敌人','横扫第二名邻近敌人'],
   '医者':['友军首次遭受致命伤害时，医者紧急分诊使其存活并回复生命','分诊同时治疗附近友军'],
-  '偶像':['邻近友军施法后，偶像为其添加应援护盾','应援同时保护附近最低血友军']
+  '偶像':['邻近友军施法后，偶像为其添加应援护盾（每名偶像每场最多 4 次）','应援同时保护附近最低血友军']
 };
 function bondModern(){return !!(S&&Number(S.bondRulesVersion)>=2);}
 function bondDesc(name,cfg){return (!S||bondModern())&&BOND_NEW_DESC[name]||cfg.desc;}
-const BondRuntime={
+function createClassicBondRuntime(adapter){
+  const {BV,byId,facsOf,jobsOf,unitDist,dealDamage,dmgPopup,bsHeal,bondModern}=adapter;
+return {
   state:null,
   start(units){
     const st={units,depth:0,chorus:[new Set(),new Set()],star:[new Set(),new Set()],mage:[new Set(),new Set()],rescued:[false,false],spotlight:[0,0]};
@@ -59,7 +61,18 @@ const BondRuntime={
   tier(u,n){return u&&u.bond&&u.bond[n]||0;},
   damage(src,tgt,n,units,type){const st=this.state;if(!st||st.depth>=2||!tgt||tgt.hp<=0)return 0;st.depth++;try{return dealDamage(src,tgt,Math.max(1,Math.round(n)),units,type);}finally{st.depth--;}},
   shield(src,tgt,n,label){if(!tgt||tgt.hp<=0||tgt.noShieldT>0)return;tgt.shield=(tgt.shield||0)+Math.max(1,Math.round(n));dmgPopup(src,tgt,label||'🛡羁绊','cast');},
-  heal(src,tgt,n){if(!tgt||tgt.hp<=0)return;const h=Math.min(tgt.maxhp-tgt.hp,Math.max(0,Math.round(n)))*(tgt.healDownT>0?1-tgt.healDownA:1);tgt.hp+=h;if(h>0){bsHeal(src,h);dmgPopup(src,tgt,'+'+Math.round(h),'heal');}},
+  heal(src,tgt,n){
+    if(!tgt||tgt.hp<=0||tgt.v3HealLockT>0)return;
+    let amount=Math.max(0,Math.round(n*(tgt.healDownT>0?Math.max(0,1-tgt.healDownA):1)));
+    const bomb=tgt.v3HealBomb;
+    if(bomb&&bomb.left>0&&bomb.owner&&bomb.owner.side!==tgt.side){
+      tgt.v3HealBomb=null;const burst=Math.max(1,Math.round(amount*(bomb.amp||.4)));amount=Math.max(0,amount-burst);
+      this.damage(bomb.owner,tgt,burst,this.state.units,'magic');dmgPopup(bomb.owner,tgt,'✦疗愈转伤','cast');
+    }
+    if(tgt.hp<=0)return;
+    const h=Math.min(tgt.maxhp-tgt.hp,amount);tgt.hp+=h;
+    if(h>0){bsHeal(src,h);dmgPopup(src,tgt,'+'+h,'heal');}
+  },
   preHit(src,tgt,dmg,units,dtype){
     const st=this.state;if(!st||st.depth||!bondModern())return dmg;
     if(this.tier(tgt,'深海')&&src&&src.side!==tgt.side&&src._casting&&!tgt.bondTide){tgt.bondTide=true;this.shield(tgt,tgt,tgt.maxhp*.18,'🌊潮盾');if(this.tier(tgt,'深海')>=2){const ally=units.filter(v=>v.hp>0&&v.side===tgt.side&&v!==tgt).sort((a,b)=>unitDist(a,tgt)-unitDist(b,tgt))[0];if(ally)this.shield(tgt,ally,ally.maxhp*.12,'🌊潮盾');}}
@@ -122,3 +135,12 @@ const BondRuntime={
     if(this.tier(src,'刺客')&&!units.some(v=>v.hp>0&&v.side===tgt.side&&v!==tgt&&unitDist(v,tgt)<=1)){src.phaseT=Math.max(src.phaseT||0,1800);src.phaseDodge=.8;if(this.tier(src,'刺客')>=2)src.itemNextStrikeAmp=Math.max(src.itemNextStrikeAmp||0,.35);dmgPopup(src,src,'🥷潜行','cast');}
   }
 };
+
+}
+const BondRuntime=createClassicBondRuntime({
+  BV:new Proxy({}, {get:(_,key)=>BV[key]}),
+  byId:(...args)=>byId(...args),facsOf:(...args)=>facsOf(...args),jobsOf:(...args)=>jobsOf(...args),
+  unitDist:(...args)=>unitDist(...args),dealDamage:(...args)=>dealDamage(...args),
+  dmgPopup:(...args)=>dmgPopup(...args),bsHeal:(...args)=>bsHeal(...args),bondModern:()=>bondModern()
+});
+globalThis.ClassicBondRules={create:createClassicBondRuntime,descriptions:BOND_NEW_DESC};

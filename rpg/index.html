@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#0c1024">
+  <title>星渊手记 · 星灯远征</title><link rel="stylesheet" href="chapter.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar"><a class="brand" href="#" aria-label="星渊手记"><span class="brand-gem">✦</span><span><b>星渊手记</b><small>ASTRAL CHRONICLE</small></span></a><div class="top-meta"><span class="chapter-chip">第一章　星灯远征</span><span class="resource"><i>✧</i><b id="memoryCount">0</b></span><button class="icon-button" id="helpButton" title="玩法说明">?</button></div></header>
+    <main>
+      <section id="selectScreen" class="screen select-screen">
+        <div class="screen-heading"><div><span class="eyebrow">CHAPTER 01 · THE LOST STAR LAMP</span><h1>集结你的远征小队</h1><p>从 50 位角色中选择 5 人。站好阵线，释放必杀，夺回失落的星灯。</p></div><div class="record-pill"><span>远征记录</span><b id="recordText">尚未通关</b></div></div>
+        <div class="selection-layout">
+          <div class="roster-panel panel"><div class="panel-heading"><div><b>角色名册</b><small>50 位可选角色 · 每次远征可重新编队</small></div><label class="search"><span>⌕</span><input id="heroSearch" type="search" placeholder="搜索角色或技能"></label></div><div id="rosterGrid" class="roster-grid"></div></div>
+          <aside class="team-panel panel"><div class="panel-heading"><div><b>远征小队</b><small>五人同行 · 前排优先承伤</small></div><span id="teamCount" class="count-pill">0 / 5</span></div><div class="formation"><span>后卫</span><div id="teamSlots" class="team-slots"></div><span>前卫</span></div><div id="heroDetail" class="hero-detail"><div class="detail-star">✧</div><b>选择一位角色</b><p>查看她的定位与必杀技</p></div><div class="team-summary"><div><span>小队倾向</span><b id="teamStyle">待编队</b></div><div><span>推荐</span><b>1 坦克 · 1 治疗 · 3 输出</b></div></div><button id="startChapter" class="primary-button" disabled>开始第一章 <span>→</span></button><div class="save-hint">角色与关卡进度保存在本机</div></aside>
+        </div>
+      </section>
+
+      <section id="mapScreen" class="screen map-screen hidden">
+        <div class="screen-heading"><div><span class="eyebrow">CHAPTER 01 · STARLAMP EXPEDITION</span><h1>星灯远征</h1><p>穿过云海回廊，净化沿途的侵蚀，最后夺回星灯。</p></div><button id="editTeam" class="secondary-button">调整小队</button></div>
+        <div class="map-card panel"><div class="map-art"><div class="map-copy"><span class="map-kicker">星穹庭院 · 北侧云径</span><h2>微光消失的那一夜</h2><p>星灯的火焰被黑雾带去了云海深处。知晴守在庭院入口，等待有人回应远方的呼唤。</p></div><div class="map-sigil">✦</div></div><div class="route"><div id="chapterNodes" class="chapter-nodes"></div></div><div class="map-bottom"><div class="active-team" id="activeTeam"></div><button id="enterStage" class="primary-button">前往当前节点 <span>→</span></button></div></div>
+        <div id="mapNotice" class="map-notice">远征开始后，队伍会自动作战。点击蓄满能量的头像释放必杀技。</div>
+      </section>
+
+      <section id="battleScreen" class="screen battle-screen hidden">
+        <div class="battle-heading"><div><span id="battleStageLabel" class="eyebrow">STAGE 1-1</span><h1 id="battleTitle">云径的巡守者</h1></div><div class="battle-heading-right"><span class="auto-pill"><i></i> 自动战斗</span><button id="retreatButton" class="secondary-button">暂停远征</button></div></div>
+        <div class="battle-arena" id="battleArena"><div class="arena-topline"><span id="waveLabel">WAVE 1</span><span id="battleClock">00:00</span></div><div class="arena-glow"></div><div id="enemyFormation" class="enemy-formation"></div><div id="combatEffects" class="combat-effects"></div><div id="partyFormation" class="party-formation"></div><div class="arena-caption" id="arenaCaption">点击敌人集中攻击 · 必杀技可手动释放</div></div>
+        <div class="battle-footer"><div class="party-hud" id="partyHud"></div><div class="battle-log" id="battleLog"><span>远征小队已抵达战场。</span></div></div>
+      </section>
+
+      <section id="resultScreen" class="screen result-screen hidden">
+        <div class="result-card panel"><div id="resultIcon" class="result-icon">✦</div><span id="resultEyebrow" class="eyebrow">ENCOUNTER CLEAR</span><h1 id="resultTitle">战斗胜利</h1><p id="resultCopy">星屑汇聚成一枚新的祝福。</p><div id="rewardChoices" class="reward-choices"></div><div class="result-rewards"><span>远征获得</span><b id="rewardSummary">✧ 星屑 × 12</b></div><button id="continueButton" class="primary-button">继续前进 <span>→</span></button></div>
+      </section>
+
+      <section id="clearScreen" class="screen result-screen hidden"><div class="result-card panel clear-card"><div class="result-icon">✧</div><span class="eyebrow">CHAPTER COMPLETE</span><h1>星灯，再次闪耀</h1><p>终夜的雾散去了。第一章完成，星穹庭院重新亮起灯火。</p><div class="clear-rewards"><div><small>本次远征</small><b id="clearTeamNames">—</b></div><div><small>累计通关</small><b id="clearCount">1 次</b></div><div><small>获得星屑</small><b id="clearCurrency">+60</b></div></div><button id="replayButton" class="primary-button">再次远征 <span>→</span></button><button id="backRoster" class="text-button">返回角色名册</button></div></section>
+
+      <section id="gameOverScreen" class="screen result-screen hidden"><div class="result-card panel"><div class="result-icon defeat">✦</div><span class="eyebrow">EXPEDITION ENDED</span><h1>小队暂时撤退</h1><p id="defeatCopy">这次远征止步于第一章。</p><div class="result-rewards"><span>仍带回</span><b id="defeatReward">✧ 星屑 × 6</b></div><button id="retryButton" class="primary-button">重新编队 <span>→</span></button></div></section>
+    </main>
+    <footer><span>星渊手记 · 五人即时战斗 RPG 原型</span><a href="action.html">打开旧版自由探索 demo</a></footer>
+  </div>
+  <div id="toast" class="toast hidden" role="status"></div>
+  <div id="campModal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card camp-card"><button class="modal-close" id="campClose">×</button><span class="eyebrow">A QUIET MOMENT</span><h2>云海营地</h2><p>趁敌人还未追上来，小队可以在这里休整或训练。</p><div class="camp-choices"><button id="campHeal" class="reward-choice"><span class="reward-icon">♡</span><b>篝火休息</b><small>全队恢复 45% 生命</small></button><button id="campTrain" class="reward-choice"><span class="reward-icon">✦</span><b>战术演练</b><small>全队攻击力提升 8%</small></button></div></div></div>
+  <div id="dialogModal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card"><button class="modal-close" id="closeModal">×</button><span class="eyebrow">HOW TO PLAY</span><h2>星灯远征手册</h2><p><b>自动普攻：</b>五位角色会根据站位自动攻击。点击敌人头像可以集火。</p><p><b>必杀技：</b>受到攻击和进行普攻会积累 TP。能量条蓄满后，点击头像或下方必杀按钮释放。</p><p><b>队伍编成：</b>前排更容易承受攻击。坦克保护队友，治疗者维持队伍，输出角色尽快击破敌人。</p><p><b>远征成长：</b>每场胜利后选择一项队伍祝福；在营地恢复状态后继续前进，挑战章节首领。</p><button id="modalOkay" class="primary-button">明白了</button></div></div>
+  <script src="characters.js"></script><script src="chapter.js"></script>
+</body>
+</html>

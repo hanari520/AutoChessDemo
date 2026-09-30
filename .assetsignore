@@ -1,6 +1,7 @@
 # 部署排除项（gitignore 语法）
 out
 .mimosa
+.video_agent
 .wrangler
 .git
 .gitignore
@@ -12,11 +13,11 @@ specs
 tasks
 server-online
 *.xlsx
-online/core.js
 online/core.test.js
-online/combat.js
 online/combat.test.js
 online/skills.test.js
+online/*.test.js
+rpg/smoke.py
 assets/units_redraw
 assets/campaign
 # tools 中仅以下运行时文件需要对外提供；测试、部署脚本和素材草稿不上传。
@@ -39,6 +40,13 @@ tools/**
 !tools/solo-ui.css
 !tools/solo-ui.js
 !tools/stage-themes.css
+!tools/battle-audio.js
+!tools/battle-hud.css
+!tools/battle-presentation.css
+!tools/battle-presentation.js
+!tools/match-layout.css
+!tools/portrait-ui.css
+!tools/portrait-ui.js
 td.html
 td.css
 td.js

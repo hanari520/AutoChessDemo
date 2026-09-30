@@ -1,0 +1,120 @@
+/* Classic challenge positions: details/bonds | board/bench | stats/gear/log. */
+#main,.online-playing .match-stage {
+  display:grid; grid-template-columns:minmax(200px,252px) minmax(0,1fr) minmax(238px,286px);
+  grid-template-rows:minmax(0,1fr); align-items:stretch; gap:clamp(8px,1vw,15px);
+  min-height:0; padding:10px 12px 8px; isolation:isolate;
+}
+.online-playing .topbar { height:58px; position:relative; z-index:50; }
+.topbar .round-panel { display:none; }
+.online-playing .topbar .round-panel { display:flex; flex:1; min-width:0; padding:0; border:0; background:none; box-shadow:none; gap:12px; }
+.online-playing .topbar .brand { display:none; }
+.online-playing .room-heading { display:none; }
+.online-playing .game-layout { display:flex; flex-direction:column; gap:0; padding:0; height:calc(100dvh - 58px); min-height:0; }
+.online-playing .match-stage { flex:1; }
+.online-playing .game-left,.online-playing .game-side { display:flex; flex-direction:column; min-height:0; gap:8px; overflow:auto; grid-column:auto; grid-row:auto; }
+.online-playing .game-left { padding:10px 9px; border:1px solid var(--theme-border); border-radius:18px; background:var(--theme-panel); }
+.online-playing .game-left .inspect-panel,.online-playing .game-left .bonds-panel { flex:none; min-height:0; padding:10px; }
+.online-playing .game-left .bond-list { max-height:none; }
+.online-playing .opponent-panel { margin:8px 0; padding:8px; border:1px solid var(--theme-border); border-radius:9px; background:var(--theme-surface); }
+.online-playing .opponent-panel .pairing-text { white-space:normal; }
+.online-playing .game-center { grid-column:auto; grid-row:auto; padding:8px 12px 10px; justify-content:space-between; gap:7px; overflow:hidden; }
+.online-playing .game-center .scoreboard-panel { flex:none; width:100%; padding:2px 3px; overflow:visible; border:0; background:none; box-shadow:none; }
+.online-playing .game-center .scoreboard-panel { order:-1; }
+.online-playing .scoreboard-panel .section-heading { padding:0; margin:0 0 3px; border:0; }
+.online-playing .scoreboard-panel .section-heading h2 { font-size:.65rem; }
+.online-playing .scoreboard { grid-template-columns:repeat(8,minmax(0,1fr)); gap:3px; }
+.online-playing .score-button { grid-template-columns:minmax(0,1fr) auto; min-height:25px; padding:3px; gap:2px; font-size:.58rem; }
+.online-playing .score-button .place { display:none; }
+.online-playing .score-button .name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.online-playing .seat-hp-track { grid-column:1/-1; display:block; height:3px; background:#172844; }
+.online-playing .seat-hp-track i { display:block; height:100%; background:#ff849f; }
+.online-playing .score-item.mine .seat-hp-track i { background:#57ceb9; }
+.online-playing .board-grid,.online-playing .battle-arena { width:min(100%,calc(100dvh - 440px),832px); }
+.online-playing .arena-panel,.online-playing .combat-panel { flex:none; min-height:0; }
+.online-playing .stage-key,.online-playing .board-help { display:none; }
+.online-playing .bench-panel { flex:none; width:440px; max-width:100%; min-height:70px; padding:8px 9px 10px; align-self:center; }
+.online-playing .bench-panel .section-heading { margin-bottom:4px; }
+.online-playing .bench-grid { grid-template-columns:repeat(8,minmax(0,1fr)); width:min(440px,100%); min-height:45px; }
+.online-playing .bench-grid .unit-slot { min-height:45px; }
+.online-playing .game-side>.panel { flex:none; }
+.online-playing .game-side .inventory-panel { min-height:190px; }
+.online-playing .war-report-panel { min-height:105px; }
+.online-playing .war-report-panel .battle-feed { margin:0 0 7px; padding:6px; width:100%; font-size:.69rem; }
+.online-playing .battle-log { max-height:210px; overflow:auto; font-size:.65rem; line-height:1.65; color:var(--theme-muted); }
+.online-playing .battle-log p { margin:0 0 3px; }
+.online-playing .battle-stats-panel .battle-damage-row { grid-template-columns:60px 1fr 30px; }
+.online-playing .battle-stats-panel .battle-damage-row small { grid-column:2/-1; text-align:right; }
+.online-playing .shop-panel { flex:none; height:clamp(150px,22.1dvh,210px); min-height:0; margin:0; border-radius:0; padding:8px 12px; display:grid; grid-template-columns:320px minmax(0,1fr) 140px; grid-template-rows:1fr; gap:10px; }
+.online-playing .shop-player-panel { grid-column:1; grid-row:1; display:flex; flex-direction:column; justify-content:center; gap:7px; padding:10px; border:1px solid var(--theme-border); border-radius:12px; background:var(--theme-surface); }
+.online-playing .shop-player-panel .level-progress { width:100%; min-width:0; max-width:none; }
+.online-playing .shop-player-panel .level-progress-label { font-size:.75rem; }
+.online-playing .shop-player-panel .button { min-height:30px; }
+.online-playing .shop-player-panel .selection-bar { display:flex; flex-wrap:wrap; padding:0; font-size:.65rem; background:transparent; }
+.online-playing .shop-player-panel .selection-bar[hidden] { display:none; }
+.online-playing .shop-player-panel { padding:6px 10px; gap:4px; }
+.classic-controls { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.online-playing .classic-controls .button { width:100%; min-height:25px; padding:3px; font-size:.65rem; }
+.hotkey-help { position:relative; }
+.hotkey-help summary { list-style:none; cursor:pointer; text-align:center; }
+.hotkey-help p { position:absolute; bottom:30px; left:0; width:260px; z-index:30; margin:0; padding:10px; border:1px solid var(--theme-border); border-radius:10px; color:var(--theme-ink); background:var(--theme-panel); line-height:1.7; font-size:.75rem; }
+.equipment-controls { display:flex; gap:5px; margin-bottom:8px; }
+.equipment-controls .button { flex:1; min-height:28px; padding:4px; font-size:.7rem; }
+.equipment-workshop { font-size:.7rem; color:var(--theme-muted); }
+.equipment-workshop summary { cursor:pointer; padding:6px 0; }
+#equipmentRecipes { display:grid; gap:5px; }
+#equipmentRecipes .button { min-height:27px; padding:4px; font-size:.65rem; }
+.economy-info,.shop-odds { margin-top:3px; font-size:.6rem; color:var(--theme-muted); }
+.online-dragging [data-zone][data-slot] { outline:1px dashed var(--theme-muted); }
+.online-playing [draggable=true] { touch-action:none; }
+.online-drag-ghost { position:fixed; transform:translate(-50%,-140%); z-index:1000; pointer-events:none; padding:8px; border-radius:8px; color:var(--theme-ink); background:var(--theme-panel); box-shadow:0 4px 15px #0005; }
+.online-playing .shop-player-panel .level-progress-label { font-size:.65rem; }
+.online-playing .bench-grid .unit-slot.empty { font-size:0; }
+.online-playing .shop-list { grid-column:2; grid-row:1; min-height:0; width:auto; }
+.online-playing .shop-actions { grid-column:3; grid-row:1; }
+.mobile-panel-tabs { display:none; }
+.game-room-menu { display:none; position:relative; }
+.online-playing .game-room-menu { display:block; }
+.game-room-menu summary { list-style:none; min-height:32px; padding:4px 7px; font-size:.7rem; }
+.game-room-menu>div { position:absolute; top:38px; right:0; z-index:100; width:180px; display:grid; gap:7px; padding:12px; border:1px solid var(--theme-border); border-radius:12px; color:var(--theme-ink); background:var(--theme-panel); }
+.match-panel-dialog { width:min(94vw,500px); max-height:calc(100dvh - 80px); margin:auto; padding:12px; border:1px solid var(--theme-border); border-radius:18px; color:var(--theme-ink); background:var(--theme-panel); }
+.match-panel-dialog::backdrop { background:#0b143e85; backdrop-filter:blur(5px); }
+.match-panel-dialog>header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.match-panel-dialog .panel { width:100%; max-height:none; }
+@media(max-width:1280px) and (min-width:881px) {
+  #main,.online-playing .match-stage { grid-template-columns:minmax(180px,224px) minmax(0,1fr) minmax(205px,236px); gap:8px; padding-inline:8px; }
+  .online-playing .shop-panel { grid-template-columns:230px minmax(0,1fr) 120px; }
+}
+@media(max-width:880px) {
+  .online-playing .match-stage { display:flex; flex-direction:column; padding:8px; }
+  .online-playing .game-left,.online-playing .game-side { display:none; }
+  .online-playing .game-center { flex:1; overflow:auto; padding:8px 4px; }
+  .online-playing .game-center .scoreboard-panel { width:100%; }
+  .online-playing .scoreboard { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .online-playing .board-grid,.online-playing .battle-arena { width:min(100%,calc(100dvh - 365px),460px); }
+  .online-playing .shop-panel { height:auto; min-height:145px; padding:7px; grid-template-columns:minmax(0,1fr) 110px; grid-template-rows:auto 66px 34px; gap:5px; }
+  .online-playing .shop-player-panel { grid-column:1/-1; grid-row:1; flex-direction:row; align-items:center; padding:4px 7px; }
+  .online-playing .shop-player-panel .level-progress { flex:1; order:0; width:auto; }
+  .online-playing .shop-player-panel .level-progress-label { flex-wrap:wrap; gap:2px; font-size:.6rem; }
+  .online-playing .shop-player-panel>#buyXpBtn { flex:none; width:132px; padding:4px; font-size:.65rem; }
+  .online-playing .shop-player-panel { flex-wrap:wrap; }
+  .online-playing .classic-controls { width:100%; grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .online-playing .hotkey-help p { left:auto; right:0; width:min(260px,85vw); }
+  .online-playing .shop-player-panel .selection-bar { position:fixed; left:8px; right:8px; bottom:153px; z-index:10; padding:7px; border-radius:8px; background:var(--theme-surface); }
+  .online-playing .shop-list { grid-column:1; grid-row:2; grid-template-columns:repeat(5,minmax(0,1fr)); }
+  .online-playing .shop-unit img { height:30px; min-height:30px; }
+  .online-playing .shop-name { font-size:.52rem; }
+  .online-playing .shop-traits { display:none; }
+  .online-playing .shop-unit>div { padding:1px 2px; }
+  .online-playing .shop-unit .button { min-height:18px; font-size:.5rem; }
+  .online-playing .shop-actions { grid-column:2; grid-row:2/4; display:flex; padding:0; }
+  .online-playing .shop-actions .button { min-height:32px; font-size:.68rem; }
+  .mobile-panel-tabs { display:grid; grid-column:1; grid-row:3; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; }
+  .mobile-panel-tabs .button { min-height:30px; padding:2px; font-size:.7rem; }
+  .online-playing .topbar { min-height:58px; padding:3px 8px; }
+  .online-playing .topbar .back { display:none; }
+  .online-playing .topbar .round-panel .stat-row { width:auto; flex-wrap:wrap; gap:2px; justify-content:flex-end; }
+  .online-playing .topbar .round-panel .stat { font-size:.6rem; padding:2px 4px; }
+  .online-playing .topbar .round-panel h2 { font-size:.78rem; }
+  .online-playing .topbar .round-panel .eyebrow { font-size:.58rem; }
+  .online-playing .topbar .connection { display:none; }
+}

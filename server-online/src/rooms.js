@@ -14,14 +14,16 @@ import {
 } from './protocol.js';
 import { botPolicy, pickBotName } from './bots.js';
 
-const SUPPORTED_RULESET = 'deterministic-battle-v3';
+const SUPPORTED_RULESET = 'deterministic-battle-v6';
 const MAX_ROOM_CONNECTIONS = 16;
 
 /** Phase length in milliseconds. ONLINE_FAST (a positive number of millis)
  * accelerates all three phases equally for tests and local joint debugging. */
-export function phaseMs(phase) {
+export function phaseMs(phase, game = null) {
   const fast = Number(process.env.ONLINE_FAST);
-  return Number.isFinite(fast) && fast > 0 ? fast : PHASE_MS[phase];
+  if (Number.isFinite(fast) && fast > 0) return fast;
+  if (phase === 'combat' && game) return Math.max(PHASE_MS.combat,...(game.battles || []).map(battle=>(battle.durationMs || 0)+1000));
+  return PHASE_MS[phase];
 }
 
 /** Synchronous SHA-256 token digest. Message handlers must never await a
@@ -82,7 +84,7 @@ class RoomEntry {
     const room = this.room;
     const player = room.players[seat];
     return {
-      type: 'state', code: room.code, seat, serverTime: Date.now(), deadline: room.deadline,
+      type: 'state', code: room.code, seat, serverTime: Date.now(), deadline: room.deadline, phaseDurationMs: room.game ? phaseMs(room.game.phase,room.game) : null,
       nextSeq: player.lastSeq + 1,
       lobby: lobbyFor(room, this.connectedSeats()),
       view: room.game ? viewFor(room.game, seat) : null,
@@ -355,7 +357,8 @@ class RoomEntry {
           room.finishedAt = Date.now();
           room.deadline = null;
         } else {
-          room.deadline += phaseMs(next.phase);
+          // Computation and event-loop delays must not consume the replay window.
+          room.deadline = Date.now() + phaseMs(next.phase,next);
           if (next.phase === 'prep') this.runBots();
         }
       }

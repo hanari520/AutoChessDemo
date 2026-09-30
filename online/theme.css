@@ -1,0 +1,80 @@
+:root {
+  --theme-ink:#4d5d88; --theme-muted:#7180a3; --theme-border:rgba(116,139,201,.3);
+  --theme-panel:linear-gradient(155deg,rgba(255,255,255,.93),rgba(241,247,255,.9));
+  --theme-surface:#edf2ff; --theme-soft:#e2eafb; --theme-gold:#a77522; --theme-accent:#8274c7;
+}
+html[data-theme="dark"] {
+  color-scheme:dark; --theme-ink:#edf2ff; --theme-muted:#a5b4d5; --theme-border:rgba(150,176,238,.24);
+  --theme-panel:linear-gradient(155deg,#111c38ed,#111832f2);
+  --theme-surface:#1c2a4d; --theme-soft:#26375c; --theme-gold:#f1d189; --theme-accent:#d0b8f1;
+  --ink:#edf2ff; --muted:#a5b4d5; --line:rgba(150,176,238,.24); --goldlight:#f1d189;
+  background:#090f22;
+}
+html[data-theme="light"] { color-scheme:light; }
+html[data-theme="dark"] body {
+  color:var(--theme-ink); background:linear-gradient(180deg,rgba(5,10,29,.4),rgba(8,13,35,.6)),url('../assets/ui/idol-arena-night.png') center 47%/cover fixed,#090f22;
+}
+html[data-theme="light"] body.online-playing {
+  --muted:#7180a3; --line:rgba(116,139,201,.3); --gold:#e9b85d; --goldlight:#a77522;
+  --green:#269f88; --red:#d96183; color:var(--theme-ink);
+  background:linear-gradient(180deg,rgba(238,247,255,.24),rgba(244,239,255,.38)),url('../assets/ui/idol-arena-v2.png') center 47%/cover fixed,#eaf1ff;
+}
+html[data-theme] .topbar { color:var(--theme-ink); background:var(--theme-panel); border-color:var(--theme-border); }
+.topbar-actions { display:flex; align-items:center; gap:12px; }
+.theme-toggle { min-height:32px; min-width:34px; padding:4px 8px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+.theme-label { font-size:.7rem; }
+html[data-theme] .brand,html[data-theme] .brand-sub,html[data-theme] .back,html[data-theme] .connection { color:var(--theme-ink); }
+html[data-theme] .panel,html[data-theme] .online-playing .game-center { color:var(--theme-ink); background:var(--theme-panel); border-color:var(--theme-border); }
+html[data-theme] .online-playing .game-center { box-shadow:inset 0 0 0 2px var(--theme-surface),0 10px 25px #0002; }
+html[data-theme] .online-playing .arena-panel,html[data-theme] .online-playing .combat-panel { background:transparent; border:0; box-shadow:none; }
+html[data-theme] h1,html[data-theme] h2,html[data-theme] .online-playing .room-heading h1 { color:var(--theme-ink); }
+html[data-theme] .room-heading,html[data-theme] .online-playing .bench-panel { background:var(--theme-panel); border-color:var(--theme-border); }
+html[data-theme] .section-heading,html[data-theme] .rule-note,html[data-theme] .advanced-settings,html[data-theme] .resume-box { border-color:var(--theme-border); }
+html[data-theme] .section-heading>span,html[data-theme] .muted,html[data-theme] .pairing-text,html[data-theme] .board-help,html[data-theme] .online-playing .stage-key,html[data-theme] .online-playing .bench-panel .section-heading>span { color:var(--theme-muted); }
+html[data-theme] .seat,html[data-theme] .score-item,html[data-theme] .stat,html[data-theme] .online-playing .bench-grid .unit-slot { background:var(--theme-surface); border-color:var(--theme-border); color:var(--theme-ink); }
+html[data-theme] .seat-name,html[data-theme] .online-playing .score-item .name,html[data-theme] .online-playing .score-item .place { color:var(--theme-ink); }
+html[data-theme] .score-button:hover:not(:disabled) { background:var(--theme-soft); }
+html[data-theme] .online-playing .stat b { color:var(--theme-gold); }
+html[data-theme] .button { color:var(--theme-ink); background:var(--theme-surface); border-color:var(--theme-border); }
+html[data-theme] .button:hover:not(:disabled) { color:var(--theme-ink); background:var(--theme-soft); }
+html[data-theme] .button.primary { color:#fff; border-color:transparent; background:linear-gradient(110deg,#54cdb9,#8498f2 64%,#ae8cde); }
+html[data-theme] .online-playing .button.quiet { color:var(--theme-ink); background:var(--theme-surface); }
+html[data-theme] .online-playing .shop-panel .section-heading { background:var(--theme-surface); }
+html[data-theme] .online-playing .shop-panel .section-heading h2 { color:var(--theme-ink); }
+html[data-theme] input { color:var(--theme-ink); background:var(--theme-surface); border-color:var(--theme-border); }
+html[data-theme] label,html[data-theme] .rule-note strong { color:var(--theme-gold); }
+html[data-theme] .online-playing .inspect-heading,html[data-theme] .online-playing .inspect-skill,html[data-theme] .online-playing .inspect-item,html[data-theme] .online-playing .bond-row,html[data-theme] .online-playing .inventory-item { border-color:var(--theme-border); }
+html[data-theme] .online-playing .inspect-skill,html[data-theme] .online-playing .inspect-item,html[data-theme] .online-playing .bond-row,html[data-theme] .online-playing .inventory-item { background:var(--theme-surface); color:var(--theme-ink); }
+html[data-theme] .online-playing .inspect-heading strong,html[data-theme] .online-playing .inspect-stat-grid b,html[data-theme] .online-playing .inspect-skill strong,html[data-theme] .online-playing .inspect-equipment>strong,html[data-theme] .online-playing .bond-row b { color:var(--theme-ink); }
+html[data-theme] .online-playing .inspect-heading small,html[data-theme] .online-playing .inspect-stat-grid span,html[data-theme] .online-playing .inspect-skill p,html[data-theme] .online-playing .inspect-item small,html[data-theme] .online-playing .inspect-live-grid,html[data-theme] .online-playing .inspect-status { color:var(--theme-muted); }
+html[data-theme] .online-playing .bond-row.active { border-color:var(--theme-accent); }
+html[data-theme] .online-playing .shop-unit,html[data-theme] .online-playing .shop-unit .button { background:var(--theme-surface); border-color:var(--theme-border); }
+html[data-theme] .online-playing .shop-name,html[data-theme] .online-playing .shop-unit .button { color:var(--theme-ink); }
+html[data-theme] .online-playing .shop-traits,html[data-theme] .online-playing .level-progress-label,html[data-theme] .online-playing .level-progress-label span:last-child { color:var(--theme-muted); }
+html[data-theme] .online-playing .battle-feed,html[data-theme] .online-playing .battle-damage { color:var(--theme-ink); background:var(--theme-surface); }
+html[data-theme] .online-playing .battle-damage-track,html[data-theme] .online-playing .level-progress-track { background:var(--theme-soft); }
+html[data-theme="light"] .online-playing .board-grid,html[data-theme="light"] .online-playing .battle-arena {
+  border-color:rgba(255,255,255,.82); background:linear-gradient(145deg,rgba(110,174,221,.34),rgba(113,132,220,.25) 48%,rgba(231,142,187,.24));
+  box-shadow:0 15px 24px rgba(77,90,159,.2),0 0 0 5px rgba(255,255,255,.35),inset 0 0 26px rgba(255,255,255,.28);
+}
+html[data-theme="light"] .online-playing .battle-cell.enemy-side { background:linear-gradient(145deg,rgba(247,157,193,.36),rgba(255,221,239,.33)); }
+html[data-theme="light"] .online-playing .battle-cell.own-side { background:linear-gradient(145deg,rgba(116,225,211,.33),rgba(188,242,238,.32)); }
+html[data-theme="light"] .online-playing .board-position.empty { background:#90daca25; }
+html[data-theme="dark"] .entry-intro>p:not(.eyebrow),html[data-theme="dark"] .lobby-aside>p,html[data-theme="dark"] .field-note,html[data-theme="dark"] .seat-status { color:var(--theme-muted); }
+html[data-theme="dark"] .prototype-note { color:var(--theme-muted)!important; }
+html[data-theme="dark"] .toast { color:var(--theme-ink); background:var(--theme-surface); }
+@media(max-width:600px) { .topbar-actions { gap:7px; } .theme-label { display:none; } .topbar .brand { font-size:.72rem; } }
+
+/* Entry introduction is a custom surface, so it needs its own night palette. */
+html[data-theme="dark"] .entry-intro {
+  color:var(--theme-ink); background:var(--theme-panel);
+  border-color:var(--theme-border); box-shadow:0 12px 32px #03091840;
+}
+html[data-theme="dark"] .entry-intro h1 { color:var(--theme-ink); text-shadow:none; }
+html[data-theme="dark"] .entry-intro h1 em { color:var(--theme-accent); }
+html[data-theme="dark"] .entry-intro .eyebrow { color:var(--theme-gold); }
+html[data-theme="dark"] .entry-intro .prototype-note {
+  color:var(--theme-muted)!important; background:var(--theme-surface);
+  border-color:var(--theme-accent);
+}
+html[data-theme="dark"] .entry-intro .entry-steps { color:var(--theme-muted); border-color:var(--theme-border); }

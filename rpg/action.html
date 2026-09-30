@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c1024">
+  <title>星渊手记 · RPG Demo</title>
+  <link rel="stylesheet" href="action-style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✦</span><div><strong>星渊手记</strong><small>THE ASTRAL CHRONICLE · RPG DEMO</small></div></div>
+      <div class="top-right"><span class="chapter">序章 · 失落的星灯</span><button id="helpBtn" class="small-button" aria-label="查看操作说明">? 操作</button></div>
+    </header>
+
+    <main class="layout">
+      <section class="game-panel" aria-label="游戏场景">
+        <div class="scene-heading"><span id="zoneIndex">01 / 03</span><div><b id="zoneName">星穹庭院</b><small id="zoneSub">晨光仍照着沉睡的门扉</small></div><span class="scene-tag" id="zoneTag">安全区域</span></div>
+        <div class="canvas-wrap" id="canvasWrap"><canvas id="game" width="1200" height="680" aria-label="RPG 游戏画面"></canvas>
+          <div id="interactPrompt" class="interact-prompt hidden">按 <kbd>E</kbd> 交互</div>
+          <div id="toast" class="toast hidden" role="status"></div>
+          <div id="dialogue" class="dialogue hidden" role="dialog" aria-live="polite"><div class="dialogue-portrait"><img id="dialoguePortrait" alt=""></div><div class="dialogue-copy"><strong id="dialogueName"></strong><p id="dialogueText"></p><span>按 E / 点击继续 ▸</span></div></div>
+          <div id="overlay" class="overlay"><div class="overlay-card"><span class="eyebrow">A SHORT RPG ADVENTURE</span><h1>追寻失落的<br><em>星灯</em></h1><p>星穹庭院的灯火正在熄灭。与守灯人交谈，穿过回廊，击败侵蚀之影，将星光带回庭院。</p><div class="overlay-actions"><button id="startBtn" class="primary-btn">开始冒险 <span>→</span></button><span>WASD 移动 · J 攻击 · K 技能 · E 交互</span></div></div></div>
+        </div>
+        <div class="actionbar"><span class="action-hint">移动 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向键</span><div class="actions"><button data-action="attack"><kbd>J</kbd> 普攻</button><button data-action="skill"><kbd>K</kbd> 星辉斩</button><button data-action="dash"><kbd>L</kbd> 闪避</button><button data-action="potion"><kbd>H</kbd> 药剂</button></div></div>
+        <div class="touch-controls" aria-label="触屏操作"><div class="dpad"><button data-move="up">▲</button><div><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button></div></div><div class="touch-actions"><button data-action="interact">交互</button><button data-action="attack">攻击</button><button data-action="skill">技能</button><button data-action="dash">闪避</button></div></div>
+      </section>
+
+      <aside class="sidebar">
+        <div class="hero-card"><div class="hero-title"><span>冒险者</span><b>LV <span id="level">1</span></b></div><div class="hero-profile"><img src="../assets/units_big/ein.webp" alt="艾因"><div><h2>艾因</h2><small>星灯的继承者</small></div></div><div class="stat-label"><span>生命值</span><b id="hpText">100 / 100</b></div><div class="meter hp"><i id="hpBar"></i></div><div class="stat-label"><span>星能</span><b id="mpText">60 / 60</b></div><div class="meter mp"><i id="mpBar"></i></div><div class="stat-label xp-label"><span>经验</span><b id="xpText">0 / 40</b></div><div class="meter xp"><i id="xpBar"></i></div></div>
+        <div class="quest-card"><div class="section-label"><span>✧ 当前任务</span><small>MAIN QUEST</small></div><h3 id="questTitle">与守灯人交谈</h3><p id="questText">走近庭院中的知晴，按 E 了解星灯的异常。</p><div class="quest-progress"><span id="questProgress">0 / 3</span><div><i id="questBar"></i></div></div></div>
+        <div class="inventory-card"><div class="section-label"><span>行囊</span><small>INVENTORY</small></div><div class="item-row"><span class="item-icon">✚</span><div><b>星露药剂</b><small>恢复 45 生命值 · H 使用</small></div><strong id="potions">× 2</strong></div><div class="item-row"><span class="item-icon crystal">✦</span><div><b>星屑</b><small>击败侵蚀之影获得</small></div><strong id="shards">× 0</strong></div></div>
+        <div class="journal-card"><div class="section-label"><span>旅途记录</span><small>JOURNAL</small></div><div id="journal" class="journal"><p>命运的旅程，即将开始。</p></div></div>
+      </aside>
+    </main>
+    <footer>星渊手记 · 使用项目现有美术素材制作的独立 RPG 玩法演示 <span>本地自动保存</span></footer>
+  </div>
+  <script src="action-game.js"></script>
+</body>
+</html>
+

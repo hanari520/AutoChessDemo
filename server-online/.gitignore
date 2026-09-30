@@ -4,3 +4,8 @@ node_modules/
 .dev.vars
 src/core.js
 src/combat.js
+
+src/economy.js
+src/equipment.js
+src/skill-catalog.js
+src/bond-runtime.js

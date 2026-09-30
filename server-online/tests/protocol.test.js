@@ -30,6 +30,13 @@ test('client parser rejects oversized or unsupported messages', () => {
   assert.throws(() => parseClientMessage('a'.repeat(4097)), /消息过长/);
 });
 
+test('classic preparation commands pass the action envelope and unknown commands fail',()=>{
+  for(const type of ['autoEquip','unequip','autoDeploy','tidy','lockShop','combine','combineWorn']){
+    assert.equal(validateActionEnvelope({type:'action',id:'prep-1',seq:1,action:{type}},{lastSeq:0}), 'new');
+  }
+  assert.throws(()=>validateActionEnvelope({type:'action',id:'cheat-1',seq:1,action:{type:'grantGold'}},{lastSeq:0}),/不支持/);
+});
+
 test('room retention deadlines depend on lifecycle state', () => {
   assert.equal(cleanupAt({ status: 'waiting', createdAt: 100 }), 100 + WAITING_TTL_MS);
   assert.equal(cleanupAt({ status: 'playing' }), null);

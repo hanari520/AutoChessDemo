@@ -1,4 +1,6 @@
+import { MAX_LEVEL, SHOP_ODDS as ODDS, xpNeeded, interestGain, streakGain, sellRefund } from './economy.js';
 import { resolveBattle } from './combat.js';
+import { EQUIPMENT, recipe } from './equipment.js';
 
 /* Eight-player online rules. Pure serializable data; no DOM or clock.
  * The room service is the sole writer. applyAction mutates on success and throws on
@@ -467,10 +469,8 @@ const UNITS = Object.fromEntries(ROSTER.map(([id, name, cost, fac, job, hp, atk]
   [id, { id, name, cost: +cost, fac, job, hp: +hp, atk: +atk }]));
 const STOCK = { 1: 50, 2: 40, 3: 30, 4: 20, 5: 10 };
 const ITEMS = ['sword', 'staff', 'armor', 'bow', 'vamp', 'mana'];
-const ODDS = [null, null, [75, 25, 0, 0, 0], [55, 30, 15, 0, 0],
-  [45, 33, 20, 2, 0], [35, 35, 25, 5, 0], [25, 35, 30, 10, 0],
-  [20, 30, 30, 18, 2], [15, 25, 30, 25, 5], [10, 20, 30, 30, 10]];
-const BOARD = 8, BENCH = 8, SHOP = 5, MAX_ROUNDS = 40;
+const BOARD_CELLS = 64, DEPLOY_START = 32, MAX_BOARD_UNITS = MAX_LEVEL;
+const BENCH = 8, SHOP = 5, MAX_ROUNDS = 40;
 
 function seed32(value) {
   let h = 2166136261;
@@ -492,12 +492,12 @@ function seatAt(state, index) {
 function cloneUnit(unit) { return unit ? { ...unit } : null; }
 function copyCard(id, uid) { return { ...UNITS[id], uid, star: 1, items: [] }; }
 function copyCount(star) { return 3 ** (star - 1); }
-function capacity(seat) { return Math.min(BOARD, seat.level); }
+function capacity(seat) { return Math.min(MAX_BOARD_UNITS, seat.level); }
 function available(state, tier) {
   return ROSTER.filter(([id, , cost]) => +cost === tier && state.pool[id] > 0);
 }
 function draw(state, level) {
-  const weights = ODDS[Math.min(9, level)].map((w, i) => available(state, i + 1).length ? w : 0);
+  const weights = ODDS[Math.min(MAX_LEVEL, level)].map((w, i) => available(state, i + 1).length ? w : 0);
   let sum = weights.reduce((a, b) => a + b, 0);
   if (!sum) return null;
   let r = random(state) * sum, tier = 1;
@@ -559,11 +559,12 @@ function pairings(state) {
 function battleFormation(seat, side) {
   return seat.board.flatMap((unit, index) => {
     if (!unit) return [];
-    const column = 2 + (index % 4);
-    const row = Math.floor(index / 4);
-    // Seat A starts at the bottom of the 8x8 arena; seat B starts at the top.
-    const y = side === 'A' ? 5 + row : 2 - row;
-    return [{ unit, slot: y * 8 + column }];
+    // Both players deploy on their own lower half. Mirror B onto the upper
+    // half of the shared combat stage without changing its chosen column.
+    const column = index % 8;
+    const row = Math.floor(index / 8);
+    const battleRow = side === 'A' ? row : 7 - row;
+    return [{ unit, slot: battleRow * 8 + column }];
   });
 }
 
@@ -580,15 +581,14 @@ function resolveRound(state) {
       { maxTicks: 360 },
     );
     const events = resolved.events || [];
-    const maxEvents = 400;
     return {
       a, b, winner: resolved.winner,
       formationA, formationB,
       survivorsA: resolved.survivorsA || [], survivorsB: resolved.survivorsB || [],
-      bonds: resolved.bonds || {}, durationMs: resolved.durationMs || 0,
+      bonds: resolved.bonds || {}, startingUnits: resolved.startingUnits || [], durationMs: resolved.durationMs || 0,
       complete: !!resolved.complete,
-      events: events.length > maxEvents ? events.slice(0, maxEvents) : events,
-      eventsTruncated: events.length > maxEvents,
+      events,
+      eventsTruncated: false,
       eventCount: events.length,
     };
   });
@@ -637,13 +637,13 @@ function settleCombat(state) {
   }
   state.results = results;
 }
-function income(seat) {
-  const interest = Math.min(5, Math.floor(seat.gold / 10));
-  const streak = Math.abs(seat.streak) >= 5 ? 3 : Math.abs(seat.streak) >= 3 ? 2 : 0;
-  seat.gold = Math.min(100, seat.gold + 5 + interest + streak + (seat.streak > 0 ? 1 : 0));
+function income(seat, state) {
+  const streak = streakGain(seat.streak);
+  const beforeInterest=seat.gold+streak+(seat.streak>0?2:0)+Math.min(state.round,5);
+  seat.gold=beforeInterest+interestGain(beforeInterest);
   seat.xp += 2;
-  while (seat.level < 9 && seat.xp >= 4 + seat.level * 2) {
-    seat.xp -= 4 + seat.level * 2;
+  while (seat.level < MAX_LEVEL && seat.xp >= xpNeeded(seat.level)) {
+    seat.xp -= xpNeeded(seat.level);
     seat.level++;
   }
   seat.ready = false;
@@ -654,7 +654,7 @@ export function createGame({ seed, players } = {}) {
   assert(players.every(p => p && typeof p.id === 'string' && p.id.length && typeof p.name === 'string' && p.name.length), 'Invalid player');
   assert(new Set(players.map(p => p.id)).size === 8, 'Duplicate player id');
   const state = {
-    version: 1, ruleset: 'deterministic-battle-v3',
+    version: 1, ruleset: 'deterministic-battle-v6',
     seed: String(seed ?? 'online'), rng: seed32(seed ?? 'online'),
     phase: 'prep', round: 1, complete: false, nextUid: 1,
     pool: Object.fromEntries(ROSTER.map(([id, , cost]) => [id, STOCK[+cost]])),
@@ -663,7 +663,7 @@ export function createGame({ seed, players } = {}) {
       alive: true, place: null, ready: false, wins: 0, losses: 0, streak: 0,
       lastOpponent: null, items: [],
       shop: Array(SHOP).fill(null),
-      bench: Array(BENCH).fill(null), board: Array(BOARD).fill(null)
+      bench: Array(BENCH).fill(null), board: Array(BOARD_CELLS).fill(null)
     }))
   };
   for (const seat of state.seats) {
@@ -701,7 +701,7 @@ export function applyAction(state, seatIndex, action) {
     seat[found.zone][found.slot] = null;
     state.pool[found.unit.id] += copyCount(found.unit.star);
     seat.items.push(...(found.unit.items || []));
-    seat.gold = Math.min(100, seat.gold + found.unit.cost * copyCount(found.unit.star));
+    seat.gold += sellRefund(found.unit);
   } else if (type === 'equip') {
     assert(Number.isInteger(action.uid), 'Invalid UID');
     assert(Number.isInteger(action.itemIndex) && action.itemIndex >= 0 && action.itemIndex < seat.items.length, 'Invalid item index');
@@ -710,13 +710,71 @@ export function applyAction(state, seatIndex, action) {
     assert((found.unit.items || []).length < 3, 'Equipment slots full');
     const [item] = seat.items.splice(action.itemIndex, 1);
     found.unit.items.push(item);
+  } else if (type === 'unequip') {
+    assert(Number.isInteger(action.uid), 'Invalid UID');
+    const found = holdings(seat).find(x => x.unit.uid === action.uid);
+    assert(found, 'Unit not owned');
+    seat.items.push(...found.unit.items);
+    found.unit.items = [];
+  } else if (type === 'autoEquip') {
+    const team = seat.board.filter(Boolean);
+    assert(team.length, 'Deploy units first');
+    for (let i=0;i<seat.items.length;i++) {
+      const j=seat.items.findIndex((item,j)=>j>i && recipe(seat.items[i],item));
+      if(j>=0){const result=recipe(seat.items[i],seat.items[j]);seat.items.splice(j,1);seat.items.splice(i,1,result);}
+    }
+    const power = unit => unit.star ** 2 * unit.cost;
+    const carry = [...team].sort((a,b) => (a.job === '守护') - (b.job === '守护') || power(b)-power(a) || a.uid-b.uid);
+    const fronts = [...team].sort((a,b) => (!['守护','刀客','狂战'].includes(a.job))-(!['守护','刀客','狂战'].includes(b.job)) || b.hp*b.star-a.hp*a.star || a.uid-b.uid);
+    const remaining = [];
+    for (const item of seat.items) {
+      const candidates = EQUIPMENT[item]?.role === 'guard' ? fronts : carry;
+      const unit = candidates.find(unit => unit.items.length < 3);
+      if (unit) unit.items.push(item); else remaining.push(item);
+    }
+    seat.items = remaining;
+  } else if (type === 'combine') {
+    const {a,b}=action;
+    assert(Number.isInteger(a)&&Number.isInteger(b)&&a>=0&&b>=0&&a<seat.items.length&&b<seat.items.length&&a!==b,'Invalid item indices');
+    const result=recipe(seat.items[a],seat.items[b]);assert(result,'No recipe');
+    seat.items.splice(Math.max(a,b),1);seat.items.splice(Math.min(a,b),1,result);
+  } else if (type === 'combineWorn') {
+    assert(Number.isInteger(action.uid),'Invalid UID');
+    const found=holdings(seat).find(x=>x.unit.uid===action.uid);assert(found,'Unit not owned');
+    const result=recipe(found.unit.items[0],found.unit.items[1]);assert(result,'No recipe');
+    found.unit.items.splice(0,2,result);
+  } else if (type === 'tidy') {
+    const groups = new Map();
+    for (const unit of seat.bench.filter(Boolean)) {
+      groups.set(unit.id, Math.max(groups.get(unit.id) || 0, unit.star));
+    }
+    const ordered = seat.bench.filter(Boolean).sort((a,b) => groups.get(b.id)-groups.get(a.id) || a.id.localeCompare(b.id) || b.star-a.star || a.uid-b.uid);
+    seat.bench = [...ordered,...Array(BENCH-ordered.length).fill(null)];
+  } else if (type === 'autoDeploy') {
+    const owned = holdings(seat).map(x => x.unit);
+    const team = [...owned].sort((a,b) => b.star**2*b.cost-a.star**2*a.cost || a.uid-b.uid).slice(0,capacity(seat));
+    const chosen = new Set(team.map(unit => unit.uid));
+    const rest = owned.filter(unit => !chosen.has(unit.uid));
+    assert(rest.length <= BENCH, 'Bench full');
+    const board = seat.board.map(unit => chosen.has(unit?.uid) ? unit : null);
+    for (const unit of team) {
+      if (board.includes(unit)) continue;
+      const melee = ['守护','刀客','狂战'].includes(unit.job);
+      const slots = Array.from({length:32},(_,i) => melee ? DEPLOY_START+i : BOARD_CELLS-1-i);
+      board[slots.find(slot => !board[slot])] = unit;
+    }
+    seat.board = board;
+    seat.bench = [...rest,...Array(BENCH-rest.length).fill(null)];
+  } else if (type === 'lockShop') {
+    seat.shopLocked = !seat.shopLocked;
   } else if (type === 'move') {
     assert(Number.isInteger(action.uid), 'Invalid UID');
     const found = holdings(seat).find(x => x.unit.uid === action.uid);
     assert(found, 'Unit not owned');
     const to = action.to;
     assert(to && (to.zone === 'bench' || to.zone === 'board') && Number.isInteger(to.slot) &&
-      to.slot >= 0 && to.slot < (to.zone === 'board' ? BOARD : BENCH), 'Invalid destination');
+      to.slot >= (to.zone === 'board' ? DEPLOY_START : 0) &&
+      to.slot < (to.zone === 'board' ? BOARD_CELLS : BENCH), 'Invalid destination');
     if (found.zone !== 'board' && to.zone === 'board' && !seat.board[to.slot]) {
       assert(seat.board.filter(Boolean).length < capacity(seat), 'Board level limit');
     }
@@ -728,12 +786,12 @@ export function applyAction(state, seatIndex, action) {
     seat.gold -= 2;
     roll(state, seat);
   } else if (type === 'buyXp') {
-    assert(seat.level < 9, 'Maximum level');
-    assert(seat.gold >= 4, 'Insufficient gold');
-    seat.gold -= 4;
+    assert(seat.level < MAX_LEVEL, 'Maximum level');
+    assert(seat.gold >= 5, 'Insufficient gold');
+    seat.gold -= 5;
     seat.xp += 4;
-    while (seat.level < 9 && seat.xp >= 4 + seat.level * 2) {
-      seat.xp -= 4 + seat.level * 2; seat.level++;
+    while (seat.level < MAX_LEVEL && seat.xp >= xpNeeded(seat.level)) {
+      seat.xp -= xpNeeded(seat.level); seat.level++;
     }
   } else throw new Error('Unknown action');
   return viewFor(state, seatIndex);
@@ -753,9 +811,10 @@ export function advancePhase(state) {
     } else {
       state.round++;
       for (const seat of alive) {
-        income(seat);
+        income(seat, state);
         if (state.round % 5 === 0) seat.items.push(ITEMS[integer(state, ITEMS.length)]);
-        roll(state, seat);
+        if (!seat.shopLocked) roll(state, seat);
+        seat.shopLocked = false;
       }
       state.results = [];
       state.battles = [];
@@ -775,13 +834,13 @@ export function viewFor(state, seatIndex) {
       hp: s.hp, level: s.level, alive: s.alive, place: s.place, ready: s.ready,
       wins: s.wins, losses: s.losses,
       board: s.board.map(publicUnit) })),
-    me: { gold: me.gold, hp: me.hp, level: me.level, xp: me.xp,
+    me: { gold: me.gold, hp: me.hp, level: me.level, xp: me.xp, streak:me.streak, shopLocked: !!me.shopLocked,
       items: [...me.items],
       shop: me.shop.map(publicUnit), bench: me.bench.map(publicUnit), board: me.board.map(publicUnit) },
     pairings: state.pairings.map(p => ({ ...p })),
     results: state.results.map(r => ({ ...r })),
     battles: ['combat', 'result', 'over'].includes(state.phase)
-      ? state.battles.filter(b => !me.alive || b.a === seatIndex || b.b === seatIndex).map(b => structuredClone(b)) : []
+      ? state.battles.map(b => structuredClone(b)) : []
   };
 }
 

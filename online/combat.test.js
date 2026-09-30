@@ -8,6 +8,15 @@ const board = (...entries) => {
   return cells;
 };
 
+test('status replay announces control, expires it, and carries finite effective stats', () => {
+  const result=resolveBattle(board([27,'liAn']),board([35,'ein']),42,{initialMana:50,maxTicks:100});
+  const statuses=result.events.filter(e=>e.type==='status');
+  assert.ok(statuses.some(e=>e.statuses.includes('freeze')));
+  const frozen=statuses.find(e=>e.statuses.includes('freeze'));
+  assert.ok(statuses.some(e=>e.target===frozen.target&&e.at>frozen.at&&!e.statuses.includes('freeze')));
+  for(const event of statuses) for(const value of Object.values(event.stats))assert.ok(Number.isFinite(value));
+});
+
 test('same seed and formations give byte-identical battle and do not mutate inputs', () => {
   const a = board([9, 'ein'], [18, 'likou']);
   const b = board([45, 'goutan'], [54, 'yujiu']);
@@ -48,6 +57,14 @@ test('seeded bond procs, healing skills, and equipment triggers are replayable',
   assert.ok(result.events.some(e => e.type === 'attack' || e.type === 'skill'));
 });
 
+test('equipment mana burn reports the target mana remaining for replay', () => {
+  const result = resolveBattle(board([27, 'yua', { items: ['hexdrinker'] }]), board([28, 'ein']), 1, { initialMana: 50, maxTicks: 10 });
+  const burn = result.events.find(e => e.type === 'manaBurn' && e.source === 'item');
+  assert.equal(burn?.target, 'ein-28');
+  assert.ok(Number.isFinite(burn.mana)&&burn.mana>=0&&burn.mana<=43);
+  assert.equal(burn.amount, 7);
+});
+
 test('incomplete rounds retain both survivor lists; a knockout marks the result complete', () => {
   const liveRound = resolveBattle(board([27, 'yua']), board([28, 'ein']), 5, { maxTicks: 1 });
   assert.equal(liveRound.complete, false);
@@ -66,6 +83,25 @@ test('real 8x8 placement changes the travel path and rejects overlapping anchors
   const far = resolveBattle(board([0, 'ein']), board([63, 'goutan']), 7);
   assert.ok(far.events.filter(e => e.type === 'move').length > close.events.filter(e => e.type === 'move').length);
   assert.throws(() => resolveBattle([{ slot: 1, unit: { id: 'ein', uid: 1 } }, { slot: 1, unit: { id: 'goutan', uid: 2 } }], board([63, 'yua']), 1), /occupied/i);
+});
+
+test('assassins jump behind the enemy, dash skills reposition, and occupied cells block walking', () => {
+  const jump = resolveBattle(board([56,'hoshimi']),board([0,'yua']),1,{maxTicks:1});
+  const leap = jump.events.find(e => e.type === 'move' && e.unit === 'hoshimi-56');
+  assert.equal(leap.kind,'jump');
+  assert.ok(leap.y <= 3);
+  assert.notDeepEqual([leap.x,leap.y],[0,0]);
+  const dash = resolveBattle(board([56,'kouichi']),board([0,'yua']),1,{initialMana:50,maxTicks:1});
+  const rush = dash.events.find(e => e.type === 'move' && e.unit === 'kouichi-56');
+  assert.equal(rush.kind,'dash');
+  assert.equal(Math.abs(rush.x - 0) + Math.abs(rush.y - 0),1);
+  assert.ok(dash.events.some(e => e.type === 'skill' && e.from === 'kouichi-56'));
+  const crowded = resolveBattle(board([51,'ein'],[19,'goutan'],[26,'kanban'],[28,'sumi'],[35,'taodai']),board([27,'yua'],[7,'likou']),1,{maxTicks:1});
+  const move = crowded.events.find(e => e.type === 'move' && e.unit === 'ein-51');
+  assert.equal(move?.kind,'walk');
+  const occupied = new Set([19,26,28,35,27,7]);
+  assert.ok(!occupied.has(move.y * 8 + move.x));
+  assert.ok(!crowded.events.some(e => e.type === 'attack' && e.from === 'ein-51'));
 });
 
 test('solo armor, item and distinct-ID bond calculations affect combat events', () => {

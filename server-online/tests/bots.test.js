@@ -22,6 +22,17 @@ test('bot decisions are deterministic for a given game seed', () => {
   assert.equal(run(), run());
 });
 
+test('bots deploy the population unlocked by XP in the same prep and support eleven slots',()=>{
+  const players=Array.from({length:8},(_,i)=>({id:`b${i}`,name:`B${i}`,bot:true}));
+  const game=createGame({seed:'bot-population',players}),seat=game.seats[0];
+  game.round=2;seat.level=7;seat.xp=47;seat.gold=12;
+  for(let i=0;i<8;i++)seat.bench[i]={uid:100+i,id:'ein',star:1,cost:1,items:[]};
+  botPolicy(game,0);assert.equal(seat.level,8);assert.equal(seat.board.filter(Boolean).length,8);
+  seat.ready=false;seat.level=11;seat.gold=0;
+  for(let i=0;i<3;i++)seat.bench[i]={uid:200+i,id:'yujiu',star:1,cost:1,items:[]};
+  botPolicy(game,0);assert.equal(seat.board.filter(Boolean).length,11);
+});
+
 test('bots play a full game to completion without escaping errors', () => {
   const players = Array.from({ length: 8 }, (_, i) =>
     (i === 0 ? { id: 'p0', name: '人类' } : { id: `b${i}`, name: `机器人${i}`, bot: true }));
@@ -43,7 +54,7 @@ test('bots play a full game to completion without escaping errors', () => {
     if (slot >= 0) applyAction(game, 0, { type: 'buy', slot });
     const benchUnit = seat.bench.find(Boolean);
     if (benchUnit && seat.board.filter(Boolean).length < Math.min(8, seat.level)) {
-      applyAction(game, 0, { type: 'move', uid: benchUnit.uid, to: { zone: 'board', slot: seat.board.indexOf(null) } });
+      applyAction(game, 0, { type: 'move', uid: benchUnit.uid, to: { zone: 'board', slot: 51 } });
     }
     applyAction(game, 0, { type: 'ready' });
   };

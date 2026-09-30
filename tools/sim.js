@@ -96,7 +96,7 @@ if (process.env.SEED) {
 }
 
 global.window.DailyCurses = require('./daily-curses.js');
-(0, eval)(fs.readFileSync(path.join(__dirname, 'bond-runtime.js'), 'utf8') + '\n' + code);
+(0, eval)(fs.readFileSync(path.join(__dirname, 'battle-audio.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'battle-presentation.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'bond-runtime.js'), 'utf8') + '\n' + code);
 const A = globalThis.API;
 if (process.env.DAILY_CAMPAIGN_TEST) {
   require('./daily-campaign.test.js').run(A);
@@ -213,6 +213,7 @@ if (process.env.T3) { require('./_t3_tests.js').run(A, driveBattle); process.exi
 if (process.env.T4) { require('./_t4_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }
 if (process.env.T5) { require('./_solo_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }   // 🪑 独木桥品质成长
 if (process.env.EFFECT_TEST) { require('./_effect_tests.js').run(A, driveBattle); process.exit(process.exitCode||0); }
+if (process.env.CLASSIC_CONTRACT_TEST) { require('./_classic_skill_contract_tests.js').run(A); process.exit(process.exitCode||0); }
 if (process.env.SKILL_FLIGHT_TEST) { require('./skill-flight-timing.test.js').run(A); process.exit(process.exitCode||0); }
 if (process.env.PACE_TEST) { require('./_pace_tests.js').run(A); process.exit(process.exitCode||0); }
 if (process.env.AUDIT) { require('./_audit_effects.js').run(A, driveBattle); process.exit(process.exitCode||0); }

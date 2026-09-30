@@ -1,0 +1,50 @@
+/* One battle-piece HUD for classic and online. Values follow the classic skin. */
+.unit.battle-unit { border:2px solid transparent; padding:0; color:#fff; }
+.unit.battle-unit.ally { --team-color:#ffd34f; }
+.unit.battle-unit.enemy { --team-color:#ff5d53; }
+.unit.battle-unit .hpbar,.unit.battle-unit .mpbar {
+  position:absolute; top:auto; padding:0; margin:0; border-radius:2px;
+  border:1px solid rgba(255,255,255,.78); background:rgba(68,79,132,.48);
+  box-shadow:0 2px 5px rgba(47,60,123,.19); pointer-events:none;
+}
+.unit.battle-unit .hpbar {
+  bottom:19px; left:8%; right:8%; height:clamp(6px,calc(var(--cell)*.095),9px);
+  min-height:4px; box-sizing:border-box; overflow:hidden;
+}
+.unit.battle-unit .mpbar {
+  bottom:13px; left:14%; right:14%; height:calc(var(--cell)*.05);
+  min-height:3px; box-sizing:border-box;
+}
+.unit.battle-unit .hpfill,.unit.battle-unit .mpfill { height:100%; padding:0; border-radius:2px; }
+.unit.battle-unit .hpfill { transition:width .2s; box-shadow:0 0 7px rgba(248,199,63,.5); }
+.unit.battle-unit.ally .hpfill { background:var(--team-color); }
+.unit.battle-unit.enemy .hpfill { background:linear-gradient(90deg,#ff8585,#e74662); box-shadow:0 0 7px rgba(235,76,99,.48); }
+.unit.battle-unit .mpfill { background:linear-gradient(90deg,#55d9db,#a18af2); transition:width .1s; box-shadow:0 0 8px rgba(161,142,255,.75); }
+.unit.battle-unit.ult-ready .mpfill { background:var(--gold-hi,#ffd67e); box-shadow:0 0 4px var(--gold-hi,#ffd67e); }
+.unit.battle-unit .team-badge {
+  position:absolute; left:0; bottom:30px; z-index:5; width:13px; height:13px;
+  padding:0; box-sizing:border-box; border:2px solid #fff; background:var(--team-color);
+  box-shadow:0 1px 4px #000,0 0 7px var(--team-color); pointer-events:none;
+}
+.unit.battle-unit.ally .team-badge { border-radius:50%; }
+.unit.battle-unit.enemy .team-badge { transform:rotate(45deg) scale(.82); border-radius:2px; }
+.unit.battle-unit .nm,.unit.battle-unit .st,.unit.battle-unit .piece-name,.unit.battle-unit .piece-star { display:none; }
+.unit.battle-unit .fz { position:absolute; top:-30%; left:2px; font-size:calc(var(--cell)*.14); z-index:2; padding:0; background:none; pointer-events:none; }
+.unit.battle-unit .fz:empty { display:none; }
+.unit.battle-unit .pt { left:50%; bottom:3%; width:148%; height:230%; z-index:auto; transform:translateX(-50%); transform-origin:50% 100%; object-fit:contain; object-position:center bottom; opacity:.94; animation:idlebob 2.6s ease-in-out infinite alternate; }
+@keyframes idlebob { from { transform:translateX(-50%) translateY(0); } to { transform:translateX(-50%) translateY(-3%); } }
+.unit.battle-unit::after { content:''; position:absolute; left:50%; right:auto; bottom:-4%; width:92%; height:24%; z-index:-1; transform:translateX(-50%); border-radius:50%; border:2px solid var(--team-color); box-sizing:border-box; background:radial-gradient(ellipse at center,color-mix(in srgb,var(--team-color) 52%,transparent),transparent 75%); box-shadow:0 0 7px var(--team-color),inset 0 0 5px var(--team-color); }
+.unit.battle-unit.enemy::after { width:70%; border-radius:20%; transform:translateX(-50%) rotate(45deg); background:radial-gradient(ellipse at center,color-mix(in srgb,var(--team-color) 30%,transparent),transparent 70%); }
+.unit.battle-unit.frozen { filter:brightness(1.3) hue-rotate(40deg); }
+.unit.battle-unit.stunned { animation:stunWob .5s infinite; }
+@keyframes stunWob { 0%,100% { transform:rotate(-4deg); } 50% { transform:rotate(4deg); } }
+.unit.battle-unit.weakened { filter:grayscale(.5) brightness(.85); }
+.unit.battle-unit.slowed { box-shadow:0 0 0 2px rgba(138,255,212,.4); }
+.unit.battle-unit.shielded { box-shadow:0 0 6px 2px rgba(91,159,216,.6); }
+.unit.battle-unit.ally .pt { filter:drop-shadow(0 0 1px rgba(255,235,175,.95)) drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+.unit.battle-unit.enemy .pt { filter:drop-shadow(1px 0 0 #ffb3bd) drop-shadow(-1px 0 0 #ffb3bd) drop-shadow(0 1px 0 #ffb3bd) drop-shadow(0 -1px 0 #ffb3bd) drop-shadow(0 0 5px rgba(255,124,151,.42)) drop-shadow(0 5px 5px rgba(73,84,145,.24)); }
+.unit.battle-unit.ult-ready::after { left:50%; bottom:-3px; width:58%; height:7px; transform:translateX(-50%); border-radius:50%; border:1.5px solid rgba(255,210,74,.95); box-shadow:0 0 6px rgba(255,210,74,.75); animation:ultPulse 1.1s ease-in-out infinite; }
+@keyframes ultPulse { 0%,100% { opacity:.5; } 50% { opacity:.95; } }
+html[data-theme="dark"] .unit.battle-unit .hpfill { background:linear-gradient(90deg,#ffe16b,#ffb02e); box-shadow:0 0 9px rgba(255,200,60,.65); }
+html[data-theme="dark"] .unit.battle-unit.enemy .hpfill { background:linear-gradient(90deg,#ff8d8d,#ff4d6e); box-shadow:0 0 9px rgba(255,90,115,.6); }
+html[data-theme="dark"] .unit.battle-unit .mpfill { background:linear-gradient(90deg,var(--st-accent2,#4ae3c1),var(--st-mp,#8ea0ff)); box-shadow:0 0 8px rgba(120,160,255,.5); }

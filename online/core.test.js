@@ -32,7 +32,7 @@ test('seed replay, eight seats and private shop/bench', () => {
   assert.equal(own.players[1].gold, undefined);
   assert.equal(serialized(own).includes('"pool"'), false);
   assert.equal(Object.keys(a.pool).length, 50);
-  assert.equal(own.ruleset, 'deterministic-battle-v3');
+  assert.equal(own.ruleset, 'deterministic-battle-v6');
   assert.equal(own.me.items.length, 1);
   assert.equal(own.players[1].items, undefined);
 });
@@ -50,14 +50,14 @@ test('buy, move, sell conserve shared stock and reject invalid operations atomic
   applyAction(s, 0, { type: 'equip', uid, itemIndex: 0 });
   assert.equal(me.bench.find(Boolean).items[0], firstItem);
   assert.equal(me.items.length, 0);
-  applyAction(s, 0, { type: 'move', uid, to: { zone: 'board', slot: 0 } });
-  assert.equal(me.board[0].uid, uid);
+  applyAction(s, 0, { type: 'move', uid, to: { zone: 'board', slot: 40 } });
+  assert.equal(me.board[40].uid, uid);
   const snapshot = serialized(s);
   assert.throws(() => applyAction(s, 0, { type: 'buy', slot }), /Empty shop slot/);
-  assert.throws(() => applyAction(s, 0, { type: 'move', uid: 9999, to: { zone: 'board', slot: 1 } }), /not owned/);
+  assert.throws(() => applyAction(s, 0, { type: 'move', uid: 9999, to: { zone: 'board', slot: 41 } }), /not owned/);
   assert.equal(serialized(s), snapshot);
   applyAction(s, 0, { type: 'sell', uid });
-  assert.equal(me.board[0], null);
+  assert.equal(me.board[40], null);
   assert.equal(s.pool[card.id], before + 1);
   assert.equal(me.items[0], firstItem);
 });
@@ -74,7 +74,7 @@ test('phase progression, combat, income, ready lock and end by 40 rounds', () =>
   assert.equal(advancePhase(s), 'prep');
   assert.equal(s.round, 2);
   assert.equal(s.seats[0].ready, false);
-  assert.ok(s.seats[0].gold >= 10);
+  assert.ok(s.seats[0].gold >= 7);
   for (let n = 0; !s.complete && n < 120; n++) {
     advancePhase(s); advancePhase(s); advancePhase(s);
   }
@@ -90,8 +90,8 @@ test('combat phase resolves deterministic battles with skill events on the serve
     const { a, b } = s.pairings[0];
     const unit = (uid) => ({ id: 'kroya', name: '克罗娅', cost: 4, fac: '学园', job: '法师',
       hp: 46, atk: 16, uid, star: 1, items: [] });
-    s.seats[a].board[0] = unit(`a-${a}`);
-    s.seats[b].board[0] = unit(`b-${b}`);
+    s.seats[a].board[44] = unit(`a-${a}`);
+    s.seats[b].board[44] = unit(`b-${b}`);
     return { s, a, b };
   };
   const left = arrange(), right = arrange();
@@ -100,9 +100,11 @@ test('combat phase resolves deterministic battles with skill events on the serve
   assert.equal(stateHash(left.s), stateHash(right.s));
   assert.equal(left.s.battles.length, 4);
   const battle = left.s.battles.find(x => x.a === left.a || x.b === left.a);
+  assert.equal(battle.formationA[0].slot, 44, 'A keeps its chosen cell');
+  assert.equal(battle.formationB[0].slot, 20, 'B is mirrored onto the opposing half');
   assert.ok(battle.events.some(event => event.type === 'cast'), 'unit skill should resolve before result phase');
   assert.ok(battle.events.some(event => event.type === 'attack'));
-  assert.equal(viewFor(left.s, left.a).battles.length, 1);
+  assert.equal(viewFor(left.s, left.a).battles.length, 4, 'living seats can spectate public battles');
   assert.ok(viewFor(left.s, left.a).battles[0].events.length > 0);
   const spectatorSeat = left.s.seats.find(seat => seat.seat !== left.a && seat.seat !== left.b).seat;
   left.s.seats[spectatorSeat].alive = false;
@@ -124,7 +126,7 @@ test('same command log produces identical combat and pool state', () => {
       if (slot >= 0) {
         applyAction(s, i, { type: 'buy', slot });
         const uid = s.seats[i].bench.find(Boolean).uid;
-        applyAction(s, i, { type: 'move', uid, to: { zone: 'board', slot: 0 } });
+        applyAction(s, i, { type: 'move', uid, to: { zone: 'board', slot: 51 } });
       }
     }
     for (let round = 0; round < 4 && !s.complete; round++) {
@@ -183,14 +185,16 @@ test('board population cannot exceed level and views cannot mutate room inventor
     applyAction(s, 0, { type: 'buy', slot });
   }
   const ids = seat.bench.filter(Boolean).map(u => u.uid);
-  applyAction(s, 0, { type: 'move', uid: ids[0], to: { zone: 'board', slot: 0 } });
-  applyAction(s, 0, { type: 'move', uid: ids[1], to: { zone: 'board', slot: 1 } });
+  applyAction(s, 0, { type: 'move', uid: ids[0], to: { zone: 'board', slot: 32 } });
+  applyAction(s, 0, { type: 'move', uid: ids[1], to: { zone: 'board', slot: 63 } });
   const before = serialized(s);
-  assert.throws(() => applyAction(s, 0, { type: 'move', uid: ids[2], to: { zone: 'board', slot: 2 } }), /Board level limit/);
+  assert.throws(() => applyAction(s, 0, { type: 'move', uid: ids[2], to: { zone: 'board', slot: 48 } }), /Board level limit/);
+  assert.equal(serialized(s), before);
+  assert.throws(() => applyAction(s, 0, { type: 'move', uid: ids[2], to: { zone: 'board', slot: 31 } }), /Invalid destination/);
   assert.equal(serialized(s), before);
   const view = viewFor(s, 0);
   view.me.items.push('sword');
-  view.me.board[0].items.push('armor');
+  view.me.board[32].items.push('armor');
   assert.equal(seat.items.length, 1);
-  assert.equal(seat.board[0].items.length, 0);
+  assert.equal(seat.board[32].items.length, 0);
 });

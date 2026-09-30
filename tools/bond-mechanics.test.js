@@ -69,6 +69,8 @@ function game(seed = 41) {
   ctx.window = ctx;
   ctx.globalThis = ctx;
   vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'battle-audio.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'battle-presentation.js'), 'utf8'), ctx, { filename: 'battle-presentation.js' });
   vm.runInContext(runtimeSource, ctx, { filename: 'bond-runtime.js' });
   vm.runInContext(source + '\n;globalThis.BondTestAPI = {\n' +
     'get S(){return S}, setS(v){S=v}, newGame, startBattle, saveGame, loadGame, ' +
@@ -394,4 +396,45 @@ test('same seed and lineup produce identical short combat trace', () => {
     return units.map(u => [u.uid, u.side, u.hp, u.mana, u.shield || 0, u.x, u.y]);
   }
   assert.deepEqual(JSON.parse(JSON.stringify(trace())), JSON.parse(JSON.stringify(trace())));
+});
+
+test('bond healing obeys healing lock and applies reduction before missing-health clamping on either side',()=>{
+  const {api}=game();const ids=bondMembers(api,'医者','class').slice(0,2).map(x=>x.id);
+  const units=setupBattle(api,ids,ids);
+  for(const side of [0,1]){
+    const mine=units.filter(u=>u.side===side),target=mine[0],healer=mine[1];
+    target.hp=target.maxhp-20;target.healDownT=4000;target.healDownA=.5;
+    api.BondRuntime.heal(healer,target,100);assert.equal(target.hp,target.maxhp,'50 effective healing should fill 20 missing HP');
+    target.hp-=100;target.v3HealLockT=3200;const before=target.hp;
+    api.BondRuntime.heal(healer,target,100);assert.equal(target.hp,before,'bond healing must respect Huize healing lock');
+  }
+});
+
+test('Rei healing conversion applies to bond heals once, while shield and lock restrictions retain priority',()=>{
+  const {api}=game();const ids=bondMembers(api,'医者','class').slice(0,2).map(x=>x.id);
+  const units=setupBattle(api,ids,['rei']),[target,healer]=units.filter(u=>u.side===0),enemy=units.find(u=>u.side===1);
+  target.hp=target.maxhp-200;target.shield=0;target.mr=0;target.sigMark=null;
+  target.v3HealBomb={owner:enemy,amp:.4,left:4000};const before=target.hp;
+  api.BondRuntime.heal(healer,target,100);assert.equal(target.v3HealBomb,null);assert.equal(target.hp,before+20,'40 damage and 60 healing');
+  const after=target.hp;api.BondRuntime.heal(healer,target,100);assert.equal(target.hp,after+100,'conversion is consumed');
+  target.noShieldT=2000;api.BondRuntime.shield(healer,target,100);assert.equal(target.shield,0);
+});
+
+test('tier 3 Guard clears silence once and tier 3 Blade counters splash within its per-unit budget on either side',()=>{
+  for(const side of [0,1]){
+    const {api}=game(),guards=bondMembers(api,'守护','class').slice(0,2).map(x=>x.id),blades=bondMembers(api,'刀客','class').slice(0,2).map(x=>x.id);
+    let units=setupBattle(api,guards,guards);api.BV[side]['守护']=3;
+    const mine=units.filter(u=>u.side===side),foes=units.filter(u=>u.side!==side);
+    mine.forEach((u,i)=>{u.x=3+i;u.y=4;});api.BondRuntime.start(units);
+    const target=mine[0],guard=mine.find(u=>u.bondClaim===target.uid);assert.ok(guard);
+    target.silenceT=3000;api.BondRuntime.preHit(foes[0],target,30,units,'phys');assert.equal(target.silenceT,0);assert.ok(guard.shield>0);
+    target.silenceT=2000;api.BondRuntime.preHit(foes[0],target,30,units,'phys');assert.equal(target.silenceT,2000,'援护只触发一次');
+    units=setupBattle(api,blades,blades);api.BV[side]['刀客']=3;
+    const team=units.filter(u=>u.side===side),enemy=units.filter(u=>u.side!==side);
+    for(const list of [team,enemy])list.forEach((u,i)=>{u.x=3+i;u.y=list===team?4:3;u.hp=u.maxhp=10000;u.ar=0;});
+    api.BondRuntime.start(units);const extra=enemy[1],before=extra.hp;
+    api.BondRuntime.hit(enemy[0],team[0],20,units);assert.ok(team[0].shield>0);assert.ok(extra.hp<before);
+    api.BondRuntime.hit(enemy[0],team[0],20,units);api.BondRuntime.hit(enemy[0],team[0],20,units);
+    const after=extra.hp;api.BondRuntime.hit(enemy[0],team[0],20,units);assert.equal(extra.hp,after,'each blade has three counters');
+  }
 });

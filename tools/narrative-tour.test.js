@@ -12,8 +12,10 @@ const unitIds = (() => {
   return new Set([...block.matchAll(/id:'([A-Za-z0-9_]+)'/g)].map(m => m[1]));
 })();
 const sfxKeys = (() => {
-  const start = html.indexOf('const SFX_DEF={');
-  const block = html.slice(start, html.indexOf('\n};', start));
+  const audio = fs.readFileSync(path.join(__dirname, 'battle-audio.js'), 'utf8');
+  const start = audio.indexOf('const SFX_DEF={');
+  assert(start >= 0, 'shared audio definitions must exist');
+  const block = audio.slice(start, audio.indexOf('\n};', start));
   return new Set([...block.matchAll(/([A-Za-z0-9_]+)\s*:\s*\{/g)].map(m => m[1]));
 })();
 const BANNED = ['远征生命', '遗物', '章末首领', '精英战', '普通战', '精英部队', '巡逻队', '回响护符', '召唤核心', '坚守旗帜', '冒险徽章', '购买补给'];
