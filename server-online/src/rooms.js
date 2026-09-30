@@ -4,7 +4,13 @@
  * mirrors the DO alarm semantics. Mutations are serialized per room and the
  * complete room is persisted before any acknowledgement or state broadcast. */
 import { createHash, randomBytes } from 'node:crypto';
-import { createGame, applyAction, advancePhase, viewFor } from './core.js';
+import { createGame, applyAction, advancePhase, viewFor, autoLockForBattle, prepareBattles, PRELOCK_LEAD_MS } from './core.js';
+
+/** Pre-lock lead: 5s in real games, but never more than half the prep phase
+ * so ONLINE_FAST accelerated tests keep a usable preparation window. */
+function prelockLead(game) {
+  return Math.min(PRELOCK_LEAD_MS, Math.floor(phaseMs('prep', game) / 2));
+}
 import {
   AUTHENTICATION_TIMEOUT_MS, CAPACITY, LOBBY_RECONNECT_MS, MAX_UNAUTHENTICATED_CONNECTIONS, PHASE_MS, RoomError,
   assertName, authenticationDeadlinePassed, cleanupAt, lobbyFor, parseClientMessage, randomToken,
@@ -461,7 +467,12 @@ class RoomEntry {
     const deadlines = [];
     const expiry = cleanupAt(this.room);
     if (expiry !== null) deadlines.push(expiry);
-    if (this.room.status === 'playing' && this.room.deadline) deadlines.push(this.room.deadline);
+    if (this.room.status === 'playing' && this.room.deadline) {
+      deadlines.push(this.room.deadline);
+      // Wake up early for the pre-lock window (lineup freeze + battle precompute).
+      const game = this.room.game;
+      if (game && game.phase === 'prep' && !game.autoLocked) deadlines.push(this.room.deadline - prelockLead(game));
+    }
     if (this.room.status === 'waiting') for (const player of this.room.players) {
       if (!player.bot && Number.isFinite(player.disconnectedAt)) deadlines.push(player.disconnectedAt+LOBBY_RECONNECT_MS);
     }
@@ -512,6 +523,17 @@ class RoomEntry {
       return;
     }
     if (room.status !== 'playing' || !room.deadline) { this.schedule(); return; }
+    // Pre-lock window: freeze lineups and precompute battles so the combat
+    // replay starts the moment the prep deadline expires. The window shrinks
+    // with ONLINE_FAST so accelerated tests keep a usable prep phase.
+    const game = room.game;
+    if (game && game.phase === 'prep' && !game.autoLocked && room.deadline - prelockLead(game) <= Date.now()) {
+      autoLockForBattle(game);
+      prepareBattles(game);
+      this.broadcast();
+      this.schedule();
+      if (room.deadline > Date.now()) return;
+    }
     try {
       let steps = 0;
       while (room.status === 'playing' && room.deadline <= Date.now() && steps++ < 100) {

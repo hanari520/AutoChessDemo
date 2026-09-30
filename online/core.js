@@ -467,6 +467,8 @@ const ROSTER = [
 ];
 const UNITS = Object.fromEntries(ROSTER.map(([id, name, cost, fac, job, hp, atk]) =>
   [id, { id, name, cost: +cost, fac, job, hp: +hp, atk: +atk }]));
+// Codex display names (id -> 中文名), a read-only view over the roster.
+export const UNIT_NAMES = Object.fromEntries(ROSTER.map(([id, name]) => [id, name]));
 const STOCK = { 1: 50, 2: 40, 3: 30, 4: 20, 5: 10 };
 const ITEMS = ['sword', 'staff', 'armor', 'bow', 'vamp', 'mana'];
 const BOARD_CELLS = 64, DEPLOY_START = 32, MAX_BOARD_UNITS = MAX_LEVEL;
@@ -597,6 +599,23 @@ function resolveRound(state) {
   });
 }
 
+// Five-second pre-lock window: the room freezes lineups (auto-lock) and
+// resolves battles before the prep deadline so replays can start instantly.
+export const PRELOCK_LEAD_MS = 5_000;
+
+export function autoLockForBattle(state) {
+  if (state.autoLocked) return false;
+  state.autoLocked = true;
+  for (const seat of state.seats) if (seat.alive) seat.ready = true;
+  return true;
+}
+
+export function prepareBattles(state) {
+  if (state.phase !== 'prep' || state.battles.length || !state.autoLocked) return false;
+  resolveRound(state);
+  return true;
+}
+
 function survivorScore(survivors) {
   return survivors.reduce((score, unit) => score + unit.hp / Math.max(1, unit.maxhp) + (unit.shield || 0) / Math.max(1, unit.maxhp), 0);
 }
@@ -659,7 +678,7 @@ export function createGame({ seed, players } = {}) {
   const state = {
     version: 1, ruleset: 'deterministic-battle-v6',
     seed: String(seed ?? 'online'), rng: seed32(seed ?? 'online'),
-    phase: 'prep', round: 1, complete: false, nextUid: 1,
+    phase: 'prep', round: 1, complete: false, nextUid: 1, autoLocked: false,
     pool: Object.fromEntries(ROSTER.map(([id, , cost]) => [id, STOCK[+cost]])),
     pairings: [], battles: [], results: [], seats: players.map((p, seat) => ({
       seat, id: p.id, name: p.name.slice(0, 32), bot: !!p.bot, hp: 40, gold: 5, level: 2, xp: 0,
@@ -683,7 +702,12 @@ export function applyAction(state, seatIndex, action) {
   assert(seat.alive, 'Seat eliminated');
   assert(action && typeof action === 'object' && typeof action.type === 'string', 'Invalid action');
   const { type } = action;
-  if (type === 'ready') { seat.ready = true; return viewFor(state, seatIndex); }
+  if (type === 'ready') {
+    assert(!state.autoLocked, 'Battle lineups are locked');
+    seat.ready = action.ready !== false;
+    return viewFor(state, seatIndex);
+  }
+  assert(!state.autoLocked, 'Battle lineups are locked');
   assert(!seat.ready, 'Seat is ready');
   if (type === 'buy') {
     const slot = action.slot;
@@ -802,7 +826,10 @@ export function applyAction(state, seatIndex, action) {
 
 export function advancePhase(state) {
   assert(state && state.version === 1 && !state.complete, 'Game complete');
-  if (state.phase === 'prep') { resolveRound(state); state.phase = 'combat'; }
+  if (state.phase === 'prep') {
+    if (!state.battles.length) resolveRound(state);   // battles may already be precomputed in the pre-lock window
+    state.phase = 'combat';
+  }
   else if (state.phase === 'combat') { settleCombat(state); state.phase = 'result'; }
   else if (state.phase === 'result') {
     const alive = state.seats.filter(s => s.alive);
@@ -821,6 +848,7 @@ export function advancePhase(state) {
       }
       state.results = [];
       state.battles = [];
+      state.autoLocked = false;   // new prep phase: unlock lineups until the next pre-lock window
       pairings(state);
       state.phase = 'prep';
     }
@@ -832,7 +860,7 @@ export function viewFor(state, seatIndex) {
   const me = seatAt(state, seatIndex);
   return {
     ruleset: state.ruleset, round: state.round, phase: state.phase,
-    complete: state.complete, seat: seatIndex,
+    complete: state.complete, seat: seatIndex, autoLocked: !!state.autoLocked,
     players: state.seats.map(s => ({ seat: s.seat, id: s.id, name: s.name, bot: !!s.bot,
       hp: s.hp, level: s.level, alive: s.alive, place: s.place, ready: s.ready,
       wins: s.wins, losses: s.losses,
@@ -842,7 +870,7 @@ export function viewFor(state, seatIndex) {
       shop: me.shop.map(publicUnit), bench: me.bench.map(publicUnit), board: me.board.map(publicUnit) },
     pairings: state.pairings.map(p => ({ ...p })),
     results: state.results.map(r => ({ ...r })),
-    battles: ['combat', 'result', 'over'].includes(state.phase)
+    battles: (state.phase !== 'prep' || state.battles.length)
       ? state.battles.map(b => structuredClone(b)) : []
   };
 }

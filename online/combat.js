@@ -60,6 +60,8 @@ const ROSTER = Object.fromEntries(RAW.trim().split('\n').map(line => {
   const [id,cost,fac,job,hp,atk,range,speed,fac2,job2] = line.split('|');
   return [id,{id,cost:+cost,fac,job,hp:+hp,atk:+atk,range:+range,speed:+speed,fac2,job2}];
 }));
+// Codex reference data: full roster order is a read-only view.
+export const ROSTER_LIST = Object.values(ROSTER);
 const MELEE = new Set('ein kouichi yukie goutan kanban zhouyi miyue taodai youyu quanrong nana7mi youyi zhijin songlv shadow sumi haruka rinco aza lianshiye hoshimi chiharu nox mahiru'.split(' '));
 const PHYSICAL = new Set('ein kouichi yukie goutan kanban zhouyi miyue taodai youyu quanrong nana7mi youyi zhijin songlv shiliu shadow sumi haruka rinco yuji yujiu sishi aza lianshiye hoshimi chiharu nox mahiru'.split(' '));
 const COST_MULT = {1:1,2:1.18,3:1.42,4:1.72,5:2.1};
@@ -72,6 +74,7 @@ const BONDS = {
   '刀客':[2,4,6], '守护':[2,4,6], '歌势':[2,4], '游侠':[2,3], '法师':[3,6], '咒术':[2],
   '刺客':[3,6], '狂战':[2,4], '医者':[2,4], '偶像':[2,3]
 };
+export const BOND_TIERS = BONDS;
 export function bondSummary(board) {
   const units = (board || []).filter(Boolean);
   const count = {};

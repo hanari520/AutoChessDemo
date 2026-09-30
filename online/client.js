@@ -7,11 +7,13 @@ import { bondSummary, previewUnit } from './combat.js';
 import { SKILL_NAMES } from './skill-names.js';
 import { EQUIPMENT, recipe, SHOP_ODDS } from './equipment.js';
 import { mountDragControls } from './interactions.js';
+import { mountCodex } from './codex.js?v=1';
 import { CLASSIC_SKILLS, CLASSIC_MARKS, classicAttackProfile } from './skill-catalog.js';
 import '../tools/battle-audio.js?v=1';
 
 const $ = (id) => document.getElementById(id);
 mountClassicMatchLayout();
+mountCodex();
 const STORAGE = 'star-stage-online-session-v1';
 const API_STORAGE = 'star-stage-online-api-v1';
 const NAME_STORAGE = 'star-stage-online-name-v1';
@@ -425,7 +427,10 @@ function send(message) {
 
 function sendAction(action) {
   if (state.pendingAction) { toast('上一项操作尚未确认，请稍候。'); return; }
-  if (!canAct()) return;
+  // The ready toggle stays available while merely locked (unlike other actions);
+  // the server rejects it once the pre-lock window freezes lineups.
+  const readyToggle = action?.type === 'ready';
+  if (readyToggle ? (state.view?.phase !== 'prep' || state.view?.autoLocked || isSpectator()) : !canAct()) return;
   const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
   const envelope = {type:'action', id, seq:state.seq, round:state.view.round, action};
   state.pendingAction = {envelope, round:state.view.round, type:action.type};
@@ -496,7 +501,7 @@ function updateCountdown() {
   const seconds = state.deadline ? Math.max(0, Math.ceil((state.deadline + state.clockSkew - Date.now()) / 1000)) : null;
   $('countdownValue').textContent = seconds===null||view.phase==='over'?'—':String(seconds);
   $('phaseCountdown').classList.toggle('urgent',seconds!==null&&seconds<=10&&view.phase==='prep');
-  $('phaseLabel').textContent = `${isSpectator() ? '观战 · ' : ''}${phaseName(view.phase)}${seconds === null ? '' : ` · ${seconds} 秒`}`;
+  $('phaseLabel').textContent = `${isSpectator() ? '观战 · ' : ''}${phaseName(view.phase)}${seconds === null ? '' : ` · ${seconds} 秒`}${view.phase === 'prep' && view.autoLocked ? ' · 阵容已冻结' : ''}`;
 }
 
 function battleUnitName(unit) { return unit?.name || unit?.id || '棋子'; }
@@ -902,8 +907,12 @@ function renderControls() {
   $('rerollBtn').disabled = !active || (me.gold ?? 0) < 2;
   $('buyXpBtn').disabled = !active || (me.gold ?? 0) < 5 || me.level >= MAX_LEVEL;
   const mine = state.view?.players?.find(p => p.seat === state.seat);
-  $('gameReadyBtn').disabled = !active || !!mine?.ready;
-  $('gameReadyBtn').textContent = mine?.ready ? '已锁定阵容' : '锁定阵容 · 结束备战';
+  const autoLocked = !!state.view?.autoLocked;
+  const prepLive = compatibleBoard() && state.connected && state.synced && state.lobby?.status === 'playing' && state.view?.phase === 'prep' && !isSpectator();
+  $('gameReadyBtn').disabled = !prepLive || autoLocked;
+  $('gameReadyBtn').textContent = autoLocked ? '阵容已冻结 · 即将开战' : mine?.ready ? '已锁定阵容 · 点击解锁' : '锁定阵容 · 结束备战';
+  $('gameReadyBtn').classList.toggle('autolocked', autoLocked);
+  $('gameReadyBtn').classList.toggle('locked', !autoLocked && !!mine?.ready);
   $('sellBtn').disabled = !active || !state.selected;
   $('autoDeployBtn').disabled = !active || ![...(me.board || []),...(me.bench || [])].some(Boolean);
   $('tidyBenchBtn').disabled = !active || !(me.bench || []).some(Boolean);
@@ -988,7 +997,10 @@ $('lobbySeats').addEventListener('click', event => {
 });
 $('rerollBtn').addEventListener('click', () => sendAction({type:'reroll'}));
 $('buyXpBtn').addEventListener('click', () => sendAction({type:'buyXp'}));
-$('gameReadyBtn').addEventListener('click', () => sendAction({type:'ready'}));
+$('gameReadyBtn').addEventListener('click', () => {
+  const mine = state.view?.players?.find(p => p.seat === state.seat);
+  sendAction({ type: 'ready', ready: !mine?.ready });
+});
 $('sellBtn').addEventListener('click', () => {
   if (!state.selected) return;
   sendAction({type:'sell',uid:state.selected.uid});
