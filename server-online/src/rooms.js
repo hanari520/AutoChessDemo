@@ -22,6 +22,11 @@ const MAX_BUFFERED_BYTES = 256 * 1024;
 export function phaseMs(phase, game = null) {
   const fast = Number(process.env.ONLINE_FAST);
   if (Number.isFinite(fast) && fast > 0) return fast;
+  if (phase === 'prep' && Number.isInteger(game?.round) && game.round > 0) {
+    if (game.round <= 3) return 25_000;
+    if (game.round <= 6) return 30_000;
+    if (game.round <= 10) return 35_000;
+  }
   if (phase === 'combat' && game) return Math.max(PHASE_MS.combat,...(game.battles || []).map(battle=>(battle.durationMs || 0)+1000));
   return PHASE_MS[phase];
 }
@@ -388,7 +393,7 @@ class RoomEntry {
             players: room.players.map(({ id, name, bot }) => ({ id, name, bot })),
           });
           room.status = 'playing';
-          room.deadline = Date.now() + phaseMs('prep');
+          room.deadline = Date.now() + phaseMs('prep', room.game);
           this.runBots();
         }
         this.schedule();
