@@ -1,5 +1,12 @@
 # 更新日志
 
+## 2026-10-01 · 托管机器人大脑共享化 Adaptive v4.3（sw v120）+ 修复毒物品战斗崩溃
+
+- 经典托管与八人联机机器人共用同一决策引擎 `tools/bot-planner.js`：装备每次备战重分配（承伤/物理/施法分职、槽位上限修复）、满席可买第三张即时合成、守关回合搜牌预算提升、增强按剩余回合复利评估、展示延时不消耗随机流。经典托管通关率 80.0%→94.7%（300 局迭代验证 + 100 局冻结后新种子留出 91.0%，工具与原始数据见 `tools/bot-iteration-20261001.md`）。
+- 联机端经 `server-online/src/bot-adapter.js` 以合法动作（buy/unequip/combine/equip/move/lockShop）执行，遵守备战锁定、八格备战席、人口上限与共享卡池；对手情报仅用 `viewFor` 的上回合锁定阵容快照。服务端套件扩至 56 项（含 bot 确定性、满席替换、装备守恒、锁店付费刷新、准备锁定）。
+- **修复 `online/combat.js` 毒羽连弩崩溃**：攻击回调作用域引用了不存在的 `k.bleedDuration`（八机器人种子 8/20 局 `k is not defined` 中断），改为经典同款固定 3000ms 物品毒时长（index.html:1606）。
+- 部署链补齐：`.assetsignore` 白名单加入 `tools/bot-planner.js` 与 `tools/bot-equipment-policy.js`（否则单机线上 404）；sw 缓存升 `vcache-v120-shared-bot` 并预缓存三个 bot 资源、`INDEX_ASSET` 随页面 v98；服务端运行时拷贝随源入库（含两个 bot 策略拷贝，漂移测试覆盖）。
+
 ## 2026-10-01 · 风险审计修复：恢复隔离、Origin 强校验、运行时拷贝入库（服务端）
 
 - **恢复不再全有或全无**：启动恢复遇到永远无法恢复的快照（结构损坏、或规则版本低于 `deterministic-battle-v6` 的进行中对局）时，不再整体抛错进入 crash loop，而是记 `room_restore_quarantine` 日志（房码+原因）、删除该房间后继续恢复其余房间；PostgreSQL 与 CloudBase 文档库存储层同样逐房隔离损坏快照。新增 `tests/restore.test.js` 与两个存储层坏快照测试。

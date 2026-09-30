@@ -32,6 +32,8 @@ const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
   byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy, autoDeployBest,
   /* 诊断插桩（DBG/T1 测试用，只读导出，不影响游戏逻辑） */
   get ITEMS(){return ITEMS}, get UNITS(){return UNITS}, get FACTIONS(){return FACTIONS}, get CLASSES(){return CLASSES},
+  get HP_SCALE(){return HP_SCALE}, get STAR_M(){return STAR_M}, get SKILL_STAR_M(){return SKILL_STAR_M},
+  resetFormation:()=>{FORMA_IDX=0;},
   get COMBAT_KITS(){return COMBAT_KITS}, get ITEM_FX(){return ITEM_FX}, get ITEM_SPECIAL(){return ITEM_SPECIAL},
   castSkill, dealDamage, v3Heal, v3AddShield, v3AttackOf, applyV3Attack, v3RainTrigger,
   get SKILL_VAR(){return SKILL_VAR}, get SKILL_INFO(){return SKILL_INFO}, get FORMA_COLS(){return FORMA_COLS},
@@ -91,12 +93,15 @@ global.__HEADLESS = true;
    mulberry32 —— 普通模式 rand() 直通 Math.random，跨进程种子不同则 before/after 对比不可复现。 */
 if (process.env.SEED) {
   let t = (+process.env.SEED) >>> 0;
+  globalThis.resetSimSeed = seed => { t = seed >>> 0; };
   Math.random = () => { t += 0x6D2B79F5 | 0; let r = Math.imul(t ^ (t >>> 15), 1 | t);
     r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
 }
 
+if(process.env.PER_GAME_SEED&&!process.env.SEED)throw new Error('PER_GAME_SEED requires an explicit SEED');
 global.window.DailyCurses = require('./daily-curses.js');
-(0, eval)(fs.readFileSync(path.join(__dirname, 'battle-audio.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'battle-presentation.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'bond-runtime.js'), 'utf8') + '\n' + code);
+const browserPolicy = process.env.BROWSER_POLICY ? '\n'+fs.readFileSync(path.join(__dirname,'bot-equipment-policy.js'),'utf8')+'\n'+fs.readFileSync(path.join(__dirname,'bot-planner.js'),'utf8')+'\n'+fs.readFileSync(process.env.BOT_SRC || path.join(__dirname,'bot_strategy.js'),'utf8') : '';
+(0, eval)(fs.readFileSync(path.join(__dirname, 'battle-audio.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'battle-presentation.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'bond-runtime.js'), 'utf8') + '\n' + code + browserPolicy);
 const A = globalThis.API;
 if (process.env.DAILY_CAMPAIGN_TEST) {
   require('./daily-campaign.test.js').run(A);
@@ -163,7 +168,9 @@ if (process.env.CAMPAIGN_TEST) {
 
 /* ---------- 普通玩家机器人：直接加载页内版 bot_strategy.js（单一事实来源）。
    仅做符号改写：经 globalThis.API 访问游戏作用域（indirect eval 顶层 let 不可直接引用） ---------- */
-const botSrc = fs.readFileSync(path.join(__dirname, 'bot_strategy.js'), 'utf8')
+require('./bot-equipment-policy.js');
+require('./bot-planner.js');
+const botSrc = fs.readFileSync(process.env.BOT_SRC || path.join(__dirname, 'bot_strategy.js'), 'utf8')
   .replace(/\bS\b/g, 'API.S')
   .replace(/\bbyId\b/g, 'API.byId')
   .replace(/\bpairCount\b/g, 'API.pairCount')
@@ -173,8 +180,9 @@ const botSrc = fs.readFileSync(path.join(__dirname, 'bot_strategy.js'), 'utf8')
   .replace(/\bcheckLevel\b/g, 'API.checkLevel')
   .replace(/\bautoDeployBest\b/g, 'API.autoDeployBest')
   .replace(/\bautoDeploy\b/g, 'API.autoDeploy')
+  .replace(/\b(HP_SCALE|STAR_M|SKILL_STAR_M|ITEMS)\b/g, 'API.$1')
   .replace(/\brenderAll\b/g, '(() => {})');
-(0, eval)(botSrc);
+if(!process.env.BROWSER_POLICY)(0, eval)(botSrc);
 const botPrep = globalThis.botPrep;   // indirect eval 的函数声明挂在 globalThis
 
 /* ---------- 战斗驱动：手动推 currentTick，压缩真实时间 ---------- */
@@ -220,6 +228,10 @@ if (process.env.AUDIT) { require('./_audit_effects.js').run(A, driveBattle); pro
 
 
 /* ---------- 主循环 ---------- */
+if (process.env.BOT_TEST) {
+  require('./bot-strategy.test.js').run(A);
+  process.exit(process.exitCode || 0);
+}
 const N = parseInt(process.argv[2] || '100', 10);
 const MAXR = parseInt(process.env.MAXR || '0', 10);   // 调试用：>0 时打完该回合的章节结算即截断（章节统计在截断点之前，不受影响）
 globalThis.hpCurve = {}; globalThis.wrStats = {}; globalThis.creepWR = {};
@@ -233,6 +245,13 @@ const chReached = [0, 0, 0, 0];   // 打到该章守关战（存活至该回合�
 const CURSE_ENV = process.env.CURSE || '';
 if (CURSE_ENV) CURSE_ENV.split(',').forEach(c => (0, eval)(`toggleCurse("${c.trim()}")`));
 for (let g = 0; g < N; g++) {
+  // Independent streams keep later games comparable when a policy changes its
+  // number of shop rolls. The default legacy stream remains unchanged.
+  if (process.env.PER_GAME_SEED && globalThis.resetSimSeed) {
+    globalThis.resetSimSeed((+process.env.SEED + g) >>> 0);
+    A.resetFormation();
+    fakeTimers.length=0; fakeClock=0;
+  }
   (0, eval)(`newGame(${CURSE_ENV ? '{custom:true}' : ''})`); (0, eval)('renderAll()');
   let outcome = null;
   let chapters = 0, ch1 = false;
@@ -287,9 +306,14 @@ for (let g = 0; g < N; g++) {
   outcome.star4=!!(A.S.ms&&A.S.ms.star4);
   outcome.elites=A.S.botElites||0;
   results.push(outcome);
+  if (process.env.PROGRESS && (g + 1) % 10 === 0) console.error(`Completed ${g + 1}/${N}: ${results.filter(r=>r.win).length} clears`);
   simMetrics.mergeTelemetryTotals(telemetryTotals, A.S.stats && A.S.stats.tele);
 }
 const wins = results.filter(r => r.chapters >= 1);
+if (process.env.SIM_JSON) fs.writeFileSync(process.env.SIM_JSON, JSON.stringify({
+  seed: process.env.SEED, independentSeeds: !!process.env.PER_GAME_SEED,
+  games: N, clears: results.filter(r=>r.win).length, chapterWins: chWins, results,
+}, null, 2));
 const fmtPct = (a, b) => b ? (a / b * 100).toFixed(1) + '%' : '—';
 console.log(`局数=${N}${MAXR ? `（r${MAXR} 截断）` : ''}  平均推进章节数=${(results.reduce((s,r)=>s+r.chapters,0)/N).toFixed(2)}  平均最终回合=${(results.reduce((s,r)=>s+r.round,0)/N).toFixed(1)}  到达结算=${wins.length}`);
 console.log(`托管决策：使用升星券 ${results.filter(r=>r.star4).length}/${N} 局，精英挑战共 ${results.reduce((n,r)=>n+r.elites,0)} 次；100 回合通关 ${results.filter(r=>r.win).length}/${N}`);

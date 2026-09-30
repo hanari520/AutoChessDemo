@@ -13,6 +13,8 @@ const SOURCES = [
   ['equipment.js', join(repoRoot, 'online', 'equipment.js')],
   ['skill-catalog.js', join(repoRoot, 'online', 'skill-catalog.js')],
   ['bond-runtime.js', join(repoRoot, 'tools', 'bond-runtime.js')],
+  ['bot-planner.js', join(repoRoot, 'tools', 'bot-planner.js')],
+  ['bot-equipment-policy.js', join(repoRoot, 'tools', 'bot-equipment-policy.js')],
 ];
 
 for (const [name, from] of SOURCES) {

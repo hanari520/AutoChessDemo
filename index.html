@@ -7837,7 +7837,7 @@ function autoPilot(delay=900){
       const step=steps[index++];
       const advance=()=>{
         if(!active()){release();return;}
-        renderAll(); setTimeout(next,180+Math.round(rand()*180));
+        renderAll(); setTimeout(next,260);
       };
       try{ if(step.fn.length)step.fn(advance); else {step.fn();advance();} }
       catch(e){try{log('⚠️ '+(step.n||'托管步骤')+'失败：'+((e&&e.message)||e));}catch(_){}advance();}
@@ -7853,7 +7853,9 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
   if(S.auto && S.phase==='prep') autoPilot(300);
 };
 </script>
-<script src="tools/bot_strategy.js?v=9"></script>
+<script src="tools/bot-equipment-policy.js?v=1"></script>
+<script src="tools/bot-planner.js?v=1"></script>
+<script src="tools/bot_strategy.js?v=11"></script>
 <script src="tools/idol-ui.js?v=1"></script>
 <script src="tools/idol-ui-redesign.js?v=5"></script>
 <script src="tools/solo-modes.js?v=4"></script>

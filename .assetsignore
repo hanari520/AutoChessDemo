@@ -25,6 +25,8 @@ assets/campaign
 # tools 中仅以下运行时文件需要对外提供；测试、部署脚本和素材草稿不上传。
 tools/**
 !tools/bot_strategy.js
+!tools/bot-equipment-policy.js
+!tools/bot-planner.js
 !tools/bond-runtime.js
 !tools/campaign-map.js
 !tools/daily-curses.js

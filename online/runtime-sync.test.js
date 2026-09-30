@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url';
  * without re-running the sync, so the server never silently ships stale rules. */
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const SOURCES = [
+  ['bot-planner.js','tools/bot-planner.js',false],
+  ['bot-equipment-policy.js','tools/bot-equipment-policy.js',false],
   ['economy.js', 'online/economy.js', false],
   ['core.js', 'online/core.js', false],
   ['combat.js', 'online/combat.js', true],

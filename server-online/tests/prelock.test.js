@@ -72,6 +72,8 @@ test('room pre-lock fires inside the lead window and broadcasts frozen state', t
   ws.receive({ type: 'ready', ready: true });   // last human ready triggers the start check
   // The room starts once every human is ready and connected; real prep phase is 25s.
   assert.equal(entry.room.status, 'playing', '1 human + 7 bots auto-starts the game');
+  assert.ok(entry.room.game.seats.slice(1).every(s=>s.ready&&s.botPolicyVersion==='Adaptive v4.3'),
+    'room startup runs the shared planner for all seven bot seats');
   entry.room.deadline = Date.now() + 100;   // inside the 5s pre-lock window
   entry.tick();
   assert.equal(entry.room.status, 'playing');
@@ -86,4 +88,11 @@ test('room pre-lock fires inside the lead window and broadcasts frozen state', t
   entry.tick();
   assert.equal(entry.room.game.phase, 'combat');
   assert.equal(JSON.stringify(entry.room.game.battles), precomputed, 'combat flip reuses precomputed replays');
+  entry.room.deadline=Date.now()-1;entry.tick();
+  assert.equal(entry.room.game.phase,'result');
+  entry.room.deadline=Date.now()-1;entry.tick();
+  assert.equal(entry.room.game.phase,'prep');
+  assert.equal(entry.room.game.round,2);
+  assert.ok(entry.room.game.seats.slice(1).every(s=>s.ready&&s.botPlan.updated===2),
+    'the next room preparation refreshes all seven bot plans');
 });
