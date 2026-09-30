@@ -48,6 +48,13 @@ export function botPolicy(game, seatIndex) {
     return unit.star * 1000 + unit.cost * 10 + jitter.get(unit.uid);
   };
 
+  // 0. Opening offer: pick the strongest of the three, mirroring a real player.
+  if (!seat.openingGranted && Array.isArray(seat.openingOffer) && seat.openingOffer.length) {
+    let best = 0;
+    seat.openingOffer.forEach((unit, i) => { if (rank(unit) > rank(seat.openingOffer[best])) best = i; });
+    attempt({ type: 'pickOpening', slot: best });
+  }
+
   // 1. Levels: from round 2, spend surplus gold on XP while keeping a buffer.
   if (game.round >= 2 && seat.level < 11) {
     for (let times = 0; times < 2 && seat.gold >= 12; times++) {

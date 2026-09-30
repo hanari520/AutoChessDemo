@@ -1,5 +1,5 @@
 import { MAX_LEVEL, SHOP_ODDS as ODDS, xpNeeded, interestGain, streakGain, sellRefund } from './economy.js';
-import { resolveBattle } from './combat.js';
+import { resolveBattle, BOND_TIERS, bondSummary } from './combat.js';
 import { EQUIPMENT, recipe } from './equipment.js';
 
 /* Eight-player online rules. Pure serializable data; no DOM or clock.
@@ -495,6 +495,79 @@ function cloneUnit(unit) { return unit ? { ...unit } : null; }
 function copyCard(id, uid) { return { ...UNITS[id], uid, star: 1, items: [] }; }
 function copyCount(star) { return 3 ** (star - 1); }
 function capacity(seat) { return Math.min(MAX_BOARD_UNITS, seat.level); }
+
+/* —— 择优上阵（移植经典 lineupScore/selectLineup：战力+装备价值+羁绊进度+前后排平衡，
+   边际贪心 + 3 轮严格增益换人，连续点击结果稳定）。 —— */
+const JOB_BAND = {'守护':0,'刀客':1,'狂战':1,'歌势':2,'医者':2,'偶像':2,'法师':3,'咒术':3,'游侠':3,'刺客':4};
+const unitBand = unit => JOB_BAND[unit.job] ?? JOB_BAND[unit.job2] ?? 2;
+const unitLinePower = unit => {
+  const gear = (unit.items || []).reduce((n, k) => n + (EQUIPMENT[k]?.crafted ? 32 : 18), 0);
+  return (unit.atk || 0) * 1.7 + (unit.hp || 0) * .22 + (unit.cost || 1) * 4 + (unit.star - 1) * 9 + gear;
+};
+function teamSynScore(team) {
+  const cnt = {}, seen = new Set();
+  team.forEach(u => { if (seen.has(u.id)) return; seen.add(u.id);
+    for (const tag of [u.fac, u.fac2, u.job, u.job2].filter(Boolean)) cnt[tag] = (cnt[tag] || 0) + 1; });
+  let s = 0;
+  for (const name in cnt) {
+    const needs = BOND_TIERS[name]; if (!needs) continue;
+    let prev = 0, progressed = false;
+    needs.forEach((need, i) => {
+      if (cnt[name] >= need) { s += 5 + 3 * i; prev = need; }
+      else if (cnt[name] > prev && !progressed) { s += (cnt[name] - prev) * .35; progressed = true; }   // 只给下一档轻微进度分
+    });
+  }
+  return s;
+}
+function lineupScore(team) {
+  const fronts = team.filter(u => unitBand(u) <= 1).length;
+  const backs = team.filter(u => unitBand(u) >= 2 && unitBand(u) <= 3).length;
+  const balance = team.length >= 3 ? (fronts ? Math.min(fronts, 2) * 16 : -38) + (backs ? 16 : -22) : 0;
+  return team.reduce((n, u) => n + unitLinePower(u), 0) + teamSynScore(team) * 8 + balance;
+}
+function selectLineup(all, limit) {
+  const team = [], pool = [...all];
+  while (team.length < limit && pool.length) {
+    let pick = 0, best = -Infinity;
+    pool.forEach((u, i) => { const score = lineupScore([...team, u]) - lineupScore(team);
+      if (score > best + 1e-6) { best = score; pick = i; } });
+    team.push(pool.splice(pick, 1)[0]);
+  }
+  for (let pass = 0; pass < 3 && pool.length; pass++) {
+    const before = lineupScore(team); let gain = 1, out = -1, incoming = -1;
+    team.forEach((u, i) => pool.forEach((v, j) => { const trial = team.slice(); trial[i] = v;
+      const delta = lineupScore(trial) - before;
+      if (delta > gain + 1e-6) { gain = delta; out = i; incoming = j; } }));
+    if (out < 0) break;
+    const replaced = team[out]; team[out] = pool[incoming]; pool[incoming] = replaced;
+  }
+  return team;
+}
+
+/* —— 开局三选一（对齐经典：cost≤2 抽 3，选 1 免费入队，未选在冻结/开战时自动发第一张）—— */
+function rollOpeningOffer(state) {
+  const offer = [];
+  for (let n = 0; n < 3; n++) {
+    const options = Object.keys(state.pool).filter(id => UNITS[id].cost <= 2 && state.pool[id] > 0 && !offer.some(u => u.id === id));
+    if (!options.length) break;
+    const id = options[Math.floor(random(state) * options.length)];
+    state.pool[id]--;
+    offer.push(copyCard(id, state.nextUid++));
+  }
+  return offer;
+}
+function grantOpening(state, seat, slot) {
+  const offer = seat.openingOffer;
+  if (!offer || seat.openingGranted) return;
+  seat.openingGranted = true;
+  seat.openingOffer = null;
+  const pick = offer[Number.isInteger(slot) ? Math.min(Math.max(slot, 0), offer.length - 1) : 0] || null;
+  for (const unit of offer) if (unit !== pick) state.pool[unit.id]++;
+  if (!pick) return;
+  const free = seat.bench.indexOf(null);
+  if (free >= 0) seat.bench[free] = pick;
+  else seat.gold += 3;   // 备战满员：与经典一致的 +3 金补偿
+}
 function available(state, tier) {
   return ROSTER.filter(([id, , cost]) => +cost === tier && state.pool[id] > 0);
 }
@@ -606,7 +679,10 @@ export const PRELOCK_LEAD_MS = 5_000;
 export function autoLockForBattle(state) {
   if (state.autoLocked) return false;
   state.autoLocked = true;
-  for (const seat of state.seats) if (seat.alive) seat.ready = true;
+  for (const seat of state.seats) if (seat.alive) {
+    seat.ready = true;
+    if (!seat.openingGranted) grantOpening(state, seat, 0);   // 冻结窗口兜底：未选自动发第一张
+  }
   return true;
 }
 
@@ -683,7 +759,7 @@ export function createGame({ seed, players } = {}) {
     pairings: [], battles: [], results: [], seats: players.map((p, seat) => ({
       seat, id: p.id, name: p.name.slice(0, 32), bot: !!p.bot, hp: 40, gold: 5, level: 2, xp: 0,
       alive: true, place: null, ready: false, wins: 0, losses: 0, streak: 0,
-      lastOpponent: null, items: [], lastLineup: [],
+      lastOpponent: null, items: [], lastLineup: [], synDone: [], openingOffer: null, openingGranted: false,
       shop: Array(SHOP).fill(null),
       bench: Array(BENCH).fill(null), board: Array(BOARD_CELLS).fill(null)
     }))
@@ -692,6 +768,7 @@ export function createGame({ seed, players } = {}) {
     seat.items.push(ITEMS[integer(state, ITEMS.length)]);
     roll(state, seat);
   }
+  for (const seat of state.seats) seat.openingOffer = rollOpeningOffer(state);
   pairings(state);
   return state;
 }
@@ -741,8 +818,18 @@ export function applyAction(state, seatIndex, action) {
     assert(Number.isInteger(action.uid), 'Invalid UID');
     const found = holdings(seat).find(x => x.unit.uid === action.uid);
     assert(found, 'Unit not owned');
-    seat.items.push(...found.unit.items);
-    found.unit.items = [];
+    if (Number.isInteger(action.index)) {   // 详情面板芯片点按：卸下单件
+      assert(action.index >= 0 && action.index < found.unit.items.length, 'Invalid item index');
+      seat.items.push(found.unit.items.splice(action.index, 1)[0]);
+    } else {
+      seat.items.push(...found.unit.items);
+      found.unit.items = [];
+    }
+  } else if (type === 'pickOpening') {
+    assert(state.round === 1 && !seat.openingGranted && Array.isArray(seat.openingOffer) && seat.openingOffer.length, 'Opening offer expired');
+    assert(Number.isInteger(action.slot) && action.slot >= 0 && action.slot < seat.openingOffer.length, 'Invalid opening slot');
+    grantOpening(state, seat, action.slot);
+    return viewFor(state, seatIndex);
   } else if (type === 'autoEquip') {
     const team = seat.board.filter(Boolean);
     assert(team.length, 'Deploy units first');
@@ -779,19 +866,19 @@ export function applyAction(state, seatIndex, action) {
     seat.bench = [...ordered,...Array(BENCH-ordered.length).fill(null)];
   } else if (type === 'autoDeploy') {
     const owned = holdings(seat).map(x => x.unit);
-    const team = [...owned].sort((a,b) => b.star**2*b.cost-a.star**2*a.cost || a.uid-b.uid).slice(0,capacity(seat));
+    const team = selectLineup(owned, capacity(seat));   // 经典同款择优：战力+装备+羁绊+前后排平衡
     const chosen = new Set(team.map(unit => unit.uid));
     const rest = owned.filter(unit => !chosen.has(unit.uid));
-    assert(rest.length <= BENCH, 'Bench full');
+    assert(rest.length <= BENCH, 'Bench Full');
     const board = seat.board.map(unit => chosen.has(unit?.uid) ? unit : null);
-    for (const unit of team) {
+    for (const unit of [...team].sort((a, b) => unitBand(a) - unitBand(b))) {   // 前排职业先占前排
       if (board.includes(unit)) continue;
-      const melee = ['守护','刀客','狂战'].includes(unit.job);
-      const slots = Array.from({length:32},(_,i) => melee ? DEPLOY_START+i : BOARD_CELLS-1-i);
+      const front = unitBand(unit) <= 1;
+      const slots = Array.from({length: 32}, (_, i) => front ? DEPLOY_START + i : BOARD_CELLS - 1 - i);
       board[slots.find(slot => !board[slot])] = unit;
     }
     seat.board = board;
-    seat.bench = [...rest,...Array(BENCH-rest.length).fill(null)];
+    seat.bench = [...rest, ...Array(BENCH - rest.length).fill(null)];
   } else if (type === 'lockShop') {
     seat.shopLocked = !seat.shopLocked;
   } else if (type === 'move') {
@@ -809,10 +896,12 @@ export function applyAction(state, seatIndex, action) {
     seat[to.zone][to.slot] = found.unit;
     seat[found.zone][found.slot] = other;
   } else if (type === 'reroll') {
+    if (seat.shopLocked) return viewFor(state, seatIndex);   // 锁定时刷新不耗金（对齐经典）
     assert(seat.gold >= 2, 'Insufficient gold');
     seat.gold -= 2;
     roll(state, seat);
   } else if (type === 'buyXp') {
+    assert(state.round > 1, '首回合不可买经验');   // 对齐经典：首回合禁买经验
     assert(seat.level < MAX_LEVEL, 'Maximum level');
     assert(seat.gold >= 5, 'Insufficient gold');
     seat.gold -= 5;
@@ -827,6 +916,7 @@ export function applyAction(state, seatIndex, action) {
 export function advancePhase(state) {
   assert(state && state.version === 1 && !state.complete, 'Game complete');
   if (state.phase === 'prep') {
+    for (const seat of state.seats) if (seat.alive && !seat.openingGranted) grantOpening(state, seat, 0);   // 开战兜底
     if (!state.battles.length) resolveRound(state);   // battles may already be precomputed in the pre-lock window
     state.phase = 'combat';
   }
@@ -842,6 +932,13 @@ export function advancePhase(state) {
       state.round++;
       for (const seat of alive) {
         income(seat, state);
+        for (const bond of bondSummary(seat.board)) {   // 羁绊凑档奖励：每档每局首次 +1 金（对齐经典）
+          const tier = bond.tiers.filter(need => bond.count >= need).length;
+          for (let t = 1; t <= tier; t++) {
+            const key = `${bond.name}:${t}`;
+            if (!seat.synDone.includes(key)) { seat.synDone.push(key); seat.gold += 1; }
+          }
+        }
         if (state.round % 5 === 0) seat.items.push(ITEMS[integer(state, ITEMS.length)]);
         if (!seat.shopLocked) roll(state, seat);
         seat.shopLocked = false;
@@ -866,6 +963,7 @@ export function viewFor(state, seatIndex) {
       wins: s.wins, losses: s.losses,
       board: (s.lastLineup || []).map(publicUnit) })),   // 上回合锁定阵容快照：实时棋盘只发给本人
     me: { gold: me.gold, hp: me.hp, level: me.level, xp: me.xp, streak:me.streak, shopLocked: !!me.shopLocked,
+      openingOffer: Array.isArray(me.openingOffer) && me.openingOffer.length ? me.openingOffer.map(publicUnit) : null,
       items: [...me.items],
       shop: me.shop.map(publicUnit), bench: me.bench.map(publicUnit), board: me.board.map(publicUnit) },
     pairings: state.pairings.map(p => ({ ...p })),

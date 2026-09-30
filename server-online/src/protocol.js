@@ -110,7 +110,7 @@ export function validateActionEnvelope(message, player) {
   if (!message.action || typeof message.action !== 'object' || Array.isArray(message.action)) {
     throw new RoomError('bad_action', '操作内容格式错误');
   }
-  if (!['buy', 'sell', 'move', 'reroll', 'buyXp', 'ready', 'equip', 'unequip', 'autoEquip', 'autoDeploy', 'tidy', 'lockShop', 'combine', 'combineWorn'].includes(message.action.type)) {
+  if (!['buy', 'sell', 'move', 'reroll', 'buyXp', 'ready', 'equip', 'unequip', 'autoEquip', 'autoDeploy', 'tidy', 'lockShop', 'combine', 'combineWorn', 'pickOpening'].includes(message.action.type)) {
     throw new RoomError('bad_action', '不支持的操作');
   }
   return 'new';

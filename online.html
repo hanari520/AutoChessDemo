@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#eef4ff">
   <link rel="icon" href="assets/ui/star-stage-icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="tools/battle-presentation.css?v=1">
-  <link rel="stylesheet" href="online/client.css?v=14">
+  <link rel="stylesheet" href="online/client.css?v=15">
   <link rel="stylesheet" href="online/classic-match.css?v=5">
   <link rel="stylesheet" href="online/theme.css?v=2">
 <link rel="stylesheet" href="tools/battle-hud.css?v=1">
@@ -78,8 +78,15 @@
       </div>
     </section>
   </main>
+  <div id="openingOverlay" class="opening-overlay" hidden>
+    <div class="opening-panel" role="dialog" aria-modal="true" aria-label="开局三选一">
+      <h2>🎬 开局应援 · 三选一</h2>
+      <p class="opening-note">免费选择一名成员加入备战席；倒计时结束未选将自动获得第一位。</p>
+      <div class="opening-cards"></div>
+    </div>
+  </div>
   <div id="dragSellBanner" class="drag-sell-banner" hidden></div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  <script type="module" src="online/client.js?v=21"></script>
+  <script type="module" src="online/client.js?v=22"></script>
 </body>
 </html>

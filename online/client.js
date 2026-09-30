@@ -519,7 +519,28 @@ function render() {
   if (state.maintenance) $('roomHint').textContent += ' · 服务维护中，当前对局可继续';
   renderLobby();
   if (gameVisible) renderGame();
+  renderOpening(state.view);
   renderControls();
+}
+
+/* 开局三选一（对齐经典开局招募）：第 1 回合备战期展示，点选免费入队；冻结/开战兜底自动选第一位 */
+function renderOpening(view) {
+  const overlay = $('openingOverlay');
+  if (!overlay) return;
+  const offer = view?.me?.openingOffer;
+  if (Array.isArray(offer) && offer.length && view.phase === 'prep' && view.round === 1) {
+    overlay.hidden = false;
+    const sig = offer.map(unit => unit.uid).join(',');
+    const list = overlay.querySelector('.opening-cards');
+    if (list && list.dataset.sig !== sig) {
+      list.dataset.sig = sig;
+      list.innerHTML = offer.map((unit, i) => `<button type="button" class="opening-card" data-opening-pick="${i}">
+        <img src="${unitImage(unit.id)}" alt="${escapeHtml(unit.name || unit.id)}">
+        <b>${escapeHtml(unit.name || unit.id)}</b>
+        <span>${escapeHtml([unit.fac, unit.fac2, unit.job, unit.job2].filter(Boolean).join(' · '))}</span>
+        <i>免费入队</i></button>`).join('');
+    }
+  } else overlay.hidden = true;
 }
 
 function renderLobby() {
@@ -921,7 +942,7 @@ function renderGame() {
   $('equipmentRecipes').innerHTML=pairs.join('') || '<p class="empty-message">凑齐两件基础装备即可合成。</p>';
   const selected=[...(me.board||[]),...(me.bench||[])].find(unit=>unit?.uid===state.selected?.uid);
   const inspectedUnit=[...(me.board||[]),...(me.bench||[])].find(unit=>String(unit?.uid)===state.inspected?.uid)||selected;
-  $('unitLoadout').innerHTML=inspectedUnit?`<p>${escapeHtml(inspectedUnit.name||inspectedUnit.id)} · ${(inspectedUnit.items||[]).length}/3 格</p><div class="loadout-slots">${Array.from({length:3},(_,i)=>{const id=inspectedUnit.items?.[i],item=EQUIPMENT[id];return `<span title="${escapeHtml(item?.desc||'空装备位')}">${item?`${escapeHtml(item.e)} ${escapeHtml(item.n)}`:'空位'}</span>`;}).join('')}</div>`:'<p>点击棋子查看穿戴情况，也可把背包装备拖到棋子上。</p>';
+  $('unitLoadout').innerHTML=inspectedUnit?`<p>${escapeHtml(inspectedUnit.name||inspectedUnit.id)} · ${(inspectedUnit.items||[]).length}/3 格</p><div class="loadout-slots">${Array.from({length:3},(_,i)=>{const id=inspectedUnit.items?.[i],item=EQUIPMENT[id];return `<button type="button" class="loadout-chip ${item?'worn':''}" data-unequip-worn="${i}" ${item&&canAct()?'':'disabled'} title="${escapeHtml(item?`${item.desc}${item.trait?`；${item.trait}`:''}。点按卸下单件`:'空装备位')}">${item?`${escapeHtml(item.e)} ${escapeHtml(item.n)} <i>×</i>`:'空位'}</button>`;}).join('')}</div>`:'<p>点击棋子查看穿戴情况，也可把背包装备拖到棋子上。</p>';
   $('combineWornBtn').disabled=!canAct()||!selected||!recipe(selected.items[0],selected.items[1]);
   $('economyInfo').textContent=`利息 +${interestGain(me.gold||0)} · 连胜/败 ${Math.abs(me.streak||0)}`;
   $('shopOdds').textContent=(SHOP_ODDS[Math.min(MAX_LEVEL,me.level||2)]||[]).map((chance,i)=>`${i+1}费 ${chance}%`).join(' · ');
@@ -955,7 +976,8 @@ function renderControls() {
   const active = canAct();
   const me = state.view?.me || {};
   $('rerollBtn').disabled = !active || (me.gold ?? 0) < 2;
-  $('buyXpBtn').disabled = !active || (me.gold ?? 0) < 5 || me.level >= MAX_LEVEL;
+  $('buyXpBtn').disabled = !active || state.view?.round === 1 || (me.gold ?? 0) < 5 || me.level >= MAX_LEVEL;
+  $('buyXpBtn').title = state.view?.round === 1 ? '首回合不可买经验' : '';
   const mine = state.view?.players?.find(p => p.seat === state.seat);
   const autoLocked = !!state.view?.autoLocked;
   const prepLive = compatibleBoard() && state.connected && state.synced && state.lobby?.status === 'playing' && state.view?.phase === 'prep' && !isSpectator();
@@ -1012,6 +1034,8 @@ for (const [id,type] of [['autoDeployBtn','autoDeploy'],['tidyBenchBtn','tidy'],
 $('unequipBtn').addEventListener('click',()=>{if(state.selected)sendAction({type:'unequip',uid:state.selected.uid});});
 $('combineWornBtn').addEventListener('click',()=>{if(state.selected)sendAction({type:'combineWorn',uid:state.selected.uid});});
 $('equipmentRecipes').addEventListener('click',event=>{const button=event.target.closest('[data-combine-a]');if(button)sendAction({type:'combine',a:Number(button.dataset.combineA),b:Number(button.dataset.combineB)});});
+$('unitLoadout').addEventListener('click',event=>{const chip=event.target.closest('[data-unequip-worn]');if(!chip||chip.disabled)return;const uid=[...(state.view?.me?.board||[]),...(state.view?.me?.bench||[])].find(unit=>String(unit?.uid)===String(state.inspected?.uid))?.uid;if(uid!=null)sendAction({type:'unequip',uid,index:Number(chip.dataset.unequipWorn)});});
+$('openingOverlay').addEventListener('click',event=>{const card=event.target.closest('[data-opening-pick]');if(card)sendAction({type:'pickOpening',slot:Number(card.dataset.openingPick)});});
 for (const id of ['boardGrid','benchGrid']) $(id).addEventListener('contextmenu',event=>{
   const target=event.target.closest('[data-zone][data-slot]');
   if(target?.dataset.zone==='board'&&state.spectateSeat!=null&&state.spectateSeat!==state.seat)return;
@@ -1045,7 +1069,10 @@ $('lobbySeats').addEventListener('click', event => {
   const button = event.target.closest('[data-kickbot]');
   if (button) removeBot(Number(button.dataset.kickbot));
 });
-$('rerollBtn').addEventListener('click', () => sendAction({type:'reroll'}));
+$('rerollBtn').addEventListener('click', () => {
+  if (state.view?.me?.shopLocked) { toast('🔒 商店已锁定，不消耗金币刷新'); return; }   // 对齐经典：锁定即冻结
+  sendAction({type:'reroll'});
+});
 $('buyXpBtn').addEventListener('click', () => sendAction({type:'buyXp'}));
 $('gameReadyBtn').addEventListener('click', () => {
   const mine = state.view?.players?.find(p => p.seat === state.seat);
