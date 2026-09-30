@@ -846,7 +846,7 @@ function renderGame() {
   $('pairingText').textContent = pairing ? pairing.b == null ? '本轮轮空' : `本轮对手：${playerName(pairing.a === state.seat ? pairing.b : pairing.a)}` : '本轮配对尚未公布';
   const watched = state.spectateSeat!=null ? players.find(p => p.seat === state.spectateSeat) : null;
   const boardOwner = watched || me;
-  $('arenaTitle').textContent = watched ? `观战 · ${watched.name}` : '上阵棋盘';
+  $('arenaTitle').textContent = watched ? `观战 · ${watched.name}${view.phase === 'prep' ? '（上回合阵容）' : ''}` : '上阵棋盘';
   $('boardCount').textContent = `${(boardOwner.board || []).filter(Boolean).length} / ${boardOwner.level || 1}`;
   $('boardGrid').innerHTML = renderBoard(boardOwner.board || Array(64).fill(null),!!watched&&watched.seat!==state.seat);
   $('benchGrid').innerHTML = (me.bench || Array(8).fill(null)).map((unit,slot) => renderUnitSlot(unit,'bench',slot)).join('');

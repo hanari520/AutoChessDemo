@@ -569,6 +569,9 @@ function battleFormation(seat, side) {
 }
 
 function resolveRound(state) {
+  // Public lineup intel lags one round: every alive seat's board is frozen here
+  // (prep is over, lineups are locked) and views hand out this snapshot only.
+  for (const seat of state.seats) if (seat.alive) seat.lastLineup = seat.board.map(publicUnit);
   state.battles = state.pairings.map(({ a, b }) => {
     if (b === null) return { a, b, winner: 'A', events: [], survivorsA: [], survivorsB: [], durationMs: 0, complete: true };
     const seed = seed32(`${state.seed}|${state.round}|${a}|${b}|${state.rng}`);
@@ -661,7 +664,7 @@ export function createGame({ seed, players } = {}) {
     pairings: [], battles: [], results: [], seats: players.map((p, seat) => ({
       seat, id: p.id, name: p.name.slice(0, 32), bot: !!p.bot, hp: 40, gold: 5, level: 2, xp: 0,
       alive: true, place: null, ready: false, wins: 0, losses: 0, streak: 0,
-      lastOpponent: null, items: [],
+      lastOpponent: null, items: [], lastLineup: [],
       shop: Array(SHOP).fill(null),
       bench: Array(BENCH).fill(null), board: Array(BOARD_CELLS).fill(null)
     }))
@@ -833,7 +836,7 @@ export function viewFor(state, seatIndex) {
     players: state.seats.map(s => ({ seat: s.seat, id: s.id, name: s.name, bot: !!s.bot,
       hp: s.hp, level: s.level, alive: s.alive, place: s.place, ready: s.ready,
       wins: s.wins, losses: s.losses,
-      board: s.board.map(publicUnit) })),
+      board: (s.lastLineup || []).map(publicUnit) })),   // 上回合锁定阵容快照：实时棋盘只发给本人
     me: { gold: me.gold, hp: me.hp, level: me.level, xp: me.xp, streak:me.streak, shopLocked: !!me.shopLocked,
       items: [...me.items],
       shop: me.shop.map(publicUnit), bench: me.bench.map(publicUnit), board: me.board.map(publicUnit) },

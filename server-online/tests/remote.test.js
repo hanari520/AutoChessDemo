@@ -223,9 +223,9 @@ test('bots fill a room, replay is idempotent after reconnect, and bot-only survi
     assert.equal(prep.view.seat, 0);
     assert.deepEqual(prep.view.players.slice(2).map(player => player.bot), [true, true, true, true, true, true]);
 
-    // Bots already acted inside this prep window: deployed and locked in.
-    assert.ok(prep.view.players.slice(2).every(player => player.board.filter(Boolean).length >= 1),
-      'every bot deployed units at game start');
+    // Opponent boards are last-round snapshots: nothing to show before the first battle.
+    assert.ok(prep.view.players.slice(2).every(player => player.board.filter(Boolean).length === 0),
+      'lineups stay private before the first battle');
     assert.ok(prep.view.players.slice(2).every(player => player.ready), 'bots locked in for round 1');
 
     // Human action, replay-confirmed duplicate ack.
@@ -250,6 +250,8 @@ test('bots fill a room, replay is idempotent after reconnect, and bot-only survi
     const final=reconnectedTracker.latest.view;
     assert.ok(final.players.filter(p=>!p.bot).every(p=>!p.alive && Number.isInteger(p.place)));
     assert.ok(final.players.some(p=>p.bot && p.alive));
+    assert.ok(final.players.filter(p=>p.bot && p.alive).every(p=>p.board.filter(Boolean).length>=1),
+      'surviving bots show their last-round lineups');
     assert.equal((await post(`/api/rooms/${code}/join`,{token})).status,404);
   } finally {
     reconnected?.close();
