@@ -1,15 +1,17 @@
 # 八人联机房间服务（Node / 腾讯云托管版）
 
-这是《星域棋战》的**八人联机服务**，代码位于 `server-online/`。一个纯 Node.js（`node:http` + `ws`）单进程服务：每个邀请码对应一个内存中的房间对象，由服务端独占写入共享卡池、经济、布阵和阶段结算。规则核心由 `scripts/sync-runtime.mjs` 从 `../online/core.js`、`../online/combat.js` 复制为 `src/core.js`、`src/combat.js`（生成物，不入库），每轮对战由确定性模拟器结算并把战斗事件发给对应玩家回放。
+这是《星域棋战》的**八人联机服务**，代码位于 `server-online/`。一个 Node.js（`node:http` + `ws`）单进程服务：每个邀请码对应一个房间对象，由服务端独占写入共享卡池、经济、布阵和阶段结算。规则核心由 `scripts/sync-runtime.mjs` 从 `../online/core.js`、`../online/combat.js` 复制为 `src/core.js`、`src/combat.js`（生成物，不入库），每轮对战由确定性模拟器结算并把战斗事件发给对应玩家回放。
+
+2026-09-30 新增客户端超时恢复、限流监控、维护排空与 CloudBase 数据库持久化。**生产上线必须先配置PostgreSQL 持久化表和服务端凭证**，具体设置、发布交接和验证见 [STABILITY.md](STABILITY.md)。下文的内存模式仅适用于本地开发。
 
 本版本由原 Cloudflare Workers + Durable Objects 实现移植而来，面向**腾讯 CloudBase 云托管（容器型）单实例常驻部署**，并新增**房主添加/移除机器人**功能。
 
 ## 与 Cloudflare 版的差异
 
-- **内存态，无持久化**：房间状态保存在进程内 `Map`，没有 DO 的 SQLite 存储。服务重启会丢失全部房间与对局（demo 阶段可接受）；未开局房间 24 小时、已结束对局 7 天后由清理定时器回收。
-- **单实例**：必须以 MinNum=1 / MaxNum=1 部署。进程内 JS 事件循环天然串行化所有消息处理器与定时器回调，等价于 DO 的单写者语义；扩到多实例会拆分房间状态。
+- **可选持久化**：开发模式房间状态保存在进程内 `Map`，重启会丢房；生产使用 CloudBase 数据库事务保存完整快照并恢复。未开局房间 24 小时、已结束对局 7 天后由清理定时器回收。
+- **单实例**：必须以 MinNum=1 / MaxNum=1 部署。持久化模式用每房队列串行处理消息、HTTP 变更与定时器，并用数据库租约防止发布时新旧实例同时写入；不支持直接扩成多个房间服务实例。
 - **阶段推进**：原 DO alarm 由每房一个 `setTimeout` 时钟替代（到期执行与 `alarm()` 逐行对应的 tick：过期清理→阶段 while 推进→重排定时器→广播）。WS 层另有 30 秒 ping/pong 心跳清理死连接。
-- **同步 token 校验**：WebSocket 消息处理中的 token 哈希用 `node:crypto` 的同步 `createHash('sha256')` 完成，整个处理器不 await，避免事件循环让出引入房间状态竞态。
+- **同步 token 校验**：token 哈希用 `node:crypto` 的同步 `createHash('sha256')` 完成；异步持久化期间同房间的后续变更排队，避免共享卡池和序号竞态。
 - **状态快照兼容**：广播格式与 CF 版完全一致（`{type:'state',code,seat,serverTime,deadline,nextSeq,lobby,view}`），现有浏览器客户端零改动即可使用。
 
 ## 本地运行
@@ -27,7 +29,7 @@ npm run dev
 
 ## API 契约
 
-- `GET /api/health` → `200 {"ok":true}`。
+- `GET /api/health` → `200 {"ok":true,"ruleset":"deterministic-battle-v6","boardCells":64,"deployStart":32}`。
 - `POST /api/rooms`，JSON `{ "name": "玩家" }` → `201 {code,seat,token,lobby}`：创建房间并取得房主（0 号席）座位。
 - `POST /api/rooms/:code/join`，JSON `{ "name": "玩家" }`：入座；八人满后拒绝第九人（409 `room_full`）。
 - 同一路由，JSON `{ "token": "..." }`：用原凭证恢复座位，包括对局开始或淘汰之后。
@@ -48,7 +50,7 @@ npm run dev
 3. 服务监听容器内 `3000` 端口（`EXPOSE 3000`），云托管服务端口按 3000 配置。
 4. **实例数固定 1**（MinNum=1 / MaxNum=1）：多实例会导致房间状态拆分。
 5. 通过 EnvParams 传 `ALLOWED_ORIGINS`（逗号分隔的精确来源列表，生产必须显式设置，例如 `https://autochess.hanari520.cn`）。
-6. 重启即丢房（内存态）；如需跨重启保留对局，需要外部持久化，当前版本不提供。
+6. 按 [STABILITY.md](STABILITY.md) 配置 `ROOM_STORE=cloudbase-pg`、PostgreSQL 表与服务端凭证；发布前排空并交接存储租约。内存模式仍然重启即丢房。
 
 ## 验证
 
@@ -57,3 +59,11 @@ npm test
 ```
 
 测试套件（`node --test`）覆盖：协议层校验（`tests/protocol.test.js`）、无定时器的机器人完整对局（`tests/bots.test.js`，直接驱动规则核心）、以及真实 HTTP+WebSocket 服务器全流程（`tests/remote.test.js`，随机端口启动本地服务、`ONLINE_FAST=80` 加速：建房→加 bot→自动开局→bot 自动买牌上阵→打完整局到排名→token 重连与重复动作幂等）。仓库根下 `node --test online/core.test.js online/combat.test.js` 也必须保持通过。
+
+## 房主与退出生命周期（v113）
+
+- POST `/api/rooms/:code/leave` 使用 `{token}`。大厅立即释放座位并移交房主给在线真人；旧凭证失效。开局后保持座位和战斗数据，退出者不再参与房间保留判定。
+- 大厅意外断线取消就绪，座位保留 90 秒后释放；期间可凭原 token 重连。房主断线立即将管理权限交给在线真人，原房主重连不会抢回权限。大厅开局要求八席就绪且所有真人在线。
+- 大厅无真人座位、对局中所有真人主动退出，或所有存活玩家均为机器人时，立即回收房间。大厅断线座位在保留期内仍计作真人。其他房间不受影响。
+- 房间关闭使用 WS 4000；同座位接管 4001；座位释放/主动退出 4005。客户端停止这些终止连接的自动重连。
+- 普通网络断线的已开局真人不立即移除，服务器继续推进对局，可重连；被淘汰真人可以观战，直到纯机器人房间被清理。

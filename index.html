@@ -805,7 +805,8 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
 <link rel="stylesheet" href="tools/narrative-bar.css?v=2">
 <link rel="stylesheet" href="tools/solo-ui.css?v=3">
 <link rel="stylesheet" href="tools/battle-hud.css?v=1">
-<link rel="stylesheet" href="tools/match-layout.css?v=1">
+<link rel="stylesheet" href="tools/match-layout.css?v=2">
+<link rel="stylesheet" href="tools/preparation-presentation.css?v=1">
 <link rel="stylesheet" href="tools/portrait-ui.css?v=2">
 <script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#0a0d1c':'#f6f8fd'</script>
 </head>
@@ -1120,6 +1121,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
 </div>
 <script src="tools/daily-curses.js?v=4"></script>
 <script src="tools/bond-runtime.js?v=1"></script>
+<script src="tools/preparation-presentation.js?v=1"></script>
 <script src="tools/battle-presentation.js?v=1"></script>
 <script src="tools/battle-audio.js?v=1"></script>
 <script src="tools/narrative-tour.js?v=1" defer></script>
@@ -2998,6 +3000,7 @@ function unitInner(u){
   const w = u.hp!=null ? (u.hp/u.maxhp*100) : 100;
   const m = u.maxmana ? (u.mana/u.maxmana*100) : 0;
   const inBattle = u.side===0||u.side===1;
+  if(!inBattle&&globalThis.ClassicPreparationPresentation)return ClassicPreparationPresentation.inner(u,{name:d.name,items:itemStr(u),icons:synIconsHTML(d,u.side)});
   const mp = inBattle ? (isPassive(u) ? '<span class="sk">被动</span>'
       : `<div class="mpbar"><div class="mpfill" style="width:${m}%"></div></div>`) : '';
   return `<i class="pt" style="background-image:url(assets/units_big/${d.id}.webp)"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d,u.side)}
@@ -3020,7 +3023,7 @@ function unitHTML(u,sel){
   if(u.star===1){ const n=pairCount(u.id); pairCls = n>=2?'pair':(n===1?'solo':''); }
   const tip = `${d.name} · ${u.star?'★'.repeat(u.star)+' ':''}${facLabel(d)}·${jobLabel(d)}\n攻击方式：${d.form==='me'?'近战':'远程'} · ${d.dtype==='phys'?'物理':'法术'}伤害\n普攻特性：${v3AttackText(u)}\n${skillName(d)}（${isPassive(u)?'被动':'主动'}）\n${skillText(u)}`
     + ((u.items&&u.items.length)?`\n装备：${u.items.map(k=>ITEMS[k].n+'（'+ITEMS[k].desc+'）').join('、')}`:'');
-  return `<div class="unit cost${d.cost} ${sideCls} ${stCls} ${pairCls} ${sel?'sel':''} ${u.shield>0?'shielded':''} ${u.frozen>0?'frozen':''}" data-uid="${u.uid}" data-unit-id="${d.id}" data-archetype="${d.sk[1]}" style="--hero-hue:${heroHue(d.id)}" title="${tip}">${unitInner(u)}</div>`;
+  return `<div class="unit ${u.side!==0&&u.side!==1?'prep-unit':''} cost${d.cost} ${sideCls} ${stCls} ${pairCls} ${sel?'sel':''} ${u.shield>0?'shielded':''} ${u.frozen>0?'frozen':''}" data-uid="${u.uid}" data-unit-id="${d.id}" data-archetype="${d.sk[1]}" style="--hero-hue:${heroHue(d.id)}" title="${tip}">${unitInner(u)}</div>`;
 }
 /* 棋盘诅咒只读取开战起始格。返回各格属性，供备战提示与战斗快照共用。 */
 function boardCurseImpacts(board=S.board,dm=dailyMods()){
@@ -7720,7 +7723,7 @@ if(IS_TOUCH && typeof document!=='undefined' && document.body){
     b.onclick=()=>{ closeDrawer(); $(id)?.click(); }; menu.appendChild(b);
   });
   paintTheme();
-  const mdraw=(id,mode)=>{ document.getElementById(id).onclick=()=>{ 
+  const mdraw=(id,mode)=>{ document.getElementById(id).onclick=()=>{
     if(S.phase!=='prep'){ closeDrawer(); return; }   // 战斗/结算中：商店装备等都是备战操作，抽屉只收不开、不挡棋盘
     drawerMode()===mode ? closeDrawer() : openDrawer(mode); }; };
   mdraw('mShopBtn','shop'); mdraw('mBondBtn','bond'); mdraw('mEquipBtn','equip'); mdraw('mSideBtn','side');

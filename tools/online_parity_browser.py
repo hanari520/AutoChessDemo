@@ -28,9 +28,16 @@ with sync_playwright() as pw:
     assert 200 in signature_responses, signature_responses
     page.wait_for_function('document.querySelector("#phaseLabel").textContent.includes("备战")')
     assert page.locator('#boardGrid .battle-cell').count() == 64
+    assert page.locator('#phaseCountdown').is_visible()
+    assert int(page.locator('#countdownValue').inner_text())>0
+    assert page.locator('#countdownValue').evaluate('el=>parseFloat(getComputedStyle(el).fontSize)')>=25
     buy = page.locator('#shopList [data-buy]:not([disabled])').first
     buy.click()
     page.locator('#benchGrid .unit-slot:not(.empty)').first.wait_for()
+    assert page.locator('#benchGrid .prep-unit .pt').count()>0
+    assert page.locator('#benchGrid .prep-unit .st').first.inner_text()=='★'
+    assert page.locator('#benchGrid .prep-unit .syn .sy').count()>=2
+    page.screenshot(path=str(OUT / 'desktop-bench-parity.png'), full_page=True)
     page.locator('#benchGrid .unit-slot:not(.empty)').first.click()
     page.locator('#boardGrid .board-position.empty:not([disabled])').first.click()
     page.locator('#boardGrid .board-position.occupied').first.wait_for()
@@ -48,7 +55,7 @@ with sync_playwright() as pw:
     assert boxes['seats']['y'] < boxes['board']['y'], boxes
     print('Desktop module positions:', boxes)
     page.screenshot(path=str(OUT / 'desktop-prep-detail.png'), full_page=True)
-    page.locator('.game-room-menu summary').click()
+    page.locator('.game-room-menu > summary').click()
     page.locator('#sfxBtn').click()
     assert page.evaluate('localStorage.getItem("vc_sfx")')=='0'
     page.locator('#sfxBtn').click()

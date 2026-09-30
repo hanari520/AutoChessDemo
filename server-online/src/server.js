@@ -1,14 +1,16 @@
 /* Node entry point for the eight-player room service: plain node:http plus
  * the 'ws' library. Designed for a single always-on CloudBase Run container
- * (MinNum=1/MaxNum=1) with all room state in process memory. HTTP/WS
+ * (MinNum=1/MaxNum=1) with an explicitly configured durable room store. HTTP/WS
  * contracts, CORS handling and error bodies mirror the former Cloudflare
  * Worker version so existing browser clients work unchanged. */
 import http from 'node:http';
 import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
 import { WebSocketServer } from 'ws';
-import { RoomManager } from './rooms.js';
+import { RoomManager, SUPPORTED_RULESET } from './rooms.js';
 import { RoomError, assertName, normalizeCode, randomCode } from './protocol.js';
+import { MemoryRoomStore, FileRoomStore } from './room-store.js';
+import { monitorEventLoopDelay } from 'node:perf_hooks';
 
 const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
@@ -24,6 +26,27 @@ const DEFAULT_ALLOWED_ORIGINS = [
 ].join(',');
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const MAX_BODY_BYTES = 2048;
+const MAX_WS_PAYLOAD_BYTES = 4096;
+
+function serviceStats(manager) {
+  const activeGames = [...manager.rooms.values()].filter(entry => entry.room.status === 'playing').length;
+  return { rooms: manager.rooms.size, activeGames, drainComplete: manager.draining && activeGames === 0, draining: manager.draining, storage: manager.store.health?.() ?? {kind:'memory', durable:false, healthy:true}, ...manager.metrics };
+}
+
+async function configuredStore() {
+  if (process.env.ROOM_STORE === 'cloudbase-pg') {
+    const { createPgRoomStore } = await import('./pg-room-store.js');
+    return createPgRoomStore();
+  }
+  if (process.env.ROOM_STORE === 'file') return new FileRoomStore(process.env.ROOM_STORE_DIR);
+  if (process.env.ROOM_STORE === 'cloudbase') {
+    const { createCloudBaseRoomStore } = await import('./cloudbase-store.js');
+    return createCloudBaseRoomStore();
+  }
+  if (process.env.ROOM_STORE && process.env.ROOM_STORE !== 'memory') throw new Error('Unknown ROOM_STORE');
+  if (process.env.NODE_ENV === 'production') throw new Error('ROOM_STORE must be explicitly configured in production');
+  return new MemoryRoomStore();
+}
 
 function allowedOrigin(request) {
   const origin = request.headers.origin;
@@ -92,17 +115,52 @@ async function handleRequest(manager, request, response) {
     origin = allowedOrigin(request);
     const headers = corsHeaders(origin);
     const url = new URL(request.url || '/', 'http://localhost');
+    if (manager.stopping && !['/api/health','/api/ready','/api/admin/metrics','/api/admin/handoff'].includes(url.pathname)) throw new RoomError('maintenance', '服务正在重启，请稍后重连', 503);
     if (request.method === 'OPTIONS') { response.writeHead(204, headers); response.end(); return; }
     if (url.pathname === '/api/health' && request.method === 'GET') {
-      respondJson(response, { ok: true }, 200, headers);
+      respondJson(response, { ok: true, ruleset: SUPPORTED_RULESET, boardCells:64, deployStart:32 }, 200, headers);
+      return;
+    }
+    if (url.pathname === '/api/ready' && request.method === 'GET') {
+      const ready = !manager.stopping && manager.store.health?.().healthy !== false && ![...manager.rooms.values()].some(entry => entry.suspended);
+      respondJson(response, {ok:ready}, ready ? 200 : 503, headers);
+      return;
+    }
+    if (url.pathname === '/api/admin/metrics' && request.method === 'GET') {
+      requireAdmin(request);
+      respondJson(response, serviceStats(manager), 200, headers);
+      return;
+    }
+    if (url.pathname === '/api/admin/drain' && request.method === 'POST') {
+      requireAdmin(request);
+      const body = await readJson(request);
+      manager.draining = body.draining !== false;
+      await Promise.all([...manager.rooms.values()].map(entry => entry.enqueue(() => entry.broadcast(), {persist:false})));
+      respondJson(response, {ok:true, ...serviceStats(manager)}, 200, headers);
+      return;
+    }
+    if (url.pathname === '/api/admin/handoff' && request.method === 'POST') {
+      requireAdmin(request);
+      const stats = serviceStats(manager);
+      if (!stats.drainComplete) throw new RoomError('games_active', '请先开启维护并等待当前对局结束', 409);
+      await manager.handoff();
+      respondJson(response, {ok:true, standby:true}, 200, headers);
       return;
     }
     if (url.pathname === '/api/rooms' && request.method === 'POST') {
+      if (!manager.allowHttp(request.socket.remoteAddress || 'unknown')) throw new RoomError('rate_limited', '建房过于频繁，请稍后重试', 429);
+      if (manager.draining) throw new RoomError('maintenance', '服务正在维护，请稍后建房', 503);
       const { name } = await readJson(request);
       const validName = assertName(name);
       for (let attempt = 0; attempt < 5; attempt++) {
         const code = randomCode();
-        const result = manager.create(code, validName);
+        const job = manager.creationQueue.then(() => {
+          if (manager.draining) throw new RoomError('maintenance', '服务正在维护，请稍后建房', 503);
+          if (manager.rooms.size >= manager.maxRooms) throw new RoomError('capacity', '当前房间已满，请稍后再试', 503);
+          return manager.create(code, validName);
+        });
+        manager.creationQueue = job.catch(() => {});
+        const result = await job;
         if (result) { respondJson(response, result, 201, headers); return; }
       }
       throw new RoomError('room_code_collision', '暂时无法生成房间码，请重试', 503);
@@ -111,21 +169,32 @@ async function handleRequest(manager, request, response) {
     if (join && request.method === 'POST') {
       const code = normalizeCode(join[1]);
       const body = await readJson(request);
-      respondJson(response, requireRoom(manager, code).join(body), 200, headers);
+      if (!manager.allowHttp(request.socket.remoteAddress || 'unknown')) throw new RoomError('rate_limited', '请求过于频繁，请稍后重试', 429);
+      const entry = requireRoom(manager, code);
+      respondJson(response, await entry.enqueue(() => entry.join(body)), 200, headers);
+      return;
+    }
+    const leave = /^\/api\/rooms\/([A-Za-z0-9]+)\/leave$/.exec(url.pathname);
+    if (leave && request.method === 'POST') {
+      const body=await readJson(request);
+      const entry = requireRoom(manager,normalizeCode(leave[1]));
+      respondJson(response,await entry.enqueue(() => entry.leave(body.token)),200,headers);
       return;
     }
     const botAdd = /^\/api\/rooms\/([A-Za-z0-9]+)\/bots$/.exec(url.pathname);
     if (botAdd && request.method === 'POST') {
       const code = normalizeCode(botAdd[1]);
       const body = await readJson(request);
-      respondJson(response, requireRoom(manager, code).addBot(body.token, body.name), 201, headers);
+      const entry = requireRoom(manager, code);
+      respondJson(response, await entry.enqueue(() => entry.addBot(body.token, body.name)), 201, headers);
       return;
     }
     const botRemove = /^\/api\/rooms\/([A-Za-z0-9]+)\/bots\/remove$/.exec(url.pathname);
     if (botRemove && request.method === 'POST') {
       const code = normalizeCode(botRemove[1]);
       const body = await readJson(request);
-      respondJson(response, requireRoom(manager, code).removeBot(body.token, body.seat), 200, headers);
+      const entry = requireRoom(manager, code);
+      respondJson(response, await entry.enqueue(() => entry.removeBot(body.token, body.seat)), 200, headers);
       return;
     }
     const socket = /^\/api\/rooms\/([A-Za-z0-9]+)\/ws$/.exec(url.pathname);
@@ -136,6 +205,13 @@ async function handleRequest(manager, request, response) {
     throw new RoomError('not_found', '接口不存在', 404);
   } catch (error) {
     errorRespond(response, error, corsHeaders(origin));
+  }
+}
+
+function requireAdmin(request) {
+  const configured = process.env.ADMIN_TOKEN;
+  if (!configured || request.headers.authorization !== `Bearer ${configured}`) {
+    throw new RoomError('forbidden', '无权访问维护接口', 403);
   }
 }
 
@@ -154,6 +230,7 @@ function handleUpgrade(manager, wss, request, socket, head) {
     socket.destroy();
   };
   try {
+    if (manager.stopping) throw new RoomError('maintenance', '服务正在重启', 503);
     allowedOrigin(request);
     const url = new URL(request.url || '/', 'http://localhost');
     const match = /^\/api\/rooms\/([A-Za-z0-9]+)\/ws$/.exec(url.pathname);
@@ -168,8 +245,10 @@ function handleUpgrade(manager, wss, request, socket, head) {
   }
 }
 
-export async function startServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0' } = {}) {
-  const manager = new RoomManager();
+export async function startServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', store, maxRooms = Number(process.env.MAX_ROOMS) || 200 } = {}) {
+  const manager = new RoomManager(store || await configuredStore());
+  manager.maxRooms = maxRooms;
+  try { await manager.restore(); } catch (error) { await manager.store.close(); throw error; }
   const server = http.createServer((request, response) => {
     handleRequest(manager, request, response).catch(error => {
       console.error('unhandled request error:', error);
@@ -177,7 +256,9 @@ export async function startServer({ port = Number(process.env.PORT) || 3000, hos
       else response.destroy();
     });
   });
-  const wss = new WebSocketServer({ noServer: true });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD_BYTES });
+  server.requestTimeout = 15_000;
+  server.headersTimeout = 10_000;
   server.on('upgrade', (request, socket, head) => handleUpgrade(manager, wss, request, socket, head));
 
   // 30s ping/pong sweep removes dead peers from connectedSeats().
@@ -193,24 +274,57 @@ export async function startServer({ port = Number(process.env.PORT) || 3000, hos
   }, HEARTBEAT_INTERVAL_MS);
   heartbeat.unref?.();
 
+  const loopDelay = monitorEventLoopDelay({resolution:20});
+  loopDelay.enable();
+  const monitoring = setInterval(() => {
+    manager.metrics.eventLoopDelayP99Ms = Math.round(loopDelay.percentile(99) / 1e6);
+    manager.metrics.memoryRssBytes = process.memoryUsage().rss;
+    console.log(JSON.stringify({event:'online_service_metrics', ...serviceStats(manager)}));
+    loopDelay.reset();
+  }, 60_000);
+  monitoring.unref?.();
+
+  manager.handoff = async () => {
+    if (manager.stopping) return;
+    // Stand by without exiting: a rolling deployment needs the old process to
+    // release ownership before the new version can pass startup restoration.
+    manager.stopping = true;
+    for (const entry of manager.rooms.values()) { if (entry.timer) clearTimeout(entry.timer); entry.timer = null; }
+    await manager.creationQueue;
+    await Promise.all([...manager.rooms.values()].map(entry => entry.queue));
+    for (const entry of manager.rooms.values()) entry.destroy(undefined,1012,'deployment handoff');
+    await manager.store.close();
+  };
+
   server.listen(port, host);
-  await once(server, 'listening');
+  try { await once(server, 'listening'); } catch (error) {
+    clearInterval(heartbeat); clearInterval(monitoring); loopDelay.disable();
+    for (const entry of manager.rooms.values()) entry.destroy();
+    await manager.store.close();
+    throw error;
+  }
 
   return {
     manager,
     server,
     wss,
     port: server.address().port,
-    close() {
+    async close() {
+      manager.stopping = true;
+      manager.draining = true;
       clearInterval(heartbeat);
-      for (const entry of manager.rooms.values()) entry.destroy();
-      manager.rooms.clear();
+      clearInterval(monitoring); loopDelay.disable();
+      for (const entry of manager.rooms.values()) { if (entry.timer) clearTimeout(entry.timer); entry.timer = null; }
+      await manager.creationQueue;
+      await Promise.all([...manager.rooms.values()].map(entry => entry.queue));
+      for (const entry of manager.rooms.values()) entry.destroy(undefined, 1012, 'service restart');
       wss.clients.forEach(client => client.terminate());
-      return new Promise((resolve, reject) => {
+      await new Promise((resolve, reject) => {
         wss.close(() => { /* clients were terminated above */ });
         server.close(error => (error ? reject(error) : resolve()));
         server.closeAllConnections?.();
       });
+      await manager.store.close();
     },
   };
 }
@@ -218,6 +332,29 @@ export async function startServer({ port = Number(process.env.PORT) || 3000, hos
 const invokedAsMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (invokedAsMain) {
   startServer()
-    .then(({ port }) => console.log(`autochess-online listening on port ${port}`))
-    .catch(error => { console.error(error); process.exit(1); });
+    .then(instance => {
+      console.log(`autochess-online listening on port ${instance.port}`);
+      let shuttingDown = false;
+      const shutdown = exitCode => {
+        if (shuttingDown) return;
+        shuttingDown = true;
+        clearInterval(storageWatch);
+        // SDK/network failures must not leave a stale authoritative process
+        // alive forever. The platform restarts it; the storage lease fences it.
+        const deadline = setTimeout(() => process.exit(1), 30_000);
+        deadline.unref?.();
+        instance.close().then(() => process.exit(exitCode), () => process.exit(1));
+      };
+      const storageWatch = setInterval(() => {
+        if (!instance.manager.stopping && (instance.manager.store.health?.().healthy === false || [...instance.manager.rooms.values()].some(entry => entry.suspended))) {
+          console.error(JSON.stringify({event:'room_storage_unavailable', action:'restart'}));
+          shutdown(1);
+        }
+      }, 5000);
+      storageWatch.unref?.();
+      for (const signal of ['SIGTERM','SIGINT']) process.once(signal, () => {
+        shutdown(0);
+      });
+    })
+    .catch(() => { console.error('Online service startup failed; check storage configuration and ownership'); process.exit(1); });
 }

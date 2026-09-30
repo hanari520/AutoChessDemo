@@ -5,6 +5,12 @@
   min-height:0; padding:10px 12px 8px; isolation:isolate;
 }
 .online-playing .topbar { height:58px; position:relative; z-index:50; }
+.online-playing .topbar{position:sticky;top:0;flex-shrink:0}
+.online-playing #roomAlert{position:fixed;top:62px;left:12px;right:12px;z-index:60;padding:8px 12px;font-size:12px;box-shadow:0 4px 18px #0003}
+.online-playing .round-head{display:flex;align-items:center;gap:12px}
+.online-playing .phase-countdown{display:flex;align-items:baseline;gap:4px;min-width:70px;padding:3px 9px;border:1px solid var(--theme-border);border-radius:10px;background:var(--theme-surface);color:var(--theme-ink)}
+.online-playing .phase-countdown strong{font-size:32px;line-height:1.1;font-variant-numeric:tabular-nums}.phase-countdown span{font-size:12px}
+.online-playing .phase-countdown.urgent{color:#f080a1;border-color:#f080a1}
 .topbar .round-panel { display:none; }
 .online-playing .topbar .round-panel { display:flex; flex:1; min-width:0; padding:0; border:0; background:none; box-shadow:none; gap:12px; }
 .online-playing .topbar .brand { display:none; }
@@ -36,6 +42,15 @@
 .online-playing .bench-panel .section-heading { margin-bottom:4px; }
 .online-playing .bench-grid { grid-template-columns:repeat(8,minmax(0,1fr)); width:min(440px,100%); min-height:45px; }
 .online-playing .bench-grid .unit-slot { min-height:45px; }
+.online-playing .bench-panel{width:min(100%,var(--match-board-size,560px));padding:8px 9px 10px;overflow:visible}
+.online-playing .bench-grid{width:100%;gap:4px;overflow:visible;align-items:stretch}
+.online-playing .bench-grid .unit-slot{position:relative;aspect-ratio:1;min-height:0;height:auto;overflow:visible;padding:0;border:1px dashed var(--theme-border);background:var(--theme-soft)}
+.online-playing .bench-grid .unit-slot:not(.empty){background:transparent;border-color:transparent}
+.online-playing .bench-panel .section-heading{display:flex;opacity:.7;font-size:11px;height:12px;margin-bottom:6px}
+.online-playing .board-grid,.online-playing .battle-arena{width:var(--match-board-size,min(100%,calc(100dvh - 440px),832px))}
+.online-playing .bond-row{display:block;padding:9px;border:1px solid var(--theme-border);border-left:3px solid var(--theme-border);border-radius:10px;background:var(--theme-surface)}
+.online-playing .bond-row.active{border-left-color:#57cdbb}.bond-top{display:flex;align-items:center;gap:6px;font-size:12px}.bond-top>b{margin-left:auto}.bond-pips{display:flex;gap:2px}.bond-pips i{font-style:normal;font-size:8px;color:var(--theme-muted)}.bond-pips i.on{color:#57cdbb}.bond-row p{font-size:11px;line-height:1.5;color:var(--theme-muted);margin:5px 0 0}
+.bond-top .syn-atlas{display:inline-block;width:18px;height:18px;background:url('../assets/syn/synergy-atlas.png');background-size:500% 500%;background-position:var(--syn-x) var(--syn-y)}
 .online-playing .game-side>.panel { flex:none; }
 .online-playing .game-side .inventory-panel { min-height:190px; }
 .online-playing .war-report-panel { min-height:105px; }
@@ -116,5 +131,9 @@
   .online-playing .topbar .round-panel .stat { font-size:.6rem; padding:2px 4px; }
   .online-playing .topbar .round-panel h2 { font-size:.78rem; }
   .online-playing .topbar .round-panel .eyebrow { font-size:.58rem; }
+  .online-playing .round-head{gap:5px}.online-playing .phase-countdown{min-width:48px;padding:3px 5px}.online-playing .phase-countdown strong{font-size:25px}
   .online-playing .topbar .connection { display:none; }
 }
+
+@media(min-width:881px){.online-playing .topbar .brand{display:flex;flex:none;width:150px;font-size:13px}.online-playing .topbar .brand-sub{font-size:9px}.online-playing .topbar .back{display:none}}
+.gear-section{padding:11px;border:1px solid var(--theme-border);border-radius:12px;background:var(--theme-surface);margin-top:8px}.gear-section>small{display:block;font-size:8px;font-weight:700;letter-spacing:1px;color:var(--theme-muted)}.gear-section>strong{display:block;font-size:12px;margin:4px 0 8px}.gear-section p{font-size:11px;line-height:1.5;color:var(--theme-muted);margin:0 0 8px}.gear-workshop{background:linear-gradient(120deg,var(--theme-surface),var(--theme-soft))}.loadout-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.loadout-slots>span{font-size:10px;min-height:35px;padding:6px 2px;text-align:center;border:1px dashed var(--theme-border);border-radius:7px}.gear-backpack .inventory-item{width:100%;font-size:11px}

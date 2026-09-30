@@ -12,6 +12,8 @@ CHANGELOG.md
 specs
 tasks
 server-online
+cloudbase
+.codex
 *.xlsx
 online/core.test.js
 online/combat.test.js
@@ -45,6 +47,8 @@ tools/**
 !tools/battle-presentation.css
 !tools/battle-presentation.js
 !tools/match-layout.css
+!tools/preparation-presentation.css
+!tools/preparation-presentation.js
 !tools/portrait-ui.css
 !tools/portrait-ui.js
 td.html

@@ -1,6 +1,8 @@
+import '../tools/preparation-presentation.js?v=1';
+import { postJson, reconnectDelay, reconcileAction } from './connection.js';
 import { MAX_LEVEL, xpNeeded, interestGain } from './economy.js';
 import { createBattleEffects } from './battle-effects.js?v=1';
-import { mountClassicMatchLayout, closeMatchPanel } from './layout.js?v=1';
+import { mountClassicMatchLayout, closeMatchPanel } from './layout.js?v=2';
 import { bondSummary, previewUnit } from './combat.js';
 import { SKILL_NAMES } from './skill-names.js';
 import { EQUIPMENT, recipe, SHOP_ODDS } from './equipment.js';
@@ -34,6 +36,8 @@ const state = {
   connected: false, busy: false, selected: null, seq: 1, pendingAction: null,
   deadline: null, phaseDurationMs: null, clockSkew: 0, spectateSeat: null,
   reconnectTimer: null, reconnectAttempts: 0, stopped: true,
+  connectionTimer: null, heartbeatTimer: null, heartbeatDeadline: null,
+  actionTimer: null, synced: false, lastMessageAt: 0, awaitingSync: false,
   battlePlayback: null, battleFrame: null, inspected: null,
 };
 mountDragControls({getSeat:()=>state.view?.me,canAct,sendAction,isBoardReadOnly:()=>state.spectateSeat!=null&&state.spectateSeat!==state.seat});
@@ -137,20 +141,7 @@ function showEntry() {
 }
 
 async function request(path, data) {
-  let response;
-  try {
-    response = await fetch(apiUrl(path), {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(data),
-    });
-  } catch {
-    throw new Error('无法连接联机服务。请检查服务地址、网络及服务器是否启动。');
-  }
-  let result;
-  try { result = await response.json(); }
-  catch { throw new Error(`联机服务返回了无法读取的响应（HTTP ${response.status}）。`); }
-  if (!response.ok) throw new Error(result.message || result.error?.message || `请求失败（HTTP ${response.status}）。`);
-  return result;
+  return postJson(apiUrl(path), data);
 }
 
 async function enterRoom(mode) {
@@ -234,63 +225,189 @@ async function removeBot(seat) {
 function closeSocket() {
   state.stopped = true;
   clearTimeout(state.reconnectTimer);
+  clearConnectionTimers();
   state.connected = false;
+  state.synced = false;
   state.pendingAction = null;
   const socket = state.socket;
   state.socket = null;
   if (socket) socket.close();
 }
 
+function clearConnectionTimers() {
+  clearTimeout(state.connectionTimer);
+  clearInterval(state.heartbeatTimer);
+  clearTimeout(state.heartbeatDeadline);
+  state.heartbeatDeadline = null;
+  clearTimeout(state.actionTimer);
+}
+
+function retryConnection() {
+  if (state.stopped || !state.session?.token || !state.code) return;
+  state.connected = false;
+  state.synced = false;
+  state.awaitingSync = true;
+  setConnection('offline', '连接中断');
+  renderControls();
+  const socket = state.socket;
+  state.socket = null;
+  clearConnectionTimers();
+  if (socket && socket.readyState !== WebSocket.CLOSED) socket.close();
+  scheduleReconnect();
+}
+
+function resumeTransport() {
+  if (state.stopped || !state.session?.token || !state.code || navigator.onLine === false) return;
+  if (!state.connected || Date.now() - state.lastMessageAt > 25_000) {
+    retryConnection();
+    clearTimeout(state.reconnectTimer);
+    connectSocket();
+  }
+  else requestSync();
+}
+
+function scheduleReconnect() {
+  clearTimeout(state.reconnectTimer);
+  const wait = reconnectDelay(state.reconnectAttempts++);
+  state.reconnectTimer = setTimeout(connectSocket, wait);
+}
+
+function requestSync() {
+  if (!state.socket || state.socket.readyState !== WebSocket.OPEN || !state.connected) { retryConnection(); return; }
+  state.synced = false;
+  state.awaitingSync = true;
+  setConnection('connecting', '正在同步');
+  renderControls();
+  try { state.socket.send(JSON.stringify({type:'sync'})); }
+  catch { retryConnection(); return; }
+  clearTimeout(state.connectionTimer);
+  state.connectionTimer = setTimeout(retryConnection, 6000);
+}
+
+function armActionTimeout() {
+  clearTimeout(state.actionTimer);
+  if (state.pendingAction) state.actionTimer = setTimeout(() => {
+    if (state.pendingAction) requestSync();
+  }, 8000);
+}
+
+function startHeartbeat(socket) {
+  clearInterval(state.heartbeatTimer);
+  state.heartbeatTimer = setInterval(() => {
+    if (socket !== state.socket || document.hidden || !state.connected || socket.readyState !== WebSocket.OPEN) return;
+    if (state.heartbeatDeadline) return;
+    try { socket.send(JSON.stringify({type:'ping'})); }
+    catch { retryConnection(); return; }
+    state.heartbeatDeadline = setTimeout(() => {
+      state.heartbeatDeadline = null;
+      retryConnection();
+    }, 10000);
+  }, 15000);
+}
+
+function settlePending(snapshot) {
+  const pending = state.pendingAction;
+  if (!pending) return 'none';
+  const outcome = reconcileAction(pending, snapshot);
+  if (outcome === 'retry') {
+    try { state.socket.send(JSON.stringify(pending.envelope)); armActionTimeout(); }
+    catch { retryConnection(); }
+    return outcome;
+  }
+  if (outcome === 'unknown') {
+    setError('无法确认上一项操作的结果，请刷新后检查棋盘。', true);
+  } else if (outcome === 'stale') {
+    toast('上一回合的操作已过期，未重新提交。');
+  } else if (outcome === 'conflict') {
+    toast('操作序号已变化，已按服务器状态同步。');
+  }
+  if (outcome !== 'unknown') state.pendingAction = null;
+  clearTimeout(state.actionTimer);
+  return outcome;
+}
+
 function connectSocket() {
   if (!state.session?.token || !state.code) return;
+  if (navigator.onLine === false) { scheduleReconnect(); return; }
   state.stopped = false;
   clearTimeout(state.reconnectTimer);
+  clearConnectionTimers();
+  state.connected = false;
+  state.synced = false;
+  state.awaitingSync = true;
   const socket = new WebSocket(wsUrl(state.code));
+  let transientAuthTimeout = false;
   state.socket = socket;
   setConnection('connecting', state.reconnectAttempts ? '正在重连' : '连接中');
+  state.connectionTimer = setTimeout(() => { if (socket === state.socket) retryConnection(); }, 10000);
   socket.addEventListener('open', () => {
     if (socket !== state.socket) return;
-    socket.send(JSON.stringify({type:'auth', token: state.session.token}));
+    try { socket.send(JSON.stringify({type:'auth', token: state.session.token})); }
+    catch { retryConnection(); }
   });
   socket.addEventListener('message', event => {
     if (socket !== state.socket) return;
     let message;
     try { message = JSON.parse(event.data); }
     catch { return; }
+    state.lastMessageAt = Date.now();
     if (message.type === 'state') {
+      clearTimeout(state.connectionTimer);
       state.connected = true;
+      state.synced = true;
       state.reconnectAttempts = 0;
+      const pendingOutcome = state.awaitingSync ? settlePending(message) : 'none';
+      if (!state.awaitingSync && state.pendingAction && reconcileAction(state.pendingAction, message) === 'confirmed') {
+        state.pendingAction = null;
+        clearTimeout(state.actionTimer);
+      }
+      state.awaitingSync = false;
       state.code = message.code || state.code;
       state.seat = message.seat ?? state.seat;
       state.lobby = message.lobby || state.lobby;
       state.view = message.view ?? null;
       state.phaseDurationMs = message.phaseDurationMs;
       state.deadline = message.deadline ?? null;
+      state.maintenance = !!message.maintenance;
       if (Number.isFinite(message.serverTime)) state.clockSkew = Date.now() - message.serverTime;
       if (Number.isInteger(message.nextSeq) && message.nextSeq > 0) state.seq = message.nextSeq;
       setConnection('online', '已连接');
-      setError('', true);
+      if (pendingOutcome !== 'unknown') setError(compatibleBoard()?'':'线上服务器尚未同步新版棋盘规则，请更新服务端后新建房间。', true);
+      startHeartbeat(socket);
       render();
     } else if (message.type === 'ack') {
-      if(state.pendingAction?.id===message.id){const key={buy:'buy',sell:'sell',reroll:'roll',buyXp:'lvlup',equip:'equip',autoEquip:'equip',unequip:'equip',combine:'equip',combineWorn:'equip',autoDeploy:'deploy',tidy:'tidy'}[state.pendingAction.type];if(key)audio.sfx(key);}
-      if (state.pendingAction?.id === message.id) state.pendingAction = null;
+      if(state.pendingAction?.envelope.id===message.id){const key={buy:'buy',sell:'sell',reroll:'roll',buyXp:'lvlup',equip:'equip',autoEquip:'equip',unequip:'equip',combine:'equip',combineWorn:'equip',autoDeploy:'deploy',tidy:'tidy'}[state.pendingAction.type];if(key)audio.sfx(key);}
+      if (state.pendingAction?.envelope.id === message.id) { state.pendingAction = null; clearTimeout(state.actionTimer); }
       if (Number.isInteger(message.seq)) state.seq = Math.max(state.seq, message.seq + 1);
+      renderControls();
+    } else if (message.type === 'pong') {
+      clearTimeout(state.heartbeatDeadline);
+      state.heartbeatDeadline = null;
     } else if (message.type === 'error') {
-      if (state.pendingAction?.id === message.id) state.pendingAction = null;
+      if (!state.connected && message.code === 'auth_timeout') transientAuthTimeout = true;
+      if (state.pendingAction?.envelope.id === message.id) { state.pendingAction = null; clearTimeout(state.actionTimer); }
       const detail = message.message || message.code || '操作未完成。';
       if (state.connected) { setError(detail, true); toast(detail); }
       else { setError(`身份验证失败：${detail}`, true); setConnection('offline', '验证失败'); }
     }
   });
-  socket.addEventListener('close', () => {
+  socket.addEventListener('close', event => {
     if (socket !== state.socket || state.stopped) return;
+    clearConnectionTimers();
     state.connected = false;
-    state.pendingAction = null;
+    state.synced = false;
+    state.awaitingSync = true;
     setConnection('offline', '连接中断');
+    if ([4000,4001,4002,4003,4005].includes(event.code)
+        && !(event.code === 4003 && (transientAuthTimeout || event.reason === 'authentication timeout'))) {
+      state.stopped=true;
+      $('roomHint').textContent=event.code===4001?'此座位已在另一窗口连接，本窗口停止重连。':'房间或座位已失效，请返回入口重新建房或加入。';
+      renderControls();
+      return;
+    }
     $('roomHint').textContent = '连接中断，正在自动重连…';
     renderControls();
-    const wait = Math.min(15000, 800 * 2 ** Math.min(state.reconnectAttempts++, 5));
-    state.reconnectTimer = setTimeout(connectSocket, wait);
+    scheduleReconnect();
   });
   socket.addEventListener('error', () => {
     if (socket === state.socket) setConnection('offline', '网络异常');
@@ -298,25 +415,29 @@ function connectSocket() {
 }
 
 function send(message) {
-  if (!state.connected || state.socket?.readyState !== WebSocket.OPEN) {
+  if (!state.connected || !state.synced || state.socket?.readyState !== WebSocket.OPEN) {
     toast('连接尚未恢复，请稍后重试。');
     return false;
   }
-  state.socket.send(JSON.stringify(message));
-  return true;
+  try { state.socket.send(JSON.stringify(message)); return true; }
+  catch { retryConnection(); return false; }
 }
 
 function sendAction(action) {
-  if (!canAct()) return;
   if (state.pendingAction) { toast('上一项操作尚未确认，请稍候。'); return; }
+  if (!canAct()) return;
   const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-  state.pendingAction = {id, seq:state.seq,type:action.type};
-  if (!send({type:'action', id, seq:state.seq, action})) state.pendingAction = null;
+  const envelope = {type:'action', id, seq:state.seq, round:state.view.round, action};
+  state.pendingAction = {envelope, round:state.view.round, type:action.type};
+  if (!send(envelope)) state.pendingAction = null;
+  else { armActionTimeout(); renderControls(); }
 }
+
+function compatibleBoard(){return !state.view||state.view.me?.board?.length===64;}
 
 function canAct() {
   const mine = state.view?.players?.find(p => p.seat === state.seat);
-  return state.connected && state.lobby?.status === 'playing' && state.view?.phase === 'prep' && !mine?.ready && !isSpectator();
+  return compatibleBoard() && state.connected && state.synced && !state.pendingAction && state.lobby?.status === 'playing' && state.view?.phase === 'prep' && !mine?.ready && !isSpectator();
 }
 
 function isSpectator() {
@@ -341,6 +462,7 @@ function render() {
     : lobby?.status === 'finished' ? '本局已结束 · 可查看最终战况'
     : gameVisible ? `第 ${state.view?.round ?? '—'} 回合 · ${phaseName(state.view?.phase)}`
     : '等待八位玩家入座并就绪';
+  if (state.maintenance) $('roomHint').textContent += ' · 服务维护中，当前对局可继续';
   renderLobby();
   if (gameVisible) renderGame();
   renderControls();
@@ -349,18 +471,18 @@ function render() {
 function renderLobby() {
   const lobby = state.lobby;
   const players = lobby?.players || [];
-  const canManageBots = state.seat === 0 && lobby?.status === 'waiting';
+  const canManageBots = state.seat === lobby?.hostSeat && lobby?.status === 'waiting';
   $('occupancy').textContent = `${players.length} / ${lobby?.capacity || 8}`;
   $('lobbySeats').innerHTML = Array.from({length: lobby?.capacity || 8}, (_, seat) => {
     const player = players.find(p => p.seat === seat);
-    const status = !player ? '等待入座' : player.bot ? (player.ready ? '机器人 · 已就绪' : '机器人') : !player.connected ? '暂时离线' : player.ready ? '已就绪' : '准备中';
+    const status = (!player ? '等待入座' : player.bot ? (player.ready ? '机器人 · 已就绪' : '机器人') : !player.connected ? '暂时离线 · 90 秒内可重连' : player.ready ? '已就绪' : '准备中')+(player && seat===lobby.hostSeat?' · 房主':'');
     const kick = player?.bot && canManageBots ? `<button type="button" class="seat-kick" data-kickbot="${player.seat}" aria-label="移除机器人 ${escapeHtml(player.name)}">✕</button>` : '';
     return `<li class="seat ${seat === state.seat ? 'mine' : ''}"><span class="seat-number">${seat + 1}</span><div class="seat-info"><div class="seat-name">${player?.bot ? '<span class="bot-badge" title="机器人替补">🤖</span>' : ''}${player ? escapeHtml(player.name) : '空席位'}${seat === state.seat ? ' · 你' : ''}</div><div class="seat-status ${player?.ready ? 'ready' : ''}">${status}</div></div>${kick}</li>`;
   }).join('');
   const mine = players.find(p => p.seat === state.seat);
   $('lobbyReadyBtn').textContent = mine?.ready ? '取消就绪' : '我已准备';
   $('lobbyNotice').textContent = players.length < 8 ? `还差 ${8 - players.length} 人入座（可用机器人补位）` : '等待所有玩家就绪';
-  $('addBotBtn').hidden = !(state.connected && canManageBots && players.length < (lobby?.capacity || 8));
+  $('addBotBtn').hidden = !(state.connected && state.synced && canManageBots && players.length < (lobby?.capacity || 8));
   $('addBotBtn').textContent = players.length <= 1 ? '添加机器人替补（可连点补满）' : '再添一名机器人';
 }
 
@@ -372,6 +494,8 @@ function updateCountdown() {
   const view = state.view;
   if (!view) return;
   const seconds = state.deadline ? Math.max(0, Math.ceil((state.deadline + state.clockSkew - Date.now()) / 1000)) : null;
+  $('countdownValue').textContent = seconds===null||view.phase==='over'?'—':String(seconds);
+  $('phaseCountdown').classList.toggle('urgent',seconds!==null&&seconds<=10&&view.phase==='prep');
   $('phaseLabel').textContent = `${isSpectator() ? '观战 · ' : ''}${phaseName(view.phase)}${seconds === null ? '' : ` · ${seconds} 秒`}`;
 }
 
@@ -517,7 +641,7 @@ function paintBattle(playback) {
     const ranked=playback.units.filter(u=>(u[mode]||0)>0).sort((a,b)=>(b[mode]||0)-(a[mode]||0)).slice(0,5);
     const total=Math.max(1,...ranked.map(u=>u[mode]||0));
     const html=`<div class="battle-stat-tabs">${Object.entries(labels).map(([key,label])=>`<button type="button" class="button ${mode===key?'on':''}" data-stat="${key}" aria-pressed="${mode===key}">${label}</button>`).join('')}</div>`+
-      (ranked.length?ranked.map(u=>`<div class="battle-damage-row"><span title="${u.side===ownSide?'我方':'对手'}">${u.side===ownSide?'●':'○'} ${escapeHtml(battleUnitName(u))}</span><span class="battle-damage-track">${mode==='damage'?`<i class="physical" style="width:${(u.physicalDamage||0)/total*100}%"></i><i class="magic" style="width:${(u.magicDamage||0)/total*100}%"></i>`:`<i class="${mode}" style="width:${u[mode]/total*100}%"></i>`}</span><b>${Math.round(u[mode]||0)}</b></div>`).join(''):'<p class="empty-message">本回合暂无该类数据</p>');
+      (ranked.length?ranked.map(u=>`<div class="battle-damage-row"><span title="${u.side===ownSide?'我方':'对手'}"><img class="stat-piece" src="${unitImage(u.id)}" alt="${escapeHtml(battleUnitName(u))}"><small>${'★'.repeat(Math.min(3,u.star||1))}</small></span><span class="battle-damage-track">${mode==='damage'?`<i class="physical" style="width:${(u.physicalDamage||0)/total*100}%"></i><i class="magic" style="width:${(u.magicDamage||0)/total*100}%"></i>`:`<i class="${mode}" style="width:${u[mode]/total*100}%"></i>`}</span><b>${Math.round(u[mode]||0)}</b></div>`).join(''):'<p class="empty-message">本回合暂无该类数据</p>');
     if(damagePanel.innerHTML!==html)damagePanel.innerHTML=html;
   }
   if (state.inspected?.battle) renderInspect();
@@ -653,13 +777,20 @@ function inspectUnit(unit, battle = false) {
   renderInspect();
 }
 
+function preparationPiece(unit,selected){
+  const owned=[...(state.view?.me?.board||[]),...(state.view?.me?.bench||[])].filter(Boolean);
+  const pair=unit.star===1&&owned.filter(u=>u.id===unit.id&&u.star===1).length>=2;
+  const traits=[unit.fac,unit.fac2,unit.job,unit.job2].filter(Boolean);
+  const items=(unit.items||[]).map(id=>EQUIPMENT[id]?.e||'').join('');
+  const inner=ClassicPreparationPresentation.inner(unit,{traits,items});
+  return `<span class="unit prep-unit cost${unit.cost||1} ${selected?'sel':''} ${pair?'pair':''}" data-uid="${unit.uid}">${inner}</span>`;
+}
+
 function renderUnitSlot(unit, zone, slot) {
   const selected = state.selected?.uid === unit?.uid;
   const canMove = canAct() && !!state.selected && !unit;
   if (!unit) return `<button type="button" class="unit-slot empty ${canMove ? 'can-move' : ''}" data-zone="${zone}" data-slot="${slot}" ${canAct() ? '' : 'disabled'} aria-label="${zone === 'board' ? '棋盘' : '备战席'}空位 ${slot + 1}">${canMove ? '移至此处' : '空位'}</button>`;
-  const art = unitImage(unit.id);
-  const items = (unit.items || []).map(id => itemNames[id] || id).join('、');
-  return `<button type="button" draggable="${canAct()}" class="unit-slot ${selected ? 'selected' : ''}" data-zone="${zone}" data-slot="${slot}" aria-label="查看 ${escapeHtml(unitTitle(unit))}${items ? `，装备 ${escapeHtml(items)}` : ''}${selected ? '，已选中' : ''}"><span class="unit-art" ${art ? `style="background-image:url('${art}')"` : ''}></span><span class="unit-meta"><span class="unit-name">${escapeHtml(unit.name || unit.id)}</span><small>★${unit.star || 1} · ${escapeHtml(unit.fac || '')} ${escapeHtml(unit.job || '')}${items ? ` · ${escapeHtml(items)}` : ''}</small></span></button>`;
+  return `<button type="button" draggable="${canAct()}" class="unit-slot ${selected?'selected':''}" data-zone="${zone}" data-slot="${slot}" aria-label="查看 ${escapeHtml(unitTitle(unit))}">${preparationPiece(unit,selected)}</button>`;
 }
 
 // The server stores all 64 stage cells; only the lower 32 are deployable.
@@ -672,9 +803,8 @@ function renderBoard(board,readOnly=false) {
     const unit = board?.[cell];
     const selected = state.selected?.uid === unit?.uid;
     const canMove = !readOnly && canAct() && !!state.selected && !unit;
-    const art = unit ? unitImage(unit.id) : '';
     const label = unit ? `${unitTitle(unit)}，第 ${Math.floor(cell / 8) - 3} 排第 ${cell % 8 + 1} 列${selected ? '，已选中' : ''}` : `第 ${Math.floor(cell / 8) - 3} 排第 ${cell % 8 + 1} 列${canMove ? '，可移入' : '，空位'}`;
-    return `<div class="battle-cell ${side} deploy-cell${rangeClass(cell)}"><button type="button" draggable="${!!unit && canAct() && !readOnly}" class="board-position ${unit ? 'occupied' : 'empty'} ${selected ? 'selected' : ''} ${canMove ? 'can-move' : ''}" data-zone="board" data-slot="${cell}" ${unit || (canAct() && !readOnly) ? '' : 'disabled'} aria-label="${escapeHtml(label)}">${unit ? `<span class="piece-art" style="background-image:url('${art}')"></span><span class="piece-star">${'★'.repeat(Math.min(3,unit.star || 1))}</span><span class="piece-name">${escapeHtml(unit.name || unit.id)}</span>` : ''}</button></div>`;
+    return `<div class="battle-cell ${side} deploy-cell${rangeClass(cell)}"><button type="button" draggable="${!!unit && canAct() && !readOnly}" class="board-position ${unit ? 'occupied' : 'empty'} ${selected ? 'selected' : ''} ${canMove ? 'can-move' : ''}" data-zone="board" data-slot="${cell}" ${unit || (canAct() && !readOnly) ? '' : 'disabled'} aria-label="${escapeHtml(label)}">${unit ? preparationPiece(unit,selected) : ''}</button></div>`;
   }).join('');
 }
 
@@ -721,7 +851,11 @@ function renderGame() {
   $('boardGrid').innerHTML = renderBoard(boardOwner.board || Array(64).fill(null),!!watched&&watched.seat!==state.seat);
   $('benchGrid').innerHTML = (me.bench || Array(8).fill(null)).map((unit,slot) => renderUnitSlot(unit,'bench',slot)).join('');
   const bonds = bondSummary(boardOwner.board);
-  $('bondList').innerHTML = bonds.length ? bonds.map(bond => `<div title="${escapeHtml((globalThis.ClassicBondRules.descriptions[bond.name]||[]).join('；'))}" class="bond-row ${bond.active ? 'active' : ''}"><span>${escapeHtml(bond.name)} <b>${bond.count}</b></span><small>${bond.tiers.map(n => `<em class="${bond.count >= n ? 'on' : ''}">${n}</em>`).join('')}</small></div>`).join('') : '<p class="empty-message">上阵棋子后显示羁绊档位。</p>';
+  $('bondList').innerHTML = bonds.length ? bonds.map(bond=>{
+    const tier=bond.tiers.filter(n=>bond.count>=n).length,next=bond.tiers.find(n=>n>bond.count)||bond.tiers.at(-1);
+    const descriptions=globalThis.ClassicBondRules.descriptions[bond.name]||[];
+    return `<div class="bond-row ${bond.active?'active':''}"><div class="bond-top">${ClassicPreparationPresentation.icon(bond.name)}<strong>${escapeHtml(bond.name)}</strong><span class="bond-pips">${bond.tiers.map((n,i)=>`<i class="${bond.count>=n?'on':''}">●</i>`).join('')}</span><b>${bond.count}/${next}</b></div><p>${escapeHtml(tier?`T${tier} ${descriptions[Math.min(tier-1,descriptions.length-1)]||''}`:`未激活 · 还需 ${Math.max(0,next-bond.count)} 名不同棋子`)}</p></div>`;
+  }).join('') : '<p class="empty-message">上阵棋子后显示羁绊档位。</p>';
   $('inventoryList').innerHTML = (me.items || []).length
     ? me.items.map((id,index) => `<button type="button" class="button inventory-item" draggable="${canAct()}" data-equip="${index}" ${canAct() ? '' : 'disabled'}>${escapeHtml(itemNames[id] || id)}<small>${escapeHtml(itemEffects[id] || '复合装备')} · ${state.selected ? '装备给所选棋子' : '先选择棋子'}</small></button>`).join('')
     : '<p class="empty-message">暂无道具。后续回合会获得装备。</p>';
@@ -731,6 +865,8 @@ function renderGame() {
   }
   $('equipmentRecipes').innerHTML=pairs.join('') || '<p class="empty-message">凑齐两件基础装备即可合成。</p>';
   const selected=[...(me.board||[]),...(me.bench||[])].find(unit=>unit?.uid===state.selected?.uid);
+  const inspectedUnit=[...(me.board||[]),...(me.bench||[])].find(unit=>String(unit?.uid)===state.inspected?.uid)||selected;
+  $('unitLoadout').innerHTML=inspectedUnit?`<p>${escapeHtml(inspectedUnit.name||inspectedUnit.id)} · ${(inspectedUnit.items||[]).length}/3 格</p><div class="loadout-slots">${Array.from({length:3},(_,i)=>{const id=inspectedUnit.items?.[i],item=EQUIPMENT[id];return `<span title="${escapeHtml(item?.desc||'空装备位')}">${item?`${escapeHtml(item.e)} ${escapeHtml(item.n)}`:'空位'}</span>`;}).join('')}</div>`:'<p>点击棋子查看穿戴情况，也可把背包装备拖到棋子上。</p>';
   $('combineWornBtn').disabled=!canAct()||!selected||!recipe(selected.items[0],selected.items[1]);
   $('economyInfo').textContent=`利息 +${interestGain(me.gold||0)} · 连胜/败 ${Math.abs(me.streak||0)}`;
   $('shopOdds').textContent=(SHOP_ODDS[Math.min(MAX_LEVEL,me.level||2)]||[]).map((chance,i)=>`${i+1}费 ${chance}%`).join(' · ');
@@ -760,7 +896,7 @@ function renderGame() {
 
 function renderControls() {
   const lobby = state.lobby;
-  $('lobbyReadyBtn').disabled = !state.connected || lobby?.status !== 'waiting';
+  $('lobbyReadyBtn').disabled = !state.connected || !state.synced || lobby?.status !== 'waiting';
   const active = canAct();
   const me = state.view?.me || {};
   $('rerollBtn').disabled = !active || (me.gold ?? 0) < 2;
@@ -777,6 +913,8 @@ function renderControls() {
   $('autoEquipBtn').disabled = !active || !me.items?.length || !(me.board || []).some(unit => unit && unit.items.length < 3);
   $('unequipBtn').disabled = !active || !state.selected || ![...(me.board || []),...(me.bench || [])].some(unit => unit?.uid === state.selected.uid && unit.items.length);
   $('actionHint').textContent = !state.connected ? '连接中断，操作暂不可用。'
+    : !state.synced ? '正在同步服务器状态，请稍候。'
+    : state.pendingAction ? '上一项操作正在确认，请稍候。'
     : isSpectator() ? '你已淘汰。点击八席战况中的玩家可观看其棋盘。'
     : state.view?.phase === 'prep' ? '购买棋子，布置站位，然后锁定阵容。'
     : state.view?.phase === 'over' ? '本局对战结束。'
@@ -824,9 +962,11 @@ for (const id of ['boardGrid','benchGrid']) $(id).addEventListener('contextmenu'
 });
 window.addEventListener('keydown',event=>{
   if(!document.body.classList.contains('online-playing')||!canAct()||event.repeat||event.ctrlKey||event.metaKey||event.altKey||event.isComposing)return;
-  if(event.target.closest('input,textarea,select,[contenteditable],dialog')||document.querySelector('dialog[open]'))return;
+  if(event.target?.closest?.('input,textarea,select,[contenteditable],dialog')||document.querySelector('dialog[open]'))return;
   const buttons={r:'autoDeployBtn',a:'autoDeployBtn',t:'tidyBenchBtn',d:'rerollBtn',f:'buyXpBtn',l:'lockShopBtn',e:'sellBtn',x:'sellBtn',delete:'sellBtn',' ':'gameReadyBtn'};
-  const id=buttons[event.key.toLowerCase()];
+  // Physical keys preserve classic controls when a non-Latin keyboard layout is active.
+  const key=/^Key[A-Z]$/.test(event.code)?event.code.slice(3).toLowerCase():event.key.toLowerCase();
+  const id=buttons[key];
   if(id){event.preventDefault();if(!$(id).disabled)$(id).click();}
 });
 $('playerName').value = localStorage.getItem(NAME_STORAGE) || '';
@@ -893,11 +1033,26 @@ $('copyInviteBtn').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(url.toString()); toast('邀请链接已复制。'); }
   catch { toast(`房间码：${state.code}`); }
 });
-$('leaveBtn').addEventListener('click', () => {
+$('leaveBtn').addEventListener('click', async () => {
+  if ($('leaveBtn').disabled) return;
+  $('leaveBtn').disabled=true;
+  try {
+    if (state.code && state.session?.token) await request(`/api/rooms/${encodeURIComponent(state.code)}/leave`,{token:state.session.token});
+  } catch (error) {
+    if (![401,404].includes(error.status)) {
+      setError(`退出失败：${error.message}`,true);
+      $('leaveBtn').disabled=false;
+      return;
+    }
+  }
   closeSocket();
   state.code = '';
   state.view = state.lobby = null;
   state.selected = null;
+  state.session=null;
+  localStorage.removeItem(STORAGE);
+  updateResume();
+  $('leaveBtn').disabled=false;
   showEntry();
 });
 
@@ -907,5 +1062,8 @@ if (inviteCode && state.session?.code === inviteCode.toUpperCase()) {
   resumeRoom();
 }
 setInterval(updateCountdown, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeTransport(); });
+window.addEventListener('online', resumeTransport);
+window.addEventListener('offline', () => { if (!state.stopped) retryConnection(); });
 
 $('battleDamage').addEventListener('click',event=>{const mode=event.target.closest('[data-stat]')?.dataset.stat;if(['damage','healing','taken'].includes(mode)){state.statMode=mode;if(state.battlePlayback)paintBattle(state.battlePlayback);}});

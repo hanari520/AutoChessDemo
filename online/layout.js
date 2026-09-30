@@ -42,9 +42,19 @@ export function mountClassicMatchLayout() {
   const gear=side.querySelector('.inventory-panel');
   gear.querySelector('.section-heading').insertAdjacentHTML('afterend','<div class="equipment-controls"><button id="autoEquipBtn" class="button" title="先合成，再分配输出与防御装备，每枚最多三件">一键装备</button><button id="unequipBtn" class="button" title="卸下所选棋子的全部装备">卸下装备</button><button id="combineWornBtn" class="button" title="合成所选棋子的前两件基础装备">就地合成</button></div>');
   gear.querySelector('.section-heading>span').textContent='穿戴 · 合成';
+  gear.querySelector('.section-heading>h2').textContent='装备';
+  const workshop=document.createElement('div');workshop.className='gear-section gear-workshop';
+  workshop.innerHTML='<small>FIELD ARMORY · 21 RECIPES</small><strong>装备工坊</strong><p>组件继承到成品，可一键合成并分配装备。</p>';
+  workshop.append(gear.querySelector('.equipment-controls'));gear.insertBefore(workshop,$('inventoryList'));
+  const loadout=document.createElement('div');loadout.className='gear-section gear-loadout';
+  loadout.innerHTML='<small>CURRENT LOADOUT</small><strong>棋子装备栏</strong><div id="unitLoadout"></div>';
+  gear.insertBefore(loadout,$('inventoryList'));
+  const backpack=document.createElement('div');backpack.className='gear-section gear-backpack';
+  backpack.innerHTML='<small>BACKPACK</small><strong>背包装备</strong>';gear.insertBefore(backpack,$('inventoryList'));backpack.append($('inventoryList'));
   gear.insertAdjacentHTML('beforeend','<details class="equipment-workshop"><summary>装备合成</summary><div id="equipmentRecipes"></div></details>');
   shop.querySelector('.section-heading').remove();shop.prepend(player);
   const round=game.querySelector('.round-panel');
+  round.querySelector('.round-head').insertAdjacentHTML('afterbegin','<div class="phase-countdown" id="phaseCountdown" aria-label="阶段倒计时"><strong id="countdownValue">—</strong><span>秒</span></div>');
   document.querySelector('.topbar').insertBefore(round,document.querySelector('.topbar-actions'));
   const tabs=document.createElement('nav');tabs.className='mobile-panel-tabs';tabs.setAttribute('aria-label','对局面板');
   tabs.innerHTML='<button class="button" data-panel="bonds">羁绊</button><button class="button" data-panel="equipment">装备</button><button class="button" data-panel="details">详情</button><button class="button" data-panel="report">战报</button>';
@@ -78,6 +88,13 @@ export function mountClassicMatchLayout() {
   };
   syncMobileLayout();
   addEventListener('resize',syncMobileLayout);
+  const fitStage=()=>{
+    if(innerWidth<=880){center.style.removeProperty('--match-board-size');return;}
+    if(center.clientHeight<100)return;
+    const width=Math.min(832,center.clientWidth-28,(center.clientHeight-130)/1.125);
+    center.style.setProperty('--match-board-size',`${Math.max(160,Math.floor(width))}px`);
+  };
+  new ResizeObserver(fitStage).observe(center);addEventListener('resize',fitStage);
   const help=document.createElement('dialog');help.id='matchHelpDialog';help.className='match-panel-dialog';
   help.innerHTML='<header><strong>操作说明</strong><button class="button" type="button">✕ 收起</button></header><div class="match-help"><p>购买棋子后可拖动到棋盘下半区；棋子之间可交换位置。点击棋子查看属性、技能、装备与战斗统计。</p><p>R / A 一键上阵 · T 整理备战席 · D 刷新 · F 买经验 · L 锁商店 · E / X / Delete 出售所选棋子 · 空格锁定阵容。</p><p>点击装备后给所选棋子穿戴，也可拖到棋子上；右键棋子卸装。两件基础装备可合成，一键装备会优先合成并分配。</p><p>手机可长按拖拽，通过底部面板查看羁绊、详情、装备和战报。点击八人血条可查看其他玩家，点击自己的血条返回。</p><p>音效和浅深色模式与经典模式共用偏好。锁定阵容后等待所有玩家准备或房间倒计时结束。</p></div>';
   document.body.append(help);help.querySelector('button').onclick=()=>help.close();$('matchHelpBtn').onclick=()=>{menu.open=false;help.showModal();};

@@ -154,10 +154,10 @@ async function buyInPrep(ws, tracker, attempts = 6) {
   throw new Error('action never landed inside a prep window');
 }
 
-test('bots fill a room, play a full game, and replay stays idempotent after reconnect', async () => {
+test('bots fill a room, replay is idempotent after reconnect, and bot-only survivors close the room', async () => {
   const health = await fetch(`${base}/api/health`, { headers: { Origin: origin } });
   assert.equal(health.status, 200);
-  assert.deepEqual(await health.json(), { ok: true });
+  assert.deepEqual(await health.json(), { ok: true, ruleset:'deterministic-battle-v6', boardCells:64, deployStart:32 });
 
   const created = await post('/api/rooms', { name: '房主' });
   assert.equal(created.status, 201);
@@ -245,23 +245,33 @@ test('bots fill a room, play a full game, and replay stays idempotent after reco
     const replayed = await nextMessage(reconnected, m => m.type === 'ack' && m.id === message.id && m.duplicate === true);
     assert.equal(replayed.seq, message.seq);
 
-    // The game runs to completion under the accelerated clock.
-    const finished = await reconnectedTracker.next(m => m.lobby?.status === 'finished', 180_000);
-    assert.equal(finished.view.complete, true);
-    assert.equal(finished.view.phase, 'over');
-    const places = finished.view.players.map(player => player.place);
-    assert.equal(places.length, 8);
-    assert.ok(places.every(place => Number.isInteger(place) && place >= 1 && place <= 8),
-      'every seat receives a final ranking');
-    // Simultaneous eliminations share a place (see settleCombat), so places
-    // are a non-strict ranking rather than a permutation of 1..8.
-    assert.equal(places.filter(place => place === 1).length, 1, 'exactly one winner');
-    assert.ok(finished.view.players.slice(2).every(player => Number.isInteger(player.place)),
-      'bot seats are ranked too');
+    // Neither human deploys: stop consuming resources once only bots survive.
+    await nextMessage(reconnected,m=>m.type==='error' && m.code==='room_bots_only',30_000);
+    const final=reconnectedTracker.latest.view;
+    assert.ok(final.players.filter(p=>!p.bot).every(p=>!p.alive && Number.isInteger(p.place)));
+    assert.ok(final.players.some(p=>p.bot && p.alive));
+    assert.equal((await post(`/api/rooms/${code}/join`,{token})).status,404);
   } finally {
     reconnected?.close();
     sockets.forEach(socket => socket.close());
   }
+});
+
+test('HTTP leave transfers host and frees seats; a bot-only lobby is deleted', async () => {
+  const {code,token}=(await post('/api/rooms',{name:'退出房主'})).body;
+  const guest=(await post(`/api/rooms/${code}/join`,{name:'接任玩家'})).body;
+  const a=await connect(code,token),b=await connect(code,guest.token);
+  try {
+    await post(`/api/rooms/${code}/bots`,{token});
+    assert.equal((await post(`/api/rooms/${code}/leave`,{token:'f'.repeat(64)})).status,401);
+    const moved=nextMessage(b,m=>m.type==='state'&&m.seat===0&&m.lobby.hostSeat===0);
+    assert.equal((await post(`/api/rooms/${code}/leave`,{token})).status,200);
+    assert.equal((await moved).lobby.players.length,2);
+    assert.equal((await post(`/api/rooms/${code}/bots`,{token:guest.token})).status,201);
+    assert.equal((await post(`/api/rooms/${code}/join`,{token})).status,401);
+    assert.equal((await post(`/api/rooms/${code}/leave`,{token:guest.token})).status,200);
+    assert.equal((await post(`/api/rooms/${code}/join`,{name:'后来玩家'})).status,404);
+  } finally {a.close();b.close();}
 });
 
 test('host can add and remove bots while the room is waiting', async () => {

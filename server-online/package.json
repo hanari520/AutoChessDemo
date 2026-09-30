@@ -9,6 +9,10 @@
     "predeploy": "node scripts/sync-runtime.mjs"
   },
   "dependencies": {
+    "@cloudbase/node-sdk": "4.1.0",
     "ws": "^8.18.0"
+  },
+  "overrides": {
+    "axios": "0.34.0"
   }
 }

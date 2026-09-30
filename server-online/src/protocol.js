@@ -6,6 +6,7 @@ export const ROOM_CODE_LENGTH = 8;
 export const PHASE_MS = Object.freeze({ prep: 45_000, combat: 8_000, result: 7_000 });
 export const WAITING_TTL_MS = 24 * 60 * 60 * 1000;
 export const FINISHED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const LOBBY_RECONNECT_MS = 90_000;
 
 export function cleanupAt(room) {
   if (room.status === 'waiting') return room.createdAt + WAITING_TTL_MS;
@@ -78,7 +79,7 @@ export async function tokenHash(token) {
 export function lobbyFor(room, connectedSeats = new Set()) {
   return {
     status: room.status,
-    hostSeat: 0,
+    hostSeat: room.hostSeat ?? null,
     capacity: CAPACITY,
     players: room.players.map(player => ({
       seat: player.seat,
@@ -95,7 +96,7 @@ export function parseClientMessage(value) {
   let message;
   try { message = JSON.parse(value); } catch { throw new RoomError('bad_json', '消息不是有效 JSON'); }
   if (!message || typeof message !== 'object' || Array.isArray(message)) throw new RoomError('bad_message', '消息格式错误');
-  if (!['auth', 'ready', 'action', 'ping'].includes(message.type)) throw new RoomError('bad_type', '不支持的消息类型');
+  if (!['auth', 'ready', 'action', 'ping', 'sync'].includes(message.type)) throw new RoomError('bad_type', '不支持的消息类型');
   return message;
 }
 

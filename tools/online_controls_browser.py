@@ -38,7 +38,8 @@ with sync_playwright() as p:
     page.locator('#boardGrid .board-position.occupied').first.click(button='right')
     page.locator('#inventoryList .inventory-item').first.wait_for()
     page.keyboard.press('l');page.wait_for_function('document.querySelector("#lockShopBtn").getAttribute("aria-pressed")==="true"')
-    page.keyboard.press('l');page.wait_for_function('document.querySelector("#lockShopBtn").getAttribute("aria-pressed")==="false"')
+    page.evaluate("window.dispatchEvent(new KeyboardEvent('keydown',{key:'д',code:'KeyL',bubbles:true}))")
+    page.wait_for_function('document.querySelector("#lockShopBtn").getAttribute("aria-pressed")==="false"')
     page.set_viewport_size({'width':390,'height':844})
     page.locator('[data-panel=equipment]').click()
     page.keyboard.press('l')
@@ -48,6 +49,8 @@ with sync_playwright() as p:
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     touch=page.context.new_cdp_session(page)
     touch.send('Emulation.setTouchEmulationEnabled',{'enabled':True,'maxTouchPoints':1})
+    # Scroll the arena, as a player would, to put the bench above the fixed shop.
+    page.evaluate('''()=>{const stage=document.querySelector('.match-stage'),bench=document.querySelector('#benchGrid'),shop=document.querySelector('.shop-panel');stage.scrollTop+=Math.max(0,bench.getBoundingClientRect().bottom-shop.getBoundingClientRect().top+12);}''')
     origin=page.locator('#boardGrid .board-position.occupied').first.bounding_box()
     destination=page.locator('#benchGrid .unit-slot.empty').first.bounding_box()
     x,y=origin['x']+origin['width']/2,origin['y']+origin['height']/2
@@ -55,6 +58,7 @@ with sync_playwright() as p:
     touch.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y}]})
     page.wait_for_timeout(420)
     assert page.locator('.online-drag-ghost').count()==1
+    assert page.evaluate('([x,y])=>!!document.elementFromPoint(x,y)?.closest("#benchGrid")',[tx,ty]),'bench must be visible during touch drag'
     touch.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':tx,'y':ty}]})
     touch.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
     page.locator('#benchGrid .unit-slot:not(.empty)').first.wait_for()

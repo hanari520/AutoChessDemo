@@ -1,0 +1,15 @@
+.unit.prep-unit{position:absolute;inset:2px;display:block;overflow:visible;border:2px solid var(--cost-edge,#8995ad);border-radius:8px;background:linear-gradient(145deg,#e0eaff,#c4d4ef);color:#fff;isolation:isolate}
+.prep-unit.cost1{--cost-edge:#a1abc4}.prep-unit.cost2{--cost-edge:#65cfa5}.prep-unit.cost3{--cost-edge:#78bcff}.prep-unit.cost4{--cost-edge:#c798ff}.prep-unit.cost5{--cost-edge:#f6ce7a}
+.unit.prep-unit .pt{position:absolute;left:50%;bottom:3%;width:148%;height:230%;transform:translateX(-50%);background-position:center bottom;background-size:contain;background-repeat:no-repeat;pointer-events:none;filter:drop-shadow(0 0 1px #fff) drop-shadow(0 2px 3px #0007);animation:prep-idle 2.6s ease-in-out infinite alternate}
+.unit.prep-unit .st{position:absolute;left:3px;bottom:3px;top:auto;z-index:3;font-size:11px;color:#ffe0a0;text-shadow:0 1px 3px #674621}
+.unit.prep-unit .nm{position:absolute;left:2px;right:2px;bottom:3px;padding:1px 0;border-radius:3px;background:#101a307d;font-size:10px;font-weight:bold;line-height:1.2;text-shadow:0 1px 2px #000;z-index:2;opacity:0;pointer-events:none}
+.unit.prep-unit:hover .nm,.unit.prep-unit.sel .nm{opacity:1;bottom:17px}
+.unit.prep-unit .syn{position:absolute;top:-58%;right:2px;display:flex;gap:2px;z-index:3;pointer-events:none}
+.prep-unit .syn-atlas{display:inline-block;background-image:url('../assets/syn/synergy-atlas.png');background-size:500% 500%;background-position:var(--syn-x) var(--syn-y);width:12px;height:12px;filter:drop-shadow(0 1px 1px #0009)}
+.unit.prep-unit .its{position:absolute;top:-30%;right:2px;z-index:3;font-size:12px;letter-spacing:-2px}
+.unit.prep-unit.sel{border-color:#ffe17b;box-shadow:0 0 0 2px #fff9,0 0 16px #f1bf4f99}
+.unit.prep-unit.pair{box-shadow:0 0 0 1px #ffd574,0 0 10px #efc45d66}
+html[data-theme=dark] .unit.prep-unit{background:linear-gradient(145deg,#29375a,#26354b);box-shadow:inset 0 1px 0 #ffffff24}
+html[data-theme=dark] .unit.prep-unit.sel{box-shadow:0 0 0 2px #ffe17b80,0 0 16px #f1bf4f80}
+@keyframes prep-idle{from{transform:translateX(-50%) translateY(0)}to{transform:translateX(-50%) translateY(-3%)}}
+@media(prefers-reduced-motion:reduce){.unit.prep-unit .pt{animation:none}}
