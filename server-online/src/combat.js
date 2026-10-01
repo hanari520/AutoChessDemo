@@ -535,7 +535,7 @@ export function resolveBattle(boardA,boardB,seed,opts={}) {
     if(u.edgePips){const every=u.edgePips>=2?3:4;if(u.attacks%every===0){const edge=Math.round(u.atk*.28);damage(u,t,edge,'pure','item');const near=sortDist(t,foes(u).filter(x=>x!==t&&dist(x,t)<=1))[0];if(near)damage(u,near,edge*.45,'pure','item');}}
     if(u.firstSnare){u.firstSnare=false;t.slow=Math.max(t.slow,1200);t.slowPct=Math.max(t.slowPct||0,.20);emit('slow',{from:u.uid,target:t.uid,source:'item'});}
     if(u.stormStun&&u.attacks%3===0&&t.hp>0)t.stun=Math.max(t.stun,450);
-    if(u.poisonItem&&t.hp>0){t.poison=Math.max(t.poison,(k.bleedDuration||3)*1000);t.poisonDmg=Math.max(t.poisonDmg||0,Math.round(t.maxhp*u.poisonItem));}
+    if(u.poisonItem&&t.hp>0){t.poison=Math.max(t.poison,3000);t.poisonDmg=Math.max(t.poisonDmg||0,Math.round(t.maxhp*u.poisonItem));}   // 物品毒固定 3 秒（对齐经典 index.html:1606；此处无技能配置 k 可引）
     if(u.bondSilence&&random()<u.bondSilence)t.silence=Math.max(t.silence,3000);
     if(t.petrifyChance&&u.melee&&random()<t.petrifyChance)u.stun=Math.max(u.stun,1500);
     if(u.passive==='soulmate'){
