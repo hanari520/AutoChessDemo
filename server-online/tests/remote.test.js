@@ -1,3 +1,4 @@
+process.env.ONLINE_INVITE_CODE = 'test-invitation';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
@@ -15,7 +16,7 @@ test.after(() => handle.close());
 async function post(path, body, overrideOrigin = origin) {
   const response = await fetch(`${base}${path}`, {
     method: 'POST', headers: { 'content-type': 'application/json', Origin: overrideOrigin },
-    body: JSON.stringify(body),
+    body: JSON.stringify({inviteCode:'test-invitation', ...body}),
   });
   return { status: response.status, headers: response.headers, body: await response.json() };
 }

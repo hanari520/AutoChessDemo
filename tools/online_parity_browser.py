@@ -15,9 +15,12 @@ with sync_playwright() as pw:
     page = browser.new_page(viewport={'width': 1440, 'height': 900})
     errors = []
     page.on('pageerror', lambda error: errors.append(str(error)))
-    page.goto('http://127.0.0.1:8081/online.html')
+    page.goto(os.environ.get('ONLINE_TEST_PAGE', 'http://127.0.0.1:8081/online.html'))
     page.locator('.advanced-settings summary').click()
     page.locator('#apiBase').fill(os.environ.get('ONLINE_TEST_API','http://127.0.0.1:3000'))
+    page.locator('#invitationCode').fill(os.environ['ONLINE_TEST_INVITE'])
+    page.locator('#invitationBtn').click()
+    page.locator('#roomEntryFields').wait_for(state='visible')
     page.locator('#playerName').fill('经典UI验收')
     page.locator('#createBtn').click()
     page.locator('#lobbySection').wait_for(state='visible')
@@ -135,7 +138,8 @@ with sync_playwright() as pw:
     page.locator('#fightBtn').click()
 
     # —— 战斗：经典战斗层上板 ——
-    page.wait_for_function('() => !!document.getElementById("unitLayer")', timeout=30000)
+    # Production uses the real preparation clock, unlike accelerated local tests.
+    page.wait_for_function('() => !!document.getElementById("unitLayer")', timeout=90000)
     page.wait_for_function('() => document.querySelectorAll("#unitLayer .unit.battle-unit").length > 0', timeout=20000)
     assert page.locator('#unitLayer .unit.battle-unit.ally').count() >= 1
     assert page.locator('#aliveBar').is_visible(), '战斗存活计数'
@@ -169,5 +173,7 @@ with sync_playwright() as pw:
     assert page.locator('#arenaInfo .pl-row').count() == 8
 
     assert not errors, errors
+    page.locator('#leaveBtn2').click()
+    page.locator('#entrySection').wait_for(state='visible')
     browser.close()
     print('经典 UI 联机验收：全部通过')

@@ -27,6 +27,7 @@ TCB_ENV=hanari-d6gjqwx683f6c455d
 CLOUDBASE_APIKEY=<服务端专用密钥>
 ADMIN_TOKEN=<随机维护密钥>
 MAX_ROOMS=200
+ONLINE_INVITE_CODE=<邀请人设置的邀请码>
 ```
 
 API Key 是环境级服务端权限，需要指定轮换负责人，轮换后重新部署。SDK 固定为 `@cloudbase/node-sdk@4.1.0`，锁文件固定依赖；axios 固定为修复版本 0.34.0，避免旧传递依赖漏洞。镜像使用 `npm ci --omit=dev --ignore-scripts`。

@@ -28,6 +28,7 @@ const IS_TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in win
 const STORAGE = 'star-stage-online-session-v1';
 const API_STORAGE = 'star-stage-online-api-v1';
 const NAME_STORAGE = 'star-stage-online-name-v1';
+const INVITE_STORAGE = 'star-stage-online-invitation-v1';
 const AUTO_INSPECT_KEY = 'vc_autoinspect';
 const DEFAULT_API = 'https://autochess-online-321604-12-1450980602.sh.run.tcloudbase.com'; // CloudBase 云托管（上海）
 
@@ -49,6 +50,7 @@ const state = {
   session: readSession(),
   code: '', seat: null, lobby: null, view: null, socket: null,
   connected: false, busy: false, seq: 1, pendingAction: null, actionQueue: [],
+  invitation: '',
   deadline: null, phaseDurationMs: null, clockSkew: 0, spectateSeat: null,
   reconnectTimer: null, reconnectAttempts: 0, stopped: true,
   connectionTimer: null, heartbeatTimer: null, heartbeatDeadline: null,
@@ -194,8 +196,35 @@ function showEntry() {
 }
 async function request(path, data) { return postJson(apiUrl(path), data); }
 
+async function verifyInvitation() {
+  if (state.busy) return;
+  const inviteCode = $('invitationCode').value.trim();
+  if (!inviteCode) { setError('请先填写邀请码。'); $('invitationCode').focus(); return; }
+  state.busy = true;
+  $('invitationBtn').disabled = true;
+  setError('');
+  try {
+    state.api = normalizedApi();
+    await request('/api/invitation', {inviteCode});
+    state.invitation = inviteCode;
+    sessionStorage.setItem(INVITE_STORAGE, inviteCode);
+    $('invitationForm').hidden = true;
+    $('roomEntryFields').hidden = false;
+    $('playerName').focus();
+  } catch (error) {
+    state.invitation = '';
+    sessionStorage.removeItem(INVITE_STORAGE);
+    setError(error.message || '邀请码验证失败，请稍后重试。');
+  } finally {
+    state.busy = false;
+    $('invitationBtn').disabled = false;
+  }
+  if (state.invitation && inviteCodeParam && state.session?.code === inviteCodeParam.toUpperCase()) resumeRoom();
+}
+
 async function enterRoom(mode) {
   if (state.busy) return;
+  if (!state.invitation) { setError('请先验证邀请码。'); $('invitationCode').focus(); return; }
   setError('');
   let api;
   try { api = normalizedApi(); }
@@ -214,9 +243,9 @@ async function enterRoom(mode) {
   setConnection('connecting', '连接中');
   try {
     const result = mode === 'create'
-      ? await request('/api/rooms', {name})
+      ? await request('/api/rooms', {name, inviteCode:state.invitation})
       : await request(`/api/rooms/${encodeURIComponent(code)}/join`, {
-          name,
+          name, inviteCode:state.invitation,
           ...(state.session?.code === code && state.session?.api === api ? {token: state.session.token} : {}),
         });
     if (!result.code || !result.token) throw new Error('联机服务未返回房间码或重连令牌。');
@@ -1846,9 +1875,10 @@ $('lobbySeats').addEventListener('click', event => {
 });
 $('apiBase').value = state.api;
 $('playerName').value = localStorage.getItem(NAME_STORAGE) || '';
-const inviteCode = new URL(location.href).searchParams.get('room');
-if (inviteCode) $('roomCodeInput').value = inviteCode.toUpperCase();
+const inviteCodeParam = new URL(location.href).searchParams.get('room');
+if (inviteCodeParam) $('roomCodeInput').value = inviteCodeParam.toUpperCase();
 updateResume();
+$('invitationForm').addEventListener('submit', event => { event.preventDefault(); verifyInvitation(); });
 $('createBtn').addEventListener('click', () => enterRoom('create'));
 $('joinBtn').addEventListener('click', () => enterRoom('join'));
 $('resumeBtn').addEventListener('click', resumeRoom);
@@ -1882,10 +1912,11 @@ $('leaveBtn').addEventListener('click', async () => {
   $('leaveBtn').disabled=false;
   showEntry();
 });
-if (inviteCode && state.session?.code === inviteCode.toUpperCase()) {
-  $('playerName').value = state.session.name || $('playerName').value;
-  $('apiBase').value = state.session.api || state.api;
-  resumeRoom();
+const savedInvitation = sessionStorage.getItem(INVITE_STORAGE);
+if (savedInvitation) {
+  $('invitationCode').value = savedInvitation;
+  if (state.session?.code === inviteCodeParam?.toUpperCase()) $('apiBase').value = state.session.api || state.api;
+  verifyInvitation();
 }
 window.__onlineState = state;   // 测试/调试句柄
 window.closeDrawer = closeDrawer;   // tools/portrait-ui.js 等共享脚本按经典全局约定调用

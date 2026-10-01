@@ -23,6 +23,8 @@ npm install
 npm run dev
 ```
 
+联机入口启用邀请模式。启动前设置 `ONLINE_INVITE_CODE`（邀请码通过服务端环境变量配置，不写入前端）；生产缺少该变量时拒绝启动。本地浏览器验收同时设置 `ONLINE_TEST_INVITE` 为相同值。
+
 `npm run dev` 会先同步规则运行时再启动服务，默认监听 `3000` 端口（`PORT` 环境变量可覆盖）。`ONLINE_FAST` 环境变量（毫秒数，非零则备战/战斗/结算三个阶段都用该值）用于测试与本地联调加速，缺省用 `protocol.js` 的 `PHASE_MS`（45s/8s/7s）。
 
 静态前端可从 `http://localhost:8081` 打开 `autochess/online.html`。其他前端来源需加入 `ALLOWED_ORIGINS` 精确列表（逗号分隔，本地默认值见 `src/server.js`）；没有 Origin 头的脚本客户端可直接访问 API，浏览器请求会做来源校验。
@@ -30,6 +32,7 @@ npm run dev
 ## API 契约
 
 - `GET /api/health` → `200 {"ok":true,"ruleset":"deterministic-battle-v6","boardCells":64,"deployStart":32}`。
+- `POST /api/invitation`，JSON `{ "inviteCode": "<邀请码>" }`：验证成功返回 `{ok:true}`；缺失或错误返回 403 `invite_required`。建房、加入和凭 token 恢复座位的请求也必须携带 `inviteCode`，仅隐藏前端按钮无法绕过服务端验证。WebSocket 仍凭入座后签发的房间 token 认证。
 - `POST /api/rooms`，JSON `{ "name": "玩家" }` → `201 {code,seat,token,lobby}`：创建房间并取得房主（0 号席）座位。
 - `POST /api/rooms/:code/join`，JSON `{ "name": "玩家" }`：入座；八人满后拒绝第九人（409 `room_full`）。
 - 同一路由，JSON `{ "token": "..." }`：用原凭证恢复座位，包括对局开始或淘汰之后。

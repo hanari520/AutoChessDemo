@@ -1,3 +1,4 @@
+process.env.ONLINE_INVITE_CODE = 'test-invitation';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
@@ -20,7 +21,7 @@ class DurableTestStore {
 
 async function post(instance, path, data, token) {
   const response = await fetch(`http://127.0.0.1:${instance.port}${path}`, {
-    method:'POST', headers:{'content-type':'application/json', Origin:'http://localhost:8081', ...(token ? {authorization:`Bearer ${token}`} : {})}, body:JSON.stringify(data),
+    method:'POST', headers:{'content-type':'application/json', Origin:'http://localhost:8081', ...(token ? {authorization:`Bearer ${token}`} : {})}, body:JSON.stringify({inviteCode:'test-invitation', ...data}),
   });
   return {status:response.status, body:await response.json()};
 }

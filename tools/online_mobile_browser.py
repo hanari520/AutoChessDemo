@@ -22,10 +22,13 @@ with sync_playwright() as pw:
     page.add_init_script(TOUCH_PATCH)
     errors = []
     page.on('pageerror', lambda error: errors.append(str(error)))
-    page.goto('http://127.0.0.1:8081/online.html')
+    page.goto(os.environ.get('ONLINE_TEST_PAGE', 'http://127.0.0.1:8081/online.html'))
     assert page.evaluate('document.body.classList.contains("touch")') is False or True
     page.locator('.advanced-settings summary').click()
     page.locator('#apiBase').fill(os.environ.get('ONLINE_TEST_API','http://127.0.0.1:3000'))
+    page.locator('#invitationCode').fill(os.environ['ONLINE_TEST_INVITE'])
+    page.locator('#invitationBtn').click()
+    page.locator('#roomEntryFields').wait_for(state='visible')
     page.locator('#playerName').fill('移动端验收')
     page.locator('#createBtn').click()
     page.locator('#lobbySection').wait_for(state='visible')
@@ -107,5 +110,7 @@ with sync_playwright() as pw:
     page.screenshot(path=str(OUT / '08-mobile-locked.png'), full_page=True)
 
     assert not errors, errors
+    page.locator('#leaveBtn2').click()
+    page.locator('#entrySection').wait_for(state='visible')
     browser.close()
     print('移动端经典界面冒烟：全部通过')

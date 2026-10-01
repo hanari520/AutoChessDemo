@@ -109,6 +109,14 @@ function requireRoom(manager, code) {
   return entry;
 }
 
+function requireInvitation(body) {
+  const expected = process.env.ONLINE_INVITE_CODE;
+  if (!expected) throw new RoomError('invitation_unavailable', '邀请码验证暂不可用，请稍后重试。', 503);
+  if (typeof body.inviteCode !== 'string' || body.inviteCode.trim() !== expected) {
+    throw new RoomError('invite_required', '邀请码不正确，请向邀请人确认后重新输入。', 403);
+  }
+}
+
 async function handleRequest(manager, request, response) {
   let origin = null;
   try {
@@ -153,10 +161,18 @@ async function handleRequest(manager, request, response) {
       respondJson(response, {ok:true, standby:true}, 200, headers);
       return;
     }
+    if (url.pathname === '/api/invitation' && request.method === 'POST') {
+      if (!manager.allowHttp(request.socket.remoteAddress || 'unknown')) throw new RoomError('rate_limited', '验证过于频繁，请稍后重试', 429);
+      requireInvitation(await readJson(request));
+      respondJson(response, {ok:true}, 200, headers);
+      return;
+    }
     if (url.pathname === '/api/rooms' && request.method === 'POST') {
       if (!manager.allowHttp(request.socket.remoteAddress || 'unknown')) throw new RoomError('rate_limited', '建房过于频繁，请稍后重试', 429);
       if (manager.draining) throw new RoomError('maintenance', '服务正在维护，请稍后建房', 503);
-      const { name } = await readJson(request);
+      const body = await readJson(request);
+      requireInvitation(body);
+      const { name } = body;
       const validName = assertName(name);
       for (let attempt = 0; attempt < 5; attempt++) {
         const code = randomCode();
@@ -176,6 +192,7 @@ async function handleRequest(manager, request, response) {
       const code = normalizeCode(join[1]);
       const body = await readJson(request);
       if (!manager.allowHttp(request.socket.remoteAddress || 'unknown')) throw new RoomError('rate_limited', '请求过于频繁，请稍后重试', 429);
+      requireInvitation(body);
       const entry = requireRoom(manager, code);
       respondJson(response, await entry.enqueue(() => entry.join(body)), 200, headers);
       return;
@@ -255,6 +272,7 @@ function handleUpgrade(manager, wss, request, socket, head) {
 }
 
 export async function startServer({ port = Number(process.env.PORT) || 3000, host = '0.0.0.0', store, maxRooms = Number(process.env.MAX_ROOMS) || 200 } = {}) {
+  if (process.env.NODE_ENV === 'production' && !process.env.ONLINE_INVITE_CODE) throw new Error('ONLINE_INVITE_CODE must be configured in production');
   const manager = new RoomManager(store || await configuredStore());
   manager.maxRooms = maxRooms;
   try { await manager.restore(); } catch (error) { await manager.store.close(); throw error; }

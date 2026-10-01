@@ -1,3 +1,4 @@
+process.env.ONLINE_INVITE_CODE = 'test-invitation';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
@@ -6,7 +7,7 @@ const {startServer}=await import('../src/server.js');
 
 test('eight independent humans receive four matching public battles with private inventories and resume the same fight',async()=>{
   const server=await startServer({port:0,host:'127.0.0.1'}),base=`http://127.0.0.1:${server.port}`,clients=[];
-  async function post(path,body){const response=await fetch(base+path,{method:'POST',headers:{'content-type':'application/json',Origin:'http://localhost:8081'},body:JSON.stringify(body)});assert.ok(response.ok);return response.json();}
+  async function post(path,body){const response=await fetch(base+path,{method:'POST',headers:{'content-type':'application/json',Origin:'http://localhost:8081'},body:JSON.stringify({inviteCode:'test-invitation',...body})});assert.ok(response.ok);return response.json();}
   function wait(client,predicate) {
     if(client.latest&&predicate(client.latest))return Promise.resolve(client.latest);
     return new Promise((resolve,reject)=>{
