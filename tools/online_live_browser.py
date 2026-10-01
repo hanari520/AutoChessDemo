@@ -69,6 +69,16 @@ def run():
             for page in pages:
                 page.wait_for_function('() => window.__onlineState.view.phase === "prep" && window.__onlineState.view.round >= 2', timeout=90000)
                 page.wait_for_function('() => !document.getElementById("unitLayer")')
+                page.wait_for_function('() => document.getElementById("countdownValue")?.textContent !== "—"')
+                assert page.locator('#phaseCountdown').is_visible()
+                initial_clock = page.locator('#countdownValue').inner_text()
+                page.wait_for_function('(value) => document.getElementById("countdownValue").textContent !== value', arg=initial_clock)
+                for _ in range(10):
+                    locked = page.evaluate('window.__onlineState.view.me.shopLocked')
+                    page.locator('#lockBtn').click()
+                    page.wait_for_function('(locked) => window.__onlineState.view.me.shopLocked !== locked', arg=locked)
+                page.wait_for_function('() => window.__onlineState.actionQueue.length === 0')
+            print('PASS: visible countdown ticks; ten acknowledged actions do not fill the client queue', flush=True)
             seat = guest.evaluate('() => window.__onlineState.seat')
             guest.reload()
             guest.locator('#gameSection').wait_for(state='visible', timeout=20000)

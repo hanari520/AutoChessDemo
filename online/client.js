@@ -168,6 +168,9 @@ function toast(message) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { element.hidden = true; }, 3500);
 }
+function removeQueuedAction(id) {
+  if (typeof id === 'string') state.actionQueue = state.actionQueue.filter(queued => queued !== id);
+}
 function updateResume() {
   const session = state.session;
   $('resumeBox').hidden = !(session?.token && session?.code);
@@ -390,7 +393,11 @@ function settlePending(snapshot) {
   } else if (outcome === 'conflict') {
     toast('操作序号已变化，已按服务器状态同步。');
   }
-  if (outcome !== 'unknown') state.pendingAction = null;
+  if (outcome !== 'unknown') {
+    removeQueuedAction(pending.envelope.id);
+    state.pendingAction = null;
+  }
+  if (outcome === 'conflict' || outcome === 'stale') state.actionQueue = [];
   clearTimeout(state.actionTimer);
   return outcome;
 }
@@ -426,6 +433,7 @@ function connectSocket() {
       state.reconnectAttempts = 0;
       const pendingOutcome = state.awaitingSync ? settlePending(message) : 'none';
       if (!state.awaitingSync && state.pendingAction && reconcileAction(state.pendingAction, message) === 'confirmed') {
+        removeQueuedAction(state.pendingAction.envelope.id);
         state.pendingAction = null;
         clearTimeout(state.actionTimer);
       }
@@ -448,6 +456,7 @@ function connectSocket() {
       startHeartbeat(socket);
       render(prev);
     } else if (message.type === 'ack') {
+      removeQueuedAction(message.id);
       if (state.pendingAction?.envelope.id === message.id) { state.pendingAction = null; clearTimeout(state.actionTimer); }
       if (Number.isInteger(message.seq)) state.seq = Math.max(state.seq, message.seq + 1);
       renderControls();
@@ -456,6 +465,7 @@ function connectSocket() {
       state.heartbeatDeadline = null;
     } else if (message.type === 'error') {
       if (!state.connected && message.code === 'auth_timeout') transientAuthTimeout = true;
+      removeQueuedAction(message.id);
       if (state.pendingAction?.envelope.id === message.id) { state.pendingAction = null; clearTimeout(state.actionTimer); }
       const detail = message.message || message.code || '操作未完成。';
       if (state.connected) { setError('', true); toast(detail); log('⚠ '+detail); }
@@ -870,6 +880,13 @@ function renderTop(){
   const pairing=state.view?.pairings?.find(p=>p.a===state.seat||p.b===state.seat);
   const watched=watchedPlayer();
   const secs=state.deadline?Math.max(0,Math.ceil((state.deadline+state.clockSkew-Date.now())/1000)):null;
+  const phaseClock=$('phaseCountdown');
+  if (phaseClock) {
+    $('countdownValue').textContent=secs===null?'—':String(secs);
+    phaseClock.classList.toggle('urgent',secs!==null&&secs<=10);
+    phaseClock.dataset.phase=state.view?.phase||'';
+    phaseClock.setAttribute('aria-label',`${phaseName(state.view?.phase)}倒计时${secs===null?'不可用':`${secs}秒`}`);
+  }
   let info='';
   if(!state.connected) info='⚠ 连接中断，正在自动重连…';
   else if(watched) info=`👁 观战中：<b>${escapeHtml(watched.name||playerName(watched.seat))}</b> · 等级 ${watched.level||1}${inPrep()?'（当前阵容）':''}`;

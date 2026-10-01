@@ -51,6 +51,15 @@ body.online-playing #oppBar .hp-strip i { font-style:normal; font-size:10.5px; c
 body.online-playing #oppBar .hp-strip i.me { color:var(--gold-hi); font-weight:bold; opacity:1; }
 body.online-playing #oppBar .hp-strip i.out { color:var(--tx3); opacity:.5; text-decoration:line-through; }
 
+/* The site header is hidden during a match, so keep the phase clock in the visible game HUD. */
+body.online-playing #phaseCountdown { display:flex; flex:none; align-items:baseline; justify-content:center; gap:2px;
+  min-width:54px; padding:3px 6px; border:1px solid var(--theme-border); border-radius:8px;
+  background:var(--theme-surface); color:var(--theme-ink); font-variant-numeric:tabular-nums; }
+body.online-playing #phaseCountdown strong { font-size:23px; line-height:1; }
+body.online-playing #phaseCountdown span { font-size:10px; color:var(--theme-muted); }
+body.online-playing #phaseCountdown.urgent { color:#f080a1; border-color:#f080a1; }
+@media (max-width:370px) { body.online-playing #phaseCountdown { min-width:43px; padding:3px 4px; } }
+
 /* ===== ③ 战斗层挂经典棋盘：效果层铺满 #board 内侧 ===== */
 /* 尺寸用 inset 由棋盘决定，绝不能用 --cell 计算：battle-effects.js 的 ResizeObserver
    会用层宽反推 --cell，若层宽又依赖 --cell 会形成正反馈把层指数放大（曾撑到 2060px 溢出）。 */

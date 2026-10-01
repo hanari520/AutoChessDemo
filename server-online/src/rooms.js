@@ -328,7 +328,12 @@ class RoomEntry {
     ws.on('message', data => {
       if (this.manager.stopping) { ws.close(1012, 'service restart'); return; }
       if (data.length > 4096) { ws.close(1009, 'message too large'); return; }
-      if (!this.manager.allowMessage(conn)) { this.send(conn, {type:'error',code:'rate_limited',message:'操作过于频繁'}); return; }
+      if (!this.manager.allowMessage(conn)) {
+        let id;
+        try { const message = JSON.parse(data.toString()); if (typeof message?.id === 'string') id = message.id; } catch { /* malformed messages are discarded */ }
+        this.send(conn, {type:'error', ...(id ? {id} : {}), code:'rate_limited', message:'操作过于频繁'});
+        return;
+      }
       let readOnly = false;
       try { const message = parseClientMessage(data.toString()); readOnly = Number.isInteger(conn.seat) && ['ping','sync'].includes(message.type); }
       catch { /* parser returns the protocol error in handleMessage */ }

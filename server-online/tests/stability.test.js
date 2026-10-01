@@ -127,7 +127,8 @@ test('concurrent room creation respects capacity and websocket flooding is rejec
   const results=await Promise.all([post(instance,'/api/rooms',{name:'甲'}),post(instance,'/api/rooms',{name:'乙'})]);
   assert.deepEqual(results.map(r=>r.status).sort(),[201,503]);
   const peer=await client(instance,results.find(r=>r.status===201).body);
-  for(let i=0;i<30;i++)peer.ws.send(JSON.stringify({type:'ping'}));
-  await peer.wait(m=>m.code==='rate_limited');
+  for(let i=0;i<30;i++)peer.ws.send(JSON.stringify({type:'action',id:`rate-${i}`,seq:i+1,round:1,action:{type:'lockShop'}}));
+  const rejected=await peer.wait(m=>m.code==='rate_limited');
+  assert.match(rejected.id,/^rate-\d+$/);
   assert.ok(instance.manager.metrics.rateLimited>0);
 });
