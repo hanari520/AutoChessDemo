@@ -21,6 +21,7 @@ import '../tools/battle-audio.js?v=1';
 
 const $ = (id) => document.getElementById(id);
 mountCodex();
+ensureCastFeed();
 const BOARD_W = 8, BOARD_H = 8, BENCH = 8;
 const IS_TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 
@@ -501,6 +502,37 @@ function myTurnBoard() { return state.view?.me?.board || Array(64).fill(null); }
 function getAt(t,i){ return t==='board' ? myTurnBoard()[i] : state.view?.me?.bench?.[i]; }
 function watchedPlayer(){ return state.spectateSeat!=null && state.spectateSeat!==state.seat
   ? state.view?.players?.find(p=>p.seat===state.spectateSeat) : null; }
+
+/* ================= 施法播报条（#castFeed，与经典同款双槽卡片） =================
+   经典由 tools/idol-ui-redesign.js 建；联机页不加载它，这里按同一 DOM 契约自建，
+   复用 idol-redesign.css 的 #castFeed/.cf-item 样式；战斗中占位 26px 不推挤棋盘。 */
+const CAST_GLYPHS = {cleave:'✦',dash:'➤',shred:'⌁',rapid:'»',massstun:'✧',massfreeze:'❄',masssilence:'♫',chain:'ϟ',frost:'❄',fireball:'☼',slam:'✹',hex:'◇',heal:'♡',aheal:'♫',teamshield:'✧',bulwark:'⬡',guard:'♡',poison:'❋',starfall:'✦',time:'◷'};
+function ensureCastFeed(){
+  let feed=$('castFeed');
+  if(feed) return feed;
+  const host=$('boardwrap'); if(!host) return null;
+  feed=document.createElement('div'); feed.id='castFeed';
+  feed.setAttribute('role','status'); feed.setAttribute('aria-live','polite');
+  feed.innerHTML='<div class="cf-slot ally"></div><div class="cf-slot foe"></div>';
+  host.insertBefore(feed, host.firstChild);
+  return feed;
+}
+function castFeedPush(unit, isAlly){
+  const feed=ensureCastFeed(); if(!feed||!unit) return;
+  const slot=feed.querySelector(isAlly?'.cf-slot.ally':'.cf-slot.foe'); if(!slot) return;
+  const kit=CLASSIC_SKILLS[unit.id]||{};
+  const arch=String(kit.mode||'magic').replace(/[^a-z0-9-]/gi,'').toLowerCase();
+  const item=document.createElement('div');
+  item.className=`cf-item arch-${arch}`;
+  item.style.setProperty('--hero-color', `hsl(${heroHue(unit.id)} 78% 66%)`);
+  item.innerHTML=`<img src="${unitImage(unit.id)}" alt="${escapeHtml(cname(unit))}" draggable="false">`
+    +`<b>${escapeHtml(cname(unit))}</b><span>${CAST_GLYPHS[arch]||'✦'} ${escapeHtml(SKILL_NAMES[unit.id]||'技能')}</span>`;
+  slot.prepend(item);
+  setTimeout(()=>item.classList.add('old'),1150);
+  setTimeout(()=>item.classList.add('bye'),1750);
+  setTimeout(()=>item.remove(),2100);
+  slot.querySelectorAll('.cf-item:not(.bye)').forEach((stale,idx)=>{ if(idx>=2){stale.classList.add('bye');setTimeout(()=>stale.remove(),300);} });
+}
 
 /* ================= 战报（经典 #log） ================= */
 function log(t){ state.logArr.unshift(t); if(state.logArr.length>60)state.logArr.pop(); renderLog(); }
@@ -1461,6 +1493,7 @@ function applyBattleEvent(playback, event, view) {
   if(actor&&event.type==='heal')actor.healing=(actor.healing||0)+(event.amount||0);
   if (!playback.catchingUp) {
     const kit=actor&&CLASSIC_SKILLS[actor.id];
+    if(event.type==='cast'&&actor)castFeedPush(actor, actor.side===playback.ownSide);
     if(event.type==='cast'&&kit)audio.skillSound(audio.v3Impact(kit,actor),actor,false);
     else if(event.type==='death')audio.sfx('die',{scale:true});
     const recipients=event.type==='cast'?(playback.battle.events||[]).filter(item=>item.at===event.at&&String(item.from)===String(event.from)&&['skill','heal','shield'].includes(item.type)).map(item=>item.target):[];

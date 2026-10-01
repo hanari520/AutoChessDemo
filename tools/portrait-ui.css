@@ -70,6 +70,8 @@
   html[data-theme] #bench .bcell { background:var(--phone-surface); border-color:var(--phone-line); border-radius:4px; }
   html[data-theme] #castFeed { min-height:0; background:none; border:0; }
   html[data-theme] #castFeed:has(.cf-slot:empty):not(:has(.cf-entry)) { margin:0; }
+  /* 战斗中固定占位：技能释放卡片出现时不推挤棋盘（空槽也保留 26px） */
+  html[data-theme] body.touch[data-phase="battle"] #castFeed { min-height:28px; margin:0 auto; }
   html[data-theme] body.portrait-play #shopbar {
     display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:24px 96px 44px 44px;
     gap:5px; padding:6px 10px calc(6px + env(safe-area-inset-bottom)); height:auto;
