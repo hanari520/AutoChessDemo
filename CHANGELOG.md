@@ -1,5 +1,14 @@
 # 更新日志
 
+## 2026-10-02 · 审计修复：弹层返回键守卫、既有红测试对齐现行引擎、仓库卫生（sw v130）
+
+- **修复 `vcPopLayer` 无守卫引用 `history`**：a8c9f4f（sw v126）引入返回键集成时，`vcPopLayer` 的守卫在 try/catch 之外直接求值 `history.state`——浏览器有 `history` 全局无恙，但 Node 侧回归环境全部炸红：`bond-mechanics.test.js` 16 例经 `startBattle → closeDrawer` 抛 ReferenceError，`AUDIT=1` 效果审计（182 断言）中途崩死，经典模式回归防护网自该提交起实际失效。守卫求值移入 try/catch，浏览器行为不变。
+- **sound-system 测试补载真实引擎**：2ba8483 将声音引擎抽到 `tools/battle-audio.js` 后，测试 VM 只 eval 页面内联委托层（`sfx → classicBattleAudio`），`ClassicBattleAudio` 未定义即抛错。测试沙箱按页面加载顺序先载入引擎，`document` 桩补 `getElementById`；`_sfxVoices`/`_sfxActive` 引擎闭包内部变量改经新增的 `get voices()`/`get active()` 访问器（`active` 为本次补齐，返回活引用）。
+- **audio-bank 测试对齐引擎归属**：`SFX_ASSET_ROOT`/`SFX_WAV_BANK`/`SFX_DEF` 已随 2ba8483 迁入 `battle-audio.js`，断言从读 index.html 改为读引擎文件并加"页面仍接线引擎"冒烟；CACHE 名断言从精确匹配 `vcache-v91-help-sections` 改为结构匹配 `vcache-v<数字>`，不再随每次升版破裂；wav 库禁用与不预缓存断言不变。
+- **服务端邀请码比较改常量时间**（server-online）：输入与期望值各做 sha256 后 `timingSafeEqual`，消除逐字节比较的前缀长度泄露；语义不变（trim 输入、精确比对、非字符串 403）。
+- **仓库卫生**：删除孤儿文件 `online/mobile-redesign.css`（f1ffd59 重写 1353 行后全仓库零引用）；`server-online/STABILITY.md` 验证清单移除已删除的 `tools/online_stability_browser.py`，改指现存的 `online_live_browser.py`/`online_parity_browser.py`；CHANGELOG.md 换行符归一回 CRLF（6f70883 意外整文件翻转为 LF，本次一次结清，此后不再产生整文件假差异）。
+- 版本链：index.html 与 battle-audio.js 内容变更 → sw 缓存升 `vcache-v130-audit-fixes`，INDEX_ASSET v99→v100。
+
 ## 2026-10-02 · 联机邀请模式（sw v128）
 
 - 先填写并通过服务器验证邀请码，才能创建或加入房间；刷新当前标签页可重新验证并恢复原座位。

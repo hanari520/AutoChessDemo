@@ -215,7 +215,7 @@ if(typeof document!=='undefined' && document.addEventListener){
 function paintSfxBtn(){ const b=$('sfxBtn'); if(!b) return; b.textContent='音效'; b.title=_sfxOn?'音效：开（点击静音，状态本地保存）':'音效：关（点击开启，状态本地保存）'; b.setAttribute('aria-label',b.title); b.classList.toggle('on',_sfxOn); }
 function toggleSfx(){ _sfxOn=!_sfxOn; if(!_sfxOn)_sfxActive.slice().forEach(e=>e.stop()); try{ localStorage.setItem('vc_sfx', _sfxOn?'1':'0'); }catch(e){} paintSfxBtn(); }
 function stopBattle(){_sfxActive.filter(e=>e.bus==='battle'&&!e.finishOnResult).forEach(e=>e.stop());}
-return {sfx,sfxCtx,warmSoundBank,skillImpact,v3Impact,skillSound,skillHitSound,paintSfxBtn,toggleSfx,stopBattle,definitions:SFX_DEF,get enabled(){return _sfxOn;},get voices(){return _sfxVoices;}};
+return {sfx,sfxCtx,warmSoundBank,skillImpact,v3Impact,skillSound,skillHitSound,paintSfxBtn,toggleSfx,stopBattle,definitions:SFX_DEF,get enabled(){return _sfxOn;},get voices(){return _sfxVoices;},get active(){return _sfxActive;}};
 }
 root.ClassicBattleAudio={create};
 })(globalThis);

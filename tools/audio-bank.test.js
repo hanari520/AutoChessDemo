@@ -15,13 +15,15 @@ assert.equal(manifest.skills.length, 50, 'every playable unit has a signature cu
 assert.ok(manifest.events.length >= 60, 'system and synergy cues are included');
 
 const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const engine = fs.readFileSync(path.join(root, 'tools', 'battle-audio.js'), 'utf8');
 const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-assert.match(page, /const SFX_ASSET_ROOT='assets\/audio\/v3\//);
-assert.match(page, /const SFX_WAV_BANK=false/, 'wav bank stays disabled until explicitly re-enabled (2026-09-29 revert)');
-const fallbackDefs = page.match(/const SFX_DEF=\{[\s\S]*?\n\};/)?.[0];
+assert.match(page, /tools\/battle-audio\.js/, 'page still wires the shared sound engine');
+assert.match(engine, /const SFX_ASSET_ROOT='assets\/audio\/v3\//);
+assert.match(engine, /const SFX_WAV_BANK=false/, 'wav bank stays disabled until explicitly re-enabled (2026-09-29 revert)');
+const fallbackDefs = engine.match(/const SFX_DEF=\{[\s\S]*?\n\};/)?.[0];
 assert.ok(fallbackDefs, 'fallback sound definitions should be available');
 assert.match(fallbackDefs, /type:'sine'/, 'fallback tones keep the original v79 timbre (soft sine waves present)');
-assert.match(worker, /const CACHE = 'vcache-v91-help-sections'/);
+assert.match(worker, /const CACHE = 'vcache-v\d+/, 'service worker keeps a versioned cache name (exact name changes every release)');
 assert.doesNotMatch(worker, /assets\/audio\//, 'disabled wav bank is not precached by the service worker');
 assert.doesNotMatch(worker, /\.\/assets\/audio\/v[12]\//);
 

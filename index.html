@@ -7684,7 +7684,7 @@ const IS_TOUCH = (typeof matchMedia==='function' && matchMedia('(pointer:coarse)
    vcLayerOpen 保证同一时刻只有一条弹层历史（连锁场景由调用方延迟切换）。 */
 let vcLayerOpen=false;
 function vcPushLayer(){ try{ if(vcLayerOpen||(history.state&&history.state.vcLayer))return; history.pushState({vcLayer:1},''); vcLayerOpen=true; }catch(e){} }
-function vcPopLayer(){ if(!vcLayerOpen&&!(history.state&&history.state.vcLayer))return; vcLayerOpen=false; try{ history.back(); }catch(e){} }
+function vcPopLayer(){ let layer=false; try{ layer=!!(vcLayerOpen||(history.state&&history.state.vcLayer)); }catch(e){} if(!layer)return; vcLayerOpen=false; try{ history.back(); }catch(e){} }
 window.addEventListener('popstate',()=>{
   vcLayerOpen=false;
   const bm=$('bookModal'), hm=$('histModal'), dr=$('mDrawer');

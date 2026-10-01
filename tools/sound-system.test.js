@@ -5,6 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const battleAudio = fs.readFileSync(path.join(__dirname, 'battle-audio.js'), 'utf8');
 const begin = html.indexOf('/* ================= 声音系统');
 const end = html.indexOf('function byId(', begin);
 assert.ok(begin >= 0 && end > begin, '声音引擎范围应可定位');
@@ -32,12 +33,14 @@ function harness({ muted = false, audio = true } = {}) {
     ARENA_SILENT: false, SPEED: 1,
     $() { return { textContent: '', title: '', setAttribute() {}, classList: { toggle() {} } }; },
     localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } },
-    document: { addEventListener() {} },
+    document: { addEventListener() {}, getElementById: () => null },
     rand() { if (mode === 'daily') dailyDraws++; else battleDraws++; return .42; },
   };
   sandbox.window = { __sfxCount: {}, __sfxPlayed: 0 };
   if (audio) sandbox.window.AudioContext = class { constructor() { return ctx; } };
   vm.createContext(sandbox);
+  // 页面里 tools/battle-audio.js 以 <script src> 先于内联声音段加载，这里保持同一顺序。
+  vm.runInContext(battleAudio, sandbox, { filename: 'tools/battle-audio.js' });
   vm.runInContext(`${assetDeclaration}\n${soundCode}`, sandbox, { filename: 'index.html:sound' });
   const evalIn = code => vm.runInContext(code, sandbox);
   return { sandbox, ctx, sources, store, evalIn,
@@ -58,9 +61,9 @@ function harness({ muted = false, audio = true } = {}) {
 {
   const h = harness();
   h.evalIn("sfx('merge3')");
-  assert.equal(h.evalIn('_sfxVoices'), 1, '多音琶音应只占一个事件槽位');
+  assert.equal(h.evalIn('classicBattleAudio().voices'), 1, '多音琶音应只占一个事件槽位');
   h.evalIn("['buy','sell','roll','lvlup','equip','deploy','tidy'].forEach(sfx)");
-  assert.equal(h.evalIn('_sfxVoices'), 8, '其他声音仍可占用余下七个槽位');
+  assert.equal(h.evalIn('classicBattleAudio().voices'), 8, '其他声音仍可占用余下七个槽位');
   assert.equal(h.sandbox.window.__sfxPlayed, 8);
   assert.ok(h.sources.length > 8, '并发按音效事件而非振荡器数量计算');
   console.log('✅ 多音音效不独占全局并发');
@@ -92,7 +95,7 @@ function harness({ muted = false, audio = true } = {}) {
   assert.equal(noAudio.sources.length, 0);
   const pending = harness();
   pending.evalIn("skillSound('shield'); toggleSfx()");
-  assert.equal(pending.evalIn('_sfxVoices'), 0, '切换静音应停止已排程声音');
+  assert.equal(pending.evalIn('classicBattleAudio().voices'), 0, '切换静音应停止已排程声音');
   assert.ok(pending.sources.every(s => s.stopped));
   assert.equal(pending.store.vc_sfx, '0');
   console.log('✅ 静音和无 AudioContext 均安全静默');
@@ -101,24 +104,24 @@ function harness({ muted = false, audio = true } = {}) {
 {
   const h = harness();
   h.evalIn("sfx('merge3')");
-  assert.equal(h.evalIn('_sfxVoices'), 1);
-  h.evalIn('_sfxActive[0].tail.onended()');
-  assert.equal(h.evalIn('_sfxVoices'), 0, '最后结束的音源应回收事件槽位');
-  assert.equal(h.evalIn('_sfxActive.length'), 0);
-  h.evalIn('_sfxActive[0]?.tail?.onended?.()');
-  assert.equal(h.evalIn('_sfxVoices'), 0, '重复结束通知不得将槽位计数减成负数');
+  assert.equal(h.evalIn('classicBattleAudio().voices'), 1);
+  h.evalIn('classicBattleAudio().active[0].tail.onended()');
+  assert.equal(h.evalIn('classicBattleAudio().voices'), 0, '最后结束的音源应回收事件槽位');
+  assert.equal(h.evalIn('classicBattleAudio().active.length'), 0);
+  h.evalIn('classicBattleAudio().active[0]?.tail?.onended?.()');
+  assert.equal(h.evalIn('classicBattleAudio().voices'), 0, '重复结束通知不得将槽位计数减成负数');
   console.log('✅ 尾音结束后回收并发槽位');
 }
 
 {
   const h = harness();
   h.evalIn("['buy','sell','roll','lvlup','equip','deploy','tidy','drag'].forEach(sfx)");
-  assert.equal(h.evalIn('_sfxVoices'), 8);
-  const old = h.evalIn('_sfxActive.slice()');
+  assert.equal(h.evalIn('classicBattleAudio().voices'), 8);
+  const old = h.evalIn('classicBattleAudio().active.slice()');
   h.evalIn("sfx('win')");
-  assert.equal(h.evalIn('_sfxVoices'), 8, '高优先级结算音应抢占而不超过容量');
+  assert.equal(h.evalIn('classicBattleAudio().voices'), 8, '高优先级结算音应抢占而不超过容量');
   assert.equal(old.filter(e => e.ended).length, 1, '应只抢占一个低优先级事件');
-  assert.equal(h.evalIn('_sfxActive.filter(e => e.priority === 5).length'), 1);
+  assert.equal(h.evalIn('classicBattleAudio().active.filter(e => e.priority === 5).length'), 1);
   const played = h.sandbox.window.__sfxPlayed;
   h.evalIn("sfx('sellhint')");
   assert.equal(h.sandbox.window.__sfxPlayed, played, '同优先级声音不能强制挤占');
@@ -144,7 +147,7 @@ function harness({ muted = false, audio = true } = {}) {
     h.evalIn(`skillSound(v3Impact(${JSON.stringify(kits[id])},{id:${JSON.stringify(id)}}))`);
     assert.equal(h.sandbox.window.__sfxCount.cast, 1, `${id} charge cue`);
     assert.equal(h.sandbox.window.__sfxCount[expected], 1, `${id} impact cue`);
-    const starts = h.evalIn('_sfxActive.map(e => e.sources[0].starts[0])');
+    const starts = h.evalIn('classicBattleAudio().active.map(e => e.sources[0].starts[0])');
     assert.equal(starts.length, 2, `${id} charge and impact must be separate events`);
     assert.ok(Math.abs(starts[0] - 1) < 1e-6, `${id} charge starts with ring`);
     assert.ok(Math.abs(starts[1] - (1 + delay)) < 1e-6, `${id} impact should match effect onset`);
@@ -158,7 +161,7 @@ function harness({ muted = false, audio = true } = {}) {
 {
   const h = harness();
   h.evalIn("skillSound('zone')");
-  let starts = h.evalIn('_sfxActive.map(e => e.sources[0].starts[0])');
+  let starts = h.evalIn('classicBattleAudio().active.map(e => e.sources[0].starts[0])');
   assert.ok(Math.abs(starts[1] - 1.03) < 1e-6, '区域音应在创建动画初段响起');
   assert.match(html, /function spawnZone[\s\S]*?vfxAoe\([^;]+; sfx\('zone'\)/, '持续区域应在生成时触发一次声音');
   h.ctx.currentTime = 1.2;
@@ -167,7 +170,7 @@ function harness({ muted = false, audio = true } = {}) {
   const fast = harness();
   fast.sandbox.SPEED = 2;
   fast.evalIn("skillSound('shield')");
-  starts = fast.evalIn('_sfxActive.map(e => e.sources[0].starts[0])');
+  starts = fast.evalIn('classicBattleAudio().active.map(e => e.sources[0].starts[0])');
   assert.ok(Math.abs(starts[1] - 1.03) < 1e-6, '2 倍速时护盾声音落点随视觉缩放');
   console.log('✅ 区域生成音与战斗速度缩放的落点');
 }
@@ -181,14 +184,14 @@ function harness({ muted = false, audio = true } = {}) {
   h.sandbox.S = { phase: 'battle' };
   h.evalIn(`${html.slice(resultStart, resultDom)}}`);
   h.evalIn("skillSound('impactBlade'); sfx('crit')");
-  const [charge, impact, crit] = h.evalIn('_sfxActive.slice()');
+  const [charge, impact, crit] = h.evalIn('classicBattleAudio().active.slice()');
   assert.ok(impact.finishOnResult && !crit.finishOnResult);
   h.evalIn('showResultBanner(true)');
   assert.equal(charge.ended, true, '结算时结束次要蓄力提示');
   assert.equal(crit.ended, true, '结算时结束次要战斗声');
   assert.equal(impact.ended, false, '结算时保留已调度的技能命中声');
-  assert.equal(h.evalIn('_sfxActive.length'), 2, '技能命中与胜利主题同时保留');
-  const starts = h.evalIn('_sfxActive.map(e => e.sources[0].starts[0])');
+  assert.equal(h.evalIn('classicBattleAudio().active.length'), 2, '技能命中与胜利主题同时保留');
+  const starts = h.evalIn('classicBattleAudio().active.map(e => e.sources[0].starts[0])');
   assert.ok(Math.abs(starts[0] - 1) < 1e-6 && Math.abs(starts[1] - 1.12) < 1e-6);
   console.log('✅ 立即结算保留技能命中声，清除次要声并延后胜利主题');
 }

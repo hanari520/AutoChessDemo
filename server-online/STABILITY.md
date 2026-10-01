@@ -61,7 +61,8 @@ npm test
 # autochess 目录
 node --test online/core.test.js online/combat.test.js online/runtime-sync.test.js
 node --test tools/online_connection.test.mjs
-python tools/online_stability_browser.py
+python tools/online_live_browser.py    # 双浏览器真云服务冒烟（先起 :8081；见脚本头部说明）
+python tools/online_parity_browser.py  # 经典 UI 联机验收（:8081 + 本地 :3000，ONLINE_TEST_API 可覆盖）
 ```
 
 共享规则运行时的服务端拷贝（`src/core.js`、`src/combat.js` 等）**随源入库**：干净克隆即可构建可用镜像，`npm run sync`（`scripts/sync-runtime.mjs`）在 dev/test/predeploy 前刷新它们，根套件的 `online/runtime-sync.test.js` 在拷贝落后于 `online/`、`tools/` 源时直接失败——改规则源后忘记同步无法通过测试。

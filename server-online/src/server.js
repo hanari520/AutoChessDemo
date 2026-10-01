@@ -5,6 +5,7 @@
  * Worker version so existing browser clients work unchanged. */
 import http from 'node:http';
 import { once } from 'node:events';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { RoomManager, SUPPORTED_RULESET } from './rooms.js';
@@ -112,7 +113,13 @@ function requireRoom(manager, code) {
 function requireInvitation(body) {
   const expected = process.env.ONLINE_INVITE_CODE;
   if (!expected) throw new RoomError('invitation_unavailable', '邀请码验证暂不可用，请稍后重试。', 503);
-  if (typeof body.inviteCode !== 'string' || body.inviteCode.trim() !== expected) {
+  if (typeof body.inviteCode !== 'string') {
+    throw new RoomError('invite_required', '邀请码不正确，请向邀请人确认后重新输入。', 403);
+  }
+  // 常量时间比较：先定长哈希再比对，避免逐字节比较泄露前缀匹配长度。
+  const given = createHash('sha256').update(body.inviteCode.trim()).digest();
+  const wanted = createHash('sha256').update(expected).digest();
+  if (!timingSafeEqual(given, wanted)) {
     throw new RoomError('invite_required', '邀请码不正确，请向邀请人确认后重新输入。', 403);
   }
 }
