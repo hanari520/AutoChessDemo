@@ -174,6 +174,6 @@ with sync_playwright() as pw:
 
     assert not errors, errors
     page.locator('#leaveBtn2').click()
-    page.locator('#entrySection').wait_for(state='visible')
+    page.locator('#entryScreen').wait_for(state='visible')
     browser.close()
     print('经典 UI 联机验收：全部通过')

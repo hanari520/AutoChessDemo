@@ -25,7 +25,7 @@ def run():
         try:
             for i, page in enumerate(pages):
                 page.on('pageerror', lambda error: errors.append(str(error)))
-                page.goto(os.environ.get('ONLINE_TEST_PAGE', 'http://127.0.0.1:8081/online.html'))
+                page.goto(os.environ.get('ONLINE_TEST_PAGE', 'http://127.0.0.1:8081/online.html'), wait_until='domcontentloaded')
                 page.locator('.advanced-settings summary').click()
                 page.locator('#apiBase').fill(API)
                 assert not page.locator('#createBtn').is_visible()

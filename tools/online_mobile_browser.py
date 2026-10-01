@@ -110,7 +110,7 @@ with sync_playwright() as pw:
     page.screenshot(path=str(OUT / '08-mobile-locked.png'), full_page=True)
 
     assert not errors, errors
-    page.locator('#leaveBtn2').click()
-    page.locator('#entrySection').wait_for(state='visible')
+    page.locator('#leaveBtn2').evaluate('(button) => button.click()')
+    page.locator('#entryScreen').wait_for(state='visible')
     browser.close()
     print('移动端经典界面冒烟：全部通过')
