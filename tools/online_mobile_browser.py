@@ -47,10 +47,15 @@ with sync_playwright() as pw:
     assert page.evaluate('!!document.querySelector("#shopbar>#shop")'), '商店常驻在 shopbar'
     assert page.evaluate('!!document.querySelector("#main #synCol")'), '羁绊列常驻在棋盘下方'
     assert page.evaluate('document.getElementById("mBondBtn").offsetParent === null'), '羁绊抽屉入口应隐藏'
-    # 商店卡精简：无血/攻行，费用角标悬浮
-    card = page.locator('#shop .card:not(.sold)').first
-    assert card.locator('.stb .stat').first.evaluate('el=>getComputedStyle(el).display') == 'none', '商店卡不显示血/攻'
-    assert card.locator('.cc2').is_visible(), '费用角标可见'
+    # 商店卡精简：无血/攻行，费用角标悬浮（等待式断言：renderShop 重建与断言存在竞态）
+    page.wait_for_function('''() => {
+      const c = document.querySelector('#shop .card:not(.sold) .stb .stat');
+      return c && getComputedStyle(c).display === 'none';
+    }''', timeout=8000)
+    page.wait_for_function('''() => {
+      const fee = document.querySelector('#shop .card:not(.sold) .cc2');
+      return fee && fee.offsetWidth > 0;
+    }''', timeout=8000)
 
     # 「更多」抽屉（图鉴/主题/音效/玩法/邀请/离房；对局内站点页头已隐藏）
     page.locator('#mMenuBtn').click()

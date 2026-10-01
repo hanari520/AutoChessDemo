@@ -1,4 +1,5 @@
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }   /* 禁用 Android Chrome 字体自动放大：图鉴筛选等密集控件会被整块撑爆 */
 /* ============================================================================
    旧版基础样式保留游戏布局与交互结构；浅色样式由 tools/idol-redesign.css 覆盖，暗色样式由 tools/idol-dark.css 覆盖。
    分节：①令牌 ②舞台底 ③浏览器表面 ④顶栏 ⑤面板与按钮 ⑥羁绊

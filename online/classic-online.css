@@ -84,6 +84,8 @@ body.touch #board .unit.mvsrc { box-shadow:0 0 0 2px rgba(84,199,162,.95), 0 0 1
 
 /* 小屏图鉴：标题与页签不换行（窄屏下"棋子图鉴"/"羁绊"会被挤成两行） */
 @media (max-width:600px){
+  .codex-body { padding-bottom:calc(22px + env(safe-area-inset-bottom)); }
+  .codex-chip { min-height:32px; padding:4px 10px; }
   .codex-head h2 { font-size:15px; white-space:nowrap; }
   .codex-tabs .btab { font-size:11px; padding:6px 8px; white-space:nowrap; }
   .codex-head .codex-close, .codex-head button { white-space:nowrap; }

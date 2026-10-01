@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="tools/battle-presentation.css?v=1">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }   /* 禁用 Android Chrome 字体自动放大：图鉴筛选等密集控件会被整块撑爆 */
 /* ============================================================================
    旧版基础样式保留游戏布局与交互结构；浅色样式由 tools/idol-redesign.css 覆盖，暗色样式由 tools/idol-dark.css 覆盖。
    分节：①令牌 ②舞台底 ③浏览器表面 ④顶栏 ⑤面板与按钮 ⑥羁绊
@@ -814,7 +815,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
 <link rel="stylesheet" href="tools/battle-hud.css?v=1">
 <link rel="stylesheet" href="tools/match-layout.css?v=2">
 <link rel="stylesheet" href="tools/preparation-presentation.css?v=1">
-<link rel="stylesheet" href="tools/portrait-ui.css?v=4">
+<link rel="stylesheet" href="tools/portrait-ui.css?v=5">
 <script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#0a0d1c':'#f6f8fd'</script>
 </head>
 <body>

@@ -1,5 +1,12 @@
 # 更新日志
 
+## 2026-10-01 · 图鉴移动端修复：禁用字体自动放大、筛选按钮紧凑化、底部安全区（sw v125）
+
+- **修复 Android Chrome 字体自动放大把图鉴撑爆**：全仓库此前没有 `text-size-adjust`，手机 Chrome 会对密集文本容器自动放大字体——图鉴的筛选按钮（费用/阵营/职业 22+ 项）被整块放大成 90px 大方块、占满整屏。现在 `html { -webkit-text-size-adjust:100%; text-size-adjust:100% }`（经典内嵌样式 + `online/classic-ui.css` 副本同改，两模式生效）。无头浏览器不触发该放大，所以此前全阶段巡检没有暴露，靠用户手机截图定位。
+- **经典图鉴筛选按钮紧凑化**：`.bf-chip` 从触屏统一的 44px 方块改为 32px 紧凑胶囊（与联机 `.codex-chip` 一致；页签/关闭等主要控件保持 44px 触控高度）。
+- **图鉴底部安全区**：经典 `#bookPanel` 与联机 `.codex-body` 的底部内边距追加 `env(safe-area-inset-bottom)`（`idol-redesign.css` 的 `padding:13px !important` 曾被无条件覆盖，已提级修正），面板滚到底不再被系统导航栏遮挡。
+- 套件加固：移动端套件里"商店卡无血/攻行"与"费用角标可见"两条一次性断言改为等待式（`renderShop` 重建与断言存在竞态，此前偶发误报）。版本链：`classic-ui.css` v2、`classic-online.css` v2、`portrait-ui.css` v5，sw 缓存升 `vcache-v125-codex-fix`。
+
 ## 2026-10-01 · 战斗中技能播报条预留空间，不再推挤棋盘（sw v124）
 
 - **两模式战斗中顶部固定预留技能释放卡片的空间**：手机竖屏此前 `#castFeed` 空槽高度为 0，首次施法时卡片把播报条从 0 撑到 28px，棋盘被瞬间推下（"释放技能突然挤压界面"）；现在战斗中固定占位 28px（空槽也保留），施法卡片出现/退场零位移（实测两模式 boardwrap 位移 0px，main 零溢出）。

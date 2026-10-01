@@ -199,11 +199,13 @@
   html[data-theme="dark"] .flow-shell .flow-mode-card[aria-checked="true"] { border-color:var(--st-accent2)!important; background:rgba(38,86,91,.8); }
   html[data-theme] .flow-shell .flow-global-close { top:calc(12px + env(safe-area-inset-top)); background:var(--phone-panel); color:var(--phone-ink); border-color:var(--phone-line); }
   html[data-theme] :is(#bookModal,#histModal,#overlay,#soloHub) { padding:0; background:#101d1a66; backdrop-filter:none; }
-  html[data-theme] :is(#bookPanel,#histPanel,#ovCard,.solo-hub-dialog) { width:100%; max-height:94dvh; padding:16px; background:var(--phone-panel)!important; color:var(--phone-ink)!important; border:1px solid var(--phone-line)!important; border-radius:16px 16px 0 0; box-shadow:none; overflow-y:auto; }
+  html[data-theme] :is(#bookPanel,#histPanel,#ovCard,.solo-hub-dialog) { width:100%; max-height:94dvh; padding:16px 16px calc(16px + env(safe-area-inset-bottom))!important; background:var(--phone-panel)!important; color:var(--phone-ink)!important; border:1px solid var(--phone-line)!important; border-radius:16px 16px 0 0; box-shadow:none; overflow-y:auto; }
   html[data-theme] :is(#bookHead h2,#histTitle,#overlay h2,.solo-hub-head h2) { color:var(--phone-ink); font-size:19px; }
   html[data-theme] #bookHead { flex-wrap:wrap; gap:8px; }
   html[data-theme] #bookTabs { order:3; width:100%; display:flex; }
-  html[data-theme] :is(.btab,#histTabs .btn,.bf-chip) { min-height:44px; color:var(--phone-ink); background:var(--phone-surface); border-color:var(--phone-line); border-radius:6px; }
+  html[data-theme] :is(.btab,#histTabs .btn) { min-height:44px; color:var(--phone-ink); background:var(--phone-surface); border-color:var(--phone-line); border-radius:6px; }
+  /* 筛选按钮是密集控件（图鉴 22+ 项）：32px 紧凑胶囊，与联机 codex-chip 统一 */
+  html[data-theme] .bf-chip { min-height:32px; padding:4px 10px; color:var(--phone-ink); background:var(--phone-surface); border-color:var(--phone-line); border-radius:6px; }
   html[data-theme] .btab.on,html[data-theme] #histTabs .btn.on,html[data-theme] .bf-chip.on { background:var(--gold-dim); color:var(--gold-hi); border-color:var(--gold); }
   html[data-theme="dark"] .btab.on,html[data-theme="dark"] #histTabs .btn.on,html[data-theme="dark"] .bf-chip.on { background:var(--gold-dim); color:var(--gold-hi); }
   html[data-theme] #bookGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
