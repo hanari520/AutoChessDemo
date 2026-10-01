@@ -1,0 +1,98 @@
+/* ============================================================================
+   经典操作界面 × 八人联机 · 适配层
+   经典核心样式来自 online/classic-ui.css（index.html <style> 的照搬副本），
+   皮肤来自 tools/idol-ui.css / idol-redesign.css / idol-dark.css / stage-themes.css /
+   mobile-stage.css / portrait-ui.css（与经典模式同一套文件）。
+   本文件只做三件事：①联机页面骨架（大厅/对局切换）的容器适配；
+   ②八人战况面板（经典 arenaPanel 样式复用）；③战斗层挂在经典棋盘上的少量补丁。
+   ============================================================================ */
+
+/* ===== ① 页面骨架：大厅保持自然滚动，对局内切经典 flex 列布局 ===== */
+/* 经典样式假设 topbar/main/shopbar 是 body 直接子级；联机页多了站点页头与 <main> 包裹，
+   这里把 flex 高度链补齐：body → main → roomScreen → gameSection 逐级 flex:1。 */
+body:not(.online-playing) { height:auto; min-height:100vh; overflow:auto; display:block; }
+body.online-playing { height:100vh; height:100dvh; overflow:hidden; display:flex; flex-direction:column; background:#120f0a; }
+body.online-playing main { flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
+  max-width:none; margin:0; padding:0; }
+body.online-playing #entryScreen,
+body.online-playing #lobbySection { display:none !important; }
+#roomScreen { flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
+#gameSection { flex:1 1 auto; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+#gameSection[hidden] { display:none; }
+body.online-playing #roomAlert { margin:6px 12px 0; }
+
+/* 对局内隐藏站点页头：顶栏 y=0 与经典完全一致（省 49px 纵向空间）；
+   返回/离房/邀请/图鉴/主题/音效/玩法 全部在游戏顶栏与触屏「更多」抽屉里有入口 */
+body.online-playing .topbar { display:none; }
+
+/* ===== ② 八人战况（经典 .panel + arenaInfo 行样式；数据=8 名玩家血量/名次） ===== */
+#arenaPanel .pl-row { display:flex; justify-content:space-between; align-items:center; gap:6px;
+  font-size:12px; line-height:1.8; color:var(--tx1); width:100%; background:none; border:0;
+  padding:0 2px; cursor:pointer; text-align:left; font-family:inherit; }
+#arenaPanel .pl-row:hover { color:var(--gold-hi); }
+#arenaPanel .pl-row.me { color:var(--gold-hi); font-weight:bold; }
+#arenaPanel .pl-row.out { color:#777b91; font-size:11px; line-height:1.65; cursor:default; }
+#arenaPanel .pl-row.watching { color:#8dff9a; }
+#arenaPanel .pl-row .pl-hp-track { flex:1; height:5px; min-width:34px; border-radius:3px;
+  background:rgba(255,255,255,.08); overflow:hidden; }
+#arenaPanel .pl-row .pl-hp-track i { display:block; height:100%; background:linear-gradient(90deg,#e0584c,#ff9a6b); }
+#arenaPanel .pl-row.out .pl-hp-track { visibility:hidden; }
+#arenaPanel .pl-hint { font-size:11px; color:var(--tx2); margin-top:4px; }
+
+/* 备战席标题（经典 bench 内嵌文字标签） */
+#bench { position:relative; }
+
+/* ===== ③b 联机战斗中：棋盘上方常驻 8 人血量微条 =====
+   经典在战斗中隐藏 #oppBar（单机无多人血量）；联机需要随时看到其他人血量，
+   复用同一位置的对手条（高度一致 → 零挤压），点击（触屏）打开战况抽屉看名次/观战。 */
+html[data-theme] body.online-playing.touch[data-phase="battle"] #oppBar { display:block; }   /* 提级盖过 portrait-ui 的战斗隐藏规则 */
+body.online-playing #oppBar .hp-strip { display:inline-flex; gap:5px; margin-left:6px; vertical-align:middle; }
+body.online-playing #oppBar .hp-strip i { font-style:normal; font-size:10.5px; color:var(--tx1); opacity:.85; white-space:nowrap; }
+body.online-playing #oppBar .hp-strip i.me { color:var(--gold-hi); font-weight:bold; opacity:1; }
+body.online-playing #oppBar .hp-strip i.out { color:var(--tx3); opacity:.5; text-decoration:line-through; }
+
+/* ===== ③ 战斗层挂经典棋盘：效果层铺满 #board 内侧 ===== */
+/* 尺寸用 inset 由棋盘决定，绝不能用 --cell 计算：battle-effects.js 的 ResizeObserver
+   会用层宽反推 --cell，若层宽又依赖 --cell 会形成正反馈把层指数放大（曾撑到 2060px 溢出）。 */
+#board .battle-effects { position:absolute; inset:var(--pad);
+  pointer-events:none; z-index:40; overflow:visible; }
+
+/* 顶栏回合刻度：联机=8 席存活刻度（无 boss 长格） */
+#roundTicks i { width:8px; }
+
+/* ===== ④ 触屏移动模式：攻击范围必须盖过「可放目标」绿框 =====
+   经典样式里 .mv-hl（点选移动的可放格）在样式表后段，box-shadow 会覆盖同格的
+   .rng-hl/.rng-src（攻击范围）——桌面端没有 mv-hl 所以不存在此冲突，触屏上
+   小屏+全下半区绿框会让蓝色范围几乎不可见。这里给触屏单独加强范围样式并让
+   重叠格以范围颜色为准（源格金框 / 可攻击格蓝框）。 */
+body.touch #board .cell.rng-hl { background:rgba(91,159,216,.34); box-shadow:inset 0 0 0 2px rgba(122,190,255,.95); }
+body.touch #board .cell.rng-src { background:rgba(224,169,78,.34); box-shadow:inset 0 0 0 2px var(--gold); }
+body.touch #board .cell.mv-hl.rng-hl { box-shadow:inset 0 0 0 2px rgba(122,190,255,.95); }
+body.touch #board .cell.mv-hl.rng-src { box-shadow:inset 0 0 0 2px var(--gold); filter:none; }
+/* 触屏装备卡整卡可拖：经典只给 .item-chip 设了 touch-action:none，
+   按住卡片描述区拖动会被页面滚动接管（拖不到棋子上） */
+body.touch .gear-item-card { touch-action:none; -webkit-touch-callout:none; }
+
+/* 触屏选中源棋子：绿光加强，便于在大片绿框中定位自己 */
+body.touch #board .unit.mvsrc { box-shadow:0 0 0 2px rgba(84,199,162,.95), 0 0 10px rgba(84,199,162,.6); }
+
+/* 对局菜单按钮（顶栏）：复用经典 .btn */
+#roomMenuBtn .en { font-size:10px; }
+
+/* 战报：经典 #log 样式已由核心块提供；联机追加时间戳行 */
+#log .lg-round { color:var(--gold-hi); font-weight:bold; }
+
+/* 小屏图鉴：标题与页签不换行（窄屏下"棋子图鉴"/"羁绊"会被挤成两行） */
+@media (max-width:600px){
+  .codex-head h2 { font-size:15px; white-space:nowrap; }
+  .codex-tabs .btab { font-size:11px; padding:6px 8px; white-space:nowrap; }
+  .codex-head .codex-close, .codex-head button { white-space:nowrap; }
+}
+
+/* 快捷键说明对话框（经典 flow-card 风格复用） */
+#hotkeyDialog { border:0; padding:0; background:transparent; }
+#hotkeyDialog::backdrop { background:rgba(5,4,3,.72); }
+#hotkeyDialog .panel { width:min(92vw,470px); max-height:80vh; overflow-y:auto; padding:16px 18px; }
+#hotkeyDialog h2 { font-size:15px; color:var(--gold-hi); letter-spacing:2px; margin-bottom:8px; }
+#hotkeyDialog p { font-size:12.5px; color:var(--tx1); line-height:1.7; margin-bottom:6px; }
+#hotkeyDialog .hk-row { display:flex; justify-content:flex-end; margin-top:10px; }

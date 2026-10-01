@@ -17,10 +17,10 @@
     --tx3:var(--phone-muted); --bg1:var(--phone-bg); --bg2:var(--phone-panel);
     --line:var(--phone-line); --line-2:var(--phone-line);
     --gold:var(--phone-gold); --gold-hi:var(--phone-gold);
-    --cell:min(calc((100vw - 42px)/8),calc((100dvh - 366px)/9));
+    --cell:min(calc((100vw - 42px)/8),calc((100dvh - 480px)/9));   /* 480 = 原 366 + 羁绊两行/商店卡精简后的净预留（满场 13 羁绊不挤压棋盘） */
     color:var(--phone-ink); background:var(--phone-bg); font-family:system-ui,'Microsoft YaHei',sans-serif;
   }
-  html[data-theme] body.touch { background:linear-gradient(180deg,#eff7ffbd,#f2effbd9),url('../assets/ui/idol-arena-v2.png') center/cover,var(--phone-bg); --st-ink:var(--phone-ink); --st-muted:var(--phone-muted); --st-accent:var(--phone-accent); --st-accent2:#62c7bd; }
+  html[data-theme] body.touch { background:linear-gradient(180deg,#eff7ffbd,#f2effbd9),url('../assets/ui/idol-arena-v2.png') center/cover,var(--phone-bg); --st-ink:var(--phone-ink); --st-muted:var(--phone-muted); --st-accent:var(--phone-accent); --st-accent2:#62c7bd; --bcell:calc(var(--cell)*.92); }
   html[data-theme="dark"] body.touch { background:linear-gradient(180deg,#0e153099,#0e1530dd),url('../assets/ui/idol-arena-night.png') center/cover,var(--phone-bg); }
   html[data-theme] body::before, html[data-theme] #main::before { display:none; }
   html[data-theme] button:focus-visible { outline:3px solid var(--phone-accent); outline-offset:2px; }
@@ -51,8 +51,8 @@
   html[data-theme] #resHp::before { color:var(--phone-danger); }
   html[data-theme] #ticketTag { display:none; }
   html[data-theme] body.touch #roundBox { background:none; border:0; }
-  html[data-theme] body.touch #mMenuBtn { min-height:44px; min-width:44px; margin:0; padding:8px; color:var(--phone-ink); background:var(--phone-surface); border-color:var(--phone-line); border-radius:8px; }
-  html[data-theme] body.touch #main { display:flex; flex:1; min-height:0; overflow:auto; padding:8px 10px; justify-content:center; align-items:center; }
+  html[data-theme] body.touch #mMenuBtn { min-height:44px; min-width:44px; margin:0; padding:8px; color:var(--phone-ink); background:var(--phone-surface); border-color:var(--phone-line); border-radius:8px; font-size:12px; }
+  html[data-theme] body.touch #main { display:flex; flex:1; min-height:0; overflow:auto; padding:4px 10px; justify-content:center; align-items:center; }
   html[data-theme] body.touch #boardwrap { width:100%; max-width:480px; flex:none; padding:0; gap:6px; border:0; border-radius:0; background:none; box-shadow:none; perspective:none; transform:none!important; margin-bottom:0!important; }
   html[data-theme] #boardwrap::before, html[data-theme] #boardwrap::after { display:none; }
   html[data-theme] body.touch #board { gap:2px; padding:5px; transform:none; border:1px solid var(--phone-line); border-radius:12px; background:var(--phone-panel); box-shadow:0 8px 24px #748dc322,0 0 0 3px #ffffff66; }
@@ -71,27 +71,35 @@
   html[data-theme] #castFeed { min-height:0; background:none; border:0; }
   html[data-theme] #castFeed:has(.cf-slot:empty):not(:has(.cf-entry)) { margin:0; }
   html[data-theme] body.portrait-play #shopbar {
-    display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:28px 108px 44px 44px;
-    gap:6px; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); height:auto;
+    display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:24px 96px 44px 44px;
+    gap:5px; padding:6px 10px calc(6px + env(safe-area-inset-bottom)); height:auto;
     background:var(--phone-panel); border-top:1px solid var(--phone-line); box-shadow:0 -4px 16px #153f3808;
   }
   html[data-theme] #shopbar::before { display:none; }
   html[data-theme] body.portrait-play #playerBox { grid-column:1/-1; grid-row:1; padding:0; background:none; border:0; box-shadow:none; }
-  html[data-theme] body.portrait-play #lvlBox { display:flex; gap:8px; padding:0; align-items:center; height:28px; }
+  html[data-theme] body.portrait-play #lvlBox { display:flex; gap:8px; padding:0; align-items:center; height:24px; }
   html[data-theme] #lvlBox .ln, html[data-theme] #lvlBox .sub, html[data-theme] #xpText { color:var(--phone-muted); font-size:11px; }
   html[data-theme] #lvlNum { color:var(--phone-ink); }
   html[data-theme] #lvlBox .xpbar { background:var(--phone-surface); height:4px; border:0; }
   html[data-theme] #lvlBox .xpfill { background:var(--phone-accent); box-shadow:none; }
   html[data-theme] body.portrait-play #playerBox::before { display:none; }
   html[data-theme] body.portrait-play #shopbar>#shop { display:grid; grid-column:1/-1; grid-row:2; grid-template-columns:repeat(5,minmax(0,1fr)); width:100%; gap:5px; min-height:0; padding:0; overflow:visible; }
-  html[data-theme] body.portrait-play #shop .card { flex:none; width:auto; min-width:0; max-width:none; min-height:0; height:108px; border-radius:6px; border:1px solid var(--phone-line); box-shadow:none; }
-  html[data-theme] body.portrait-play #shop .card .art { height:54px; max-height:54px; }
+  html[data-theme] body.portrait-play #shop .card { flex:none; width:auto; min-width:0; max-width:none; min-height:0; height:96px; border-radius:6px; border:1px solid var(--phone-line); box-shadow:none; }
+  /* 商店卡精简（对齐手游惯例）：隐藏血量/攻击，只留费用角标（左上悬浮，避开右上徽章），
+     省下的高度给立绘与羁绊区 */
+  html[data-theme] body.portrait-play #shop .card .stb {
+    position:absolute; top:2px; right:2px; left:auto; margin:0; padding:0; height:auto;
+    background:none; border:0; z-index:3;
+  }
+  html[data-theme] body.portrait-play #shop .card .stb .stat { display:none; }
+  /* 对子/羁绊触发徽章：底部通栏小字（低频信息，不抢立绘与费用的视觉） */
+  html[data-theme] body.portrait-play #shop .card .badges {
+    top:auto; bottom:0; left:0; right:0; justify-content:center; gap:2px;
+    font-size:8px; padding:1px 2px; background:linear-gradient(transparent, rgba(255,255,255,.92) 30%);
+  }
+  html[data-theme] body.portrait-play #shop .card .art { height:44px; max-height:44px; }
   html[data-theme] body.portrait-play #shop .card .artbg { background-color:var(--phone-surface); }
   html[data-theme] body.portrait-play #shop .card .cn { padding:0 4px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  html[data-theme] body.portrait-play #shop .card .tis { padding:2px 3px; height:18px; overflow:hidden; }
-  html[data-theme] body.portrait-play #shop .card .tb { font-size:8px; padding:1px 2px; }
-  html[data-theme] body.portrait-play #shop .card .stb { padding:2px 3px; margin:0; height:17px; font-size:8px; }
-  html[data-theme] body.portrait-play #shop .card .badges { top:4px; right:3px; font-size:9px; }
   html[data-theme] body.portrait-play #portraitActions { grid-column:1/-1; grid-row:3; display:grid; grid-template-columns:1fr 1fr 1.25fr; gap:6px; }
   html[data-theme] body.portrait-play #portraitActions>.btn { min-height:44px; padding:6px; font-size:12px; }
   html[data-theme] body.portrait-play #fightBox { margin:0; grid-column:auto; grid-row:auto; }
@@ -104,6 +112,40 @@
   html[data-theme] body.portrait-play #mBondBtn { grid-column:2; }
   html[data-theme] body.portrait-play #mEquipBtn { grid-column:3; }
   html[data-theme] body.portrait-play #mSideBtn { grid-column:4; }
+
+  /* ===== 羁绊常驻 chips：棋盘上方两行，激活绿框 + ✓（参考成熟自走棋手游的信息架构） ===== */
+  html[data-theme] body.portrait-play #synCol {
+    width:100%; max-width:480px; flex:none; height:auto;
+    max-height:48px; overflow-y:auto; overflow-x:hidden;   /* 两行封顶：羁绊多时内部滚动（已触发档位排前），不挤压棋盘 */
+    flex-direction:row; flex-wrap:wrap; gap:4px; padding:0;
+  }
+  html[data-theme] body.portrait-play #synCol :is(.syn-head,.syn-foot) { display:none; }
+  html[data-theme] body.portrait-play #synAll { display:flex; flex-wrap:wrap; gap:5px; }
+  html[data-theme] body.portrait-play #synAll .syn-badge {
+    display:inline-flex; align-items:center; width:auto; min-width:0; padding:1px 6px;
+    border-radius:999px; background:var(--phone-surface); border:1px solid var(--phone-line); box-shadow:none;
+  }
+  html[data-theme] body.portrait-play #synAll .syn-badge .syn-eff,
+  html[data-theme] body.portrait-play #synAll .syn-badge .pips { display:none; }   /* 效果/档位点收进 title */
+  html[data-theme] body.portrait-play #synAll .syn-badge .syn-top { gap:3px; font-size:12px; line-height:1.25; color:var(--phone-muted); }
+  html[data-theme] body.portrait-play #synAll .syn-badge :is(.ico,.syn-atlas) { width:13px; height:13px; }
+  html[data-theme] body.portrait-play #synAll .syn-badge.on { border-color:#7fc9a5; background:#e9f8f0; }
+  html[data-theme] body.portrait-play #synAll .syn-badge.on .syn-top { color:var(--phone-ink); font-weight:700; }
+  html[data-theme] body.portrait-play #synAll .syn-badge.on::after { content:'✓'; color:#3f9e6f; font-weight:800; margin-left:2px; }
+  html[data-theme="dark"] body.portrait-play #synAll .syn-badge.on { border-color:#4e8f72; background:#1d3a2e; }
+  html[data-theme] body.portrait-play #synAll .syn-empty { font-size:12px; color:var(--phone-muted); }
+
+  /* 商店卡羁绊标签：去掉血/攻后腾出的空间给羁绊——标签换行两行完整显示（文字保留），
+     窄卡一行两个（图标 10px + 9px 字），三羁绊全可见 */
+  html[data-theme] body.portrait-play #shop .card .tis { height:auto; min-height:0; flex-wrap:wrap; gap:1px 2px; padding:1px 2px; overflow:visible; }
+  html[data-theme] body.portrait-play #shop .card .tb { font-size:9px; padding:0; gap:0; line-height:1.05; }
+  html[data-theme] body.portrait-play #shop .card .ti.syn-atlas { width:9px; height:9px; }
+
+  /* 羁绊已常驻：抽屉入口让位，底栏四键改三键 */
+  html[data-theme] body.portrait-play #mBondBtn { display:none; }
+  html[data-theme] body.portrait-play #shopbar { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  html[data-theme] body.portrait-play #mEquipBtn { grid-column:2; }
+  html[data-theme] body.portrait-play #mSideBtn { grid-column:3; }
   html[data-theme] body.touch #mDrawer { background:#101d1a55; pointer-events:auto; }
   html[data-theme] body.touch #mDrawerBox { margin-bottom:0!important; max-height:82dvh; border-radius:16px 16px 0 0; border:1px solid var(--phone-line); color:var(--phone-ink)!important; background:var(--phone-panel)!important; box-shadow:none; backdrop-filter:none; }
   html[data-theme] #mDrawerBox::before { content:''; display:block; flex:none; height:4px; width:32px; border-radius:4px; margin:8px auto 0; background:var(--phone-line); }
@@ -132,7 +174,8 @@
   html[data-theme="dark"] .flow-shell .flow-card { background:linear-gradient(180deg,#192644e6,#0e1530ef),url('../assets/ui/idol-arena-night.png') center/cover; }
   html[data-theme] .flow-shell .flow-card h1 { text-align:left; color:var(--phone-ink); font-size:32px; letter-spacing:-1px; }
   html[data-theme] .flow-shell #flowResult h1 { font-size:24px; line-height:1.4; letter-spacing:0; }
-  html[data-theme] .flow-shell .flow-eyebrow { text-align:left; color:var(--phone-gold); font-size:10px; letter-spacing:2px; }
+  html[data-theme] .flow-shell .flow-eyebrow { text-align:left; color:#957ec5; font-size:10px; letter-spacing:2px; }
+  html[data-theme="dark"] .flow-shell .flow-eyebrow { color:#c3a9f0; }
   html[data-theme] .flow-shell :is(.flow-lead,.flow-note,.flow-scroll,.flow-save-meta,.flow-mode-details) { text-align:left; color:var(--phone-muted); font-size:14px; line-height:1.65; }
   html[data-theme] .flow-shell #homeArt { order:2; height:clamp(160px,26dvh,240px); margin:8px -20px 0; overflow:hidden; border:0; background:radial-gradient(ellipse at 50% 100%,#ffffffcc,transparent 65%),url('../assets/ui/idol-arena-v2.png') center 46%/cover; }
   html[data-theme="dark"] .flow-shell #homeArt { background:url('../assets/ui/idol-arena-night.png') center 46%/cover; }
@@ -140,7 +183,7 @@
   html[data-theme] .flow-shell #homeRecommended { order:3; }
   html[data-theme] .flow-shell #homeSaves { order:4; }
   html[data-theme] .flow-shell #homeFeedback { order:5; min-height:0; }
-  html[data-theme] .flow-shell .flow-home-actions { order:6; margin-top:auto; display:grid; grid-template-columns:1fr 1fr; }
+  html[data-theme] .flow-shell .flow-home-actions { order:6; margin-top:14px; display:grid; grid-template-columns:1fr 1fr; }
   html[data-theme] .flow-shell .flow-actions button { border-radius:8px; min-height:48px; padding:12px; font-size:14px; box-shadow:none; }
   html[data-theme] .flow-shell :is(.flow-primary,#homeNew) { color:#fff; background:var(--phone-cta); border-color:transparent!important; }
   html[data-theme] .flow-shell :is(.flow-secondary,.flow-save-card button,.flow-mode-card,.flow-mode-details,.flow-save-card) { color:var(--phone-ink); background:var(--phone-panel); border-color:var(--phone-line)!important; border-radius:8px; box-shadow:none; }
@@ -150,7 +193,8 @@
   html[data-theme] .flow-shell :is(#homeNew,#homeContinue,#homeOnline) { grid-column:1/-1; width:100%; }
   html[data-theme] .flow-shell .flow-mode-grid { grid-template-columns:1fr; gap:8px; }
   html[data-theme] .flow-shell .flow-mode-card { padding:16px; }
-  html[data-theme] .flow-shell .flow-mode-card[aria-checked="true"] { border-color:var(--phone-accent)!important; background:var(--phone-surface); }
+  html[data-theme] .flow-shell .flow-mode-card[aria-checked="true"] { border-color:#64c6b5!important; background:#ecfbf8; box-shadow:0 0 0 2px rgba(73,205,184,.12); }
+  html[data-theme="dark"] .flow-shell .flow-mode-card[aria-checked="true"] { border-color:var(--st-accent2)!important; background:rgba(38,86,91,.8); }
   html[data-theme] .flow-shell .flow-global-close { top:calc(12px + env(safe-area-inset-top)); background:var(--phone-panel); color:var(--phone-ink); border-color:var(--phone-line); }
   html[data-theme] :is(#bookModal,#histModal,#overlay,#soloHub) { padding:0; background:#101d1a66; backdrop-filter:none; }
   html[data-theme] :is(#bookPanel,#histPanel,#ovCard,.solo-hub-dialog) { width:100%; max-height:94dvh; padding:16px; background:var(--phone-panel)!important; color:var(--phone-ink)!important; border:1px solid var(--phone-line)!important; border-radius:16px 16px 0 0; box-shadow:none; overflow-y:auto; }
@@ -158,6 +202,8 @@
   html[data-theme] #bookHead { flex-wrap:wrap; gap:8px; }
   html[data-theme] #bookTabs { order:3; width:100%; display:flex; }
   html[data-theme] :is(.btab,#histTabs .btn,.bf-chip) { min-height:44px; color:var(--phone-ink); background:var(--phone-surface); border-color:var(--phone-line); border-radius:6px; }
+  html[data-theme] .btab.on,html[data-theme] #histTabs .btn.on,html[data-theme] .bf-chip.on { background:var(--gold-dim); color:var(--gold-hi); border-color:var(--gold); }
+  html[data-theme="dark"] .btab.on,html[data-theme="dark"] #histTabs .btn.on,html[data-theme="dark"] .bf-chip.on { background:var(--gold-dim); color:var(--gold-hi); }
   html[data-theme] #bookGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
   html[data-theme] #bookGrid .bcard { min-width:0; padding:12px 8px; color:var(--phone-ink); background:var(--phone-surface); border-color:var(--phone-line); border-radius:10px; box-shadow:none; }
   html[data-theme] #bookGrid :is(.bn,.bs,.bf2,.bp),html[data-theme] #bookPanel :is(.bsy-title,.bsy-desc,.bsy-mem,.bsy-need) { color:var(--phone-ink); }
@@ -200,7 +246,7 @@
   html[data-theme] .idol-guide-bond :is(b,span b) { color:var(--phone-accent); }
   @media (max-height:700px) {
     html[data-theme] body.touch #main { justify-content:flex-start; }
-    html[data-theme] body { --cell:min(calc((100vw - 42px)/8),calc((100dvh - 330px)/9)); }
+    html[data-theme] body { --cell:min(calc((100vw - 42px)/8),calc((100dvh - 378px)/9)); }
     html[data-theme] body.portrait-play #shopbar { grid-template-rows:24px 84px 44px 44px; gap:4px; padding-top:6px; }
     html[data-theme] body.portrait-play #shop .card { height:84px; }
     html[data-theme] body.portrait-play #shop .card .art { height:36px; }

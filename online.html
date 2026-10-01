@@ -5,15 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eef4ff">
   <link rel="icon" href="assets/ui/star-stage-icon.svg" type="image/svg+xml">
+  <!-- 大厅 / 入口沿用联机样式 -->
+  <link rel="stylesheet" href="online/client.css?v=17">
+  <!-- 经典模式操作界面：核心样式照搬自 index.html 内嵌样式块，皮肤层与经典共用同一批 tools 文件 -->
+  <link rel="stylesheet" href="online/classic-ui.css?v=1">
   <link rel="stylesheet" href="tools/battle-presentation.css?v=1">
-  <link rel="stylesheet" href="online/client.css?v=15">
-  <link rel="stylesheet" href="online/classic-match.css?v=5">
-  <link rel="stylesheet" href="online/theme.css?v=2">
-<link rel="stylesheet" href="tools/battle-hud.css?v=1">
-<link rel="stylesheet" href="tools/match-layout.css?v=2">
+  <link rel="stylesheet" href="tools/idol-ui.css?v=2">
+  <link rel="stylesheet" href="tools/idol-redesign.css?v=12">
+  <link rel="stylesheet" href="tools/mobile-stage.css?v=2">
+  <link rel="stylesheet" href="tools/idol-dark.css?v=5">
+  <link rel="stylesheet" href="tools/stage-themes.css?v=2">
+  <link rel="stylesheet" href="tools/battle-hud.css?v=1">
   <link rel="stylesheet" href="tools/preparation-presentation.css?v=1">
-<link rel="stylesheet" href="online/mobile-redesign.css?v=3">
-<link rel="stylesheet" href="online/shop-parity.css?v=1">
+  <link rel="stylesheet" href="tools/portrait-ui.css?v=3">
+  <link rel="stylesheet" href="online/theme.css?v=3">
+  <link rel="stylesheet" href="online/classic-online.css?v=1">
   <script>try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#0a0d1c':'#f6f8fd'</script>
   <script src="online/theme.js?v=1" defer></script>
   <title>八人联机 · 星域棋战</title>
@@ -21,8 +27,8 @@
 <body>
   <header class="topbar">
     <a class="back" href="index.html" aria-label="返回单机游戏">← 单机模式</a>
-    <div class="brand"><span class="brand-mark">✦</span><span>星域棋战</span><span class="brand-sub">八人联机</span></div>
-    <div class="topbar-actions"><div id="connection" class="connection" role="status" aria-live="polite"><span class="status-dot"></span><span>未连接</span></div><button id="codexBtn" class="button" type="button" aria-label="打开棋子图鉴">📖 图鉴</button><button id="themeBtn" class="button theme-toggle" type="button" aria-label="切换暗色模式">🌙<span class="theme-label">暗色</span></button></div>
+    <div class="brand"><span class="brand-mark">✦</span><span class="brand-name">星域棋战</span><span class="brand-sub">八人联机</span></div>
+    <div class="topbar-actions"><div id="connection" class="connection" role="status" aria-live="polite"><span class="status-dot"></span><span>未连接</span></div><button id="codexBtn" class="button" type="button" aria-label="打开棋子图鉴">📖<span class="btn-label"> 图鉴</span></button><button id="themeBtn" class="button theme-toggle" type="button" aria-label="切换暗色模式">🌙<span class="theme-label">暗色</span></button></div>
   </header>
 
   <main>
@@ -48,45 +54,126 @@
       </div>
     </section>
 
-    <section id="roomScreen" class="room-screen" aria-label="联机房间" hidden>
-      <div class="room-heading">
-        <div><p class="eyebrow" id="roomCaption">ROOM LOBBY</p><h1>房间 <span id="roomCode">------</span></h1><p id="roomHint" class="muted">等待玩家入座</p></div>
-        <div class="room-controls"><button id="copyInviteBtn" class="button" type="button">复制邀请链接</button><button id="leaveBtn" class="button quiet" type="button">返回入口</button></div>
-      </div>
-      <div id="roomAlert" class="room-alert" role="alert" hidden></div>
+    <section id="roomScreen" aria-label="联机房间" hidden>
       <div id="lobbySection" class="lobby-layout">
-        <section class="panel"><div class="section-heading"><h2>席位</h2><span id="occupancy">0 / 8</span></div><ol id="lobbySeats" class="seat-grid" aria-label="八个玩家席位"></ol></section>
-        <aside class="panel lobby-aside"><h2>开局准备</h2><p>八名玩家都入座并点击就绪后，对局自动开始。人不够时，房主可以添加机器人替补。</p><button id="lobbyReadyBtn" class="button primary wide" type="button" disabled>我已准备</button><button id="addBotBtn" class="button wide" type="button" hidden>添加机器人替补</button><p id="lobbyNotice" class="muted">连接房间中…</p><div class="rule-note"><strong>八人联机模式</strong><span>八人共享卡池，轮流迎战不同对手。招募、升星、装备与站位共同决定阵容强度；离开后可在这台设备上重连对局。</span></div></aside>
+        <div class="room-heading">
+          <div><p class="eyebrow" id="roomCaption">ROOM LOBBY</p><h1>房间 <span id="roomCode">------</span></h1><p id="roomHint" class="muted">等待玩家入座</p></div>
+          <div class="room-controls"><button id="copyInviteBtn" class="button" type="button">复制邀请链接</button><button id="leaveBtn" class="button quiet" type="button">返回入口</button></div>
+        </div>
+        <div id="roomAlert" class="room-alert" role="alert" hidden></div>
+        <div class="lobby-grid">
+          <section class="panel"><div class="section-heading"><h2>席位</h2><span id="occupancy">0 / 8</span></div><ol id="lobbySeats" class="seat-grid" aria-label="八个玩家席位"></ol></section>
+          <aside class="panel lobby-aside"><h2>开局准备</h2><p>八名玩家都入座并点击就绪后，对局自动开始。人不够时，房主可以添加机器人替补。</p><button id="lobbyReadyBtn" class="button primary wide" type="button" disabled>我已准备</button><button id="addBotBtn" class="button wide" type="button" hidden>添加机器人替补</button><p id="lobbyNotice" class="muted">连接房间中…</p><div class="rule-note"><strong>八人联机模式</strong><span>八人共享卡池，轮流迎战不同对手。招募、升星、装备与站位共同决定阵容强度；离开后可在这台设备上重连对局。</span></div></aside>
+        </div>
       </div>
 
-      <div id="gameSection" class="game-layout" hidden>
-        <section class="panel round-panel"><div class="round-head"><div><p class="eyebrow" id="phaseLabel">备战</p><h2 id="roundTitle">第 1 回合</h2></div><div class="level-progress"><div class="level-progress-label"><span id="levelProgressText">等级 2 · 0 / 8 经验</span><span id="levelProgressNext">下一等级</span></div><div id="levelProgressTrack" class="level-progress-track" role="progressbar" aria-label="等级经验" aria-valuemin="0" aria-valuenow="0" aria-valuemax="8"><span id="levelProgressFill"></span></div></div><div id="playerStats" class="stat-row"></div></div><div id="pairingText" class="pairing-text">等待配对</div></section>
-        <aside class="panel scoreboard-panel"><div class="section-heading"><h2>八席战况</h2><span id="aliveCount">8 人存活</span></div><ol id="scoreboard" class="scoreboard"></ol></aside>
-        <div class="game-center">
-          <section id="combatPanel" class="panel combat-panel" hidden><div class="section-heading"><h2 id="combatTitle">本轮战斗</h2><span id="combatCaption">同步服务端战斗</span></div><div class="stage-key"><span>◆ 对手</span><span>● 我方</span></div><div id="battleArena" class="battle-arena" aria-label="战斗棋盘"></div><p id="battleFeed" class="battle-feed" aria-live="polite">等待战斗事件…</p><details class="battle-damage"><summary>我方伤害与治疗</summary><div id="battleDamage"></div></details></section>
-          <section id="arenaPanel" class="panel arena-panel"><div class="section-heading"><h2 id="arenaTitle">上阵棋盘</h2><span id="boardCount">0 / 1</span></div><div class="stage-key"><span>◆ 对手战区</span><span>● 我方布阵区 · 32 格自由站位</span></div><div id="boardGrid" class="unit-grid board-grid" aria-label="上阵棋盘"></div><p class="muted small board-help">选择棋子，再点击下半场任意空格布阵。最多上阵数量由等级决定。</p></section>
-          <section class="panel bench-panel"><div class="section-heading"><h2>备战席</h2><span>8 格</span></div><div id="benchGrid" class="unit-grid bench-grid" aria-label="备战席"></div></section>
-          <div id="selectionBar" class="selection-bar" hidden><span id="selectionText"></span><button id="sellBtn" class="button danger" type="button">出售</button><button id="cancelSelectionBtn" class="button quiet" type="button">取消选择</button></div>
+      <!-- ===== 对局界面：经典模式操作界面照搬（topbar / main / shopbar），仅增加八人战况面板 ===== -->
+      <div id="gameSection" hidden>
+        <div id="topbar">
+          <span id="roundBox" title="当前回合（刻度 = 八席存活数）">
+            <span class="rn"><b id="round">1</b><span class="rm" id="roundMax">/∞</span></span>
+            <span id="roundTicks" aria-hidden="true"></span>
+          </span>
+          <span class="res" id="resHp" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 21C7.2 16.7 3 13.4 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 4.4-4.2 7.7-9 12z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="hp">40</span><span class="rl">生命</span></span>
+          <span class="res" id="resGold" title="利息：每10金+1，上限3。下回合利息预览见绿色数字" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/svg%3E&quot;)"><span class="rv" id="gold">0</span><span class="ri" id="interest"></span><span class="rl">金币</span></span>
+          <span class="res" id="resPop" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Ccircle cx='9' cy='8' r='3.2'/%3E%3Cpath d='M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5z'/%3E%3Ccircle cx='17' cy='9' r='2.5'/%3E%3Cpath d='M15.5 14c2.9.3 5.5 2 5.5 5h-4.6z'/%3E%3C/svg%3E&quot;)"><span class="rv"><span id="pop">0</span>/<span id="popMax">2</span></span><span class="rl">人口</span></span>
+          <span class="res" id="resStreak" title="连胜/连败 3→+2金、5→+3金、7+→+4金" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3c.5 3-4 5.5-4 9.5a4 4 0 0 0 8 0C16 9 13 8 12 3z'/%3E%3Cpath d='M12 17.5a2.5 2.5 0 0 1-2.5-2.5c0-1.4 1.2-2.3 2.5-3.8 1.3 1.5 2.5 2.4 2.5 3.8a2.5 2.5 0 0 1-2.5 2.5z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="streak">0</span><span class="rl">连胜</span></span>
+          <span class="spacer"></span>
+          <div class="fight-btn-row">
+            <button class="btn ic" id="sfxBtn" title="音效开关" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 9v6h3.5L12 19V5L7.5 9z'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7'/%3E%3C/svg%3E&quot;)"></button>
+            <button class="btn ic" id="helpBtn" title="操作说明（快捷键）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M9.6 9.3a2.4 2.4 0 1 1 3.4 2.2c-.8.4-1 .9-1 1.6M12 16.5h.01'/%3E%3C/svg%3E&quot;)">玩法</button>
+            <button class="btn ic" id="codexBtn2" title="棋子图鉴" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2z'/%3E%3Cpath d='M7 19a2 2 0 0 1 2-2h10'/%3E%3C/svg%3E&quot;)">图鉴</button>
+            <button class="btn theme-toggle" id="themeBtn2" type="button" title="切换暗色模式" aria-label="切换暗色模式">🌙</button>
+            <button class="btn ic" id="inviteBtn2" title="复制邀请链接">邀请</button>
+            <button class="btn ic" id="leaveBtn2" title="退出对局并返回入口">离房</button>
+          </div>
+          <button id="mMenuBtn" class="btn m-only" aria-label="更多功能">更多</button>
         </div>
-        <aside class="game-side">
-          <section class="panel inspect-panel"><div class="section-heading"><h2>棋子详情</h2><button id="closeInspectBtn" class="button quiet inspect-close" type="button" hidden>关闭</button></div><div id="unitInspect" class="unit-inspect"><p class="empty-message">点击场上、备战席或战斗中的棋子查看属性、技能和装备。</p></div></section>
-          <section class="panel bonds-panel"><div class="section-heading"><h2>阵容羁绊</h2><span>以上阵棋子计算</span></div><div id="bondList" class="bond-list"></div></section>
-          <section class="panel inventory-panel"><div class="section-heading"><h2>装备道具</h2><span>简化加成</span></div><div id="inventoryList" class="inventory-list"></div></section>
-          <section class="panel results-panel"><div class="section-heading"><h2>本回合对战</h2><span id="resultCaption">实时结算</span></div><div id="resultsList" class="results-list"></div></section>
-        </aside>
-        <aside class="panel shop-panel"><div class="section-heading"><h2>招募棋子</h2><span>八人共享卡池 · 每轮五选</span></div><div id="shopList" class="shop-list"></div><div class="shop-actions"><button id="rerollBtn" class="button wide" type="button">刷新 · 2 金币</button><button id="buyXpBtn" class="button wide" type="button">升级经验 · 5 金币</button><button id="gameReadyBtn" class="button primary wide" type="button">锁定阵容</button></div><p id="actionHint" class="muted small">等待对局开始</p></aside>
+        <div id="main">
+          <div id="synCol">
+            <div class="syn-head">羁绊 <span class="en">BONDS</span><span class="sub">12 阵营 · 10 职业</span></div>
+            <div id="synAll"></div>
+            <div class="syn-foot" title="打开图鉴查看全部羁绊说明" onclick="document.getElementById('codexBtn').click()">只列出场上已有的羁绊 · 查看全部</div>
+          </div>
+          <div id="boardwrap">
+            <div id="oppBar"><div id="enemyInfo">等待对局开始…</div></div>
+            <div style="position:relative">
+              <div id="board"></div>
+            </div>
+            <div id="bench"></div>
+          </div>
+          <div id="side">
+            <div class="panel" id="arenaPanel"><h3>八人战况 · 对手与名次</h3><div id="arenaInfo"></div></div>
+            <div class="panel"><h3>战斗统计</h3><div id="statBar"></div></div>
+            <div class="panel" id="equipPanel"><h3 title="点装备→点棋子穿戴；右键棋子卸下全部装备">装备</h3><div id="equip"></div></div>
+            <div class="panel" id="inspectPanel"><h3 title="单击棋子查看">棋子详情</h3><div id="inspect"><div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div></div></div>
+            <div class="panel"><h3>战报</h3><div id="log"></div></div>
+          </div>
+        </div>
+        <div id="shopbar">
+          <div id="playerBox">
+            <div id="lvlBox">
+              <div class="lvl-row"><span class="ln">Lv.<b id="lvlNum">2</b><span class="sub">（人口 <b id="pop2">0</b>/<b id="popMax2">2</b>）</span></span><span class="gd">◎<b id="gold2">0</b></span></div>
+              <div class="lvl-row"><span id="xpText">经验 0/1</span><span class="it" id="interest2">利息 +0</span></div>
+              <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
+              <div class="odds-row" id="oddsRow" title="当前商店各费用棋子出现率"></div>
+            </div>
+            <div id="pbtns">
+              <button class="btn" id="lvlBtn">买经验 (F)</button>
+              <button class="btn ic" id="deployBtn" title="从场上和备战席择优选人，并稳定调整站位（R）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Crect x='4' y='13' width='16' height='7'/%3E%3Cpath d='M12 3v8M8.5 7.5L12 4l3.5 3.5'/%3E%3C/svg%3E&quot;)">一键上阵 (R)</button>
+              <button class="btn ic" id="tidyBtn" title="整理备战席：把棋子按星级与同名聚拢，空位挪到最后（T）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 6h16M4 12h10M4 18h6'/%3E%3C/svg%3E&quot;)">整理 (T)</button>
+              <button class="btn ic" id="sellBtn" title="出售：单击棋子后按 E（或 X / Delete）；也可直接把棋子拖到这里或拖到下方商店卡片区松手（1★原价、合成折价；装备卸回装备栏）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M8 12h7M12.5 9.5L15 12l-2.5 2.5'/%3E%3C/svg%3E&quot;)">出售 (E)</button>
+            </div>
+          </div>
+          <div id="shop"></div>
+          <div id="shopctlCol">
+            <div id="goldChip" class="ic" title="当前金币（利息：每10金+1，上限3）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='3.2'/%3E%3C/svg%3E&quot;)"><b id="goldChipN">0</b><span id="goldChipI"></span></div>
+            <button class="btn shopctl ic" id="refreshBtn" title="刷新商店（D）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4'/%3E%3C/svg%3E&quot;)">刷新 (D)</button>
+            <button class="btn shopctl ic" id="lockBtn" title="锁定当前商店：仅保留到下一回合，回合结束自动解锁（L）" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Crect x='6' y='11' width='12' height='9'/%3E%3Cpath d='M9 11V7a3 3 0 0 1 6 0v4'/%3E%3C/svg%3E&quot;)">锁定 (L)</button>
+          </div>
+          <div id="fightBox">
+            <button class="btn" id="fightBtn">锁定阵容</button>
+          </div>
+          <button id="mShopBtn" class="btn m-only">商店</button>
+          <button id="mBondBtn" class="btn m-only">羁绊</button>
+          <button id="mEquipBtn" class="btn m-only">装备</button>
+          <button id="mSideBtn" class="btn m-only">详情</button>
+        </div>
+        <div id="dragGhost"></div>
+        <div id="sellBanner"></div>
+        <div id="moveHint"></div>
+        <div id="mDrawer" class="hidden">
+          <div id="mDrawerBox">
+            <div id="mDrawerHead"><b id="mDrawerTitle">面板</b>
+              <span style="display:flex;gap:6px;align-items:center">
+                <button id="mAutoInspectBtn" class="btn" style="padding:4px 10px;font-size:12px;" title="开：单击棋子直接弹出详情抽屉；关：单击棋子优先进入点选移动">详情直开：关</button>
+                <button id="mDrawerClose" class="btn">✕ 收起</button>
+              </span>
+            </div>
+            <div id="mDrawerBody">
+              <div id="mShopSec" class="m-sec hidden"></div>
+              <div id="mBondSec" class="m-sec hidden"></div>
+              <div id="mEquipSec" class="m-sec hidden"></div>
+              <div id="mSideSec" class="m-sec hidden"></div>
+              <div id="mMenuSec" class="m-sec hidden"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
-  <div id="openingOverlay" class="opening-overlay" hidden>
-    <div class="opening-panel" role="dialog" aria-modal="true" aria-label="开局三选一">
-      <h2>🎬 开局应援 · 三选一</h2>
-      <p class="opening-note">免费选择一名成员加入备战席；倒计时结束未选将自动获得第一位。</p>
-      <div class="opening-cards"></div>
+  <dialog id="hotkeyDialog">
+    <div class="panel">
+      <h2>⌨️ 操作说明</h2>
+      <p>单击棋子看详情；拖动换位 / 上场；把棋子拖到出售按钮或商店卡片区松手即卖（装备自动卸回）。右键棋子卸下全部装备。</p>
+      <p>快捷键：<b>R/A</b> 一键上阵（择优） · <b>T</b> 整理备战席 · <b>D</b> 刷新 · <b>F</b> 买经验 · <b>L</b> 锁定 · <b>E/X/Delete</b> 出售 · <b>空格</b> 锁定阵容 / 解锁</p>
+      <p>装备可拖到棋子身上穿戴；两件基础装备可在装备面板合成；⚡ 一键整理会先合成再按主C/前排分配。</p>
+      <p>点击右侧「八人战况」可观看其他玩家的棋盘，再点自己返回。</p>
+      <div class="hk-row"><button class="btn" id="hotkeyClose" type="button">明白了</button></div>
     </div>
-  </div>
-  <div id="dragSellBanner" class="drag-sell-banner" hidden></div>
+  </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  <script type="module" src="online/client.js?v=22"></script>
+  <script type="module" src="online/client.js?v=25"></script>
+  <script src="tools/portrait-ui.js?v=3" defer></script>
 </body>
 </html>

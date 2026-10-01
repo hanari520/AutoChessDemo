@@ -1,23 +1,35 @@
 import '../tools/preparation-presentation.js?v=1';
+import '../tools/bond-runtime.js';
 import { postJson, reconnectDelay, reconcileAction } from './connection.js';
-import { MAX_LEVEL, xpNeeded, interestGain, sellRefund } from './economy.js';
+import { MAX_LEVEL, xpNeeded, interestGain, sellRefund, SHOP_ODDS } from './economy.js';
 import { createBattleEffects } from './battle-effects.js?v=1';
-import { mountClassicMatchLayout, closeMatchPanel } from './layout.js?v=2';
-import { bondSummary, previewUnit } from './combat.js';
+import { bondSummary, previewUnit, ROSTER_LIST } from './combat.js';
+import { UNIT_NAMES } from './core.js';
 import { SKILL_NAMES } from './skill-names.js';
-import { EQUIPMENT, recipe, SHOP_ODDS } from './equipment.js';
-import { mountDragControls } from './interactions.js?v=2';
-import { mountCodex } from './codex.js?v=1';
+import { EQUIPMENT, recipe } from './equipment.js';
 import { CLASSIC_SKILLS, CLASSIC_MARKS, classicAttackProfile } from './skill-catalog.js';
+import { mountCodex } from './codex.js?v=1';
 import '../tools/battle-audio.js?v=1';
 
+/* ============================================================================
+   八人联机 · 经典模式操作界面
+   DOM 结构、渲染函数与交互（拖拽 / 点选 / 快捷键 / 出售 / 装备 / 战斗层）逐段照搬
+   index.html 的经典实现；差异仅两处：
+   ①状态来源是服务器快照（state.view），动作走 WS（sendAction），移动/出售/装备做乐观渲染；
+   ②右侧增加「八人战况」面板（经典 arenaPanel 同款样式），展示 8 名玩家血量与名次。
+   ============================================================================ */
+
 const $ = (id) => document.getElementById(id);
-mountClassicMatchLayout();
 mountCodex();
+const BOARD_W = 8, BOARD_H = 8, BENCH = 8;
+const IS_TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+
 const STORAGE = 'star-stage-online-session-v1';
 const API_STORAGE = 'star-stage-online-api-v1';
 const NAME_STORAGE = 'star-stage-online-name-v1';
+const AUTO_INSPECT_KEY = 'vc_autoinspect';
 const DEFAULT_API = 'https://autochess-online-321604-12-1450980602.sh.run.tcloudbase.com'; // CloudBase 云托管（上海）
+
 const skillVisuals = new Map();
 fetch('assets/skill_signature_manifest.json').then(response => response.ok ? response.json() : null).then(manifest => {
   for (const unit of manifest?.units || []) {
@@ -34,89 +46,88 @@ fetch('assets/skill_signature_manifest.json').then(response => response.ok ? res
 const state = {
   api: localStorage.getItem(API_STORAGE) || DEFAULT_API,
   session: readSession(),
-  statMode:'damage',code: '', seat: null, lobby: null, view: null, socket: null,
-  connected: false, busy: false, selected: null, seq: 1, pendingAction: null,
+  code: '', seat: null, lobby: null, view: null, socket: null,
+  connected: false, busy: false, seq: 1, pendingAction: null, actionQueue: [],
   deadline: null, phaseDurationMs: null, clockSkew: 0, spectateSeat: null,
   reconnectTimer: null, reconnectAttempts: 0, stopped: true,
   connectionTimer: null, heartbeatTimer: null, heartbeatDeadline: null,
   actionTimer: null, synced: false, lastMessageAt: 0, awaitingSync: false,
-  battlePlayback: null, battleFrame: null, inspected: null,
+  battlePlayback: null, battleFrame: null,
+  selUid: null, selItem: null, inspectUid: null, rangeFocus: null, moveSel: null,
+  statMode: 'deal', logArr: [], audioPhase: '', openingSig: '',
 };
-mountDragControls({getSeat:()=>state.view?.me,canAct,sendAction,isBoardReadOnly:()=>state.spectateSeat!=null&&state.spectateSeat!==state.seat,
-  onHover:paintDragHover,sfx:name=>audio.sfx(name)});
+let autoInspect = (()=>{ try{ return localStorage.getItem(AUTO_INSPECT_KEY)==='1' }catch(e){ return false } })();
 
-/* —— 拖拽悬停反馈（对齐经典：拖到哪显示哪的攻击范围 / 落点与可穿高亮 / 出售横幅）——
-   只切换既有格子的 class、不重建 DOM；渲染函数每次重排后用 refreshDragPaint() 补画。 */
-let dragHoverInfo=null,dragPainted=[];
-function clearDragPaint(){
-  dragPainted.forEach(el=>el.classList.remove('rng-hl','rng-src','drop-hl','equip-hl'));
-  dragPainted=[];
-  document.querySelectorAll('#boardGrid .rng-hl, #boardGrid .rng-src').forEach(el=>el.classList.remove('rng-hl','rng-src'));   // 剥掉拖拽前渲染残留的查看层
-  document.querySelector('.shop-panel')?.classList.remove('online-sell-zone');
-  const banner=$('dragSellBanner');if(banner)banner.hidden=true;
+const audio = globalThis.ClassicBattleAudio.create({speed:()=>1,silent:()=>false});
+const sfx = (...args)=>audio.sfx(...args);
+
+/* ===== 名册 / 标签工具（照搬经典 facsOf/jobsOf/synIconHTML 一族） ===== */
+const byId = id => ROSTER_LIST.find(u => u.id === id);
+const cname = u => UNIT_NAMES[u?.id] || u?.name || u?.id || '';
+const facsOf = d => d ? (d.fac2 ? [d.fac, d.fac2] : [d.fac]) : [];
+const jobsOf = d => d ? (d.job2 ? [d.job, d.job2] : [d.job]) : [];
+const facLabel = d => d ? (d.fac2 ? d.fac+'/'+d.fac2 : d.fac) : '';
+const jobLabel = d => d ? (d.job2 ? d.job+'/'+d.job2 : d.job) : '';
+const SYN_IMG = {'深海':'shenhai','星际':'xingji','毛茸乐园':'maorong','音律':'yinlv','四禧丸子':'sixi','学园':'xueyuan','夜幕':'yemu','花语':'huayu','魔道':'modao','森之国':'senzhiguo','工造':'gongzao','P-SP':'psp','刀客':'daoke','守护':'shouhu','游侠':'youxia','刺客':'cike','法师':'fashi','咒术':'zhoushu','医者':'yizhe','歌势':'geshi','偶像':'ouxiang','狂战':'kuangzhan'};
+const SYN_ICON_ORDER = Object.keys(SYN_IMG), SYN_ICON_INDEX = Object.create(null);
+SYN_ICON_ORDER.forEach((k,i)=>SYN_ICON_INDEX[k]=i);
+function synIconHTML(k, extra=''){
+  const i = SYN_ICON_INDEX[k]; if(i===undefined) return '';
+  return `<i class="syn-atlas${extra?' '+extra:''}" title="${k}" style="--syn-x:${(i%5)*25}%;--syn-y:${Math.floor(i/5)*25}%"></i>`;
 }
-function paintDragHover(info){
-  dragHoverInfo=info;
-  clearDragPaint();
-  if(!info)return;
-  const boardCell=i=>$('boardGrid')?.children?.[i]||null;
-  const benchCell=slot=>document.querySelector(`#benchGrid [data-zone="bench"][data-slot="${slot}"]`);
-  if(info.cell){
-    const {zone,slot}=info.cell;
-    const wrap=zone==='board'?boardCell(slot):benchCell(slot);
-    if(wrap){wrap.classList.add('drop-hl');dragPainted.push(wrap);}
-    if(!info.isItem&&info.unit&&zone==='board'){
-      const reach=previewUnit(info.unit)?.range||0;
-      const sx=slot%8,sy=Math.floor(slot/8);
-      const src=boardCell(slot);
-      if(src){src.classList.add('rng-src');dragPainted.push(src);}
-      for(let i=0;i<64;i++){
-        if(i===slot)continue;
-        if(Math.abs(i%8-sx)+Math.abs(Math.floor(i/8)-sy)<=reach){
-          const cell=boardCell(i);
-          if(cell){cell.classList.add('rng-hl');dragPainted.push(cell);}
-        }
-      }
-    }
-    if(info.isItem&&state.view?.me?.[zone]?.[slot]&&wrap){wrap.classList.add('equip-hl');dragPainted.push(wrap);}
-  }
-  if(info.sell&&!info.isItem&&info.unit){
-    const panel=document.querySelector('.shop-panel');
-    panel?.classList.add('online-sell-zone');
-    const banner=$('dragSellBanner');
-    if(banner){
-      banner.textContent=`松手出售 +${sellRefund(info.unit)} 金`;
-      banner.hidden=false;
-      if(panel){const r=panel.getBoundingClientRect();banner.style.left=Math.max(8,Math.min(innerWidth-220,r.left+r.width/2-100))+'px';banner.style.top=Math.max(6,r.top-40)+'px';}
-    }
-  }
+const synIconsHTML = (d, on=false) => { const ks=[...facsOf(d),...jobsOf(d)];
+  return ks.length?`<span class="syn">${ks.map(k=>SYN_IMG[k]?synIconHTML(k,`sy${on?' on':''}`):'').join('')}</span>`:''; };
+function heroHue(id){
+  let h=0x811c9dc5;
+  for(const ch of String(id||'idol')) h=Math.imul(h^ch.charCodeAt(0),0x01000193);
+  return (h>>>0)%360;
 }
-function refreshDragPaint(){if(dragHoverInfo)paintDragHover({...dragHoverInfo});}
-const audio=globalThis.ClassicBattleAudio.create({speed:()=>state.battlePlayback?.speed||1,silent:()=>false});
-$('sfxBtn').addEventListener('click',()=>audio.toggleSfx());audio.paintSfxBtn();
-
-// 旧会话保存的本地默认地址在 DEFAULT_API 变更后自动迁移，避免残留 localhost。
-if (state.api !== DEFAULT_API && state.api === 'http://localhost:8787') {
-  state.api = DEFAULT_API;
-  localStorage.setItem(API_STORAGE, DEFAULT_API);
+const itemStr = u => (u.items||[]).map(k=>EQUIPMENT[k]?.e||'').join('');
+function pairCount(id){ // 同名 1★ 拥有数（备战席+场上）
+  const me=state.view?.me; if(!me) return 0;
+  return [...(me.board||[]),...(me.bench||[])].filter(u=>u&&u.id===id&&(u.star||1)===1).length;
 }
+const has2star = id => [...(state.view?.me?.board||[]),...(state.view?.me?.bench||[])].some(u=>u&&u.id===id&&(u.star||1)===2);
+const has3star = id => [...(state.view?.me?.board||[]),...(state.view?.me?.bench||[])].some(u=>u&&u.id===id&&(u.star||1)>=3);
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+function unitImage(id){ const safe=String(id||'').replace(/[^\w-]/g,''); return safe?`assets/units_big/${safe}.webp`:''; }
 
+/* ===== 技能文案（沿用联机端已有的目录化描述，与经典详情面板字段一致） ===== */
+const skillModes = {
+  guard:'自身护盾与嘲讽', guardLink:'护盾、嘲讽与队友分担伤害', dash:'突进并攻击目标',
+  cleave:'攻击附近多个敌人', single:'对目标造成技能伤害', heal:'治疗队友',
+  team:'强化或治疗全队', teamShield:'为全队提供护盾', support:'回复队友法力与生命',
+  chain:'弹射攻击多个敌人', zone:'攻击并控制目标区域', field:'范围技能',
+  combo:'连续攻击', passive:'普通攻击触发被动效果',
+};
+function attackText(id){const p=classicAttackProfile(id);const styles={blade:'弧形刃光',shot:'追踪箭矢',arc:'棱晶法弹',pulse:'节拍光环',burst:'碎星爆点'};const effects={none:'稳定命中',bleed:`${Math.round(p.proc*100)}% 概率造成流血`,slow:`${Math.round(p.proc*100)}% 概率减速`,spark:`${Math.round(p.proc*100)}% 概率溅射电弧`,mana:'命中时额外回蓝',shieldbreak:'优先攻击护盾目标，破盾后强化下一击',rainveil:'雨露闪避后召唤雨幕护盾',soulmate:'命中时与队友共享治疗'};return `${styles[p.style]} · ${effects[p.onHit]||'专属命中回响'}（${Math.round(p.mult*100)}% 攻击）`;}
+function skillText(skill) {
+  if(skill?.desc)return skill.desc;
+  if (!skill) return '本棋子没有技能数据。';
+  const parts = [skillModes[skill.mode] || '发动技能'];
+  if (skill.mult) parts.push(`伤害 ${Math.round(skill.mult * 100)}% 攻击`);
+  if (skill.heal) parts.push(`治疗 ${Math.round(skill.heal * 100)}% 攻击`);
+  if (skill.shield) parts.push(`护盾 ${Math.round(skill.shield * 100)}% 最大生命`);
+  if (skill.stun) parts.push(`眩晕 ${skill.stun / 1000} 秒`);
+  if (skill.freeze) parts.push(`冻结 ${skill.freeze / 1000} 秒`);
+  if (skill.silence) parts.push(`沉默 ${skill.silence / 1000} 秒`);
+  return parts.join(' · ');
+}
+const isPassive = u => previewUnit(u)?.skill?.mode==='passive';
+
+/* ================= 会话 / 网络（沿用联机传输层） ================= */
 function readSession() {
   try { return JSON.parse(localStorage.getItem(STORAGE) || 'null'); }
   catch { return null; }
 }
-
 function saveSession(session) {
   state.session = session;
   localStorage.setItem(STORAGE, JSON.stringify(session));
   updateResume();
 }
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-}
-
 function normalizedApi() {
   const raw = $('apiBase').value.trim() || DEFAULT_API;
   let url;
@@ -127,30 +138,25 @@ function normalizedApi() {
     throw new Error('当前页面使用 HTTPS，联机服务也需要 HTTPS。');
   }
   url.pathname = url.pathname.replace(/\/+$/, '');
-  url.search = '';
-  url.hash = '';
+  url.search = ''; url.hash = '';
   return url.toString().replace(/\/$/, '');
 }
-
-function apiUrl(path) { return `${state.api}${path}`; }
+const apiUrl = path => `${state.api}${path}`;
 function wsUrl(code) {
   const url = new URL(apiUrl(`/api/rooms/${encodeURIComponent(code)}/ws`));
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return url.toString();
 }
-
 function setConnection(kind, label) {
   const element = $('connection');
   element.dataset.state = kind;
   element.lastElementChild.textContent = label;
 }
-
 function setError(message, inRoom = false) {
   const element = inRoom ? $('roomAlert') : $('entryError');
   element.textContent = message;
   element.hidden = !message;
 }
-
 let toastTimer;
 function toast(message) {
   const element = $('toast');
@@ -159,13 +165,11 @@ function toast(message) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { element.hidden = true; }, 3500);
 }
-
 function updateResume() {
   const session = state.session;
   $('resumeBox').hidden = !(session?.token && session?.code);
   if (session?.code) $('resumeBtn').textContent = `重连房间 ${session.code} →`;
 }
-
 function showRoom() {
   $('entryScreen').hidden = true;
   $('roomScreen').hidden = false;
@@ -176,12 +180,9 @@ function showRoom() {
   history.replaceState(null, '', url);
   render();
 }
-
 function showEntry() {
-  closeMatchPanel();
-  if(state.battleFrame !== null)cancelAnimationFrame(state.battleFrame);
-  state.battleFrame=null;
-  state.battlePlayback?.renderer?.destroy();state.battlePlayback=null;
+  cancelAnimationFrame(state.battleFrame??0); state.battleFrame=null;
+  state.battlePlayback?.renderer?.destroy(); state.battlePlayback=null;
   $('roomScreen').hidden = true;
   $('entryScreen').hidden = false;
   document.body.classList.remove('online-playing');
@@ -190,10 +191,7 @@ function showEntry() {
   url.searchParams.delete('room');
   history.replaceState(null, '', url);
 }
-
-async function request(path, data) {
-  return postJson(apiUrl(path), data);
-}
+async function request(path, data) { return postJson(apiUrl(path), data); }
 
 async function enterRoom(mode) {
   if (state.busy) return;
@@ -226,19 +224,21 @@ async function enterRoom(mode) {
     state.seat = result.seat;
     state.lobby = result.lobby || null;
     state.view = null;
-    state.selected = null;
+    state.logArr = [];
     saveSession({code: result.code, token: result.token, seat: result.seat, name, api});
     showRoom();
     connectSocket();
   } catch (error) {
     setConnection('offline', '连接失败');
-    setError(error.message || '无法进入房间。');
+    const raw = error.message || '';
+    setError(/fetch|network|Failed|加载|服务器/i.test(raw)
+      ? '连不上联机服务器：请检查「联机服务器地址」或稍后再试。'
+      : (raw || '无法进入房间。'));
   } finally {
     state.busy = false;
     $('createBtn').disabled = $('joinBtn').disabled = false;
   }
 }
-
 async function resumeRoom() {
   const session = state.session;
   if (!session?.token || !session?.code) return;
@@ -247,7 +247,6 @@ async function resumeRoom() {
   $('roomCodeInput').value = session.code;
   await enterRoom('join');
 }
-
 async function addBot() {
   if (!state.session?.token || !state.code || state.busy) return;
   state.busy = true;
@@ -262,7 +261,6 @@ async function addBot() {
     $('addBotBtn').disabled = false;
   }
 }
-
 async function removeBot(seat) {
   if (!state.session?.token || !state.code) return;
   try {
@@ -272,7 +270,6 @@ async function removeBot(seat) {
     toast(error.message || '移除机器人失败。');
   }
 }
-
 function closeSocket() {
   state.stopped = true;
   clearTimeout(state.reconnectTimer);
@@ -280,11 +277,11 @@ function closeSocket() {
   state.connected = false;
   state.synced = false;
   state.pendingAction = null;
+  state.actionQueue = [];
   const socket = state.socket;
   state.socket = null;
   if (socket) socket.close();
 }
-
 function clearConnectionTimers() {
   clearTimeout(state.connectionTimer);
   clearInterval(state.heartbeatTimer);
@@ -292,21 +289,18 @@ function clearConnectionTimers() {
   state.heartbeatDeadline = null;
   clearTimeout(state.actionTimer);
 }
-
 function retryConnection() {
   if (state.stopped || !state.session?.token || !state.code) return;
   state.connected = false;
   state.synced = false;
   state.awaitingSync = true;
   setConnection('offline', '连接中断');
-  renderControls();
   const socket = state.socket;
   state.socket = null;
   clearConnectionTimers();
   if (socket && socket.readyState !== WebSocket.CLOSED) socket.close();
   scheduleReconnect();
 }
-
 function resumeTransport() {
   if (state.stopped || !state.session?.token || !state.code || navigator.onLine === false) return;
   if (!state.connected || Date.now() - state.lastMessageAt > 25_000) {
@@ -316,32 +310,27 @@ function resumeTransport() {
   }
   else requestSync();
 }
-
 function scheduleReconnect() {
   clearTimeout(state.reconnectTimer);
   const wait = reconnectDelay(state.reconnectAttempts++);
   state.reconnectTimer = setTimeout(connectSocket, wait);
 }
-
 function requestSync() {
   if (!state.socket || state.socket.readyState !== WebSocket.OPEN || !state.connected) { retryConnection(); return; }
   state.synced = false;
   state.awaitingSync = true;
   setConnection('connecting', '正在同步');
-  renderControls();
   try { state.socket.send(JSON.stringify({type:'sync'})); }
   catch { retryConnection(); return; }
   clearTimeout(state.connectionTimer);
   state.connectionTimer = setTimeout(retryConnection, 6000);
 }
-
 function armActionTimeout() {
   clearTimeout(state.actionTimer);
   if (state.pendingAction) state.actionTimer = setTimeout(() => {
     if (state.pendingAction) requestSync();
   }, 8000);
 }
-
 function startHeartbeat(socket) {
   clearInterval(state.heartbeatTimer);
   state.heartbeatTimer = setInterval(() => {
@@ -355,7 +344,6 @@ function startHeartbeat(socket) {
     }, 10000);
   }, 15000);
 }
-
 function settlePending(snapshot) {
   const pending = state.pendingAction;
   if (!pending) return 'none';
@@ -366,7 +354,7 @@ function settlePending(snapshot) {
     return outcome;
   }
   if (outcome === 'unknown') {
-    setError('无法确认上一项操作的结果，请刷新后检查棋盘。', true);
+    log('⚠ 无法确认上一项操作的结果，已按服务器状态同步');
   } else if (outcome === 'stale') {
     toast('上一回合的操作已过期，未重新提交。');
   } else if (outcome === 'conflict') {
@@ -376,7 +364,6 @@ function settlePending(snapshot) {
   clearTimeout(state.actionTimer);
   return outcome;
 }
-
 function connectSocket() {
   if (!state.session?.token || !state.code) return;
   if (navigator.onLine === false) { scheduleReconnect(); return; }
@@ -416,18 +403,21 @@ function connectSocket() {
       state.code = message.code || state.code;
       state.seat = message.seat ?? state.seat;
       state.lobby = message.lobby || state.lobby;
+      const prev = state.view;
       state.view = message.view ?? null;
       state.phaseDurationMs = message.phaseDurationMs;
       state.deadline = message.deadline ?? null;
       state.maintenance = !!message.maintenance;
       if (Number.isFinite(message.serverTime)) state.clockSkew = Date.now() - message.serverTime;
-      if (Number.isInteger(message.nextSeq) && message.nextSeq > 0) state.seq = message.nextSeq;
+      if (Number.isInteger(message.nextSeq) && message.nextSeq > 0) state.seq = Math.max(state.seq, message.nextSeq);
       setConnection('online', '已连接');
-      if (pendingOutcome !== 'unknown') setError(compatibleBoard()?'':'线上服务器尚未同步新版棋盘规则，请更新服务端后新建房间。', true);
+      if (pendingOutcome !== 'unknown' && state.view && state.view.me?.board?.length !== 64) {
+        setError('线上服务器尚未同步新版棋盘规则，请更新服务端后新建房间。', true);
+      } else if (state.maintenance) setError('服务维护中，当前对局可继续。', true);
+      else setError('', true);
       startHeartbeat(socket);
-      render();
+      render(prev);
     } else if (message.type === 'ack') {
-      if(state.pendingAction?.envelope.id===message.id){const key={buy:'buy',sell:'sell',reroll:'roll',buyXp:'lvlup',equip:'equip',autoEquip:'equip',unequip:'equip',combine:'equip',combineWorn:'equip',autoDeploy:'deploy',tidy:'tidy'}[state.pendingAction.type];if(key)audio.sfx(key);}
       if (state.pendingAction?.envelope.id === message.id) { state.pendingAction = null; clearTimeout(state.actionTimer); }
       if (Number.isInteger(message.seq)) state.seq = Math.max(state.seq, message.seq + 1);
       renderControls();
@@ -438,7 +428,7 @@ function connectSocket() {
       if (!state.connected && message.code === 'auth_timeout') transientAuthTimeout = true;
       if (state.pendingAction?.envelope.id === message.id) { state.pendingAction = null; clearTimeout(state.actionTimer); }
       const detail = message.message || message.code || '操作未完成。';
-      if (state.connected) { setError(detail, true); toast(detail); }
+      if (state.connected) { setError('', true); toast(detail); log('⚠ '+detail); }
       else { setError(`身份验证失败：${detail}`, true); setConnection('offline', '验证失败'); }
     }
   });
@@ -453,18 +443,15 @@ function connectSocket() {
         && !(event.code === 4003 && (transientAuthTimeout || event.reason === 'authentication timeout'))) {
       state.stopped=true;
       $('roomHint').textContent=event.code===4001?'此座位已在另一窗口连接，本窗口停止重连。':'房间或座位已失效，请返回入口重新建房或加入。';
-      renderControls();
       return;
     }
     $('roomHint').textContent = '连接中断，正在自动重连…';
-    renderControls();
     scheduleReconnect();
   });
   socket.addEventListener('error', () => {
     if (socket === state.socket) setConnection('offline', '网络异常');
   });
 }
-
 function send(message) {
   if (!state.connected || !state.synced || state.socket?.readyState !== WebSocket.OPEN) {
     toast('连接尚未恢复，请稍后重试。');
@@ -473,39 +460,1199 @@ function send(message) {
   try { state.socket.send(JSON.stringify(message)); return true; }
   catch { retryConnection(); return false; }
 }
-
-function sendAction(action) {
-  if (state.pendingAction) { toast('上一项操作尚未确认，请稍候。'); return; }
-  // The ready toggle stays available while merely locked (unlike other actions);
-  // the server rejects it once the pre-lock window freezes lineups.
+/* 动作发送：seq 在发送时即前移（服务端要求严格递增），在途动作仅保留最后一个用于断线重放；
+   乐观渲染保证手感，服务器快照回来后整体校正。 */
+function sendAction(action, {optimistic} = {}) {
   const readyToggle = action?.type === 'ready';
-  if (readyToggle ? (state.view?.phase !== 'prep' || state.view?.autoLocked || isSpectator()) : !canAct()) return;
+  if (readyToggle ? (state.view?.phase !== 'prep' || state.view?.autoLocked || isSpectator()) : !canAct()) return false;
+  if (state.actionQueue.length >= 8) { toast('操作太快了，稍等一下。'); return false; }
   const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
   const envelope = {type:'action', id, seq:state.seq, round:state.view.round, action};
+  state.seq++;
+  state.actionQueue.push(id);
   state.pendingAction = {envelope, round:state.view.round, type:action.type};
-  if (!send(envelope)) state.pendingAction = null;
-  else { armActionTimeout(); renderControls(); }
+  if (!send(envelope)) { state.pendingAction = null; state.seq--; state.actionQueue = state.actionQueue.filter(x=>x!==id); return false; }
+  armActionTimeout();
+  const key={buy:'buy',sell:'sell',reroll:'roll',buyXp:'lvlup',equip:'equip',autoEquip:'equip',unequip:'equip',combine:'equip',combineWorn:'equip',autoDeploy:'deploy',tidy:'tidy'}[action.type];
+  if(key&&!optimistic)sfx(key);
+  return true;
 }
 
-function compatibleBoard(){return !state.view||state.view.me?.board?.length===64;}
-
+const compatibleBoard = () => !state.view || state.view.me?.board?.length === 64;
 function canAct() {
   const mine = state.view?.players?.find(p => p.seat === state.seat);
-  return compatibleBoard() && state.connected && state.synced && !state.pendingAction && state.lobby?.status === 'playing' && state.view?.phase === 'prep' && !mine?.ready && !isSpectator();
+  return compatibleBoard() && state.connected && state.synced && state.lobby?.status === 'playing'
+    && state.view?.phase === 'prep' && !mine?.ready && !isSpectator();
 }
-
 function isSpectator() {
   const player = state.view?.players?.find(p => p.seat === state.seat);
   return !!state.view && (player?.alive === false || (state.view.me && state.view.me.hp <= 0));
 }
-
 function playerName(seat) {
   return state.lobby?.players?.find(p => p.seat === seat)?.name
     || state.view?.players?.find(p => p.seat === seat)?.name
     || `席位 ${Number(seat) + 1}`;
 }
+function phaseName(phase) {
+  return ({prep:'备战',combat:'对战中',result:'结算',over:'对局结束'})[phase] || '等待同步';
+}
+function inPrep() { return state.view?.phase === 'prep'; }
+function myTurnBoard() { return state.view?.me?.board || Array(64).fill(null); }
+function getAt(t,i){ return t==='board' ? myTurnBoard()[i] : state.view?.me?.bench?.[i]; }
+function watchedPlayer(){ return state.spectateSeat!=null && state.spectateSeat!==state.seat
+  ? state.view?.players?.find(p=>p.seat===state.spectateSeat) : null; }
 
-function render() {
+/* ================= 战报（经典 #log） ================= */
+function log(t){ state.logArr.unshift(t); if(state.logArr.length>60)state.logArr.pop(); renderLog(); }
+function renderLog(){ const el=$('log'); if(el) el.innerHTML=state.logArr.map(x=>'· '+escapeHtml(x)).join('<br>'); }
+
+/* ================= 渲染：棋子（照搬经典 unitInner/unitHTML） ================= */
+function unitInner(u){
+  const d=byId(u.id)||{};
+  const st=(u.frozen>0?'❄':'')+(u.stun>0?'💫':'')+(u.atkDownT>0?'🔻':'')+(u.slowT>0?'🐌':'')
+    +(u.noShieldT>0?'🔨':'')+(u.healDownT>0?'💉':'')+(u.silenceT>0?'🔇':'')+(u.tauntT>0?'🎯':'')
+    +(u.hexT>0?'🐧':'')+(u.petrifyT>0?'🗿':'')+(u.arDownT>0?'🪓':'')+(u.mrDownT>0?'🔯':'');
+  const fz = st ? `<span class="fz">${st}</span>` : '';
+  const inBattle = u.side===0||u.side===1;
+  if(!inBattle&&globalThis.ClassicPreparationPresentation)return ClassicPreparationPresentation.inner(u,{name:cname(u),items:itemStr(u),icons:synIconsHTML(d)});
+  const w = u.hp!=null&&u.maxhp ? (u.hp/u.maxhp*100) : 100;
+  const m = u.maxmana ? ((u.mana||0)/u.maxmana*100) : 0;
+  const mp = inBattle ? ((u.isPassive||isPassive(u)) ? '<span class="sk">被动</span>'
+      : `<div class="mpbar"><div class="mpfill" style="width:${m}%"></div></div>`) : '';
+  return `<i class="pt" style="background-image:url(${unitImage(d.id)})"></i>${itemStr(u)?`<span class="its">${itemStr(u)}</span>`:''}${fz}${synIconsHTML(d,u.bvOn)}
+    <span class="st">${'★'.repeat(Math.min(4,u.star||1))}</span>
+    <span class="nm">${cname(u)}</span>
+    ${mp}
+    ${inBattle?`<div class="hpbar"><div class="hpfill" style="width:${Math.max(0,w)}%"></div></div>`:''}`;
+}
+function unitTitle(u){
+  const d=byId(u.id)||{};
+  return `${cname(u)} · ${'★'.repeat(u.star||1)} ${facLabel(d)}·${jobLabel(d)}\n攻击方式：${d.range>1?'远程':'近战'} · ${previewUnit(u)?.damageType==='phys'?'物理':'法术'}伤害\n普攻特性：${attackText(u.id)}\n${SKILL_NAMES[u.id]||'战斗技能'}（${isPassive(u)?'被动':'主动'}）\n${skillText(previewUnit(u)?.skill)}`
+    + ((u.items&&u.items.length)?`\n装备：${u.items.map(k=>EQUIPMENT[k]?EQUIPMENT[k].n+'（'+EQUIPMENT[k].desc+'）':k).join('、')}`:'');
+}
+function unitHTML(u,sel){
+  const d=byId(u.id)||{};
+  const stCls=(u.frozen>0?'frozen ':'')+(u.stun>0?'stunned ':'')+(u.atkDownT>0?'weakened ':'')+(u.slowT>0?'slowed':'');
+  let pairCls='';
+  if((u.star||1)===1){ const n=pairCount(u.id); pairCls = n>=2?'pair':(n===1?'solo':''); }
+  const tip=unitTitle(u).replace(/"/g,'&quot;').replace(/\n/g,'&#10;');
+  return `<div class="unit prep-unit cost${d.cost||1} ${stCls} ${pairCls} ${sel?'sel':''} ${u.shield>0?'shielded':''}" data-uid="${u.uid}" data-unit-id="${d.id}" style="--hero-hue:${heroHue(d.id)}" title="${tip}">${unitInner(u)}</div>`;
+}
+
+/* ================= 渲染：棋盘 / 备战席 ================= */
+let _geo=null;
+function boardGeo(){
+  const b=$('board');
+  const fp=b?b.offsetWidth+'x'+b.offsetHeight:'0x0';
+  if(_geo && _geo.fp===fp) return _geo;
+  let cw=54, ch=54, gx=2, gy=2, sx=56, sy=56, cellX=0, cellY=0;
+  try{
+    const c0=b.children[0], c1=b.children[1], cr=b.children[BOARD_W];
+    if(c0 && c0.classList.contains('cell') && c1){
+      cw=c0.offsetWidth; ch=c0.offsetHeight;
+      sx=c1.offsetLeft-c0.offsetLeft; sy=cr?cr.offsetTop-c0.offsetTop:sx;
+      gx=Math.max(0,sx-cw); gy=Math.max(0,sy-ch);
+      cellX=c0.offsetLeft; cellY=c0.offsetTop;
+    }
+  }catch(e){}
+  _geo={fp,cw,ch,gx,gy,sx,sy,cellX,cellY};
+  return _geo;
+}
+const _unitSize=new Map();
+function unitSizeOf(u,el){
+  const key=(u.big?'b':'n')+':'+(_geo?_geo.cw:0);
+  let s=_unitSize.get(key);
+  if(!s){ s={w:el.offsetWidth||0,h:el.offsetHeight||0}; if(s.w)_unitSize.set(key,s); }
+  return s||{w:0,h:0};
+}
+function unitVisual(u){
+  const g=boardGeo(), layer=document.getElementById('unitLayer');
+  const el=layer&&layer.querySelector(`[data-uid="${u.uid}"]`);
+  const sz={w:g.cw-8,h:g.ch-8};
+  if(!el) return { x:g.cellX+u.x*g.sx+g.cw/2, y:g.cellY+u.y*g.sy+g.ch/2, el:null };
+  return { x:g.cellX+(parseFloat(el.style.left)||0)+sz.w/2, y:g.cellY+(parseFloat(el.style.top)||0)+sz.h/2, el };
+}
+function setRangeFocus(idx,rng){ state.rangeFocus=(idx==null||rng==null)?null:{idx,rng}; }
+function clearRangeFocus(){ state.rangeFocus=null; }
+function paintRange(){
+  const b=$('board'); if(!b) return;
+  const focus=state.rangeFocus;
+  // 战斗层存在时格子被战斗占用，不做备战高亮
+  if(document.getElementById('unitLayer')){ b.querySelectorAll('.cell.rng-hl,.cell.rng-src').forEach(c=>c.classList.remove('rng-hl','rng-src')); return; }
+  b.querySelectorAll('.cell').forEach(c=>c.classList.remove('rng-hl','rng-src'));
+  if(!focus) return;
+  const sx=focus.idx%BOARD_W, sy=Math.floor(focus.idx/BOARD_W), rr=focus.rng;
+  for(let yy=0;yy<BOARD_H;yy++) for(let xx=0;xx<BOARD_W;xx++){
+    const i=yy*BOARD_W+xx; if(i===focus.idx) continue;
+    if(Math.abs(xx-sx)+Math.abs(yy-sy)<=rr){
+      const c=b.children[i]; if(c) c.classList.add('rng-hl');
+    }
+  }
+  const sc=b.children[focus.idx]; if(sc) sc.classList.add('rng-src');
+}
+/* 羁绊徽章悬浮层（照搬经典 paintSynBadges：脱离棋子、按格子定位画在全板最高层） */
+function paintSynBadges(board,opts={}){
+  const b=$('board'); if(!b) return;
+  const old=document.getElementById('synBadgeLayer'); if(old) old.remove();
+  const g=boardGeo(); if(!g.cw) return;
+  let html='';
+  const put=(u,x,y,big)=>{
+    if(!u || x<0 || y<0 || x>=BOARD_W || y>=BOARD_H) return;
+    const d=byId(u.id); if(!d) return;
+    const s=synIconsHTML(d); if(!s) return;
+    const n=(s.match(/class="sy/g)||[]).length || 1;
+    const bw=g.cw*(big?0.30:0.19);
+    const w=n*bw+(n-1)*2;
+    const left=g.cellX+x*g.sx+(big?2*g.cw+g.gx:g.cw)-4-w;
+    const top =g.cellY+(big?Math.max(0,y-1):y)*g.sy-(big?0.45:0.58)*g.ch;
+    html+=`<div style="left:${left}px;top:${top}px"${big?' class="big-badge"':''}>${s}</div>`;
+  };
+  const putStar=(u,x,y,big)=>{
+    if(!u || !u.star) return;
+    const left=g.cellX+x*g.sx+g.cw*0.04;
+    const top =g.cellY+(big?Math.max(0,y-1):y)*g.sy+(big?2:1)*g.ch*0.74;
+    html+=`<div style="left:${left}px;top:${top}px"${big?' class="big-badge"':''}><span class="st">${'★'.repeat(Math.min(4,u.star))}</span></div>`;
+  };
+  for(let i=0;i<BOARD_W*BOARD_H;i++){
+    const p=board[i];
+    if(p){ const x=i%BOARD_W, y=(i/BOARD_W)|0; put(p,x,y,!!p.big); putStar(p,x,y,!!p.big); continue; }
+    if(opts.enemyBoard && opts.enemyBoard[i]){ const x=i%BOARD_W, y=(i/BOARD_W)|0; put(opts.enemyBoard[i],x,y,!!opts.enemyBoard[i].big); putStar(opts.enemyBoard[i],x,y,!!opts.enemyBoard[i].big); }
+  }
+  if(!html) return;
+  const layer=document.createElement('div'); layer.id='synBadgeLayer'; layer.innerHTML=html;
+  b.appendChild(layer);
+}
+function renderBoard(){
+  const b=$('board'); if(!b) return;
+  if(state.view&&state.view.phase!=='prep') return;   // 战斗/结算中棋盘由战斗层接管
+  b.innerHTML='';
+  $('aliveBar')?.remove();
+  const watched=watchedPlayer();
+  const board=watched?(watched.board||[]):myTurnBoard();
+  for(let y=0;y<BOARD_H;y++) for(let x=0;x<BOARD_W;x++){
+    const i=y*BOARD_W+x;
+    const cell=document.createElement('div');
+    cell.className='cell'+(y<BOARD_H/2?' enemy-side':'');
+    cell.dataset.i=i;
+    cell.style.zIndex=String(1+y);
+    const u=board[i];
+    const readOnly=!!watched||!canAct();
+    if(u){
+      cell.innerHTML=unitHTML(u, !watched&&state.selUid===u.uid);
+      if(watched){ const pe=cell.querySelector('.unit'); if(pe) pe.classList.add('preview'); }
+    }
+    cell.onclick=()=>cellClick(i);
+    if(!readOnly&&u) cell.querySelector('.unit').style.cursor='grab';
+    b.appendChild(cell);
+  }
+  paintRange();
+  paintMoveSel();
+  repaintDragHover();
+  paintSynBadges(board);
+}
+function renderBench(){
+  const b=$('bench'); if(!b) return;
+  b.innerHTML='<span style="grid-column:1/-1;font-size:11px;color:var(--tx2);letter-spacing:2px;text-align:left;line-height:1.2">备战席</span>';
+  const src=state.view?.me?.bench||[];
+  const bench=Array.from({length:BENCH},(_,i)=>src[i]??null);
+  for(let i=0;i<BENCH;i++){
+    const s=document.createElement('div'); s.className='bslot'; s.dataset.bi=i;
+    const u=bench[i];
+    if(u) s.innerHTML=unitHTML(u, state.selUid===u.uid);
+    s.onclick=()=>benchClick(i);
+    b.appendChild(s);
+  }
+  paintMoveSel();
+}
+
+/* ================= 渲染：商店（照搬经典 renderShop） ================= */
+function synTriggers(u){ // 购买该棋子后【新触发】的羁绊档位
+  const me=state.view?.me||{};
+  const base=bondSummary(me.board||[]);
+  const cur={}; base.forEach(b=>cur[b.name]=b);
+  const next=bondSummary([...(me.board||[]).filter(Boolean),u]);
+  const out=[];
+  for(const b of next){
+    const before=cur[b.name];
+    const tierN=before?before.active:0;
+    if(b.active>tierN) out.push(`${b.name} T${b.active}`);
+  }
+  return out;
+}
+function synTags(u){ // 可补全（已有成员但尚未满档）的羁绊名
+  const me=state.view?.me||{};
+  return bondSummary(me.board||[]).filter(b=>b.count>0&&b.active<b.tiers.length&&b.tiers.some(n=>n>b.count)).map(b=>b.name)
+    .filter(name=>[u.fac,u.fac2,u.job,u.job2].filter(Boolean).includes(name));
+}
+function traitIcons(u){
+  const d=byId(u.id)||{};
+  const ks=[...facsOf(d),...jobsOf(d)].filter(k=>SYN_IMG[k]).slice(0,3);
+  return ks.map(k=>`<span class="tb" title="${k}">${synIconHTML(k,'ti')}${k}</span>`).join('');
+}
+function previewShopInspect(u){
+  const d=byId(u.id)||{}; const stats=previewUnit(u)||{};
+  $('inspect').innerHTML=`
+    <div class="in-hd"><b>${cname(u)}</b><span class="in-star">★</span>
+      <img class="in-pt" src="${unitImage(d.id)}" alt=""></div>
+    <div class="in-tag">${facLabel(d)} · ${jobLabel(d)} ｜ ${d.cost||u.cost} 费</div>
+    <div class="in-row r-hp"><span>生命</span><div class="bar"><i style="width:${Math.min(100,(stats.hp||0)/1.5)}%"></i></div><b>${stats.hp??'—'}</b></div>
+    <div class="in-row r-atk"><span>攻击</span><div class="bar"><i style="width:${Math.min(100,(stats.atk||0)*4)}%"></i></div><b>${stats.atk??'—'}</b></div>
+    <div class="in-row r-spd"><span>攻速</span><div class="bar"><i style="width:${Math.min(100,(stats.speed||0)*60)}%"></i></div><b>${(stats.speed||0).toFixed(2)}/s</b></div>
+    <div class="in-row r-rng"><span>射程</span><div class="bar"><i style="width:${Math.min(100,(stats.range||0)*18)}%"></i></div><b>${stats.range??'—'} 格</b></div>
+    <div class="in-row r-plain"><span>护甲</span><b>${stats.armor??0}</b><span>魔抗</span><b>${Math.round((stats.resist||0)*100)}%</b><span>形式</span><b>${stats.melee?'近战':'远程'} · ${stats.damageType==='phys'?'物理':'法术'}</b></div>
+    <div class="in-sk">✦ ${SKILL_NAMES[u.id]||'战斗技能'}（${stats.skill?.mode==='passive'?'被动':'主动'}）</div>
+    <div class="in-desc">${escapeHtml(skillText(stats.skill))}</div>`;
+}
+function renderShop(){
+  const s=$('shop'); if(!s) return;
+  s.innerHTML='';
+  const me=state.view?.me||{};
+  (me.shop||[]).forEach((u,i)=>{
+    const c=document.createElement('div');
+    c.className='card'+(u?'':' sold');
+    if(u) c.classList.add('cost'+(u.cost||1));
+    const isPair = u && pairCount(u.id)>=2;
+    const isSolo = u && !isPair && pairCount(u.id)===1;
+    const owned3 = u && !isPair && has3star(u.id);
+    const owned2 = u && !isPair && !owned3 && has2star(u.id);
+    const trig = u ? synTriggers(u) : [];
+    const synNames = u && !trig.length ? synTags(u) : [];
+    if(isPair) c.classList.add('paircard');
+    const bds=[
+      isPair ? '<span class="bd pair">🎴 对子·可升星</span>' : '',
+      owned3 ? '<span class="bd c3">⭐ 三星达成</span>' : '',
+      owned2 ? '<span class="bd c3">⭐ 追三</span>' : '',
+      trig.length ? '<span class="bd trig">🔗 '+trig.join(' ')+'</span>' : '',
+      (!trig.length && synNames.length) ? '<span class="bd syn">🔗 '+synNames.join('/')+'</span>' : '',
+      (isSolo && !owned2 && !owned3) ? '<span class="bd dim">1/3</span>' : '',
+    ].filter(Boolean).join('');
+    if(u){
+      const d=byId(u.id)||{};
+      c.innerHTML=`<div class="costbar"></div>`+
+        `<div class="artbg" style="background-image:url('${unitImage(u.id)}')" aria-hidden="true"></div>`+
+        `<div class="art"></div>`+
+        `<div class="cn">${cname(u)}</div>`+
+        `<div class="tis">${traitIcons(u)}</div>`+
+        `<div class="stb"><span class="stat hp"><i></i>${u.hp??d.hp??''}</span><span class="stat atk"><i></i>${u.atk??d.atk??''}</span><b class="cc2">${u.cost||d.cost}</b></div>`+
+        (bds?`<div class="badges">${bds}</div>`:'');
+      c.onmouseenter=()=>previewShopInspect(u);
+      c.onclick=()=>buy(i);
+    }
+    s.appendChild(c);
+  });
+}
+function buy(i){
+  if(!inPrep()||!canAct()) return;
+  const u=state.view?.me?.shop?.[i];
+  if(!u) return;
+  if(sendAction({type:'buy',slot:i})) log('购买 '+(cname(u)));
+}
+
+/* ================= 渲染：顶栏 / 等级盒（照搬经典 renderTop） ================= */
+function renderTop(){
+  const me=state.view?.me||{};
+  const players=state.view?.players||[];
+  $('round').textContent=String(state.view?.round??'—');
+  $('roundMax').textContent='/联机';
+  { const rt=$('roundTicks');
+    if(rt){
+      const n=8, cur=Math.max(0,8-players.filter(p=>p.alive!==false).length);
+      if(rt.childElementCount!==n) rt.innerHTML=Array.from({length:n},()=>'<i></i>').join('');
+      [...rt.children].forEach((el,i)=>el.classList.toggle('on',i<=cur));
+    } }
+  $('hp').textContent=String(me.hp??'—'); $('gold').textContent=String(me.gold??0);
+  const ig=interestGain(me.gold||0);
+  $('interest').textContent = inPrep() && (me.level||1)<MAX_LEVEL && ig ? `+${ig}` : '';
+  $('goldChipN').textContent=String(me.gold??0);
+  $('goldChipI').textContent = inPrep() && ig ? ` +${ig}息` : '';
+  const pop=(me.board||[]).filter(Boolean).length;
+  $('pop').textContent=String(pop); $('popMax').textContent=String(me.level||1);
+  const popLazy = inPrep() && pop<(me.level||1) && (me.bench||[]).some(Boolean);
+  $('pop').closest('.res')?.classList.toggle('pop-warn', !!popLazy);
+  $('deployBtn')?.classList.toggle('pulse', !!popLazy);
+  $('deployBtn').title = popLazy
+    ? `⚠ 场上只上了 ${pop}/${me.level||1} 人，还有空位——按 R 择优上阵（或拖动棋子）`
+    : '从场上与备战席择优选人，并稳定调整站位（R）';
+  $('streak').textContent=String(Math.abs(me.streak||0));
+  $('resStreak').querySelector('.rl').textContent=(me.streak||0)<0?'连败':'连胜';
+  const need=xpNeeded(me.level||1);
+  $('lvlNum').textContent=String(me.level||1);
+  const capped=(me.level||1)>=MAX_LEVEL;
+  $('xpText').textContent = capped ? '人口已满' : `经验 ${me.xp||0}/${need}`;
+  $('xpText').title='';
+  $('xpFill').style.width = capped ? '100%' : Math.min(100,(me.xp||0)/need*100)+'%';
+  $('lvlBtn').textContent = capped ? '人口已满' : (state.view?.round===1 ? '首回合不可买经验' : (IS_TOUCH?'买经验 -5金':'买经验 (F) +4经验 -5金'));
+  { // 各费用出现率（照搬经典 oddsRow）
+    const orow=$('oddsRow');
+    if(orow){
+      const lv=Math.min(MAX_LEVEL,me.level||2);
+      const od=SHOP_ODDS[lv]||SHOP_ODDS[11];
+      orow.innerHTML=[1,2,3,4,5].map(c=>`<i class="oc${c}" title="${c} 费棋子出现率"><b>${od[c-1]??0}%</b><u>${c}费</u></i>`).join('');
+    }
+  }
+  $('refreshBtn').textContent=(IS_TOUCH?'刷新':'刷新 (D)')+' -2金';
+  const sel=state.selUid!=null?findUnit(state.selUid):null;
+  const selUnit=sel?getAt(sel[0],sel[1]):null;
+  if(selUnit){
+    $('sellBtn').textContent=(IS_TOUCH?`出售 +${sellRefund(selUnit)}金`:`出售 +${sellRefund(selUnit)}金 (E)`);
+    $('sellBtn').disabled=false;
+  } else {
+    $('sellBtn').textContent=IS_TOUCH?'出售':'出售 (E)';
+    $('sellBtn').disabled=true;
+  }
+  $('lockBtn').textContent=me.shopLocked?(IS_TOUCH?'已锁定':'已锁定 (L)'):(IS_TOUCH?'锁定':'锁定 (L)');
+  $('lockBtn').classList.toggle('on',!!me.shopLocked);
+  $('gold2').textContent=String(me.gold??0);
+  $('interest2').textContent=`利息 +${ig}`;
+  $('interest2').title='每 10 金 +1，上限 3';
+  // 敌方信息栏：备战=对手与倒计时；战斗=双方存活
+  const pairing=state.view?.pairings?.find(p=>p.a===state.seat||p.b===state.seat);
+  const watched=watchedPlayer();
+  const secs=state.deadline?Math.max(0,Math.ceil((state.deadline+state.clockSkew-Date.now())/1000)):null;
+  let info='';
+  if(!state.connected) info='⚠ 连接中断，正在自动重连…';
+  else if(watched) info=`👁 观战中：<b>${escapeHtml(watched.name||playerName(watched.seat))}</b> · 等级 ${watched.level||1}${inPrep()?'（当前阵容）':''}`;
+  else if(state.view?.phase==='combat'){
+    // 战斗中：8 人血量紧凑条常驻在棋盘上方（高度与原对手条一致，零挤压）；
+    // 点触屏可打开「战况」抽屉看名次/观战
+    const playback=state.battlePlayback;
+    let live='';
+    if(playback){
+      const own=playback.units.filter(u=>u.alive&&u.side===playback.ownSide).length;
+      const foe=playback.units.filter(u=>u.alive&&u.side!==playback.ownSide).length;
+      live=` · 🔵<b>${own}</b>:<b>${foe}</b>🔴`;
+    }
+    info=`⚔ 战斗中${live} <span class="hp-strip">${players.map(p=>{
+      const mine=p.seat===state.seat, dead=p.alive===false;
+      const full=p.name||playerName(p.seat);
+      const nm=String(full).slice(0,2);
+      return `<i class="${mine?'me':''}${dead?' out':''}" title="${escapeHtml(full)}（席位 ${p.seat+1}${dead?' · 已淘汰':''}）">${escapeHtml(nm)}${dead?'✕':'❤'+escapeHtml(p.hp??0)}</i>`;
+    }).join('')}</span>`;
+  }
+  else if(pairing) info=pairing.b==null?'本轮轮空 · 生命与阵容保持不变':`本轮对手：<b style="color:var(--gold-hi)">${escapeHtml(playerName(pairing.a===state.seat?pairing.b:pairing.a))}</b>${secs!=null?` · ${secs}s 后开战`:''}`;
+  else info='等待配对…';
+  if(isSpectator()&&!watched) info='💀 你已淘汰 · 点击右侧「八人战况」可观战其他玩家';
+  $('enemyInfo').innerHTML=info;
+}
+
+/* ================= 渲染：羁绊列（照搬经典 synBadges/renderSynergy） ================= */
+function bondDesc(name,cfg){ const list=globalThis.ClassicBondRules?.descriptions?.[name]||[]; return list; }
+function synBadges(cnt){
+  const items=Object.entries(cnt).map(([k,c])=>{
+    const n=c.count, tiers=c.tiers||[];
+    if(n===0) return null;
+    const tier=c.active||0;
+    const next=tiers.find(x=>x>n);
+    return {k,tiers,tier,n,gap:next?next-n:0,prog:n>=(tiers[tiers.length-1]||0)?'MAX':`${n}/${next??n}`};
+  }).filter(Boolean)
+    .sort((a,b)=>(b.tier>0?1:0)-(a.tier>0?1:0) || b.tier-a.tier || a.gap-b.gap);
+  return items.map(({k,tiers,tier,prog})=>{
+    const pips=tiers.map((x,i)=>`<i class="${i<tier?'on':''}"></i>`).join('');
+    const desc=bondDesc(k);
+    const effs=desc.slice(0,tier).map((d,i)=>`<div class="syn-eff">T${i+1} ${escapeHtml(d)}</div>`).join('');
+    return `<div class="syn-badge ${tier>0?('on t'+tier):''}" title="${k}\n${desc.map((d,i)=>`T${i+1}(${tiers[i]}人)：${d}`).join('\n')}">
+      <div class="syn-top">${synIconHTML(k,'ico')||'<span class="ico">❓</span>'}<span>${k}</span><span class="pips">${pips}</span><span class="cnt">${prog}</span></div>${effs}</div>`;
+  }).join('') || '<div class="syn-empty">上场棋子后显示羁绊</div>';
+}
+function renderSynergy(){
+  const watched=watchedPlayer();
+  const board=(watched?.board)||myTurnBoard();
+  const bonds=bondSummary(board);
+  const cnt=Object.fromEntries(bonds.map(b=>[b.name,b]));
+  $('synAll').innerHTML=synBadges(cnt);
+  const me=state.view?.me||{};
+  $('pop2').textContent=String((me.board||[]).filter(Boolean).length);
+  $('popMax2').textContent=String(me.level||1);
+}
+
+/* ================= 渲染：装备面板（照搬经典 renderEquip 的结构） ================= */
+function renderEquip(){
+  const e=$('equip'); if(!e) return;
+  const me=state.view?.me||{};
+  const items=me.items||[];
+  const pos=state.inspectUid!=null?findUnit(state.inspectUid):null;
+  const u=pos?getAt(pos[0],pos[1]):null;
+  const worn=u&&u.items||[];
+  const wornHtml=`<section class="gear-worn"><div class="gear-section-head"><div><span class="gear-kicker">CURRENT LOADOUT</span><b>${u?escapeHtml(cname(u))+' · 已穿戴':'棋子装备栏'}</b></div><small>${worn.length}/3 格</small></div>`+
+    (worn.length?`<div class="gear-worn-items">${worn.map((k,idx)=>`<span class="in-item-chip worn" data-ii="${idx}" title="${escapeHtml(EQUIPMENT[k]?.desc||'')}；${escapeHtml(EQUIPMENT[k]?.trait||'')}。备战期点按卸下，或拖到背包卸下">${EQUIPMENT[k]?.e||''} ${escapeHtml(EQUIPMENT[k]?.n||k)} <i>×</i></span>`).join('')}</div>`:
+      `<div class="gear-worn-empty">${u?'选中的棋子还没有装备':'点选棋子查看穿戴情况，也可把装备直接拖到棋子上'}</div>`)+`</section>`;
+  const pairs=[];
+  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+    const prod=recipe(items[i],items[j]);if(prod)pairs.push({i,j,prod,a:items[i],b:items[j]});
+  }
+  const itemRoute=k=>{const it=EQUIPMENT[k],from=it.from||[];return `<div class="gear-route"><span class="gear-route-icons">${from.length?from.map(x=>EQUIPMENT[x]?.e||'').join(' + '):'✦'}</span><b>${it.e} ${escapeHtml(it.n)}</b><small>${escapeHtml(it.desc)}</small><em>${escapeHtml(it.trait||'')}</em></div>`;};
+  const routeBook=Object.keys(EQUIPMENT).filter(k=>EQUIPMENT[k].crafted);
+  const routeBookHtml=`<details class="gear-routebook"><summary>查看全部 ${routeBook.length} 条合成路线</summary><div class="gear-route-grid">${routeBook.map(itemRoute).join('')}</div></details>`;
+  const autoDisabled=!canAct()||!items.length;
+  e.innerHTML=`<div class="gear-workshop">
+    <header class="gear-hero"><div><span class="gear-kicker">FIELD ARMORY · ${routeBook.length} RECIPES</span><h3>装备工坊</h3><p>组件会继承到成品，成品再带来一条独有战斗机制。</p></div>
+      <button class="btn gear-auto" id="autoEquipBtn" ${autoDisabled?'disabled':''} title="自动合成可用配方，再按主C与前排分配装备">⚡ 一键整理</button></header>
+    ${wornHtml}
+    <section class="gear-bag"><div class="gear-section-head"><div><span class="gear-kicker">BACKPACK · ${items.length} ITEMS</span><b>背包装备</b></div><small>${pairs.length?`可合成 ${pairs.length} 件`:'拖拽穿戴 · 点选后再点棋子'}</small></div>
+      ${items.length?`<div class="gear-inventory" id="gearInventory"></div>`:`<div class="gear-empty"><span>✧</span><b>背包暂时空了</b><small>每 5 回合的野怪战会掉落装备。</small></div>`}
+      ${pairs.length?`<div class="gear-ready"><div class="gear-subhead">现在可以合成</div><div class="gear-ready-grid">${pairs.slice(0,4).map(p=>`<article class="gear-ready-card"><div class="gear-ready-route">${EQUIPMENT[p.a]?.e} + ${EQUIPMENT[p.b]?.e}<span>→</span>${EQUIPMENT[p.prod]?.e}</div><b>${escapeHtml(EQUIPMENT[p.prod]?.n||'')}</b><em>${escapeHtml(EQUIPMENT[p.prod]?.trait||'')}</em><button class="btn" data-combine="${p.i},${p.j}" ${canAct()?'':'disabled'}>合成此装备</button></article>`).join('')}</div>${pairs.length>4?`<small class="gear-more">另有 ${pairs.length-4} 件可合成</small>`:''}</div>`:''}
+    </section>
+    ${routeBookHtml}
+  </div>`;
+  $('autoEquipBtn').onclick=()=>{ if(canAct()&&sendAction({type:'autoEquip'})) log('⚡ 一键整理装备'); };
+  e.querySelectorAll('[data-combine]').forEach(btn=>btn.onclick=()=>{
+    if(!canAct())return;
+    const [i,j]=btn.dataset.combine.split(',').map(Number);
+    if(sendAction({type:'combine',a:i,b:j})){
+      const it=EQUIPMENT[recipe(items[i],items[j])];
+      log(`⛓ 合成 ${it?it.e+it.n:''}`);
+    }
+  });
+  bindWornChips();
+  const inventory=$('gearInventory');
+  if(inventory)items.forEach((k,i)=>{
+    const it=EQUIPMENT[k],c=document.createElement('div');
+    c.className='gear-item-card'+(state.selItem===i?' sel':'')+(it.crafted?' crafted':'');
+    c.setAttribute('role','button');c.setAttribute('aria-pressed',String(state.selItem===i));c.tabIndex=0;
+    c.title=(it.desc)+' · '+(it.trait||'')+'（拖到棋子上穿戴，或点选后再点棋子）';
+    c.innerHTML=`<div class="item-chip ${state.selItem===i?'sel':''}${it.crafted?' crafted':''}"><span class="gear-item-icon">${it.e}</span><span>${escapeHtml(it.n)}</span><i>${it.crafted?'成品':'组件'}</i></div><small>${escapeHtml(it.desc)}</small><em>${escapeHtml(it.trait||'')}</em>`;
+    c.onclick=()=>{if(Date.now()<chipClickSuppressedUntil)return;state.selItem=state.selItem===i?null:i;renderEquip();if(IS_TOUCH&&state.selItem!=null){closeDrawer();log(`🎒 已选 ${it.n}：点要穿戴的棋子（再点该装备取消）`);}};
+    c.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();c.click();}};
+    c.addEventListener('pointerdown',ev=>{if(ev.button!==0||!canAct())return;ev.stopPropagation();itemDrag={i,x0:ev.clientX,y0:ev.clientY,ghost:null};});
+    inventory.appendChild(c);
+  });
+}
+function equipTo(u,itemIndex){
+  if(!u||!inPrep()||!canAct())return;
+  if(sendAction({type:'equip',uid:u.uid,itemIndex},{optimistic:true})){
+    const me=state.view.me, item=me.items?.[itemIndex];
+    if(item!=null){ me.items.splice(itemIndex,1); u.items=u.items||[]; if(u.items.length<3)u.items.push(item); }
+    log(`🎽 ${cname(u)} 穿上 ${EQUIPMENT[item]?.n||''}`);
+    renderAll();
+  }
+}
+function unequipOne(uid,idx){
+  if(!inPrep()||!canAct())return;
+  const pos=findUnit(uid); if(!pos)return;
+  const u=getAt(pos[0],pos[1]);
+  if(!u||!u.items||u.items[idx]==null)return;
+  if(sendAction({type:'unequip',uid,index:idx},{optimistic:true})){
+    const me=state.view.me, k=u.items.splice(idx,1)[0];
+    me.items=me.items||[]; me.items.push(k);
+    log(`🧥 ${cname(u)} 卸下 ${EQUIPMENT[k]?.n||k}`);
+    renderAll();
+    if(state.inspectUid===uid)showInspectFor(pos[0],pos[1]);
+  }
+}
+function combineWornByUid(uid){
+  if(!inPrep()||!canAct())return;
+  if(sendAction({type:'combineWorn',uid}))log('⛓ 就地合成身上的前两件装备');
+}
+function bindWornChips(){
+  document.querySelectorAll('#equip .worn').forEach(ch=>{
+    ch.addEventListener('pointerdown', ev=>{
+      if(ev.button!==0||!canAct()||state.inspectUid==null) return;
+      ev.stopPropagation();
+      unequipDrag={ uid:state.inspectUid, idx:+ch.dataset.ii, x0:ev.clientX, y0:ev.clientY, ghost:null };
+    });
+  });
+}
+
+/* ================= 渲染：棋子详情（照搬经典 showInspect） ================= */
+const INSPECT_EMPTY='<div class="in-empty">点击场上 / 备战席的棋子<br>查看属性 · 技能 · 装备详情</div>';
+function showInspect(u){
+  const d=byId(u.id)||{}; const stats=previewUnit(u)||{};
+  const itemChips=(u.items&&u.items.length)
+    ? u.items.map((k,idx)=>`<span class="in-item-chip" data-ii="${idx}" title="${escapeHtml(EQUIPMENT[k]?.n||k)}（${escapeHtml(EQUIPMENT[k]?.desc||'')}；${escapeHtml(EQUIPMENT[k]?.trait||'')}）：拖到下方装备栏卸下；点按也可卸下">${EQUIPMENT[k]?.e||''} ${escapeHtml(EQUIPMENT[k]?.n||k)}</span>`).join('')
+    : '<span style="color:#8f88b0">无</span>';
+  $('inspect').innerHTML=`
+    <div class="in-hd"><b>${cname(u)}</b><span class="in-star">${'★'.repeat(Math.min(4,u.star||1))}</span>
+      <img class="in-pt" src="${unitImage(d.id)}" alt="">
+      <span class="in-close" title="关闭" id="inClose">✕</span></div>
+    <div class="in-tag">${facLabel(d)} · ${jobLabel(d)} ｜ ${d.cost||u.cost} 费</div>
+    <div class="in-row r-hp"><span>生命</span><div class="bar"><i style="width:${Math.min(100,(stats.hp||0)/1.5)}%"></i></div><b>${stats.hp??'—'}</b></div>
+    <div class="in-row r-atk"><span>攻击</span><div class="bar"><i style="width:${Math.min(100,(stats.atk||0)*4)}%"></i></div><b>${stats.atk??'—'}</b></div>
+    <div class="in-row r-spd"><span>攻速</span><div class="bar"><i style="width:${Math.min(100,(stats.speed||0)*60)}%"></i></div><b>${(stats.speed||0).toFixed(2)}/s</b></div>
+    <div class="in-row r-rng"><span>射程</span><div class="bar"><i style="width:${Math.min(100,(stats.range||0)*18)}%"></i></div><b>${stats.range??'—'} 格</b></div>
+    <div class="in-row r-plain"><span>护甲</span><b>${stats.armor??0}</b><span>魔抗</span><b>${Math.round((stats.resist||0)*100)}%</b><span>出售</span><b>${sellRefund(u)}金</b></div>
+    <div class="in-row r-plain"><span>形式</span><b>${stats.melee?'近战':'远程'} · ${stats.damageType==='phys'?'物理':'法术'}</b></div>
+    <div class="in-sk">✦ ${SKILL_NAMES[u.id]||'战斗技能'}（${stats.skill?.mode==='passive'?'被动':'主动'}）</div>
+    <div class="in-desc">${escapeHtml(skillText(stats.skill))}</div>
+    <div class="in-desc" style="color:#8a93c4;font-size:11.5px">${escapeHtml(attackText(u.id))}</div>
+    ${CLASSIC_MARKS[u.id]?`<div class="in-desc" style="color:#dcb8ff;font-size:11.5px">专属印记【${CLASSIC_MARKS[u.id].label}】：${stats.skill?.mode==='passive'?'普攻后留给目标':'技能命中后留给目标，治疗/保护技能留给自身'}，下次受伤增伤/减伤 ${Math.round(CLASSIC_MARKS[u.id].amp*100)}%，持续 ${CLASSIC_MARKS[u.id].dur} 秒。</div>`:''}
+    <div class="in-item">🎒 装备：<span id="inItemChips">${itemChips}</span></div>
+    ${(IS_TOUCH&&u.items&&u.items.length)?`<div class="in-unequip" id="inUnequipAll">🧥 卸下全部装备</div>`:''}
+    ${(u.items&&u.items.length>=2&&recipe(u.items[0],u.items[1]))?`<div class="in-combo" id="inCombo">⛓ 就地合成 → ${(()=>{const pr=recipe(u.items[0],u.items[1]);return (EQUIPMENT[pr]?.e||'')+(EQUIPMENT[pr]?.n||'');})()}</div>`:''}
+    <div class="in-sell" id="inSell">💸 出售（+${sellRefund(u)}💰）</div>`;
+  state.inspectUid=u.uid;
+  $('inClose').onclick=hideInspect;
+  $('inSell').onclick=sellInspect;
+  const combo=$('inCombo'); if(combo)combo.onclick=()=>combineWornByUid(u.uid);
+  const une=$('inUnequipAll'); if(une)une.onclick=unequipInspect;
+  document.querySelectorAll('#inspect .in-item-chip').forEach(ch=>{
+    ch.addEventListener('pointerdown', ev=>{
+      if(ev.button!==0||!canAct()||state.inspectUid==null) return;
+      ev.stopPropagation();
+      unequipDrag={ uid:state.inspectUid, idx:+ch.dataset.ii, x0:ev.clientX, y0:ev.clientY, ghost:null };
+    });
+  });
+}
+function showEnemyInspect(u,ownerLabel='敌方'){ // 观战/敌方预览棋子：无出售按钮
+  const d=byId(u.id)||{}; const stats=previewUnit(u)||{};
+  $('inspect').innerHTML=`
+    <div class="in-hd"><b>${cname(u)}</b><span class="in-star">${'★'.repeat(Math.min(4,u.star||1))}</span>
+      <span class="in-tag" style="margin-left:6px;color:#ff9a9a">${escapeHtml(ownerLabel)}</span>
+      <img class="in-pt" src="${unitImage(d.id)}" alt="">
+      <span class="in-close" title="关闭" id="inClose">✕</span></div>
+    <div class="in-tag">${facLabel(d)} · ${jobLabel(d)} ｜ ${d.cost||u.cost} 费</div>
+    <div class="in-row r-hp"><span>生命</span><div class="bar"><i style="width:${Math.min(100,(stats.hp||0)/1.5)}%"></i></div><b>${stats.hp??'—'}</b></div>
+    <div class="in-row r-atk"><span>攻击</span><div class="bar"><i style="width:${Math.min(100,(stats.atk||0)*4)}%"></i></div><b>${stats.atk??'—'}</b></div>
+    <div class="in-row r-spd"><span>攻速</span><div class="bar"><i style="width:${Math.min(100,(stats.speed||0)*60)}%"></i></div><b>${(stats.speed||0).toFixed(2)}/s</b></div>
+    <div class="in-row r-rng"><span>射程</span><div class="bar"><i style="width:${Math.min(100,(stats.range||0)*18)}%"></i></div><b>${stats.range??'—'} 格</b></div>
+    <div class="in-row r-plain"><span>护甲</span><b>${stats.armor??0}</b><span>魔抗</span><b>${Math.round((stats.resist||0)*100)}%</b><span>站位</span><b>${d.job==='刺客'?'切后排':(stats.melee?'前排':'后排')}</b></div>
+    <div class="in-row r-plain"><span>形式</span><b>${stats.melee?'近战':'远程'} · ${stats.damageType==='phys'?'物理':'法术'}</b></div>
+    <div class="in-sk">✦ ${SKILL_NAMES[u.id]||'战斗技能'}（${stats.skill?.mode==='passive'?'被动':'主动'}）</div>
+    <div class="in-desc">${escapeHtml(skillText(stats.skill))}</div>`;
+  state.inspectUid=null;
+  $('inClose').onclick=hideInspect;
+}
+function showInspectFor(t,i){
+  const u=getAt(t,i);
+  if(!u){ hideInspect(); return; }
+  showInspect(u);
+  renderEquip();
+}
+function hideInspect(){ state.inspectUid=null; $('inspect').innerHTML=INSPECT_EMPTY; }
+function sellInspect(){
+  if(!inPrep()||state.inspectUid==null)return;
+  state.selUid=state.inspectUid;
+  sellSelected();
+}
+function unequipInspect(){
+  if(!inPrep()||state.inspectUid==null)return;
+  const pos=findUnit(state.inspectUid); if(!pos)return;
+  const u=getAt(pos[0],pos[1]);
+  if(!u.items||!u.items.length)return;
+  if(sendAction({type:'unequip',uid:u.uid})){
+    const me=state.view.me, names=u.items.map(k=>EQUIPMENT[k]?.n||k).join('、');
+    me.items=(me.items||[]).concat(u.items); u.items=[];
+    log(`🧥 ${cname(u)} 卸下装备：${names}`);
+    renderAll(); showInspectFor(pos[0],pos[1]);
+  }
+}
+function findUnit(uid){
+  const me=state.view?.me; if(!me)return null;
+  const board=me.board||[];
+  for(let i=0;i<board.length;i++) if(board[i]&&String(board[i].uid)===String(uid)) return ['board',i];
+  const bench=me.bench||[];
+  for(let i=0;i<bench.length;i++) if(bench[i]&&String(bench[i].uid)===String(uid)) return ['bench',i];
+  return null;
+}
+
+/* ================= 交互：点击 / 拖拽（照搬经典） ================= */
+function benchClick(i){ clickUnit('bench', i); }
+function cellClick(i){ clickUnit('board', i); }
+function moveOrSwap(ft,fi,tt,ti){
+  const src=getAt(ft,fi);
+  if(src==null||(ft===tt&&fi===ti)) return;
+  if(!canAct())return;
+  // 乐观渲染：先动本地，服务器快照回来后校正
+  const me=state.view.me, bench=me.bench||(me.bench=Array(8).fill(null)), board=me.board;
+  const dst=tt==='board'?board[ti]:bench[ti];
+  if(tt==='board'&&ti<32) return;   // 只能布置在我方半区
+  if(ft==='bench'&&tt==='board'&&!dst&&board.filter(Boolean).length>=(me.level||1)){ log('⚠ 人口已满，先升级人口！'); return; }
+  if(sendAction({type:'move',uid:src.uid,to:{zone:tt,slot:ti}},{optimistic:true})){
+    if(tt==='board')board[ti]=src; else bench[ti]=src;
+    if(ft==='board')board[fi]=dst??null; else bench[fi]=dst??null;
+    renderAll();
+  }
+}
+function clickUnit(t,i){
+  if(!inPrep()) return;
+  const watched=watchedPlayer();
+  const u = watched&&t==='board' ? (watched.board||[])[i] : getAt(t,i);
+  if(watched&&t==='board'){   // 观战：只看详情，不可操作
+    if(u) showEnemyInspect(u, watched.name||playerName(watched.seat));
+    else hideInspect();
+    return;
+  }
+  if(state.selItem!=null){   // 装备穿戴模式：点棋子即穿上
+    if(!u){ log('⚠ 请点击要穿戴装备的棋子'); return; }
+    equipTo(u, state.selItem);
+    state.selItem=null;
+    if(state.inspectUid===u.uid) showInspectFor(t,i);
+    renderEquip();
+    return;
+  }
+  if(IS_TOUCH){
+    if(state.moveSel){
+      const src=findUnit(state.moveSel.uid);
+      if(src && u && String(u.uid)===String(state.moveSel.uid)){
+        state.moveSel=null; state.selUid=null; hideInspect(); clearRangeFocus(); renderAll(); return;
+      }
+      if(src){
+        moveOrSwap(src[0],src[1],t,i);
+        state.moveSel=null; state.selUid=null; hideInspect(); clearRangeFocus(); closeDrawer(); renderAll(); return;
+      }
+      state.moveSel=null;
+    }
+    if(u){ state.selUid=u.uid; state.moveSel={uid:u.uid}; showInspectFor(t,i); setRangeFocus(t==='board'?i:null, t==='board'?(previewUnit(u)?.range||1):null); if(autoInspect) openDrawer('side'); }
+    else { state.selUid=null; hideInspect(); clearRangeFocus(); }
+    renderBoard(); renderBench(); renderTop(); renderEquip();
+    return;
+  }
+  // 桌面：单击 = 查看详情 + 攻击范围；换位走拖拽
+  if(u){ state.selUid=u.uid; showInspectFor(t,i); setRangeFocus(t==='board'?i:null, t==='board'?(previewUnit(u)?.range||1):null); }
+  else { state.selUid=null; hideInspect(); clearRangeFocus(); }
+  renderBoard(); renderBench(); renderTop(); renderEquip();
+}
+function paintMoveSel(){
+  document.querySelectorAll('.mvsrc').forEach(x=>x.classList.remove('mvsrc'));
+  document.querySelectorAll('.mv-hl').forEach(x=>x.classList.remove('mv-hl'));
+  const hint=$('moveHint');
+  const active = IS_TOUCH && inPrep() && state.moveSel && findUnit(state.moveSel.uid);
+  if(!active){
+    if(hint) hint.style.display='none';
+    if(state.moveSel&&(!IS_TOUCH||!inPrep())) state.moveSel=null;
+    return;
+  }
+  const srcEl=document.querySelector(`.unit[data-uid="${state.moveSel.uid}"]`);
+  if(srcEl) srcEl.classList.add('mvsrc');
+  const cells=$('board').children;
+  for(let i=BOARD_W*BOARD_H/2;i<BOARD_W*BOARD_H;i++) if(cells[i]) cells[i].classList.add('mv-hl');
+  document.querySelectorAll('#bench .bslot').forEach(s=>s.classList.add('mv-hl'));
+  if(hint){
+    const src=state.moveSel?findUnit(state.moveSel.uid):null;
+    const u=src?getAt(src[0],src[1]):null;
+    const rng=src&&src[0]==='board'&&u?(previewUnit(u)?.range??1):null;
+    hint.textContent = rng!=null
+      ? `射程 ${rng} 格（蓝格可攻击）· 点目标格移动/换位`
+      : '已选中，点目标格移动/换位（点原棋子取消）';
+    hint.style.display='block';
+    try{ hint.style.bottom=(($('shopbar')&&$('shopbar').offsetHeight||90)+10)+'px'; }catch(e){}
+  }
+}
+/* 装备拖拽落点高亮 */
+function paintEquipDrop(clientX, clientY){
+  document.querySelectorAll('.equip-hl').forEach(x=>x.classList.remove('equip-hl'));
+  const tgt=document.elementFromPoint(clientX,clientY);
+  const cell=tgt&&tgt.closest&&tgt.closest('.cell,.bslot');
+  if(!cell) return null;
+  const t=cell.classList.contains('cell')?'board':'bench';
+  const i=cell.classList.contains('cell')?+cell.dataset.i:+cell.dataset.bi;
+  const u=t==='board'?(watchedPlayer()?.board||myTurnBoard())[i]:getAt('bench',i);
+  if(u&&t==='board'&&!watchedPlayer()) cell.classList.add('equip-hl');
+  else if(u&&t==='bench') cell.classList.add('equip-hl');
+  return u?{t,i,u}:null;
+}
+let drag=null, itemDrag=null, unequipDrag=null, chipClickSuppressedUntil=0, dragHoverCell=null;
+/* 联机特有：每次 state 广播都会重建棋盘 DOM，拖拽/移动中的落点高亮会被冲掉。
+   renderBoard 重排后按最近一次悬停补画（经典本地状态无此问题）。 */
+function repaintDragHover(){
+  if(!dragHoverCell) return;
+  if(dragHoverCell.zone==='board'){ const c=$('board')?.children?.[dragHoverCell.slot]; if(c)c.classList.add('drop-hl'); }
+  else { const slot=document.querySelector(`#bench .bslot[data-bi="${dragHoverCell.slot}"]`); if(slot)slot.classList.add('drop-hl'); }
+}
+document.addEventListener('pointerdown', e=>{
+  if(e.button!==0) return;
+  if(!inPrep()) return;
+  const el = e.target.closest && e.target.closest('.unit');
+  if(!el) return;
+  if(el.classList.contains('preview')) return;
+  const cell = el.closest('.cell'), slot = el.closest('.bslot');
+  if(!cell && !slot) return;
+  drag = { t: cell?'board':'bench', i: cell?+cell.dataset.i:+slot.dataset.bi,
+           x0:e.clientX, y0:e.clientY, ghost:null, el, wasInSell:false };
+  if(drag.t==='board'){ const u=getAt('board',drag.i); if(u){ setRangeFocus(drag.i, previewUnit(u)?.range||1); paintRange(); } }
+});
+document.addEventListener('pointermove', e=>{
+  if(unequipDrag){
+    if(!unequipDrag.ghost && Math.hypot(e.clientX-unequipDrag.x0, e.clientY-unequipDrag.y0)>6){
+      const pos=findUnit(unequipDrag.uid);
+      const u=pos?getAt(pos[0],pos[1]):null;
+      const k=u&&u.items?u.items[unequipDrag.idx]:null;
+      const g=$('dragGhost'); g.innerHTML=`<div class="unit item-ghost">${k?(EQUIPMENT[k]?.e||'')+' '+(EQUIPMENT[k]?.n||''):''}</div>`;
+      g.style.display='block'; unequipDrag.ghost=g;
+    }
+    if(unequipDrag.ghost){
+      unequipDrag.ghost.style.left=(e.clientX-34)+'px';
+      unequipDrag.ghost.style.top=(e.clientY-34)+'px';
+      const ov=document.elementFromPoint(e.clientX,e.clientY);
+      const eq=$('equip'), pnl=eq&&eq.closest?eq.closest('.panel'):null;
+      const over=!!(ov&&ov.closest&&ov.closest('#equip'));
+      if(pnl) pnl.classList.toggle('drop-panel-hl', over);
+    }
+    return;
+  }
+  if(itemDrag){
+    if(!itemDrag.ghost && Math.hypot(e.clientX-itemDrag.x0, e.clientY-itemDrag.y0)>6){
+      const g=$('dragGhost'); g.innerHTML=`<div class="unit item-ghost">${EQUIPMENT[state.view?.me?.items?.[itemDrag.i]]?(EQUIPMENT[state.view.me.items[itemDrag.i]].e+' '+EQUIPMENT[state.view.me.items[itemDrag.i]].n):''}</div>`;
+      g.style.display='block'; itemDrag.ghost=g;
+    }
+    if(itemDrag.ghost){
+      itemDrag.ghost.style.left=(e.clientX-34)+'px';
+      itemDrag.ghost.style.top=(e.clientY-34)+'px';
+      const hit=paintEquipDrop(e.clientX,e.clientY);
+      const ov=document.elementFromPoint(e.clientX,e.clientY);
+      const insp=$('inspect');
+      if(insp) insp.classList.toggle('inspect-hl', !hit && !!(ov&&ov.closest&&ov.closest('#inspect')));
+    }
+    return;
+  }
+  if(!drag) return;
+  if(!drag.ghost && Math.hypot(e.clientX-drag.x0, e.clientY-drag.y0)>6){
+    const g=$('dragGhost'); g.innerHTML=unitHTML(getAt(drag.t,drag.i),false);
+    g.style.display='block'; drag.ghost=g;
+  }
+  if(drag.ghost){
+    drag.ghost.style.left=(e.clientX-34)+'px';
+    drag.ghost.style.top=(e.clientY-34)+'px';
+    document.querySelectorAll('.drop-hl').forEach(x=>x.classList.remove('drop-hl'));
+    document.querySelectorAll('.sell-hl').forEach(x=>x.classList.remove('sell-hl'));
+    const tgt=document.elementFromPoint(e.clientX,e.clientY);
+    const c=tgt&&tgt.closest && tgt.closest('.cell,.bslot');
+    if(c){
+      const tt2 = c.classList.contains('cell')?'board':'bench';
+      const ti2 = c.classList.contains('cell')?+c.dataset.i:+c.dataset.bi;
+      if(tt2==='board'){ const du=getAt(drag.t,drag.i); if(du){ setRangeFocus(ti2, previewUnit(du)?.range||1); paintRange(); } }
+      else { clearRangeFocus(); paintRange(); }
+    }
+    if(c) c.classList.add('drop-hl');
+    dragHoverCell = c ? {zone:c.classList.contains('cell')?'board':'bench', slot:c.classList.contains('cell')?+c.dataset.i:+c.dataset.bi} : null;
+    const sb=tgt&&tgt.closest && tgt.closest('#sellBtn');
+    if(sb) sb.classList.add('sell-hl');
+    const inShop = tgt && tgt.closest && tgt.closest('#shop');
+    const shopEl=$('shop'), bn=$('sellBanner');
+    shopEl.classList.toggle('sell-zone', !!inShop);
+    if(inShop){
+      const su=getAt(drag.t,drag.i);
+      if(su){
+        bn.textContent=`松手出售 +${sellRefund(su)}金`;
+        bn.style.display='block';
+        const r=shopEl.getBoundingClientRect();
+        bn.style.left=Math.max(8, Math.min(innerWidth-210, r.left+r.width/2-90))+'px';
+        bn.style.top=Math.max(6, r.top-34)+'px';
+      }
+      drag.ghost.style.top=(e.clientY-34-24)+'px';
+      drag.ghost.classList.add('in-sell');
+      if(!drag.wasInSell){ drag.wasInSell=true; sfx('sellhint'); }
+    } else {
+      bn.style.display='none';
+      drag.ghost.classList.remove('in-sell');
+      drag.wasInSell=false;
+    }
+  }
+});
+document.addEventListener('pointerup', e=>{
+  if(unequipDrag){
+    const ud=unequipDrag; unequipDrag=null;
+    document.querySelectorAll('.drop-panel-hl').forEach(x=>x.classList.remove('drop-panel-hl'));
+    $('dragGhost').style.display='none';
+    if(!findUnit(ud.uid)) return;
+    if(!ud.ghost){ unequipOne(ud.uid, ud.idx); return; }
+    const ov=document.elementFromPoint(e.clientX,e.clientY);
+    if(ov&&ov.closest&&ov.closest('#equip')) unequipOne(ud.uid, ud.idx);
+    else log('⚠ 拖到「装备」背包栏松手才卸下（点按身上的装备芯片也可直接卸下）');
+    return;
+  }
+  if(itemDrag){
+    const id=itemDrag; itemDrag=null;
+    document.querySelectorAll('.equip-hl').forEach(x=>x.classList.remove('equip-hl'));
+    const ip=$('inspect'); if(ip) ip.classList.remove('inspect-hl');
+    $('dragGhost').style.display='none';
+    $('shop').classList.remove('sell-zone'); $('sellBanner').style.display='none'; $('dragGhost').classList.remove('in-sell');
+    if(id.ghost){
+      chipClickSuppressedUntil=Date.now()+400;
+      const hit=paintEquipDrop(e.clientX,e.clientY);
+      if(hit&&!watchedPlayer()){ equipTo(hit.u, id.i); }
+      else {
+        const ov=document.elementFromPoint(e.clientX,e.clientY);
+        const ip2=(ov&&ov.closest&&ov.closest('#inspect')&&state.inspectUid!=null)?findUnit(state.inspectUid):null;
+        if(ip2){ equipTo(getAt(ip2[0],ip2[1]), id.i); }
+        else {
+          log(ov&&ov.closest&&ov.closest('#shop')
+            ? '⚠ 装备不能出售：请拖到棋子身上穿戴（右键棋子可卸下装备）'
+            : '⚠ 请把装备拖到棋子身上');
+        }
+      }
+    } else {
+      state.selItem = state.selItem===id.i ? null : id.i; renderEquip();
+    }
+    return;
+  }
+  if(!drag) return;
+  const d=drag; drag=null;
+  dragHoverCell=null;
+  clearRangeFocus();
+  $('dragGhost').style.display='none';
+  document.querySelectorAll('.drop-hl').forEach(x=>x.classList.remove('drop-hl'));
+  document.querySelectorAll('.sell-hl').forEach(x=>x.classList.remove('sell-hl'));
+  $('shop').classList.remove('sell-zone'); $('sellBanner').style.display='none'; $('dragGhost').classList.remove('in-sell');
+  if(!d.ghost) return;
+  const tgt=document.elementFromPoint(e.clientX,e.clientY);
+  const sell=tgt&&tgt.closest && tgt.closest('#sellBtn,#shop');
+  if(sell && inPrep()){
+    const u=getAt(d.t,d.i);
+    if(u) sellUnit(u);
+    return;
+  }
+  const c=tgt&&tgt.closest && tgt.closest('.cell,.bslot');
+  if(c){
+    const tt = c.classList.contains('cell')?'board':'bench';
+    const ti = c.classList.contains('cell')?+c.dataset.i:+c.dataset.bi;
+    moveOrSwap(d.t,d.i,tt,ti);
+    state.selUid=null;
+  }
+});
+function sellUnit(u){
+  if(!u||!inPrep()||!canAct())return;
+  if(sendAction({type:'sell',uid:u.uid},{optimistic:true})){
+    const me=state.view.me;
+    const pos=findUnit(u.uid);
+    if(pos){ if(pos[0]==='board')me.board[pos[1]]=null; else me.bench[pos[1]]=null; }
+    me.gold=(me.gold||0)+sellRefund(u);
+    log(`💸 出售 ${cname(u)} +${sellRefund(u)}金`);
+    if(state.selUid===u.uid)state.selUid=null;
+    if(state.inspectUid===u.uid)hideInspect();
+    renderAll();
+  }
+}
+function sellSelected(){
+  const sel=state.selUid!=null?findUnit(state.selUid):null;
+  if(!sel)return;
+  sellUnit(getAt(sel[0],sel[1]));
+}
+/* 右键 = 卸下全部装备（照搬经典） */
+document.addEventListener('contextmenu', e=>{
+  if(IS_TOUCH){ e.preventDefault(); return; }
+  if(!inPrep()) return;
+  const el=e.target.closest && e.target.closest('.unit');
+  if(!el) return;
+  const cell=el.closest('.cell'), slot=el.closest('.bslot');
+  if(!cell && !slot) return;
+  e.preventDefault();
+  const u = cell ? myTurnBoard()[+cell.dataset.i] : state.view?.me?.bench?.[+slot.dataset.bi];
+  if(!u) return;
+  if(!u.items || !u.items.length){ log(`⚠ ${cname(u)} 身上没有装备`); return; }
+  if(sendAction({type:'unequip',uid:u.uid})){
+    const me=state.view.me, names=u.items.map(k=>EQUIPMENT[k]?.n||k).join('、');
+    me.items=(me.items||[]).concat(u.items); u.items=[];
+    log(`🧥 ${cname(u)} 卸下装备：${names}`);
+    renderAll();
+  }
+});
+/* 键盘快捷键（照搬经典：D/F/L/R/A/T/E/X/Delete/空格） */
+window.addEventListener('keydown',e=>{
+  if(!document.body.classList.contains('online-playing'))return;
+  if(!inPrep()||e.repeat||e.ctrlKey||e.metaKey||e.altKey||e.isComposing)return;
+  if(e.target?.closest?.('input,textarea,select,[contenteditable],dialog')||document.querySelector('dialog[open]'))return;
+  const key=/^Key[A-Z]$/.test(e.code)?e.code.slice(3).toLowerCase():e.key.toLowerCase();
+  if(key==='d')$('refreshBtn').click();
+  else if(key==='f')$('lvlBtn').click();
+  else if(key==='l')$('lockBtn').click();
+  else if(key==='a'||key==='r')$('deployBtn').click();
+  else if(key==='t')$('tidyBtn').click();
+  else if((key==='delete'||key==='x'||key==='e')&&state.selUid!=null)sellSelected();
+  else if(key===' '){ e.preventDefault(); $('fightBtn').click(); }
+});
+
+/* ================= 渲染：八人战况（新增：8 名玩家血量/名次/观战） ================= */
+function renderPlayersHUD(){
+  const info=$('arenaInfo'); if(!info)return;
+  const players=state.view?.players||[];
+  if(!players.length){ info.innerHTML='<div class="pl-hint">等待对局数据…</div>'; return; }
+  const maxHp=Math.max(40,...players.map(p=>p.hp||0));
+  const alive=players.filter(p=>p.alive!==false).sort((a,b)=>(b.hp||0)-(a.hp||0));
+  const out=players.filter(p=>p.alive===false).sort((a,b)=>(a.place||99)-(b.place||99));
+  const row=(p,rank,dead)=>{
+    const mine=p.seat===state.seat, watching=p.seat===state.spectateSeat;
+    return `<button type="button" class="pl-row${mine?' me':''}${dead?' out':''}${watching?' watching':''}" data-watch="${p.seat}">
+      <span>${dead?`#${p.place||rank} ·`:rank+'.'} ${escapeHtml(p.name||playerName(p.seat))}${mine?' (你)':''}${p.bot?' 🤖':''}</span>
+      <span class="pl-hp-track" aria-hidden="true"><i style="width:${Math.max(0,Math.min(100,(p.hp||0)/maxHp*100))}%"></i></span>
+      <span>${dead?'淘汰':'❤'+(p.hp??0)+' · Lv'+(p.level||1)}</span></button>`;
+  };
+  info.innerHTML=alive.map((p,i)=>row(p,i+1,false)).join('')+
+    out.map(p=>row(p,alive.length+1,true)).join('')+
+    `<div class="pl-hint">${isSpectator()?'点击玩家观战其棋盘 · 点自己返回':'点击玩家可观战其棋盘'}</div>`;
+}
+$('arenaInfo')?.addEventListener('click',event=>{
+  const row=event.target.closest('[data-watch]');
+  if(!row)return;
+  const seat=Number(row.dataset.watch);
+  state.spectateSeat = seat===state.seat ? null : seat;
+  state.selUid=null; state.inspectUid=null; hideInspect(); clearRangeFocus();
+  renderAll();
+});
+
+/* ================= 渲染：战斗统计（照搬经典 statBar） ================= */
+const STAT_META={deal:['⚔ 输出','m-deal'],heal:['💚 治疗','m-heal'],take:['🛡 抗伤','m-take']};
+function renderStatBar(){
+  const bar=$('statBar'); if(!bar) return;
+  const playback=state.battlePlayback;
+  if(!playback){ bar.innerHTML=''; return; }
+  const ownSide=playback.ownSide;
+  const rows=playback.units
+    .map(u=>({id:u.id,star:u.star||1,side:u.side===ownSide?0:1,
+      deal:u.damage||0,dealP:u.physicalDamage||0,dealM:u.magicDamage||0,heal:u.healing||0,take:u.taken||0}))
+    .filter(r=>r[state.statMode]>0)
+    .sort((a,b)=>b[state.statMode]-a[state.statMode]).slice(0,5);
+  const mx=rows.length?rows[0][state.statMode]:1;
+  bar.innerHTML = `<div class="stb-tabs">${Object.keys(STAT_META).map(m=>
+      `<div class="stb-tab${m===state.statMode?' on':''}" data-stat="${m}">${STAT_META[m][0]}</div>`).join('')}</div>` +
+    (rows.length ? rows.map(r=>{
+      const wP = state.statMode==='deal' ? Math.round((r.dealP||0)/mx*100) : 0;
+      const wM = state.statMode==='deal' ? Math.round((r.dealM||0)/mx*100) : 0;
+      const body = state.statMode==='deal'
+        ? `<i class="m-deal" style="width:${wP}%"></i><i class="m-dealM" style="width:${wM}%"></i>`
+        : `<i class="${STAT_META[state.statMode][1]}" style="width:${Math.max(7,Math.round(r[state.statMode]/mx*100))}%"></i>`;
+      return `<div class="stb-row"><i class="stb-side ${r.side===0?'ally':'enemy'}" title="${r.side===0?'我方':'敌方'}"></i><img src="assets/units/${r.id}.png" alt=""><span class="stb-star">${'★'.repeat(r.star)}</span>`+
+        `<div class="stb-bar">${body}</div><b>${Math.round(r[state.statMode])}</b></div>`;
+      }).join('')
+      : `<div class="stb-empty">本回合暂无该类数据</div>`);
+}
+$('statBar')?.addEventListener('click',event=>{
+  const tab=event.target.closest('[data-stat]');
+  if(tab){ state.statMode=tab.dataset.stat; renderStatBar(); }
+});
+let _stbT=0;
+function statBarTick(){ const now=Date.now(); if(now-_stbT>500){ _stbT=now; renderStatBar(); } }
+
+/* ================= 战斗（服务器事件 → 经典 renderBattle 棋盘层） ================= */
+function makeBattlePlayback(view, battle) {
+  const units = [];
+  const starting = new Map((battle.startingUnits || []).map(unit => [String(unit.uid),unit]));
+  const ownSide = (state.spectateSeat ?? state.seat) === battle.b ? 'B' : 'A';
+  for (const [side, formation] of [['A', battle.formationA], ['B', battle.formationB]]) {
+    for (const entry of formation || []) {
+      const unit = entry.unit;
+      if (!unit) continue;
+      const x = entry.slot % 8, y = Math.floor(entry.slot / 8);
+      units.push({
+        ...unit, ...starting.get(String(unit.uid)), uid: String(unit.uid), id:unit.id, side,
+        x, y:ownSide === 'B' ? 7 - y : y, alive: true,
+      });
+    }
+  }
+  const duration = state.phaseDurationMs || Math.max(8000,(battle.durationMs || 0) + 1000);
+  const remaining = state.deadline ? Math.max(0, state.deadline + state.clockSkew - Date.now()) : duration;
+  const elapsed = view.phase === 'combat' ? Math.min(duration, Math.max(0, duration - remaining)) : duration;
+  return {
+    key: `${view.round}:${battle.a}:${battle.b}:${state.spectateSeat ?? state.seat}`,
+    battle, units, ownSide, cursor: 0, elapsed, duration,
+    startedAt: performance.now() - elapsed,
+    speed: Math.max(1,(battle.durationMs || 0) / Math.max(1,duration-500)), catchingUp: elapsed > 500,
+  };
+}
+function applyBattleEvent(playback, event, view) {
+  const target = playback.units.find(item => item.uid === String(event.target));
+  const actor = playback.units.find(item => item.uid === String(event.from));
+  if (event.type === 'move') {
+    const unit = playback.units.find(item => item.uid === String(event.unit));
+    if (unit) { unit.x = event.x; unit.y = playback.ownSide === 'B' ? 7 - event.y : event.y; }
+  } else if (event.type === 'death') {
+    if (target) target.alive = false;
+  }
+  if (target) {
+    for (const field of ['hp','shield','mana']) if (Number.isFinite(event[field])) target[field] = event[field];
+    if (event.type === 'mana' && !Number.isFinite(event.mana)) target.mana = Math.min(target.maxmana || 50,(target.mana || 0) + (event.amount || 0));
+  }
+  if(target&&event.type==='mark')target.sigMark=event.mark;
+  if(target&&['markBurst','markExpired'].includes(event.type))target.sigMark=null;
+  if (target && event.type === 'status') { target.statuses = event.statuses; Object.assign(target,event.stats||{}); }
+  if(actor&&['attack','skill','bounce','item','bond','counter','echo','tempo','spark','zoneDamage','afterimage','thorns','reflect','link','burn','dot'].includes(event.type)){actor.damage=(actor.damage||0)+(event.amount||0);const metric=event.dtype==='magic'?'magicDamage':'physicalDamage';actor[metric]=(actor[metric]||0)+(event.amount||0);}
+  if(target&&event.amount>0&&!['heal','shield','mana','manaBurn'].includes(event.type))target.taken=(target.taken||0)+event.amount;
+  if(actor&&event.type==='cast')actor.casts=(actor.casts||0)+1;
+  if(event.type==='death'){const killer=playback.units.find(u=>u.uid===String(event.by));if(killer)killer.kills=(killer.kills||0)+1;}
+  if(actor&&event.type==='heal')actor.healing=(actor.healing||0)+(event.amount||0);
+  if (!playback.catchingUp) {
+    const kit=actor&&CLASSIC_SKILLS[actor.id];
+    if(event.type==='cast'&&kit)audio.skillSound(audio.v3Impact(kit,actor),actor,false);
+    else if(event.type==='death')audio.sfx('die',{scale:true});
+    const recipients=event.type==='cast'?(playback.battle.events||[]).filter(item=>item.at===event.at&&String(item.from)===String(event.from)&&['skill','heal','shield'].includes(item.type)).map(item=>item.target):[];
+    playback.renderer?.event(event,recipients);
+    // 伤害数字（经典 dmg 弹字）
+    if(target&&event.amount>0&&!['heal','shield','mana','manaBurn'].includes(event.type))spawnDamageText(target,`-${event.amount}`,event.crit?'crit':'');
+    else if(target&&event.type==='heal'&&event.amount>0)spawnDamageText(target,`+${event.amount}`,'heal');
+  }
+  if (actor && event.type === 'cast') actor.mana = Number.isFinite(event.mana) ? event.mana : 0;
+  // 战报：关键事件落 #log（替代经典战报由 sim 写入的路径）
+  if(['cast','death'].includes(event.type)&&!playback.catchingUp){
+    const nm=u=>byId(u?.id)?.name||'?';
+    if(event.type==='cast')log(`✦ ${nm(actor)} 发动 ${SKILL_NAMES[actor?.id]||'技能'}`);
+    else if(event.type==='death')log(`💀 ${nm(target)} 退场${event.by?`（${nm(playback.units.find(x=>x.uid===String(event.by)))} 击杀）`:''}`);
+  }
+}
+function spawnDamageText(u,text,cls){
+  const b=$('board'); if(!b)return;
+  const p=unitVisual(u);
+  const el=document.createElement('div');
+  el.className='dmg'+(cls?' '+cls:''); el.textContent=text;
+  el.style.left=(p.x-24)+'px'; el.style.top=(p.y-30)+'px';
+  b.appendChild(el); setTimeout(()=>el.remove(),800);
+}
+const STATUS_CLASS={freeze:'frozen',stun:'stunned',weakenT:'weakened',slow:'slowed'};
+const STATUS_ICON={freeze:'❄',stun:'💫',weakenT:'🔻',slow:'🐌',noShield:'🔨',healDownT:'💉',silence:'🔇',taunt:'🎯',arDownT:'🪓',mrDownT:'🔯',hex:'🐧',petrifyT:'🗿'};
+function renderBattle(playback){
+  const b=$('board'); if(!b) return;
+  let layer=document.getElementById('unitLayer');
+  if(!layer){
+    b.innerHTML='';
+    for(let i=0;i<64;i++){
+      const cell=document.createElement('div');
+      cell.className='cell'+(i<32?' enemy-side':'');
+      cell.dataset.i=i; cell.style.zIndex=String(1+(i/8|0));
+      b.appendChild(cell);
+    }
+    layer=document.createElement('div'); layer.id='unitLayer';
+    b.appendChild(layer);
+    _geo=null;
+  }
+  if(!playback.nodes) playback.nodes=new Map();
+  let fx=b.querySelector('.battle-effects');
+  if(!fx){ fx=document.createElement('div'); fx.className='battle-effects'; b.appendChild(fx); }
+  if(!playback.renderer) playback.renderer=createBattleEffects(fx,playback.nodes,playback.units,skillVisuals,playback.speed);
+  const g=boardGeo();
+  const seen=new Set();
+  for(const u of playback.units){
+    if(u.alive===false) continue;
+    seen.add(String(u.uid));
+    let el=layer.querySelector(`[data-uid="${u.uid}"]`);
+    if(!el){
+      el=document.createElement('div');
+      el.className='unit battle-unit cost'+(byId(u.id)?.cost||1)+(u.side===playback.ownSide?' ally':' enemy');
+      el.dataset.uid=u.uid;
+      el.title=(u.side===playback.ownSide?'我方 · ':'对手 · ')+unitTitle(u).replace(/"/g,'&quot;').replace(/\n/g,'&#10;');
+      el.innerHTML=unitInner(u);
+      const teamBadge=document.createElement('span'); teamBadge.className='team-badge';
+      teamBadge.setAttribute('aria-hidden','true'); el.appendChild(teamBadge);
+      const pe=el.querySelector('.pt'); if(pe) pe.style.animationDelay=(-((Number(u.uid)*137)%2600)/1000)+'s';
+      layer.appendChild(el);
+      playback.nodes.set(u.uid,el);
+    }
+    const sz=unitSizeOf(u,el);
+    const px=u.x*g.sx+((u.big?2*g.cw+g.gx:g.cw)-sz.w)/2,
+          py=u.y*g.sy+((u.big?2*g.ch+g.gy:g.ch)-sz.h)/2;
+    el.style.left=px+'px'; el.style.top=py+'px';
+    const z=String(10+u.y*2+(u.big?1:0));
+    if(el._zk!==z){ el.style.zIndex=z; el._zk=z; }
+    if(el.dataset.gx!==undefined && (+el.dataset.gx!==u.x || +el.dataset.gy!==u.y)){
+      el.classList.add('walking');
+      clearTimeout(el._wt); el._wt=setTimeout(()=>el.classList.remove('walking'), 520);
+    }
+    el.dataset.gx=u.x; el.dataset.gy=u.y;
+    const hp=el.querySelector('.hpfill');
+    if(hp){ const hw=Math.max(0,(u.hp??0)/(u.maxhp||1)*100)+'%'; if(el._hw!==hw){ el._hw=hw; hp.style.width=hw; } }
+    const mp=el.querySelector('.mpfill');
+    if(mp){ const mw=Math.min(100,(u.mana||0)/(u.maxmana||50)*100)+'%'; if(el._mw!==mw){ el._mw=mw; mp.style.width=mw; } }
+    el.classList.toggle('ult-ready', u.alive!==false && !(u.isPassive||isPassive(u)) && (u.mana||0)>=(u.maxmana||50) && !(u.statuses||[]).some(s=>['stun','freeze','silence'].includes(s)));
+    el.classList.toggle('shielded',(u.shield||0)>0);
+    const statuses=u.statuses||[];
+    for(const [key,cls] of Object.entries(STATUS_CLASS))el.classList.toggle(cls,statuses.includes(key));
+    const stTxt=statuses.map(k=>STATUS_ICON[k]||'').join('');
+    let fz=el.querySelector('.fz');
+    if(stTxt){
+      if(!fz){ fz=document.createElement('span'); fz.className='fz'; el.appendChild(fz); }
+      if(el._fz!==stTxt){ el._fz=stTxt; fz.textContent=stTxt; }
+    } else if(fz) fz.remove();
+  }
+  for(const el of [...layer.children]){
+    if(!seen.has(el.dataset.uid)) el.remove();
+  }
+  // 双方存活计数（经典 #aliveBar）
+  let ab=$('aliveBar');
+  const own=playback.units.filter(u=>u.alive&&u.side===playback.ownSide).length;
+  const foe=playback.units.filter(u=>u.alive&&u.side!==playback.ownSide).length;
+  if(!ab){ ab=document.createElement('div'); ab.id='aliveBar';
+    ab.innerHTML='<span class="ab-me">🔵 我 <b>0</b></span><span class="ab-sep">:</span><span class="ab-foe"><b>0</b> 🔴 敌</span>';
+    const synAll=$('synAll');
+    if(!IS_TOUCH&&synAll&&synAll.parentNode)synAll.parentNode.insertBefore(ab,synAll);
+    else $('oppBar').appendChild(ab);
+  }
+  ab.querySelector('.ab-me b').textContent=String(own);
+  ab.querySelector('.ab-foe b').textContent=String(foe);
+}
+function renderBattlePlayback(view) {
+  const watchingSeat = state.spectateSeat ?? state.seat;
+  const battle = view.battles?.find(item => item.a === watchingSeat || item.b === watchingSeat);
+  const inBattlePhase = ['combat','result','over'].includes(view.phase);
+  if (!battle || battle.b === null || !inBattlePhase) {
+    if (state.battleFrame !== null) { cancelAnimationFrame(state.battleFrame); state.battleFrame=null; }
+    if(state.battlePlayback){ state.battlePlayback?.renderer?.destroy(); state.battlePlayback=null; $('aliveBar')?.remove(); }
+    return;
+  }
+  const key = `${view.round}:${battle.a}:${battle.b}:${watchingSeat}`;
+  if (state.battlePlayback?.key !== key) {
+    state.battlePlayback?.renderer?.destroy(); $('aliveBar')?.remove();
+    state.battlePlayback = makeBattlePlayback(view,battle);
+  }
+  const playback = state.battlePlayback;
+  playback.battle = battle;
+  if (!playback.painted){ renderBattle(playback); playback.painted=true; }
+  const renderFrame = (now) => {
+    state.battleFrame = null;
+    const elapsed = view.phase === 'combat' ? Math.min(playback.duration, Math.max(0, now - playback.startedAt)) : playback.duration;
+    playback.elapsed = elapsed;
+    const simElapsed = Math.min(battle.durationMs || 0,elapsed * playback.speed);
+    const events = battle.events || [];
+    while (playback.cursor < events.length && (view.phase !== 'combat' || events[playback.cursor].at <= simElapsed)) {
+      applyBattleEvent(playback, events[playback.cursor++], view);
+    }
+    playback.catchingUp = false;
+    renderBattle(playback);
+    statBarTick();
+    if (view.phase === 'combat' && elapsed < playback.duration) state.battleFrame = requestAnimationFrame(renderFrame);
+    else if(view.phase!=='combat'){
+      renderTop();   // 战斗结束后敌方信息栏切回结果提示
+    }
+  };
+  if (state.battleFrame !== null) cancelAnimationFrame(state.battleFrame);
+  renderFrame(performance.now());
+}
+
+/* ================= 棋盘自适应（照搬经典 fitBoardCell / fitBoard） ================= */
+function fitBoardCell(){
+  if(typeof matchMedia!=='function') return;
+  const wide=matchMedia('(min-width:881px)').matches && !matchMedia('(orientation:landscape) and (max-height:540px)').matches;
+  if(!wide){ document.body.style.removeProperty('--cell'); return; }
+  const main=$('main'); if(!main) return;
+  const syn=$('synCol'), side=$('side');
+  const synW=(syn&&syn.offsetParent!==null)?syn.offsetWidth:0;
+  const sideW=(side&&side.offsetParent!==null)?side.offsetWidth:0;
+  const wAv=main.clientWidth-20-synW-sideW-32;
+  const hAv=main.clientHeight-16;
+  const ab=$('aliveBar'); const abH=(ab&&ab.offsetParent!==null)?ab.offsetHeight+4:0;
+  const c=Math.max(40,Math.min(104,(wAv-14)/8,(hAv-62-abH)/8.85));
+  document.body.style.setProperty('--cell',c.toFixed(1)+'px');
+  _geo=null;
+}
+function fitBoard(){
+  const w=$('boardwrap'), b=$('board'); if(!w||!b) return;
+  const st=w.style;
+  if(innerWidth>880){ st.transform=''; st.marginBottom=''; return; }
+  const landscape = innerWidth>innerHeight;
+  const reserved = ($('shopbar').offsetHeight||0) + (landscape?16:24);
+  const main=$('main')||w.parentElement;
+  const siblingW=main?[...main.children].filter(el=>el!==w&&getComputedStyle(el).display!=='none').reduce((sum,el)=>sum+el.offsetWidth,0):0;
+  const availW = landscape ? Math.max(0,(main?.clientWidth||innerWidth)-siblingW-12) : innerWidth-8;
+  const availH = landscape
+    ? innerHeight - reserved
+    : Math.max(0, (main?.clientHeight || innerHeight - reserved) - 14);
+  const s = Math.max(0.35, Math.min(1, availW/w.offsetWidth, availH/w.offsetHeight));
+  st.transformOrigin='top center';
+  st.transform = s<1 ? `scale(${s})` : '';
+  st.marginBottom = s<1 ? (-w.offsetHeight*(1-s))+'px' : '';
+}
+addEventListener('resize',()=>{ fitBoardCell(); fitBoard(); if(!document.getElementById('unitLayer')) renderBoard(); });
+
+/* ================= 渲染总入口 ================= */
+function renderAll(){
+  renderBoard();
+  renderBench();
+  renderShop();
+  renderTop();
+  renderSynergy();
+  renderEquip();
+  renderPlayersHUD();
+  renderControls();
+  fitBoardCell();
+}
+let lastRenderKey='';
+function render(prev){
   const lobby = state.lobby;
   const gameVisible = lobby?.status === 'playing' || lobby?.status === 'finished';
   document.body.classList.toggle('online-playing', gameVisible);
@@ -516,34 +1663,73 @@ function render() {
     : lobby?.status === 'finished' ? '本局已结束 · 可查看最终战况'
     : gameVisible ? `第 ${state.view?.round ?? '—'} 回合 · ${phaseName(state.view?.phase)}`
     : '等待八位玩家入座并就绪';
-  if (state.maintenance) $('roomHint').textContent += ' · 服务维护中，当前对局可继续';
   renderLobby();
+  renderControls();
   if (gameVisible) renderGame();
   renderOpening(state.view);
+}
+function renderGame(){
+  const view=state.view;
+  if(!view)return;
+  // data-phase 用经典取值（prep/battle/chapter/over）：tools 皮肤里 body[data-phase=...] 规则两模式共享
+  document.body.dataset.phase=({prep:'prep',combat:'battle',result:'chapter',over:'over'})[view.phase]||'prep';
+  const phaseKey=`${view.round}:${view.phase}`;
+  if(state.audioPhase!==phaseKey){
+    const prevPhase=state.audioPhase.split(':')[1];
+    state.audioPhase=phaseKey;
+    if(view.phase==='combat'){audio.sfx('battleStart');log(`—— 第 ${view.round} 回合 · 开战 ——`);}
+    else if(view.phase==='prep'&&prevPhase==='result'){log(`—— 第 ${view.round} 回合 · 备战 ——`);}
+    else if(view.phase==='prep'&&prevPhase===undefined){log(`—— 第 ${view.round} 回合 · 备战 ——`);}
+    else if(view.phase==='result'){
+      const result=view.results?.find(r=>r.a===state.seat||r.b===state.seat);
+      if(result){
+        const won=result.winner===state.seat;
+        audio.sfx(won?'win':'lose');
+        log(won?`🏆 战斗胜利（对 ${playerName(result.a===state.seat?result.b:result.a)}）`:`🩹 战斗失利（对 ${playerName(result.a===state.seat?result.b:result.a)}）${result.damage?` · -${result.damage} 生命`:''}`);
+      }
+      audio.stopBattle();
+    }
+  }
+  if(view.phase!=='prep'){ state.selUid=null; state.selItem=null; state.moveSel=null; clearRangeFocus(); }
+  renderBattlePlayback(view);
+  renderAll();
+  if(state.inspectUid!=null){
+    const pos=findUnit(state.inspectUid);
+    if(!pos){ hideInspect(); }
+  }
   renderControls();
 }
-
-/* 开局三选一（对齐经典开局招募）：第 1 回合备战期展示，点选免费入队；冻结/开战兜底自动选第一位 */
-function renderOpening(view) {
-  const overlay = $('openingOverlay');
-  if (!overlay) return;
-  const offer = view?.me?.openingOffer;
-  if (Array.isArray(offer) && offer.length && view.phase === 'prep' && view.round === 1) {
-    overlay.hidden = false;
-    const sig = offer.map(unit => unit.uid).join(',');
-    const list = overlay.querySelector('.opening-cards');
-    if (list && list.dataset.sig !== sig) {
-      list.dataset.sig = sig;
-      list.innerHTML = offer.map((unit, i) => `<button type="button" class="opening-card" data-opening-pick="${i}">
-        <img src="${unitImage(unit.id)}" alt="${escapeHtml(unit.name || unit.id)}">
-        <b>${escapeHtml(unit.name || unit.id)}</b>
-        <span>${escapeHtml([unit.fac, unit.fac2, unit.job, unit.job2].filter(Boolean).join(' · '))}</span>
-        <i>免费入队</i></button>`).join('');
-    }
-  } else overlay.hidden = true;
+function renderOpening(view){
+  const offer=view?.me?.openingOffer;
+  let ov=document.getElementById('openingOfferOverlay');
+  const active=Array.isArray(offer)&&offer.length&&view?.phase==='prep'&&view?.round===1&&!isSpectator();
+  if(!active){ if(ov)ov.remove(); state.openingSig=''; return; }
+  const sig=offer.map(u=>u.uid).join(',');
+  if(ov&&state.openingSig===sig)return;
+  state.openingSig=sig;
+  if(ov)ov.remove();
+  ov=document.createElement('div'); ov.id='openingOfferOverlay'; ov.className='stg-overlay';
+  const card=(u,i)=>{ const d=byId(u.id)||{};
+    const syn=[...facsOf(d),...jobsOf(d)].join(' / ');
+    return `<button type="button" data-i="${i}" class="stg-pick">
+      <img src="${unitImage(u.id)}" alt="">
+      <div class="stg-pick-name">${escapeHtml(cname(u))}</div>
+      <div class="stg-pick-meta">${d.cost||1} 费 · ${escapeHtml(syn)}</div>
+      <div class="stg-pick-role">${escapeHtml(skillText(previewUnit(u)?.skill)).slice(0,46)}</div></button>`; };
+  ov.innerHTML=`<div class="stg-card stg-card--wide">
+    <div class="stg-kicker">OPENING · 开局应援</div>
+    <div class="stg-title">选择你的第一位成员</div>
+    <div class="stg-sub">免费加入备战席；倒计时结束未选将自动获得第一位</div>
+    <div class="stg-picks">${offer.map(card).join('')}</div></div>`;
+  ov.addEventListener('click',e=>{
+    const btn=e.target.closest('button[data-i]'); if(!btn)return;
+    const slot=Number(btn.dataset.i);
+    ov.remove(); state.openingSig='';
+    if(sendAction({type:'pickOpening',slot}))log('🎤 开局应援：已选择成员');
+  });
+  document.body.appendChild(ov);
 }
-
-function renderLobby() {
+function renderLobby(){
   const lobby = state.lobby;
   const players = lobby?.players || [];
   const canManageBots = state.seat === lobby?.hostSeat && lobby?.status === 'waiting';
@@ -560,498 +1746,72 @@ function renderLobby() {
   $('addBotBtn').hidden = !(state.connected && state.synced && canManageBots && players.length < (lobby?.capacity || 8));
   $('addBotBtn').textContent = players.length <= 1 ? '添加机器人替补（可连点补满）' : '再添一名机器人';
 }
-
-function phaseName(phase) {
-  return ({prep:'备战',combat:'对战中',result:'结算',over:'对局结束'})[phase] || '等待同步';
+function updateCountdown(){
+  if(!state.view)return;
+  renderTop();   // 倒计时走敌方信息栏
+}
+function renderControls(){
+  const me=state.view?.me||{};
+  const active=canAct();
+  const capped=(me.level||1)>=MAX_LEVEL;
+  $('lobbyReadyBtn').disabled = !state.connected || !state.synced || state.lobby?.status !== 'waiting';
+  $('lvlBtn').disabled = !active || capped || state.view?.round===1 || (me.gold??0)<5;
+  $('lvlBtn').textContent = capped?'人口已满':(state.view?.round===1?'首回合不可买经验':(IS_TOUCH?'买经验 -5金':'买经验 (F) +4经验 -5金'));
+  $('refreshBtn').disabled = !active || (me.gold??0)<2;
+  $('lockBtn').disabled = !active;
+  $('deployBtn').disabled = !active || ![...(me.board||[]),...(me.bench||[])].some(Boolean);
+  $('tidyBtn').disabled = !active || !(me.bench||[]).some(Boolean);
+  const sel=state.selUid!=null?findUnit(state.selUid):null;
+  $('sellBtn').disabled = !active || !sel;
+  const mine=state.view?.players?.find(p=>p.seat===state.seat);
+  const autoLocked=!!state.view?.autoLocked;
+  const fight=$('fightBtn');
+  fight.disabled = !state.connected || !state.synced || !inPrep() || isSpectator() || (view=>{
+    return view.phase!=='prep'||autoLocked;
+  })(state.view||{});
+  fight.textContent = !inPrep() ? (state.view?.phase==='combat'?'⚔ 战斗中':'等待下一轮')
+    : autoLocked ? '⏳ 阵容已冻结'
+    : mine?.ready ? (IS_TOUCH?'✓ 已锁定':'✓ 已锁定（点击解锁）')
+    : (IS_TOUCH?'⚔ 锁定阵容':'⚔ 锁定阵容 (空格)');
 }
 
-function updateCountdown() {
-  const view = state.view;
-  if (!view) return;
-  const seconds = state.deadline ? Math.max(0, Math.ceil((state.deadline + state.clockSkew - Date.now()) / 1000)) : null;
-  $('countdownValue').textContent = seconds===null||view.phase==='over'?'—':String(seconds);
-  $('phaseCountdown').classList.toggle('urgent',seconds!==null&&seconds<=10&&view.phase==='prep');
-  $('phaseLabel').textContent = `${isSpectator() ? '观战 · ' : ''}${phaseName(view.phase)}${seconds === null ? '' : ` · ${seconds} 秒`}${view.phase === 'prep' && view.autoLocked ? ' · 阵容已冻结' : ''}`;
-}
-
-function battleUnitName(unit) { return unit?.name || unit?.id || '棋子'; }
-
-function battleEventText(event, playback) {
-  if(event.type==='mark')return `获得【${event.label}】印记`;
-  if(event.type==='markBurst')return `【${event.label}】印记触发`;
-  if(event.label)return event.label;
-  const source = battleUnitName(playback.units.find(unit => unit.uid === String(event.from)));
-  const target = battleUnitName(playback.units.find(unit => unit.uid === String(event.target)));
-  if (event.type === 'cast') return `${source} · 发动技能`;
-  if (event.type === 'heal') return `${source}治疗${target} · +${event.amount || 0}`;
-  if (event.type === 'shield') return `${target}获得护盾 · +${event.amount || 0}`;
-  if (event.type === 'death') return `${target}退场`;
-  if (event.type === 'dodge') return `${target}闪避攻击`;
-  if (event.type === 'move') return '棋子正在调整站位';
-  if (event.type === 'attack' || event.type === 'skill' || event.type === 'bounce') {
-    return `${source}对${target}造成 ${event.amount || 0} 点伤害`;
-  }
-  return event.type === 'shield' ? '护盾生效' : '战斗进行中';
-}
-
-function makeBattlePlayback(view, battle) {
-  const units = [];
-  const starting = new Map((battle.startingUnits || []).map(unit => [String(unit.uid),unit]));
-  const ownSide = (state.spectateSeat ?? state.seat) === battle.b ? 'B' : 'A';
-  for (const [side, formation] of [['A', battle.formationA], ['B', battle.formationB]]) {
-    for (const entry of formation || []) {
-      const unit = entry.unit;
-      if (!unit) continue;
-      const x = entry.slot % 8, y = Math.floor(entry.slot / 8);
-      units.push({
-        ...unit, ...starting.get(String(unit.uid)), uid: String(unit.uid), side,
-        x, y:ownSide === 'B' ? 7 - y : y, alive: true,
-      });
-    }
-  }
-  const duration = state.phaseDurationMs || Math.max(8000,(battle.durationMs || 0) + 1000);
-  const remaining = state.deadline ? Math.max(0, state.deadline + state.clockSkew - Date.now()) : duration;
-  const elapsed = view.phase === 'combat' ? Math.min(duration, Math.max(0, duration - remaining)) : duration;
-  return {
-    key: `${view.round}:${battle.a}:${battle.b}:${state.spectateSeat ?? state.seat}`,
-    battle, units, ownSide, cursor: 0, elapsed, duration,
-    startedAt: performance.now() - elapsed,
-    lastPaint: 0, feed: '双方阵容已锁定，战斗由服务器模拟。', feedHoldUntil: 0, log: [], logPainted: -1,
-    painted: false,
-    speed: Math.max(1,(battle.durationMs || 0) / Math.max(1,duration-500)), catchingUp: elapsed > 500,
-  };
-}
-
-function applyBattleEvent(playback, event, view) {
-  const target = playback.units.find(item => item.uid === String(event.target));
-  const actor = playback.units.find(item => item.uid === String(event.from));
-  if (event.type === 'move') {
-    const unit = playback.units.find(item => item.uid === String(event.unit));
-    if (unit) { unit.x = event.x; unit.y = playback.ownSide === 'B' ? 7 - event.y : event.y; }
-  } else if (event.type === 'death') {
-    const unit = target;
-    if (unit) unit.alive = false;
-  }
-  if (target) {
-    for (const field of ['hp','shield','mana']) if (Number.isFinite(event[field])) target[field] = event[field];
-    if (event.type === 'mana' && !Number.isFinite(event.mana)) target.mana = Math.min(target.maxmana || 50,(target.mana || 0) + (event.amount || 0));
-  }
-  if(target&&event.type==='mark')target.sigMark=event.mark;
-  if(target&&['markBurst','markExpired'].includes(event.type))target.sigMark=null;
-  if (target && event.type === 'status') { target.statuses = event.statuses; Object.assign(target,event.stats); }
-  if(actor&&['attack','skill','bounce','item','bond','counter','echo','tempo','spark','zoneDamage','afterimage','thorns','reflect','link','burn','dot'].includes(event.type)){actor.damage=(actor.damage||0)+(event.amount||0);const metric=event.dtype==='magic'?'magicDamage':'physicalDamage';actor[metric]=(actor[metric]||0)+(event.amount||0);}
-  if(target&&event.amount>0&&!['heal','shield','mana','manaBurn'].includes(event.type))target.taken=(target.taken||0)+event.amount;
-  if(actor&&event.type==='cast')actor.casts=(actor.casts||0)+1;
-  if(event.type==='death'){const killer=playback.units.find(u=>u.uid===String(event.by));if(killer)killer.kills=(killer.kills||0)+1;}
-  if(actor&&event.type==='heal')actor.healing=(actor.healing||0)+(event.amount||0);
-  if (!playback.catchingUp) {
-    const kit=actor&&CLASSIC_SKILLS[actor.id];
-    if(event.type==='cast'&&kit)audio.skillSound(audio.v3Impact(kit,actor),actor,false);
-    else if(event.type==='death')audio.sfx('die',{scale:true});
-    const recipients=event.type==='cast'?(playback.battle.events||[]).filter(item=>item.at===event.at&&String(item.from)===String(event.from)&&['skill','heal','shield'].includes(item.type)).map(item=>item.target):[];
-    playback.renderer?.event(event,recipients);
-  }
-  if (actor && event.type === 'cast') actor.mana = Number.isFinite(event.mana) ? event.mana : 0;
-  if (['attack', 'skill', 'bounce', 'cast', 'heal', 'shield', 'death', 'dodge'].includes(event.type)) {
-    const now = performance.now();
-    // A cast and its damage often share one server tick. Keep the cast visible
-    // through subsequent replay frames instead of replacing it immediately.
-    if (event.type === 'cast') playback.feedHoldUntil = now + 700;
-    if (event.type === 'cast' || now >= playback.feedHoldUntil) {
-      playback.feed = battleEventText(event, playback);
-    }
-    if(['cast','death','heal','shield','bond','counter','echo','zoneDamage','mark','markBurst'].includes(event.type))playback.log.push(`${(event.at/1000).toFixed(1)} 秒 · ${battleEventText(event,playback)}`);
-  }
-}
-
-function paintBattle(playback) {
-  const ownSide = (isSpectator() ? state.spectateSeat : state.seat) === playback.battle.b ? 'B' : 'A';
-  if (!playback.painted) {
-    $('battleArena').innerHTML = Array.from({length:64}, (_,slot) => `<div class="battle-cell ${slot < 32 ? 'enemy-side' : 'own-side'}"></div>`).join('') + '<div class="battle-unit-layer"></div>';
-    const layer = $('battleArena').lastElementChild;
-    playback.nodes = new Map();
-    for (const unit of playback.units) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'battle-piece unit battle-unit';
-      button.dataset.inspectBattle = unit.uid;
-      const passive=previewUnit(unit)?.skill?.mode==='passive';
-      button.innerHTML = `<img class="piece-art pt" src="${unitImage(unit.id)}" alt="">${passive?'':'<div class="mpbar battle-mp"><div class="mpfill"></div></div>'}<div class="hpbar battle-hp"><div class="hpfill"></div></div><i class="team-badge" aria-hidden="true"></i><span class="fz" aria-hidden="true"></span>`;
-      layer.append(button);
-      playback.nodes.set(unit.uid,button);
-    }
-    const effects = document.createElement('div'); effects.className='battle-effects';
-    $('battleArena').append(effects);
-    effects.style.setProperty('--spd',playback.speed);
-    layer.style.setProperty('--spd',playback.speed);
-    playback.renderer=createBattleEffects(effects,playback.nodes,playback.units,skillVisuals,playback.speed);
-    playback.painted = true;
-  }
-  for (const unit of playback.units) {
-    const node = playback.nodes.get(unit.uid);
-    if (!node) continue;
-    node.style.setProperty('--battle-x',unit.x);
-    node.style.setProperty('--battle-y',unit.y);
-    node.classList.toggle('team-own',unit.side === ownSide);
-    node.classList.toggle('team-foe',unit.side !== ownSide);
-    node.classList.toggle('ally',unit.side === ownSide);
-    node.classList.toggle('enemy',unit.side !== ownSide);
-    node.classList.toggle('battle-dead',!unit.alive);
-    const statuses=unit.statuses||[];
-    const statusIcons={freeze:'❄',stun:'💫',weakenT:'🔻',slow:'🐌',noShield:'🔨',healDownT:'💉',silence:'🔇',taunt:'🎯',arDownT:'🪓',mrDownT:'🔯'};
-    node.querySelector('.fz').textContent = statuses.map(key=>statusIcons[key]||'').join('');
-    for(const [key,cls] of Object.entries({freeze:'frozen',stun:'stunned',weakenT:'weakened',slow:'slowed'}))node.classList.toggle(cls,statuses.includes(key));
-    node.classList.toggle('shielded',(unit.shield||0)>0);
-    node.classList.toggle('ult-ready',unit.alive&&(unit.mana||0)>=(unit.maxmana||50)&&!statuses.some(key=>['stun','freeze','silence'].includes(key)));
-    node.querySelector('.hpfill').style.width = `${Math.max(0,Math.min(100,(unit.hp ?? unit.maxhp ?? 1)/(unit.maxhp || 1)*100))}%`;
-    const mp=node.querySelector('.mpfill');
-    if(mp)mp.style.width = `${Math.max(0,Math.min(100,(unit.mana || 0)/(unit.maxmana || 50)*100))}%`;
-    node.setAttribute('aria-label',`${battleUnitName(unit)}，${unit.side === ownSide ? '我方' : '对手'}，生命 ${Math.round(unit.hp ?? unit.maxhp ?? 0)} / ${unit.maxhp || 0}，法力 ${Math.round(unit.mana || 0)} / ${unit.maxmana || 50}`);
-  }
-  $('battleFeed').textContent = playback.feed;
-  if(playback.logPainted!==playback.log.length){$('battleLog').innerHTML=playback.log.slice(-40).map(line=>`<p>${escapeHtml(line)}</p>`).join('');playback.logPainted=playback.log.length;}
-  const damagePanel=$('battleDamage');
-  if(damagePanel) {
-    const mode=state.statMode,labels={damage:'⚔ 输出',healing:'💚 治疗',taken:'🛡 抗伤'};
-    const ranked=playback.units.filter(u=>(u[mode]||0)>0).sort((a,b)=>(b[mode]||0)-(a[mode]||0)).slice(0,5);
-    const total=Math.max(1,...ranked.map(u=>u[mode]||0));
-    const html=`<div class="battle-stat-tabs">${Object.entries(labels).map(([key,label])=>`<button type="button" class="button ${mode===key?'on':''}" data-stat="${key}" aria-pressed="${mode===key}">${label}</button>`).join('')}</div>`+
-      (ranked.length?ranked.map(u=>`<div class="battle-damage-row"><span title="${u.side===ownSide?'我方':'对手'}"><img class="stat-piece" src="${unitImage(u.id)}" alt="${escapeHtml(battleUnitName(u))}"><small>${'★'.repeat(Math.min(3,u.star||1))}</small></span><span class="battle-damage-track">${mode==='damage'?`<i class="physical" style="width:${(u.physicalDamage||0)/total*100}%"></i><i class="magic" style="width:${(u.magicDamage||0)/total*100}%"></i>`:`<i class="${mode}" style="width:${u[mode]/total*100}%"></i>`}</span><b>${Math.round(u[mode]||0)}</b></div>`).join(''):'<p class="empty-message">本回合暂无该类数据</p>');
-    if(damagePanel.innerHTML!==html)damagePanel.innerHTML=html;
-  }
-  if (state.inspected?.battle) renderInspect();
-}
-
-function renderBattlePlayback(view) {
-  const panel = $('combatPanel');
-  const watchingSeat = state.spectateSeat ?? state.seat;
-  const battle = view.battles?.find(item => item.a === watchingSeat || item.b === watchingSeat);
-  if (!battle || battle.b === null) {
-    if (state.battleFrame !== null) cancelAnimationFrame(state.battleFrame);
-    state.battleFrame = null;
-    state.battlePlayback?.renderer?.destroy();
-    state.battlePlayback = null;
-    panel.hidden = view.phase !== 'combat' && view.phase !== 'result' && view.phase !== 'over';
-    $('battleArena').innerHTML = '';
-    $('battleFeed').textContent = view.phase==='prep'?'备战中，购买棋子并调整阵容。':battle?.b === null ? '本轮轮空，生命与阵容保持不变。' : '你已淘汰，可在八席战况中查看最终名次。';
-    $('combatCaption').textContent = battle?.b === null ? '轮空' : '战况回放';
-    return;
-  }
-  panel.hidden = false;
-  const key = `${view.round}:${battle.a}:${battle.b}:${watchingSeat}`;
-  if (state.battlePlayback?.key !== key) { state.battlePlayback?.renderer?.destroy(); state.battlePlayback = makeBattlePlayback(view,battle); }
-  const playback = state.battlePlayback;
-  playback.battle = battle;
-  $('combatTitle').textContent = `战斗 · ${playerName(battle.a)} VS ${playerName(battle.b)}`;
-  $('combatCaption').textContent = '双方阵容已锁定';
-
-  if (!playback.painted) paintBattle(playback);
-  const renderFrame = (now) => {
-    state.battleFrame = null;
-    const elapsed = view.phase === 'combat' ? Math.min(playback.duration, Math.max(0, now - playback.startedAt)) : playback.duration;
-    playback.elapsed = elapsed;
-    const simElapsed = Math.min(battle.durationMs || 0,elapsed * playback.speed);
-    const events = battle.events || [];
-    while (playback.cursor < events.length && (view.phase !== 'combat' || events[playback.cursor].at <= simElapsed)) {
-      applyBattleEvent(playback, events[playback.cursor++], view);
-    }
-    playback.catchingUp = false;
-    const ownAlive=playback.units.filter(u=>u.alive&&u.side===playback.ownSide).length;
-    const foeAlive=playback.units.filter(u=>u.alive&&u.side!==playback.ownSide).length;
-    $('combatCaption').textContent=`我方 ${ownAlive} · 对手 ${foeAlive} · ${Math.ceil(Math.max(0,(battle.durationMs || 0)-simElapsed)/1000)} 秒`;
-    // Server timestamps drive movement and actions at their original cadence.
-    if (elapsed - playback.lastPaint >= 16 || view.phase !== 'combat' || playback.lastPaint === 0) {
-      playback.lastPaint = elapsed;
-      if (simElapsed >= (battle.durationMs || 0)) {
-        const result = view.results?.find(item => item.a === battle.a && item.b === battle.b);
-        const winner = result?.winner != null ? playerName(result.winner)
-          : battle.winner === 'A' ? playerName(battle.a) : battle.winner === 'B' ? playerName(battle.b) : '双方';
-        playback.feed = result ? `战斗结束 · ${winner}获胜 · 造成 ${result.damage} 点玩家伤害`
-          : `战斗结束 · ${winner}${battle.winner === 'draw' ? '存活更多' : '获胜'}`;
-      }
-      paintBattle(playback);
-    }
-    if (view.phase === 'combat' && elapsed < playback.duration) state.battleFrame = requestAnimationFrame(renderFrame);
-  };
-  if (state.battleFrame !== null) cancelAnimationFrame(state.battleFrame);
-  renderFrame(performance.now());
-}
-
-function unitImage(id) {
-  const safe = String(id || '').replace(/[^\w-]/g, '');
-  return safe ? `assets/units_big/${safe}.webp` : '';
-}
-
-// Same atlas order and card hierarchy as the classic recruitment tray.
-const shopTraitOrder = ['深海','星际','毛茸乐园','音律','四禧丸子','学园','夜幕','花语','魔道','森之国','工造','P-SP','刀客','守护','游侠','刺客','法师','咒术','医者','歌势','偶像','狂战'];
-function shopTraits(unit) {
-  return [...new Set([unit.fac,unit.fac2,unit.job,unit.job2].filter(Boolean).flatMap(name=>name.split('/')))].slice(0,3).map(name=>{
-    const index=shopTraitOrder.indexOf(name);
-    const icon=index<0?'':`<i class="shop-trait-icon" aria-hidden="true" style="--syn-x:${index%5*25}%;--syn-y:${Math.floor(index/5)*25}%"></i>`;
-    return `<span class="shop-trait" title="${escapeHtml(name)}">${icon}${escapeHtml(name)}</span>`;
-  }).join('');
-}
-
-function unitTitle(unit) {
-  return `${unit.name || unit.id || '未知棋子'} · ${unit.star || 1} 星 · ${unit.cost || 1} 金币`;
-}
-
-const statusNames={stun:'眩晕',freeze:'冻结',silence:'沉默',slow:'减速',taunt:'嘲讽',poison:'中毒',noShield:'禁盾',hasteT:'加速',attackBuffT:'强化',drT:'减伤',woundT:'易伤',weakenT:'虚弱',healDownT:'重伤',arDownT:'破甲',mrDownT:'减抗',reflectT:'反伤',blockT:'格挡',petrifyT:'石化',healLock:'禁疗',counterT:'盾破反击',tempoT:'心拍',hex:'变形',phaseT:'潜行'};
-const itemNames = Object.fromEntries(Object.entries(EQUIPMENT).map(([id,item])=>[id,item.n]));
-const itemEffects = Object.fromEntries(Object.entries(EQUIPMENT).map(([id,item])=>[id,item.desc]));
-const skillModes = {
-  guard:'自身护盾与嘲讽', guardLink:'护盾、嘲讽与队友分担伤害', dash:'突进并攻击目标',
-  cleave:'攻击附近多个敌人', single:'对目标造成技能伤害', heal:'治疗队友',
-  team:'强化或治疗全队', teamShield:'为全队提供护盾', support:'回复队友法力与生命',
-  chain:'弹射攻击多个敌人', zone:'攻击并控制目标区域', field:'范围技能',
-  combo:'连续攻击', passive:'普通攻击触发被动效果',
-};
-function attackText(id){const p=classicAttackProfile(id);const styles={blade:'弧形刃光',shot:'追踪箭矢',arc:'棱晶法弹',pulse:'节拍光环',burst:'碎星爆点'};const effects={none:'稳定命中',bleed:`${Math.round(p.proc*100)}% 概率造成流血`,slow:`${Math.round(p.proc*100)}% 概率减速`,spark:`${Math.round(p.proc*100)}% 概率溅射电弧`,mana:'命中时额外回蓝',shieldbreak:'优先攻击护盾目标，破盾后强化下一击',rainveil:'雨露闪避后召唤雨幕护盾',soulmate:'命中时与队友共享治疗'};return `${styles[p.style]} · ${effects[p.onHit]||'专属命中回响'}（${Math.round(p.mult*100)}% 攻击）`;}
-function skillText(skill) {
-  if(skill?.desc)return skill.desc;
-  if (!skill) return '本棋子没有联机技能数据。';
-  const parts = [skillModes[skill.mode] || '发动技能'];
-  if (skill.mult) parts.push(`伤害 ${Math.round(skill.mult * 100)}% 攻击`);
-  if (skill.heal) parts.push(`治疗 ${Math.round(skill.heal * 100)}% 攻击`);
-  if (skill.shield) parts.push(`护盾 ${Math.round(skill.shield * 100)}% 最大生命`);
-  if (skill.stun) parts.push(`眩晕 ${skill.stun / 1000} 秒`);
-  if (skill.freeze) parts.push(`冻结 ${skill.freeze / 1000} 秒`);
-  if (skill.silence) parts.push(`沉默 ${skill.silence / 1000} 秒`);
-  return parts.join(' · ');
-}
-function renderInspect() {
-  const inspected = state.inspected;
-  const unit = inspected?.battle
-    ? state.battlePlayback?.units.find(item => item.uid === inspected.uid)
-    : [...(state.view?.me?.board || []), ...(state.view?.me?.bench || []),
-       ...(state.spectateSeat!=null ? state.view?.players?.find(p => p.seat === state.spectateSeat)?.board || [] : [])]
-      .find(item => item && String(item.uid) === inspected?.uid);
-  $('closeInspectBtn').hidden = !unit;
-  if (!unit) {
-    state.inspected = null;
-    $('unitInspect').innerHTML = '<p class="empty-message">点击场上、备战席或战斗中的棋子查看属性、技能和装备。</p>';
-    return;
-  }
-  const stats = previewUnit(unit);
-  if (!stats) return;
-  const shown = inspected.battle ? {...stats,atk:unit.atk ?? stats.atk,speed:unit.speed ?? stats.speed,
-    range:unit.range ?? stats.range,armor:unit.armor ?? stats.armor,resist:unit.resist ?? stats.resist} : stats;
-  const hp = inspected.battle ? Math.round(unit.hp ?? stats.hp) : stats.hp;
-  const mp = inspected.battle ? Math.round(unit.mana ?? 0) : 0;
-  const items = (unit.items || []).map(id => `<span class="inspect-item" title="${escapeHtml(itemEffects[id] || '联机装备效果')}">${escapeHtml(itemNames[id] || id)}<small>${escapeHtml(itemEffects[id] || '复合装备')}</small></span>`).join('');
-  $('unitInspect').innerHTML = `<div class="inspect-heading"><img src="${unitImage(unit.id)}" alt=""><div><strong>${escapeHtml(unit.name || unit.id)}</strong><span>${'★'.repeat(unit.star || 1)} · ${unit.cost || 1} 金币</span><small>${escapeHtml([unit.fac,unit.fac2,unit.job,unit.job2].filter(Boolean).join(' · '))}</small></div></div>
-    <div class="inspect-stat-grid"><span>生命 <b>${hp} / ${inspected.battle ? unit.maxhp || stats.hp : stats.hp}</b></span><span>攻击 <b>${shown.atk}</b></span><span>攻速 <b>${shown.speed.toFixed(2)}/秒</b></span><span>射程 <b>${shown.range} 格</b></span><span>护甲 <b>${shown.armor}</b></span><span>魔抗 <b>${Math.round(shown.resist * 100)}%</b></span><span>形式 <b>${stats.melee ? '近战' : '远程'} · ${stats.damageType === 'phys' ? '物理' : '法术'}</b></span>${inspected.battle ? `<span>法力 <b>${mp} / ${unit.maxmana || 50}</b></span>` : ''}</div>
-    <div class="inspect-skill inspect-attack"><strong>普攻特性</strong><p>${escapeHtml(attackText(unit.id))}</p></div><div class="inspect-skill"><strong>✦ ${escapeHtml(SKILL_NAMES[unit.id] || '战斗技能')}（${stats.skill?.mode === 'passive' ? '被动' : '主动'}）</strong><p>${escapeHtml(skillText(stats.skill))}</p><p>${escapeHtml(CLASSIC_MARKS[unit.id]?`专属印记【${CLASSIC_MARKS[unit.id].label}】：${stats.skill?.mode==='passive'?'普攻后留给目标':'技能命中后留给目标，治疗/保护技能留给自身'}，下次受伤增伤/减伤 ${Math.round(CLASSIC_MARKS[unit.id].amp*100)}%，持续 ${CLASSIC_MARKS[unit.id].dur} 秒。`: '')}</p></div>
-    ${inspected.battle ? `<div class="inspect-live-grid"><span>护盾 <b>${Math.round(unit.shield||0)}</b></span><span>伤害 <b>${Math.round(unit.damage||0)}</b></span><span>承伤 <b>${Math.round(unit.taken||0)}</b></span><span>治疗 <b>${Math.round(unit.healing||0)}</b></span><span>施法 <b>${unit.casts||0}</b></span><span>击杀 <b>${unit.kills||0}</b></span></div><p class="inspect-status">${escapeHtml((unit.statuses||[]).map(key=>statusNames[key]||key).join(' · ')||'无异常状态')}</p>` : ''}
-    ${unit.sigMark?`<p class="inspect-status">【${escapeHtml(unit.sigMark.label)}】${unit.sigMark.guard?'下次受击减伤':'下次受伤增伤'} ${Math.round(unit.sigMark.amp*100)}%</p>`:''}
-    <div class="inspect-equipment"><strong>装备</strong><div>${items || '<span class="muted">暂无装备</span>'}</div></div>`;
-}
-function inspectUnit(unit, battle = false) {
-  if (!unit) return;
-  state.inspected = {uid:String(unit.uid),battle};
-  renderInspect();
-}
-
-function preparationPiece(unit,selected){
-  const owned=[...(state.view?.me?.board||[]),...(state.view?.me?.bench||[])].filter(Boolean);
-  const pair=unit.star===1&&owned.filter(u=>u.id===unit.id&&u.star===1).length>=2;
-  const traits=[unit.fac,unit.fac2,unit.job,unit.job2].filter(Boolean);
-  const items=(unit.items||[]).map(id=>EQUIPMENT[id]?.e||'').join('');
-  const inner=ClassicPreparationPresentation.inner(unit,{traits,items});
-  return `<span class="unit prep-unit cost${unit.cost||1} ${selected?'sel':''} ${pair?'pair':''}" data-uid="${unit.uid}">${inner}</span>`;
-}
-
-function renderUnitSlot(unit, zone, slot) {
-  const selected = state.selected?.uid === unit?.uid;
-  const canMove = canAct() && !!state.selected && !unit;
-  if (!unit) return `<button type="button" class="unit-slot empty ${canMove ? 'can-move' : ''}" data-zone="${zone}" data-slot="${slot}" ${canAct() ? '' : 'disabled'} aria-label="${zone === 'board' ? '棋盘' : '备战席'}空位 ${slot + 1}">${canMove ? '移至此处' : '空位'}</button>`;
-  return `<button type="button" draggable="${canAct()}" class="unit-slot ${selected?'selected':''}" data-zone="${zone}" data-slot="${slot}" aria-label="查看 ${escapeHtml(unitTitle(unit))}">${preparationPiece(unit,selected)}</button>`;
-}
-
-// The server stores all 64 stage cells; only the lower 32 are deployable.
-function renderBoard(board,readOnly=false) {
-  const focus=dragHoverInfo?-1:(board||[]).findIndex(unit=>unit&&String(unit.uid)===state.inspected?.uid&&!state.inspected?.battle);const reach=focus>=0?previewUnit(board[focus])?.range||0:0;
-  const rangeClass=cell=>focus<0?'':cell===focus?' rng-src':Math.abs(cell%8-focus%8)+Math.abs(Math.floor(cell/8)-Math.floor(focus/8))<=reach?' rng-hl':'';
-  return Array.from({length:64}, (_, cell) => {
-    const side = cell < 32 ? 'enemy-side' : 'own-side';
-    if (cell < 32) return `<div class="battle-cell ${side}${rangeClass(cell)}" aria-hidden="true"></div>`;
-    const unit = board?.[cell];
-    const selected = state.selected?.uid === unit?.uid;
-    const canMove = !readOnly && canAct() && !!state.selected && !unit;
-    const label = unit ? `${unitTitle(unit)}，第 ${Math.floor(cell / 8) - 3} 排第 ${cell % 8 + 1} 列${selected ? '，已选中' : ''}` : `第 ${Math.floor(cell / 8) - 3} 排第 ${cell % 8 + 1} 列${canMove ? '，可移入' : '，空位'}`;
-    return `<div class="battle-cell ${side} deploy-cell${rangeClass(cell)}"><button type="button" draggable="${!!unit && canAct() && !readOnly}" class="board-position ${unit ? 'occupied' : 'empty'} ${selected ? 'selected' : ''} ${canMove ? 'can-move' : ''}" data-zone="board" data-slot="${cell}" ${unit || (canAct() && !readOnly) ? '' : 'disabled'} aria-label="${escapeHtml(label)}">${unit ? preparationPiece(unit,selected) : ''}</button></div>`;
-  }).join('');
-}
-
-function renderGame() {
-  const view = state.view;
-  document.body.dataset.phase = view?.phase || '';
-  if(view&&state.audioPhase!==`${view.round}:${view.phase}`){state.audioPhase=`${view.round}:${view.phase}`;if(view.phase==='combat')audio.sfx('battleStart');if(view.phase==='result'){const result=view.results?.find(r=>r.a===state.seat||r.b===state.seat);if(result)audio.sfx(result.winner===state.seat?'win':'lose');audio.stopBattle();}}
-  if (!view) {
-    $('phaseLabel').textContent = '正在同步';
-    $('roundTitle').textContent = '等待对局数据';
-    return;
-  }
-  const players = view.players || [];
-  if (isSpectator()) {
-    if (!players.some(player => player.seat === state.spectateSeat && player.alive !== false)) {
-      state.spectateSeat = players.find(player => player.alive !== false)?.seat ?? null;
-    }
-  } else if(state.spectateSeat!=null&&!players.some(p=>p.seat===state.spectateSeat))state.spectateSeat=null;
-  if (view.phase !== 'prep') state.selected = null;
-  updateCountdown();
-  renderBattlePlayback(view);
-  $('arenaPanel').hidden = view.phase === 'combat' && !$('combatPanel').hidden;
-  $('roundTitle').textContent = `第 ${view.round ?? '—'} 回合`;
-  const me = view.me || {};
-  const xpRequired = xpNeeded(me.level || 1);
-  const maxLevel = (me.level || 1) >= MAX_LEVEL;
-  $('levelProgressText').textContent = maxLevel ? '等级 11 · 已满级' : `等级 ${me.level || 1} · ${me.xp || 0} / ${xpRequired} 经验`;
-  $('levelProgressNext').textContent = maxLevel ? '最高等级' : `再需 ${Math.max(0,xpRequired - (me.xp || 0))} 经验`;
-  $('levelProgressFill').style.width = `${maxLevel ? 100 : Math.min(100,(me.xp || 0) / xpRequired * 100)}%`;
-  $('levelProgressTrack').setAttribute('aria-valuenow',String(maxLevel ? 1 : me.xp || 0));
-  $('levelProgressTrack').setAttribute('aria-valuemax',String(maxLevel ? 1 : xpRequired));
-  const stats = [
-    ['生命', me.hp ?? '—'], ['金币', me.gold ?? '—'], ['等级', me.level ?? '—'], ['经验', me.xp ?? '—'],
-  ];
-  $('playerStats').innerHTML = stats.map(([label,value]) => `<span class="stat">${label} <b>${escapeHtml(value)}</b></span>`).join('');
-  $('aliveCount').textContent = `${players.filter(p => p.alive !== false).length} 人存活`;
-  $('scoreboard').innerHTML = [...players].sort((a,b) => (b.hp || 0) - (a.hp || 0)).map((p,index) => `<li class="score-item ${p.seat === state.seat ? 'mine' : ''} ${p.alive === false ? 'out' : ''} ${p.seat === state.spectateSeat ? 'watching' : ''}"><button type="button" class="score-button" data-watch="${p.seat}"  aria-label="观战 ${escapeHtml(p.name || playerName(p.seat))}"><span class="place">${p.place ? `#${p.place}` : String(index + 1).padStart(2,'0')}</span><span class="name">${escapeHtml(p.name || playerName(p.seat))}${p.seat === state.seat ? ' · 你' : ''}</span><span class="hp">${escapeHtml(p.hp ?? 0)} HP</span><span class="seat-hp-track" aria-hidden="true"><i style="width:${Math.max(0,Math.min(100,(p.hp||0)/40*100))}%"></i></span></button></li>`).join('');
-  const pairing = view.pairings?.find(p => p.a === state.seat || p.b === state.seat);
-  $('pairingText').textContent = pairing ? pairing.b == null ? '本轮轮空' : `本轮对手：${playerName(pairing.a === state.seat ? pairing.b : pairing.a)}` : '本轮配对尚未公布';
-  const watched = state.spectateSeat!=null ? players.find(p => p.seat === state.spectateSeat) : null;
-  const boardOwner = watched || me;
-  $('arenaTitle').textContent = watched ? `观战 · ${watched.name}${view.phase === 'prep' ? '（上回合阵容）' : ''}` : '上阵棋盘';
-  $('boardCount').textContent = `${(boardOwner.board || []).filter(Boolean).length} / ${boardOwner.level || 1}`;
-  $('boardGrid').innerHTML = renderBoard(boardOwner.board || Array(64).fill(null),!!watched&&watched.seat!==state.seat);
-  refreshDragPaint();   // 重排会清掉拖拽高亮，按最近一次悬停补画
-  $('benchGrid').innerHTML = (me.bench || Array(8).fill(null)).map((unit,slot) => renderUnitSlot(unit,'bench',slot)).join('');
-  const bonds = bondSummary(boardOwner.board);
-  $('bondList').innerHTML = bonds.length ? bonds.map(bond=>{
-    const tier=bond.tiers.filter(n=>bond.count>=n).length,next=bond.tiers.find(n=>n>bond.count)||bond.tiers.at(-1);
-    const descriptions=globalThis.ClassicBondRules.descriptions[bond.name]||[];
-    return `<div class="bond-row ${bond.active?'active':''}"><div class="bond-top">${ClassicPreparationPresentation.icon(bond.name)}<strong>${escapeHtml(bond.name)}</strong><span class="bond-pips">${bond.tiers.map((n,i)=>`<i class="${bond.count>=n?'on':''}">●</i>`).join('')}</span><b>${bond.count}/${next}</b></div><p>${escapeHtml(tier?`T${tier} ${descriptions[Math.min(tier-1,descriptions.length-1)]||''}`:`未激活 · 还需 ${Math.max(0,next-bond.count)} 名不同棋子`)}</p></div>`;
-  }).join('') : '<p class="empty-message">上阵棋子后显示羁绊档位。</p>';
-  $('inventoryList').innerHTML = (me.items || []).length
-    ? me.items.map((id,index) => `<button type="button" class="button inventory-item" draggable="${canAct()}" data-equip="${index}" ${canAct() ? '' : 'disabled'}>${escapeHtml(itemNames[id] || id)}<small>${escapeHtml(itemEffects[id] || '复合装备')} · ${state.selected ? '装备给所选棋子' : '先选择棋子'}</small></button>`).join('')
-    : '<p class="empty-message">暂无道具。后续回合会获得装备。</p>';
-  const pairs=[];
-  for(let a=0;a<(me.items||[]).length;a++)for(let b=a+1;b<me.items.length;b++){
-    const result=recipe(me.items[a],me.items[b]);if(result)pairs.push(`<button class="button" data-combine-a="${a}" data-combine-b="${b}" ${canAct()?'':'disabled'} title="${escapeHtml(EQUIPMENT[result].desc)}">${escapeHtml(itemNames[me.items[a]])} + ${escapeHtml(itemNames[me.items[b]])} → ${escapeHtml(itemNames[result])}</button>`);
-  }
-  $('equipmentRecipes').innerHTML=pairs.join('') || '<p class="empty-message">凑齐两件基础装备即可合成。</p>';
-  const selected=[...(me.board||[]),...(me.bench||[])].find(unit=>unit?.uid===state.selected?.uid);
-  const inspectedUnit=[...(me.board||[]),...(me.bench||[])].find(unit=>String(unit?.uid)===state.inspected?.uid)||selected;
-  $('unitLoadout').innerHTML=inspectedUnit?`<p>${escapeHtml(inspectedUnit.name||inspectedUnit.id)} · ${(inspectedUnit.items||[]).length}/3 格</p><div class="loadout-slots">${Array.from({length:3},(_,i)=>{const id=inspectedUnit.items?.[i],item=EQUIPMENT[id];return `<button type="button" class="loadout-chip ${item?'worn':''}" data-unequip-worn="${i}" ${item&&canAct()?'':'disabled'} title="${escapeHtml(item?`${item.desc}${item.trait?`；${item.trait}`:''}。点按卸下单件`:'空装备位')}">${item?`${escapeHtml(item.e)} ${escapeHtml(item.n)} <i>×</i>`:'空位'}</button>`;}).join('')}</div>`:'<p>点击棋子查看穿戴情况，也可把背包装备拖到棋子上。</p>';
-  $('combineWornBtn').disabled=!canAct()||!selected||!recipe(selected.items[0],selected.items[1]);
-  $('economyInfo').textContent=`利息 +${interestGain(me.gold||0)} · 连胜/败 ${Math.abs(me.streak||0)}`;
-  $('shopOdds').textContent=(SHOP_ODDS[Math.min(MAX_LEVEL,me.level||2)]||[]).map((chance,i)=>`${i+1}费 ${chance}%`).join(' · ');
-  $('shopList').innerHTML = (me.shop || Array(5).fill(null)).map((unit,slot) => {
-    if (!unit) return `<div class="shop-unit classic-shop-card sold" aria-label="第 ${slot+1} 格已售出"><span>已售出</span></div>`;
-    const src = unitImage(unit.id);
-    const copies=[...(me.board||[]),...(me.bench||[])].filter(owned=>owned?.id===unit.id&&owned.star===1).length;
-    const badge=copies>=2?'对子·可升星':copies===1?'1/3':'';
-    return `<button type="button" class="shop-unit classic-shop-card cost${unit.cost}${copies>=2?' paircard':''}" data-buy="${slot}" ${canAct() && (me.gold ?? 0) >= unit.cost ? '' : 'disabled'} aria-label="购买 ${escapeHtml(unit.name || unit.id)}，${unit.cost} 金币" title="${escapeHtml(unit.name || unit.id)} · ${unit.cost} 金币 · 生命 ${unit.hp} · 攻击 ${unit.atk}"><span class="shop-artbg" style="background-image:url('${src}')" aria-hidden="true"></span><span class="shop-costbar" aria-hidden="true"></span>${badge?`<span class="shop-owned-badge">${badge}</span>`:''}<span class="shop-name">${escapeHtml(unit.name || unit.id)}</span><span class="shop-traits">${shopTraits(unit)}</span><span class="shop-card-stats"><span class="shop-card-hp" title="生命" aria-label="生命 ${unit.hp}">♥ ${unit.hp}</span><span class="shop-card-atk" title="攻击" aria-label="攻击 ${unit.atk}">♠ ${unit.atk}</span><b class="shop-card-cost" title="${unit.cost} 金币">${unit.cost}</b></span></button>`;
-  }).join('');
-  const results = view.results || [];
-  $('resultCaption').textContent = results.length ? `${results.length} 场对战` : '尚未结算';
-  $('resultsList').innerHTML = results.length ? results.map(result => {
-    const left = playerName(result.a);
-    const right = result.b == null ? '轮空' : playerName(result.b);
-    const winner = result.winner == null ? '未分胜负' : playerName(result.winner);
-    return `<div class="result ${result.a === state.seat || result.b === state.seat ? 'mine' : ''}">${escapeHtml(left)} VS ${escapeHtml(right)}<br><strong>${escapeHtml(winner)}胜</strong>${result.damage ? ` · ${escapeHtml(result.damage)} 伤害` : ''}</div>`;
-  }).join('') : '<p class="empty-message">对战结束后将在这里显示战果。</p>';
-  if (state.selected) {
-    const found = [...(me.board || []), ...(me.bench || [])].some(unit => unit?.uid === state.selected.uid);
-    if (!found) state.selected = null;
-  }
-  $('selectionBar').hidden = !state.selected;
-  $('selectionText').textContent = state.selected ? `已选择 ${state.selected.name} · 点击棋盘或备战席空位移动` : '';
-  renderInspect();
-}
-
-function renderControls() {
-  const lobby = state.lobby;
-  $('lobbyReadyBtn').disabled = !state.connected || !state.synced || lobby?.status !== 'waiting';
-  const active = canAct();
-  const me = state.view?.me || {};
-  $('rerollBtn').disabled = !active || (me.gold ?? 0) < 2;
-  $('buyXpBtn').disabled = !active || state.view?.round === 1 || (me.gold ?? 0) < 5 || me.level >= MAX_LEVEL;
-  $('buyXpBtn').title = state.view?.round === 1 ? '首回合不可买经验' : '';
-  const mine = state.view?.players?.find(p => p.seat === state.seat);
-  const autoLocked = !!state.view?.autoLocked;
-  const prepLive = compatibleBoard() && state.connected && state.synced && state.lobby?.status === 'playing' && state.view?.phase === 'prep' && !isSpectator();
-  $('gameReadyBtn').disabled = !prepLive || autoLocked;
-  $('gameReadyBtn').textContent = autoLocked ? '阵容已冻结 · 即将开战' : mine?.ready ? '已锁定阵容 · 点击解锁' : '锁定阵容 · 结束备战';
-  $('gameReadyBtn').classList.toggle('autolocked', autoLocked);
-  $('gameReadyBtn').classList.toggle('locked', !autoLocked && !!mine?.ready);
-  $('sellBtn').disabled = !active || !state.selected;
-  $('autoDeployBtn').disabled = !active || ![...(me.board || []),...(me.bench || [])].some(Boolean);
-  $('tidyBenchBtn').disabled = !active || !(me.bench || []).some(Boolean);
-  $('lockShopBtn').disabled = !active;
-  $('lockShopBtn').textContent = me.shopLocked ? '解锁商店 (L)' : '锁商店 (L)';
-  $('lockShopBtn').setAttribute('aria-pressed',String(!!me.shopLocked));
-  $('autoEquipBtn').disabled = !active || !me.items?.length || !(me.board || []).some(unit => unit && unit.items.length < 3);
-  $('unequipBtn').disabled = !active || !state.selected || ![...(me.board || []),...(me.bench || [])].some(unit => unit?.uid === state.selected.uid && unit.items.length);
-  $('actionHint').textContent = !state.connected ? '连接中断，操作暂不可用。'
-    : !state.synced ? '正在同步服务器状态，请稍候。'
-    : state.pendingAction ? '上一项操作正在确认，请稍候。'
-    : isSpectator() ? '你已淘汰。点击八席战况中的玩家可观看其棋盘。'
-    : state.view?.phase === 'prep' ? '购买棋子，布置站位，然后锁定阵容。'
-    : state.view?.phase === 'over' ? '本局对战结束。'
-    : '等待本轮结算，随后进入下一轮备战。';
-}
-
-function handleSlotClick(event) {
-  const target = event.target.closest('[data-zone][data-slot]');
-  if (!target) return;
-  const zone = target.dataset.zone;
-  const slot = Number(target.dataset.slot);
-  if(zone==='board'&&state.spectateSeat!=null&&state.spectateSeat!==state.seat){const owner=state.view?.players?.find(p=>p.seat===state.spectateSeat);if(owner?.board?.[slot])inspectUnit(owner.board[slot]);return;}
-  const unit = (isSpectator() && zone === 'board'
-    ? state.view?.players?.find(p => p.seat === state.spectateSeat)?.board
-    : state.view?.me?.[zone])?.[slot];
-  if (unit) {
-    inspectUnit(unit);
-    if (canAct()) state.selected = state.selected?.uid === unit.uid ? null : {uid:unit.uid,name:unit.name || unit.id};
-    renderGame();
-    renderControls();
-    return;
-  }
-  if (!canAct()) return;
-  if (state.selected) {
-    sendAction({type:'move', uid:state.selected.uid, to:{zone,slot}});
-    state.selected = null;
-    renderGame();
-    renderControls();
-  }
-}
-
+/* ================= 按钮动作 ================= */
+$('refreshBtn').addEventListener('click',()=>{
+  if(state.view?.me?.shopLocked){ toast('🔒 商店已锁定，不消耗金币刷新'); return; }
+  if(sendAction({type:'reroll'}))log('🔄 刷新商店 -2金');
+});
+$('lvlBtn').addEventListener('click',()=>{ if(sendAction({type:'buyXp'}))log('📖 买经验 +4 -5金'); });
+$('lockBtn').addEventListener('click',()=>{ if(sendAction({type:'lockShop'}))log(state.view?.me?.shopLocked?'🔓 商店已解锁':'🔒 商店已锁定'); });
+$('deployBtn').addEventListener('click',()=>{ if(sendAction({type:'autoDeploy'}))log('⚡ 一键上阵（择优布阵）'); });
+$('tidyBtn').addEventListener('click',()=>{ if(sendAction({type:'tidy'}))log('🧹 整理备战席'); });
+$('sellBtn').addEventListener('click',sellSelected);
+$('fightBtn').addEventListener('click',()=>{
+  const mine=state.view?.players?.find(p=>p.seat===state.seat);
+  if(!inPrep()||state.view?.autoLocked)return;
+  if(sendAction({type:'ready',ready:!mine?.ready}))log(mine?.ready?'🔓 已解除锁定':'🔒 阵容已锁定，等待其他玩家');
+});
+$('sfxBtn').addEventListener('click',()=>audio.toggleSfx());audio.paintSfxBtn();
+$('helpBtn').addEventListener('click',()=>$('hotkeyDialog').showModal());
+$('codexBtn2').addEventListener('click',()=>$('codexBtn').click());
+$('enemyInfo').addEventListener('click',()=>{ if(IS_TOUCH&&document.body.classList.contains('online-playing')) openDrawer('side'); });
+$('themeBtn2').addEventListener('click',()=>$('themeBtn').click());
+$('hotkeyClose').addEventListener('click',()=>$('hotkeyDialog').close());
+$('inviteBtn2').addEventListener('click',async()=>{
+  const url=new URL(location.href); url.searchParams.set('room',state.code);
+  try{ await navigator.clipboard.writeText(url.toString()); toast('邀请链接已复制。'); }
+  catch{ toast(`房间码：${state.code}`); }
+});
+$('leaveBtn2').addEventListener('click',()=>$('leaveBtn').click());
+$('lobbyReadyBtn').addEventListener('click',()=>{
+  const mine = state.lobby?.players?.find(p => p.seat === state.seat);
+  send({type:'ready', ready:!mine?.ready, id:crypto.randomUUID?.() || String(Date.now())});
+});
+$('addBotBtn').addEventListener('click',addBot);
+$('lobbySeats').addEventListener('click', event => {
+  const button = event.target.closest('[data-kickbot]');
+  if (button) removeBot(Number(button.dataset.kickbot));
+});
 $('apiBase').value = state.api;
-for (const [id,type] of [['autoDeployBtn','autoDeploy'],['tidyBenchBtn','tidy'],['lockShopBtn','lockShop'],['autoEquipBtn','autoEquip']]) {
-  $(id).addEventListener('click',()=>sendAction({type}));
-}
-$('unequipBtn').addEventListener('click',()=>{if(state.selected)sendAction({type:'unequip',uid:state.selected.uid});});
-$('combineWornBtn').addEventListener('click',()=>{if(state.selected)sendAction({type:'combineWorn',uid:state.selected.uid});});
-$('equipmentRecipes').addEventListener('click',event=>{const button=event.target.closest('[data-combine-a]');if(button)sendAction({type:'combine',a:Number(button.dataset.combineA),b:Number(button.dataset.combineB)});});
-$('unitLoadout').addEventListener('click',event=>{const chip=event.target.closest('[data-unequip-worn]');if(!chip||chip.disabled)return;const uid=[...(state.view?.me?.board||[]),...(state.view?.me?.bench||[])].find(unit=>String(unit?.uid)===String(state.inspected?.uid))?.uid;if(uid!=null)sendAction({type:'unequip',uid,index:Number(chip.dataset.unequipWorn)});});
-$('openingOverlay').addEventListener('click',event=>{const card=event.target.closest('[data-opening-pick]');if(card)sendAction({type:'pickOpening',slot:Number(card.dataset.openingPick)});});
-for (const id of ['boardGrid','benchGrid']) $(id).addEventListener('contextmenu',event=>{
-  const target=event.target.closest('[data-zone][data-slot]');
-  if(target?.dataset.zone==='board'&&state.spectateSeat!=null&&state.spectateSeat!==state.seat)return;
-  const unit=state.view?.me?.[target?.dataset.zone]?.[Number(target?.dataset.slot)];
-  if(!unit||!canAct())return;
-  event.preventDefault();sendAction({type:'unequip',uid:unit.uid});
-});
-window.addEventListener('keydown',event=>{
-  if(!document.body.classList.contains('online-playing')||!canAct()||event.repeat||event.ctrlKey||event.metaKey||event.altKey||event.isComposing)return;
-  if(event.target?.closest?.('input,textarea,select,[contenteditable],dialog')||document.querySelector('dialog[open]'))return;
-  const buttons={r:'autoDeployBtn',a:'autoDeployBtn',t:'tidyBenchBtn',d:'rerollBtn',f:'buyXpBtn',l:'lockShopBtn',e:'sellBtn',x:'sellBtn',delete:'sellBtn',' ':'gameReadyBtn'};
-  // Physical keys preserve classic controls when a non-Latin keyboard layout is active.
-  const key=/^Key[A-Z]$/.test(event.code)?event.code.slice(3).toLowerCase():event.key.toLowerCase();
-  const id=buttons[key];
-  if(id){event.preventDefault();if(!$(id).disabled)$(id).click();}
-});
 $('playerName').value = localStorage.getItem(NAME_STORAGE) || '';
 const inviteCode = new URL(location.href).searchParams.get('room');
 if (inviteCode) $('roomCodeInput').value = inviteCode.toUpperCase();
@@ -1060,62 +1820,6 @@ $('createBtn').addEventListener('click', () => enterRoom('create'));
 $('joinBtn').addEventListener('click', () => enterRoom('join'));
 $('resumeBtn').addEventListener('click', resumeRoom);
 $('roomCodeInput').addEventListener('keydown', event => { if (event.key === 'Enter') enterRoom('join'); });
-$('lobbyReadyBtn').addEventListener('click', () => {
-  const mine = state.lobby?.players?.find(p => p.seat === state.seat);
-  send({type:'ready', ready:!mine?.ready, id:crypto.randomUUID?.() || String(Date.now())});
-});
-$('addBotBtn').addEventListener('click', addBot);
-$('lobbySeats').addEventListener('click', event => {
-  const button = event.target.closest('[data-kickbot]');
-  if (button) removeBot(Number(button.dataset.kickbot));
-});
-$('rerollBtn').addEventListener('click', () => {
-  if (state.view?.me?.shopLocked) { toast('🔒 商店已锁定，不消耗金币刷新'); return; }   // 对齐经典：锁定即冻结
-  sendAction({type:'reroll'});
-});
-$('buyXpBtn').addEventListener('click', () => sendAction({type:'buyXp'}));
-$('gameReadyBtn').addEventListener('click', () => {
-  const mine = state.view?.players?.find(p => p.seat === state.seat);
-  sendAction({ type: 'ready', ready: !mine?.ready });
-});
-$('sellBtn').addEventListener('click', () => {
-  if (!state.selected) return;
-  sendAction({type:'sell',uid:state.selected.uid});
-  state.selected = null;
-  renderGame();
-  renderControls();
-});
-$('cancelSelectionBtn').addEventListener('click', () => { state.selected = null; renderGame(); renderControls(); });
-$('boardGrid').addEventListener('click', handleSlotClick);
-$('benchGrid').addEventListener('click', handleSlotClick);
-$('battleArena').addEventListener('click', event => {
-  const button = event.target.closest('[data-inspect-battle]');
-  const unit = state.battlePlayback?.units.find(item => item.uid === button?.dataset.inspectBattle);
-  if (unit) inspectUnit(unit,true);
-});
-$('closeInspectBtn').addEventListener('click', () => { state.inspected = null; renderInspect(); });
-$('scoreboard').addEventListener('click', event => {
-  const button = event.target.closest('[data-watch]');
-  if (button) {
-    const seat=Number(button.dataset.watch);state.spectateSeat=seat===state.seat?null:seat;
-    state.selected=null;
-    renderGame();
-    renderControls();
-  }
-});
-$('shopList').addEventListener('click', event => {
-  const button = event.target.closest('[data-buy]');
-  if (button) sendAction({type:'buy',slot:Number(button.dataset.buy)});
-});
-$('inventoryList').addEventListener('click', event => {
-  const button = event.target.closest('[data-equip]');
-  if (button && state.selected) {
-    sendAction({type:'equip', uid:state.selected.uid, itemIndex:Number(button.dataset.equip)});
-    state.selected = null;
-    renderGame();
-    renderControls();
-  } else if(button)toast('选择棋子后点击装备，或将装备拖到棋子身上。');
-});
 $('copyInviteBtn').addEventListener('click', async () => {
   const url = new URL(location.href);
   url.searchParams.set('room', state.code);
@@ -1137,22 +1841,94 @@ $('leaveBtn').addEventListener('click', async () => {
   closeSocket();
   state.code = '';
   state.view = state.lobby = null;
-  state.selected = null;
+  state.selUid=state.inspectUid=null;
+  state.logArr=[];
   state.session=null;
   localStorage.removeItem(STORAGE);
   updateResume();
   $('leaveBtn').disabled=false;
   showEntry();
 });
-
 if (inviteCode && state.session?.code === inviteCode.toUpperCase()) {
   $('playerName').value = state.session.name || $('playerName').value;
   $('apiBase').value = state.session.api || state.api;
   resumeRoom();
 }
+window.__onlineState = state;   // 测试/调试句柄
+window.closeDrawer = closeDrawer;   // tools/portrait-ui.js 等共享脚本按经典全局约定调用
+window.openDrawer = openDrawer;
+window.fitBoard = fitBoard;
 setInterval(updateCountdown, 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeTransport(); });
 window.addEventListener('online', resumeTransport);
 window.addEventListener('offline', () => { if (!state.stopped) retryConnection(); });
 
-$('battleDamage').addEventListener('click',event=>{const mode=event.target.closest('[data-stat]')?.dataset.stat;if(['damage','healing','taken'].includes(mode)){state.statMode=mode;if(state.battlePlayback)paintBattle(state.battlePlayback);}});
+/* ================= 经典布局迁移：详情/敌方信息入左栏；触屏抽屉 ================= */
+(function initClassicLayout(){
+  if(!IS_TOUCH){
+    try{ $('synCol').insertBefore($('oppBar'), $('synAll')); }catch(e){}
+    try{ const ip=$('inspectPanel'), sc=$('synCol'); if(ip&&sc) sc.insertBefore(ip, sc.firstChild); }catch(e){}
+  }
+  fitBoardCell(); fitBoard();
+  paintAutoInspectBtn();
+})();
+function paintAutoInspectBtn(){ const b=$('mAutoInspectBtn'); if(b){ b.textContent=autoInspect?'详情直开：开':'详情直开：关'; b.classList.toggle('on',autoInspect); } }
+function drawerMode(){
+  const d=$('mDrawer');
+  if(!d||d.classList.contains('hidden')) return null;
+  if(!$('mShopSec').classList.contains('hidden')) return 'shop';
+  if(!$('mBondSec').classList.contains('hidden')) return 'bond';
+  if(!$('mEquipSec').classList.contains('hidden')) return 'equip';
+  if($('mMenuSec')&&!$('mMenuSec').classList.contains('hidden')) return 'menu';
+  return 'side';
+}
+function openDrawer(mode){
+  const d=$('mDrawer'); if(!d)return;
+  $('mShopSec').classList.toggle('hidden', mode!=='shop');
+  $('mBondSec').classList.toggle('hidden', mode!=='bond');
+  $('mEquipSec').classList.toggle('hidden', mode!=='equip');
+  $('mSideSec').classList.toggle('hidden', mode!=='side');
+  $('mMenuSec')?.classList.toggle('hidden', mode!=='menu');
+  $('mDrawerTitle').textContent = mode==='shop' ? '🏪 商店（买牌 / 刷新 / 锁定）'
+    : mode==='bond' ? '🔗 羁绊（阵营 / 职业 · 档位效果）'
+    : mode==='equip' ? '🎒 装备（拖到棋子身上穿；点身上的装备卸下）'
+    : mode==='menu' ? '更多功能'
+    : '📋 八人战况 · 棋子详情 · 战报';
+  try{ $('mDrawerBox').style.marginBottom = (($('shopbar')&&$('shopbar').offsetHeight)||0)+'px'; }catch(e){}
+  d.classList.remove('hidden');
+}
+function closeDrawer(){ const d=$('mDrawer'); if(d)d.classList.add('hidden'); }
+if(IS_TOUCH&&document.body){
+  document.body.classList.add('touch');
+  const rel=(id,txt)=>{ const b=document.getElementById(id); if(b) b.textContent=txt; };
+  rel('deployBtn','⚡ 一键上阵');
+  rel('tidyBtn','🧹 整理备战席');
+  rel('fightBtn','⚔ 锁定阵容');
+  $('mShopSec').appendChild($('shop'));
+  $('mShopSec').appendChild($('shopctlCol'));
+  $('mShopSec').appendChild($('pbtns'));
+  $('mBondSec').appendChild($('synCol'));
+  $('mEquipSec').appendChild($('equipPanel'));
+  $('mSideSec').appendChild($('side'));
+  const mdraw=(id,mode)=>{ $(id).onclick=()=>{
+    if(!inPrep()){ closeDrawer(); return; }
+    drawerMode()===mode ? closeDrawer() : openDrawer(mode); }; };
+  mdraw('mShopBtn','shop'); mdraw('mBondBtn','bond'); mdraw('mEquipBtn','equip'); mdraw('mSideBtn','side');
+  rel('mSideBtn','战况');   // 八人战况/详情/战报同抽屉：触屏上这是观战其他玩家的入口
+  { // 更多功能抽屉（照搬经典 mMenuSec 思路）：音效 / 玩法 / 邀请 / 离房
+    const menu=$('mMenuSec');
+    [['棋子图鉴','codexBtn'],['切换主题','themeBtn'],['音效开关','sfxBtn'],['操作说明','helpBtn'],['复制邀请链接','inviteBtn2'],['退出对局返回入口','leaveBtn2']].forEach(([label,id])=>{
+      const b=document.createElement('button'); b.className='btn'; b.textContent=label;
+      b.onclick=()=>{ closeDrawer(); const t=$(id); if(t) t.click(); };
+      menu.appendChild(b);
+    });
+    $('mMenuBtn').onclick=()=>{ drawerMode()==='menu' ? closeDrawer() : openDrawer('menu'); };
+  }
+  $('mDrawerClose').onclick=closeDrawer;
+  const aib=$('mAutoInspectBtn');
+  if(aib){ $('mSideSec').insertBefore(aib,$('side')); aib.onclick=()=>{ autoInspect=!autoInspect;
+    try{ localStorage.setItem(AUTO_INSPECT_KEY, autoInspect?'1':'0') }catch(e){}
+    paintAutoInspectBtn();
+    log(autoInspect?'📋 详情直开：开（单击棋子直接看详情）':'📋 详情直开：关（单击棋子优先点选移动，详情走 📋 按钮）');
+  }; }
+}

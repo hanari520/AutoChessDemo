@@ -55,7 +55,7 @@ button { -webkit-tap-highlight-color: transparent; }
 #topbar .btn.ic { flex: 0 0 34px; width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; font-size: 0; }
 #topbar .btn.ic::before { flex: none; width: 16px; height: 16px; margin: 0; }
 /* The whole action group switches together between labeled and compact buttons. */
-@media (min-width: 1480px) {
+@media (min-width: 1180px) {
   #topbar .fight-btn-row .btn.ic {
     flex: 0 0 auto; width: auto; min-width: max-content; height: 34px;
     padding: 0 10px; gap: 6px; overflow: visible;
@@ -484,7 +484,7 @@ html[data-theme="dark"] .flow-danger { color:#ffb4c2; background:rgba(117,48,67,
 #topbar #endBtn { color: #b75c78; border-color: rgba(231,139,167,.58); background: linear-gradient(145deg,#fff7fb,#ffe7ef); box-shadow: 0 3px 10px rgba(218,119,157,.14); }
 #topbar #endBtn:hover { color: #994461; background: linear-gradient(145deg,#fff,#ffdce8); }
 
-@media (max-width: 1280px) and (min-width: 881px) {
+@media (max-width: 1179px) and (min-width: 881px) {
   #main { grid-template-columns: minmax(180px,224px) minmax(0,1fr) minmax(205px,236px); gap: 8px; padding-inline: 8px; }
   #synCol { padding: 8px 6px; } #side { gap: 6px; }
   #shopbar { gap: 6px; padding-inline: 8px; }

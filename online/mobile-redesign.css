@@ -80,11 +80,12 @@
     backdrop-filter: none;
   }
 
-  html[data-theme] .topbar .brand { gap: 6px; color: var(--theme-ink); font-size: .82rem; }
+  html[data-theme] .topbar .brand { gap: 6px; color: var(--theme-ink); font-size: .82rem; white-space: nowrap; }
   html[data-theme] .brand-mark { color: var(--theme-accent); background: none; -webkit-text-fill-color: currentColor; }
   html[data-theme] .brand-sub { display: inline; padding-left: 7px; color: var(--theme-muted); border-color: var(--theme-border); }
   html[data-theme] .back { color: var(--theme-muted); font-size: .74rem; white-space: nowrap; }
   html[data-theme] .topbar-actions { display: flex; align-items: center; gap: 6px; }
+  html[data-theme] .topbar-actions .button { white-space: nowrap; flex: 0 0 auto; padding-inline: 9px; }
   html[data-theme] .connection { gap: 5px; color: var(--theme-muted); font-size: .68rem; white-space: nowrap; }
   html[data-theme] .status-dot { width: 7px; height: 7px; }
   html[data-theme] .theme-toggle { min-width: 44px; min-height: 44px; justify-content: center; padding: 5px 9px; }
@@ -182,7 +183,7 @@
   .entry-intro h1 em { color: var(--theme-accent); }
   .entry-intro > p:not(.eyebrow) { margin: 0 0 10px; color: var(--theme-muted); font-size: .86rem; line-height: 1.65; }
   .entry-intro .prototype-note { margin-top: 12px; padding: 8px 10px; border: 0; border-left: 2px solid var(--theme-gold); border-radius: 0 7px 7px 0; color: var(--theme-muted) !important; background: var(--theme-surface); font-size: .73rem; }
-  .entry-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding-top: 11px; margin-top: 12px; color: var(--theme-muted); border-color: var(--theme-border); font-size: .63rem; letter-spacing: 0; }
+  .entry-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding-top: 11px; margin-top: 12px; color: var(--theme-muted); border-color: var(--theme-border); font-size: .72rem; letter-spacing: 0; }
   .entry-panel { padding: 16px; }
   .entry-panel h2 { margin-bottom: 12px; color: var(--theme-ink); font-size: 1.12rem; letter-spacing: 0; }
   .entry-panel label { margin-top: 10px; }

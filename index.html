@@ -103,7 +103,8 @@ html { scrollbar-width:thin; scrollbar-color:#3a3226 transparent; }
   padding:6px 14px; cursor:pointer; font-size:14px; font-weight:bold;
   clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut)); }
 .btn:hover { background:var(--bg4); color:var(--tx0); }
-.btn:disabled { opacity:.4; cursor:default; }
+.btn:disabled { opacity:.62; cursor:default; }
+.btn:disabled:not(.flow-primary) { color:var(--tx2); }
 .btn.off { background:var(--bg2); color:var(--tx3); border-color:var(--line); }
 .btn.on { background:var(--gold-dim); border-color:var(--gold); color:var(--gold-hi); }
 .btn.ic { display:inline-flex; align-items:center; gap:6px; }
@@ -538,7 +539,7 @@ html[data-theme="dark"] .unit.battle-unit.ally, html[data-theme="dark"] .unit.ba
 .cp-item b{ color:var(--gold-hi); white-space:nowrap; }
 .cp-item .cp-d{ flex:1; min-width:150px; }
 .cp-item .cp-r{ color:var(--heal); white-space:nowrap; font-size:11px; }
-#histModal { position:fixed; inset:0; background:rgba(5,4,3,.9); display:flex; align-items:center; justify-content:center; z-index:55; }
+#histModal { position:fixed; inset:0; background:rgba(5,4,3,.9); display:flex; align-items:center; justify-content:center; z-index:210; }
 #histModal.hidden { display:none; }
 #histPanel { background:linear-gradient(180deg,#221c13,#120f0a 70%); border:1px solid var(--line-2); border-radius:0; padding:18px;
   width:min(92vw,470px); max-height:80vh; overflow-y:auto; }
@@ -557,7 +558,7 @@ html[data-theme="dark"] .unit.battle-unit.ally, html[data-theme="dark"] .unit.ba
 .lb-pt{ width:20px; height:20px; image-rendering:pixelated; vertical-align:middle; border-radius:0; background:var(--bg3); margin-right:2px; }
 .lb-team{ min-width:0; }
 /* 图鉴 */
-#bookModal { position:fixed; inset:0; background:rgba(5,4,3,.92); z-index:40; display:flex; align-items:center; justify-content:center; }
+#bookModal { position:fixed; inset:0; background:rgba(5,4,3,.92); z-index:200; display:flex; align-items:center; justify-content:center; }
 #bookModal.hidden { display:none; }
 #bookPanel { width:min(920px,94vw); max-height:90vh; background:linear-gradient(180deg,#221c13,#120f0a 70%); border:1px solid var(--line-2); border-radius:0;
   display:flex; flex-direction:column; padding:14px 16px; }
@@ -568,6 +569,7 @@ html[data-theme="dark"] .unit.battle-unit.ally, html[data-theme="dark"] .unit.ba
 .btab.on { background:var(--gold-dim); color:var(--gold-hi); border-color:var(--gold); }
 #bookUnits.hidden, #bookSyn.hidden, #bookItems.hidden { display:none; }
 #bookUnits { display:flex; flex-direction:column; min-height:0; flex:1; }
+#bookGrid { padding-bottom:10px; }
 #bookSyn, #bookItems { display:grid; grid-template-columns:1fr 1fr; gap:5px 14px; margin:8px 0 12px; overflow-y:auto; min-height:0; flex:1; }
 #bookFilters { border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:10px; }
 .bf-row { display:flex; align-items:flex-start; gap:8px; margin:4px 0; }
@@ -580,7 +582,10 @@ html[data-theme="dark"] .unit.battle-unit.ally, html[data-theme="dark"] .unit.ba
 #bookGrid { overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; padding-right:4px; }
 .bcard { background:var(--bg2); border:1px solid var(--line-2); border-left-width:2px; border-radius:0; padding:8px 10px; font-size:12px; line-height:1.5; }
 .bcard .bn { font-weight:bold; font-size:13px; display:flex; justify-content:space-between; align-items:center; }
-.bcard .bc { font-size:11px; color:var(--gold-hi); }
+.bcard .bc { font-size:11px; color:var(--gold-dim); }
+html[data-theme="dark"] .bcard .bc { color:var(--gold-hi); }
+.gold-note { color:var(--gold-dim); }
+html[data-theme="dark"] .gold-note { color:#f4d387; }
 .bcard .bf2 { color:var(--tx1); font-size:11px; }
 .bcard .bs { color:#8fd0e8; font-size:11px; margin-top:2px; }
 .bcard .bp { color:var(--heal); font-size:10px; }
@@ -595,7 +600,7 @@ html[data-theme="dark"] .unit.battle-unit.ally, html[data-theme="dark"] .unit.ba
 .bsy-mem { color:var(--tx3); font-size:11px; margin-top:3px; }
 .card .cnpt { max-height:100%; max-width:82%; width:auto; height:auto; object-fit:contain; image-rendering:auto; }
 #inspect .in-pt { height:2.6em; image-rendering:pixelated; }
-.bcard .bnpt { height:2em; margin-right:4px; image-rendering:pixelated; vertical-align:middle; }
+.bcard .bnpt { height:30px; width:30px; object-fit:cover; border-radius:6px; margin-right:5px; vertical-align:middle; }
 
 /* ===== ⑪ 战斗特效（引擎层迁移） ===== */
 /* Battle effects are shared in tools/battle-presentation.css. */
@@ -763,11 +768,13 @@ body.touch .m-only { display:inline-block; }
 
 /* ===== ⑰ 战斗渲染增强 + 参考图对齐件 ===== */
 .odds-row { display:flex; gap:3px; margin-top:5px; }
-.odds-row i { flex:1; text-align:center; font-size:10px; padding:1px 0; border:1px solid var(--line);
+.odds-row i { flex:1; display:flex; flex-direction:column; align-items:center; line-height:1.15; padding:2px 0 1px; border:1px solid var(--line);
   color:var(--tx2); font-style:normal; white-space:nowrap; }
-.odds-row i u { font-size:8px; color:var(--tx3); text-decoration:none; margin-left:1px; }
+.odds-row i b { font-size:11px; font-weight:bold; }
+.odds-row i u { font-size:9px; color:var(--tx3); text-decoration:none; }
 .odds-row .oc1 { color:var(--c1); } .odds-row .oc2 { color:var(--c2); } .odds-row .oc3 { color:var(--c3); }
-.odds-row .oc4 { color:var(--c4); } .odds-row .oc5 { color:var(--gold-hi); }
+.odds-row .oc4 { color:var(--c4); } .odds-row .oc5 { color:var(--gold-dim); }
+html[data-theme="dark"] .odds-row .oc5 { color:var(--gold-hi); }
 /* 媒体查询内取消透视时同步 --rx（quake 关键帧引用它）；--bcell 已统一由 body 基础规则派生 */
 @media (max-width:880px){
   #board { --rx:0deg; }
@@ -802,12 +809,12 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
 <link rel="stylesheet" href="tools/mobile-stage.css?v=2">
 <link rel="stylesheet" href="tools/idol-dark.css?v=5">
 <link rel="stylesheet" href="tools/stage-themes.css?v=2">
-<link rel="stylesheet" href="tools/narrative-bar.css?v=2">
+<link rel="stylesheet" href="tools/narrative-bar.css?v=3">
 <link rel="stylesheet" href="tools/solo-ui.css?v=3">
 <link rel="stylesheet" href="tools/battle-hud.css?v=1">
 <link rel="stylesheet" href="tools/match-layout.css?v=2">
 <link rel="stylesheet" href="tools/preparation-presentation.css?v=1">
-<link rel="stylesheet" href="tools/portrait-ui.css?v=2">
+<link rel="stylesheet" href="tools/portrait-ui.css?v=3">
 <script id="themeBoot">try{document.documentElement.dataset.theme=localStorage.getItem('vc_theme')==='dark'?'dark':'light'}catch(e){document.documentElement.dataset.theme='light'}document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#0a0d1c':'#f6f8fd'</script>
 </head>
 <body>
@@ -822,7 +829,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
   <span class="res" id="resPop" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Ccircle cx='9' cy='8' r='3.2'/%3E%3Cpath d='M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5z'/%3E%3Ccircle cx='17' cy='9' r='2.5'/%3E%3Cpath d='M15.5 14c2.9.3 5.5 2 5.5 5h-4.6z'/%3E%3C/svg%3E&quot;)"><span class="rv"><span id="pop">0</span>/<span id="popMax">11</span></span><span class="rl">人口</span></span>
   <span class="res" id="resStreak" title="连胜/连败 3→+2金、5→+3金、7+→+4金" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M12 3c.5 3-4 5.5-4 9.5a4 4 0 0 0 8 0C16 9 13 8 12 3z'/%3E%3Cpath d='M12 17.5a2.5 2.5 0 0 1-2.5-2.5c0-1.4 1.2-2.3 2.5-3.8 1.3 1.5 2.5 2.4 2.5 3.8a2.5 2.5 0 0 1-2.5 2.5z'/%3E%3C/svg%3E&quot;)"><span class="rv" id="streak">0</span><span class="rl">连胜</span></span>
   <span class="tag" id="curseTag" style="display:none;cursor:help"></span>
-  <span class="tag" id="ticketTag" style="cursor:help" title="升星券：把一名 3★ 棋子升为 4★。来源：守关胜利、挑战规则补偿。用法：点击 3★ 棋子 → 详情面板金色按钮">券 ×0</span>
+  <span class="tag" id="ticketTag" style="cursor:help" title="升星券：把一名 3★ 棋子升为 4★。来源：守关胜利、挑战规则补偿。用法：点击 3★ 棋子 → 详情面板金色按钮">升星券 ×0</span>
   <span class="spacer"></span>
   <div class="fight-btn-row">
     <button class="btn ic" id="histBtn" title="战绩记录 · 成就 · 本地排行 · 全球排行" style="--ic:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M8 4h8v5a4 4 0 0 1-8 0z'/%3E%3Cpath d='M8 5H5a3 3 0 0 0 3 3M16 5h3a3 3 0 0 1-3 3M12 13v4M8 20h8'/%3E%3C/svg%3E&quot;)">荣誉殿堂</button>
@@ -860,7 +867,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
 <div id="shopbar">
   <div id="playerBox">
     <div id="lvlBox">
-      <div class="lvl-row"><span class="ln">Lv.<b id="lvlNum">2</b><span class="sub">（人口 <b id="pop2">0</b>/<b id="popMax2">11</b>）</span></span><span class="gd"><b id="gold2">10</b></span></div>
+      <div class="lvl-row"><span class="ln">Lv.<b id="lvlNum">2</b><span class="sub">（人口 <b id="pop2">0</b>/<b id="popMax2">11</b>）</span></span><span class="gd">◎<b id="gold2">10</b></span></div>
       <div class="lvl-row"><span id="xpText">经验 0/6</span><span class="it" id="interest2">利息 +1</span></div>
       <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
       <div class="odds-row" id="oddsRow" title="当前商店各费用棋子出现率"></div>
@@ -1052,7 +1059,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
       <li>胜利 +2 金；连胜/连败 3/5/7 → +2/+3/+4 金</li>
       <li>利息每 10 金 +1（上限 3，挑战规则可改变）</li>
       <li>刷新商店 2 金；买经验 5 金 +4 经验（每回合自然 +2）</li>
-      <li>卖棋 1★ 原价、合成折价；<b style="color:#ffd24a">第 1 回合不可买经验</b></li>
+      <li>卖棋 1★ 原价、合成折价；<b class="gold-note">第 1 回合不可买经验</b></li>
     </ul>
   </section>
 <section class="help-sec">
@@ -1060,7 +1067,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
     <ul class="help-list">
       <li>5 卡槽独立抽取，概率只与人口等级绑定（不绑羁绊）</li>
       <li>共享卡池 1费50 / 2费40 / 3费30 / 4费20 / 5费10 张，7 级起可见 5 费（经济封锁诅咒下商店为 4 格）</li>
-      <li>卡片速读：左侧<b>色条</b> = 费用；<span style="color:#ffd24a">金边 = 对子</span>（买到即升星）</li>
+      <li>卡片速读：左侧<b>色条</b> = 费用；<span class="gold-note">金边 = 对子</span>（买到即升星）</li>
       <li>徽章并列 <span style="color:#ffd24a">🎴对子</span> / <span style="color:#ff8ad8">⭐追三</span> / <span style="color:#8dff9a">🔗触发羁绊档位</span> / <span style="color:#4ac8ff">🔗可补羁绊进度</span></li>
     </ul>
   </section>
@@ -1125,7 +1132,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
 <script src="tools/battle-presentation.js?v=1"></script>
 <script src="tools/battle-audio.js?v=1"></script>
 <script src="tools/narrative-tour.js?v=1" defer></script>
-<script src="tools/narrative-bar.js?v=1" defer></script>
+<script src="tools/narrative-bar.js?v=2" defer></script>
 <script>
 /* ================= 名单：50 人（VirtuaReal 42 + P-SP 8，2026-09-19 费用与名单修订） =================
    fac 阵营(12) / job 职业(10) / sk [技能名, 原型]——多多自走棋式：绝大多数为回蓝主动技，仅 3 个被动（破盾/格挡/吸血）
@@ -3362,7 +3369,7 @@ function renderTop(){
     if(orow){
       const lv=(hasCurse('solo')&&capped)?soloShopLvl():S.lvl;
       const od=SHOP_ODDS[lv]||SHOP_ODDS[11];
-      orow.innerHTML=[1,2,3,4,5].map(c=>`<i class="oc${c}" title="${c} 费棋子出现率">${od[c]??0}<u>%</u></i>`).join('');
+      orow.innerHTML=[1,2,3,4,5].map(c=>`<i class="oc${c}" title="${c} 费棋子出现率"><b>${od[c]??0}%</b><u>${c}费</u></i>`).join('');
     }
   }
   $('refreshBtn').textContent = (IS_TOUCH?'刷新':'刷新 (D)')+` -${refreshCost()}金`;   // 价格随诅咒变化（通胀 3 / 紧缩货架 1）
@@ -3385,7 +3392,7 @@ function renderTop(){
   const dynTxt = S.lossStreak>=2 ? `难度 ⬇（连败 ${S.lossStreak}，敌方减弱）`
     : S.streak>=4 ? `难度 ⬆（连胜 ${S.streak}，敌方增强 +${Math.min(4, S.streak-3)}%）` : '难度 ➖ 标准';
   $('enemyInfo').innerHTML = c.boss
-    ? `<b>${c.name}</b> · 野怪回合（${S.round>=20&&S.round<25?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">🏆 胜利掉 <b style="color:#8dff9a">2</b> 件装备 · 💤 普通野怪战失败不扣血，仍掉 <b style="color:#8dff9a">1</b> 件${S.round%chLen()===0?' · <b style="color:#ff9a9a">守关战必须取胜，失败即结束本局</b>':''}</span>${threat}${challengeAvailable()?`<div style="margin-top:5px"><button class="btn" onclick="chooseChallenge()" ${S.challengeRound===S.round?'disabled':''}>${S.challengeRound===S.round?'已选精英挑战':'选择精英挑战：敌方 +25% 强度'}</button><span style="font-size:11px;color:#ffd24a"> 胜利额外 +2 装备、+3 金；失败 -3 生命</span></div>`:''}`
+    ? `<b>${c.name}</b> · 野怪回合（${S.round>=20&&S.round<25?'2★ 头目':'头目'}率领护卫队）<br><span style="font-size:11px;color:#8a93c4">🏆 胜利掉 <b style="color:#8dff9a">2</b> 件装备 · 💤 普通野怪战失败不扣血，仍掉 <b style="color:#8dff9a">1</b> 件${S.round%chLen()===0?' · <b style="color:#ff9a9a">守关战必须取胜，失败即结束本局</b>':''}</span>${threat}${challengeAvailable()?`<div style="margin-top:5px"><button class="btn" onclick="chooseChallenge()" ${S.challengeRound===S.round?'disabled':''}>${S.challengeRound===S.round?'已选精英挑战':'选择精英挑战：敌方 +25% 强度'}</button><span class="gold-note" style="font-size:11px"> 胜利额外 +2 装备、+3 金；失败 -3 生命</span></div>`:''}`
     : `<b>${c.name}</b>${(S.enemyBoard||[]).some(u=>u&&u.star>=2)?' · <b style="color:#ffd24a">2★ 精英棋子带队</b>':''}：` + Object.entries(c.mix).map(([j,n])=>`${j}×${n}`).join(' + ')
       + `<br><span style="font-size:11px;color:#8a93c4">${dynTxt} · 胜利 +1 金（装备只在野怪回合掉落）</span>${threat}`;
   $('gold2').textContent=S.gold;
@@ -3785,7 +3792,7 @@ function showInspect(u){
     ${(svOf(d.id).p&&svOf(d.id).p.critPct)?`<div class="in-row"><span>专属暴击</span><b>${Math.round(svOf(d.id).p.critPct*100)}%</b><span>暴伤</span><b>${svOf(d.id).p.critMul}×</b></div>
     <div class="in-tag" style="font-size:10px;color:#8a93c4">叠加规则：与刺客羁绊/装备暴击率相加（封顶 60%），暴伤取最大</div>`:''}
     <div class="in-sk">✦ ${skillName(d)}（${isPassive(u)?'被动':'主动'}）</div>
-    <div class="in-role" style="margin:2px 0 0;font-size:12.5px;color:#ffd24a;font-weight:600">🎯 ${skillRole(d)}</div>
+    <div class="in-role gold-note" style="margin:2px 0 0;font-size:12.5px;font-weight:600">🎯 ${skillRole(d)}</div>
     <div class="in-desc">${skillDesc(u)}</div>
     <div class="in-item">🎒 装备：<span id="inItemChips">${itemChips}</span></div>
     ${(IS_TOUCH&&u.items&&u.items.length)?`<div class="in-unequip" onclick="unequipInspect()">🧥 卸下全部装备</div>`:''}
@@ -3819,7 +3826,7 @@ function showEnemyInspect(u){   // 敌方棋子详情（无出售按钮；数值
     <div class="in-row r-plain"><span>护甲</span><b>${d.ar||0}</b><span>魔抗</span><b>${Math.round((d.mr||0)*100)}%</b><span>站位</span><b>${d.job==='刺客'?'切后排':(d.form==='me'?'前排':'后排')}</b></div>
     <div class="in-row r-plain"><span>形式</span><b>${d.form==='me'?'近战':'远程'} · ${d.dtype==='phys'?'物理':'法术'}</b></div>
     <div class="in-sk">✦ ${skillName(d)}（${isPassive(u)?'被动':'主动'}）</div>
-    <div class="in-role" style="margin:2px 0 0;font-size:12.5px;color:#ffd24a;font-weight:600">🎯 ${skillRole(d)}</div>
+    <div class="in-role gold-note" style="margin:2px 0 0;font-size:12.5px;font-weight:600">🎯 ${skillRole(d)}</div>
     <div class="in-desc">${skillDesc(u)}</div>`;
   S.inspectUid=null;
 }
@@ -7176,9 +7183,9 @@ function renderBook(){
   list.sort((a,b)=>a.cost-b.cost);
   /* 收集进度（F5）：已收录 = 至少上场过一次的棋子；未收录的卡片用暗色左边框区分 */
   const cs=codexStat(), csPct=Math.round(cs.collected/cs.total*100), csTitle=codexTitle(cs.collected);
-  $('bookCount').innerHTML=`已收集 <b style="color:#ffd24a">${cs.collected}/${cs.total}</b>（${csPct}%）`+
+  $('bookCount').innerHTML=`已收集 <b class="gold-note">${cs.collected}/${cs.total}</b>（${csPct}%）`+
     (csTitle?` · <b style="color:#9dd3e8">${csTitle}</b>`:'')+
-    `<span style="color:#6f6893"> · 当前筛选 ${list.length} 名（上场过一次即收录）</span>`;
+    `<span style="display:block;color:#56506e;font-size:11px">当前筛选 ${list.length} 名 · 上场过一次即收录</span>`;
   const myos=myosGet();   // 🎯 本命标记（G3）
   const favorite=myos&&byId(myos), favoriteStats=favorite&&cs.map[myos];
   const profile=$('myosProfile');
@@ -7188,7 +7195,7 @@ function renderBook(){
       const fs=favoriteStats||{}, played=Number(fs.used)||0, casts=Number(fs.casts)||0;
       const winRate=played?Math.round((Number(fs.win)||0)/played*100):0;
       const milestone=played===0?'等待首秀':casts===0?'首次登场 · 技能记录待开启':`累计施法 ${casts} 次`;
-      profile.innerHTML=`<div class="bsy-title">💖 本命档案 · ${favorite.name}</div><div style="display:flex;gap:12px;align-items:center;padding:8px;border:1px solid rgba(255,210,74,.35);background:rgba(50,39,72,.32)"><img src="assets/units_big/${favorite.id}.webp" alt="${favorite.name}" style="width:76px;height:76px;object-fit:contain"><div style="min-width:0"><b style="color:#ffd24a">${facLabel(favorite)} · ${jobLabel(favorite)}</b><div class="bsy-desc">${skillRole(byId(favorite))} · ${skillName(favorite)}</div><div class="bsy-desc">登场 ${played} 局 · 胜局 ${Number(fs.win)||0} · 胜局率 ${winRate}%</div><div class="bsy-desc">累计施法 ${casts} 次 · 累计输出 ${Number(fs.damage)||0} · 单场最高输出 ${Number(fs.bestDamage)||0} · 击杀 ${Number(fs.kills)||0}</div><div class="bsy-desc" style="color:#9dd3e8">${milestone}</div></div></div>`;
+      profile.innerHTML=`<div class="bsy-title">💖 本命档案 · ${favorite.name}</div><div style="display:flex;gap:12px;align-items:center;padding:8px;border:1px solid rgba(255,210,74,.35);background:rgba(50,39,72,.32)"><img src="assets/units_big/${favorite.id}.webp" alt="${favorite.name}" style="width:76px;height:76px;object-fit:contain"><div style="min-width:0"><b class="gold-note">${facLabel(favorite)} · ${jobLabel(favorite)}</b><div class="bsy-desc">${skillRole(byId(favorite))} · ${skillName(favorite)}</div><div class="bsy-desc">登场 ${played} 局 · 胜局 ${Number(fs.win)||0} · 胜局率 ${winRate}%</div><div class="bsy-desc">累计施法 ${casts} 次 · 累计输出 ${Number(fs.damage)||0} · 单场最高输出 ${Number(fs.bestDamage)||0} · 击杀 ${Number(fs.kills)||0}</div><div class="bsy-desc" style="color:#9dd3e8">${milestone}</div></div></div>`;
     }
   }
   $('bookGrid').innerHTML=list.map(u=>{
@@ -7198,7 +7205,7 @@ function renderBook(){
     return `<div class="bcard" style="border-left-color:${isMyos?'#ffd24a':ce?COST_BORDER[u.cost]:'#3a3358'}${isMyos?';box-shadow:0 0 0 1px rgba(255,210,74,.55)':''}">
       <div class="bn"><span><img class="bnpt" src="assets/units_big/${u.id}.webp" alt="">${isMyos?'💖 ':''}${u.name}</span><span class="bc">💰${u.cost}</span></div>
       <div class="bf2">${facLabel(u)} · ${jobLabel(u)} · ${u.form==='me'?'近战':'远程'}${u.dtype==='phys'?'物理':'法术'}</div>
-      ${(SKILL_VAR[u.id]&&SKILL_VAR[u.id].p&&SKILL_VAR[u.id].p.critPct)?`<div class="bp" style="color:#ffd24a">⚡ 专属暴击 ${Math.round(SKILL_VAR[u.id].p.critPct*100)}% · 暴伤 ${SKILL_VAR[u.id].p.critMul}×（与刺客羁绊/装备相加封顶 60%，暴伤取最大）</div>`:''}
+      ${(SKILL_VAR[u.id]&&SKILL_VAR[u.id].p&&SKILL_VAR[u.id].p.critPct)?`<div class="bp gold-note">⚡ 专属暴击 ${Math.round(SKILL_VAR[u.id].p.critPct*100)}% · 暴伤 ${SKILL_VAR[u.id].p.critMul}×（与刺客羁绊/装备相加封顶 60%，暴伤取最大）</div>`:''}
       <div style="font-size:12px;color:#ffd24a;font-weight:600;margin-top:2px">🎯 ${skillRole(byId(u.id))}</div><div class="bs">${skillName(u)}（${passive?'被动':'主动'}）${passive?'':skillDesc(u)}</div>
       ${passive?`<div class="bp">${skillDesc(u)}</div>`:''}
       <div class="bp" style="color:#a99cd0">${u.hp}❤ ${u.atk}⚔ 射程 ${u.rng} 格</div>
@@ -7344,7 +7351,7 @@ function renderSetup(){
         return `<label class="cp-item${on?' on':''}"><input type="radio" name="custom-curse" data-curse="${flowEsc(c.id)}" ${on?'checked':''}><b>${flowEsc(c.n)}</b><span class="cp-d">${flowEsc(c.d)}</span><span class="cp-r">${flowEsc(c.r)}</span></label>`;}).join('');
     curses.querySelectorAll('[data-curse]').forEach(input=>input.addEventListener('click',e=>{if(curseSel[0]===input.dataset.curse)e.preventDefault();toggleCurse(input.dataset.curse);}));
   }
-  $('setupSlotNote').textContent=selMode==='normal'||selMode==='custom'?'普通与自定义共用存档位 vc_save4。开始前会确认覆盖；每日挑战存档独立互不影响。':`本模式使用独立存档位 ${selMode==='daily'?'vc_daily3':'vc_arena3'}；开始前会确认覆盖。`;
+  $('setupSlotNote').textContent=selMode==='normal'||selMode==='custom'?'普通与自定义共用一个存档位，开始前会确认覆盖；每日挑战存档独立互不影响。':`本模式使用独立存档位，开始前会确认覆盖。`;
   $('setupFeedback').textContent=setupNotice;
   $('setupStart').textContent=`开始${modeLabel(selMode).replace(/^\S+\s*/,'')}`;
 }
@@ -7862,7 +7869,7 @@ $('autoBtn').onclick=()=>{ S.auto=!S.auto; autoStoreSet(S.auto); setAutoUI();
 <script src="tools/campaign-map.js?v=2"></script>
 <script src="tools/solo-ui.js?v=4"></script>
 <script src="tools/solo-host.js?v=6"></script>
-<script src="tools/portrait-ui.js?v=1"></script>
+<script src="tools/portrait-ui.js?v=3"></script>
 <div id="levelGuideModal" class="level-guide-backdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="levelGuideTitle">
   <section class="level-guide-card" id="levelGuideCard">
     <div class="level-guide-kicker" id="levelGuideKicker">关卡提示</div>

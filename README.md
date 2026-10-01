@@ -37,12 +37,17 @@ npx wrangler deploy   # 把本目录作为 Worker 静态资源上传；排除项
 
 当前八人房间支持邀请码、八席大厅、房主添加/移除机器人、就绪开局、共享卡池、商店、布阵、确定性战斗事件回放、经济回合、淘汰、名次和断线重连。房间状态与战果由服务端负责，所有玩家看到同一份战斗结果。房间仅存于单个容器实例内，服务重启会清空正在进行的对局。
 
+对局界面与经典模式完全一致（2026-10-01 起）：`online.html` 直接复用 `index.html` 的操作界面骨架、渲染结构与皮肤（核心样式副本 `online/classic-ui.css` + 同一批 `tools/` 样式），操作手感（拖拽、点选、快捷键、出售、装备、触屏抽屉）与经典一致；唯一新增是右侧「八人战况」面板（8 名玩家血量与名次，点击可观战其他玩家棋盘）。
+
 开发验收命令：
 
 ```bash
 node --test tools/solo-modes.test.js
 python tools/solo_browser_test.py
 python tools/solo-puzzle-proof.py
+# 八人联机（需静态 :8081 + 联机 API :3000）
+python tools/online_parity_browser.py
+python tools/online_mobile_browser.py
 ```
 
 设计与覆盖范围见 `specs/solo-acceptance.md`。

@@ -1,5 +1,5 @@
 :root {
-  --theme-ink:#4d5d88; --theme-muted:#7180a3; --theme-border:rgba(116,139,201,.3);
+  --theme-ink:#43537c; --theme-muted:#5b6b91; --theme-border:rgba(116,139,201,.3);
   --theme-panel:linear-gradient(155deg,rgba(255,255,255,.93),rgba(241,247,255,.9));
   --theme-surface:#edf2ff; --theme-soft:#e2eafb; --theme-gold:#a77522; --theme-accent:#8274c7;
 }

@@ -44,6 +44,7 @@
 
   function finish() {
     if (el) el.hidden = true;
+    document.body.classList.remove('narrative-on');
     queue = []; idx = 0;
     if (onKey) document.removeEventListener('keydown', onKey);
     onKey = null;
@@ -56,6 +57,7 @@
     ensure();
     queue = lines.slice(); idx = 0; done = onDone || null;
     el.hidden = false;
+    document.body.classList.add('narrative-on');
     onKey = e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); next(); } };
     document.addEventListener('keydown', onKey);
     render();
