@@ -383,5 +383,10 @@ if (invokedAsMain) {
         shutdown(0);
       });
     })
-    .catch(() => { console.error('Online service startup failed; check storage configuration and ownership'); process.exit(1); });
+    .catch(error => {
+      const name = String(error?.name || 'Error').replace(/[^A-Za-z0-9_.-]/g,'').slice(0,64) || 'Error';
+      const code = /^[A-Za-z0-9_.-]{1,64}$/.test(String(error?.code || '')) ? error.code : null;
+      console.error(JSON.stringify({event:'online_service_start_failed',errorName:name,errorCode:code}));
+      process.exit(1);
+    });
 }

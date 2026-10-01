@@ -22,7 +22,15 @@ export class PgRoomStore {
       p_operation: operation, p_owner: this.owner, p_epoch: this.epoch,
       p_code: code, p_snapshot: snapshot,
     }).abortSignal(AbortSignal.timeout(5000));
-    if (error || !data || typeof data !== 'object') throw new Error('CloudBase PostgreSQL room storage request failed');
+    if (error) {
+      const code = /^[A-Za-z0-9_.-]{1,64}$/.test(String(error.code || '')) ? error.code : 'unknown';
+      console.error(JSON.stringify({event:'room_store_rpc_failed',operation,code}));
+      throw new Error('CloudBase PostgreSQL room storage request failed');
+    }
+    if (!data || typeof data !== 'object') {
+      console.error(JSON.stringify({event:'room_store_rpc_invalid_response',operation,dataType:typeof data}));
+      throw new Error('CloudBase PostgreSQL room storage request failed');
+    }
     return data;
   }
   async owned(operation, code, snapshot) {
