@@ -8,7 +8,7 @@ import { UNIT_NAMES } from './core.js';
 import { SKILL_NAMES } from './skill-names.js';
 import { EQUIPMENT, recipe } from './equipment.js';
 import { CLASSIC_SKILLS, CLASSIC_MARKS, classicAttackProfile } from './skill-catalog.js';
-import { mountCodex } from './codex.js?v=1';
+import { mountCodex } from './codex.js?v=2';
 import '../tools/battle-audio.js?v=1';
 
 /* ============================================================================
@@ -1929,8 +1929,14 @@ function openDrawer(mode){
     : '📋 八人战况 · 棋子详情 · 战报';
   try{ $('mDrawerBox').style.marginBottom = (($('shopbar')&&$('shopbar').offsetHeight)||0)+'px'; }catch(e){}
   d.classList.remove('hidden');
+  try{ if(!(history.state&&history.state.vcLayer)) history.pushState({vcLayer:1},''); }catch(e){}   // 返回键先关抽屉
 }
-function closeDrawer(){ const d=$('mDrawer'); if(d)d.classList.add('hidden'); }
+function closeDrawer(){
+  const d=$('mDrawer'); if(!d||d.classList.contains('hidden')) return;
+  d.classList.add('hidden');
+  try{ if(history.state&&history.state.vcLayer) history.back(); }catch(e){}
+}
+window.addEventListener('popstate',()=>{ const d=$('mDrawer'); if(d&&!d.classList.contains('hidden')) d.classList.add('hidden'); });
 if(IS_TOUCH&&document.body){
   document.body.classList.add('touch');
   const rel=(id,txt)=>{ const b=document.getElementById(id); if(b) b.textContent=txt; };
@@ -1952,7 +1958,7 @@ if(IS_TOUCH&&document.body){
     const menu=$('mMenuSec');
     [['棋子图鉴','codexBtn'],['切换主题','themeBtn'],['音效开关','sfxBtn'],['操作说明','helpBtn'],['复制邀请链接','inviteBtn2'],['退出对局返回入口','leaveBtn2']].forEach(([label,id])=>{
       const b=document.createElement('button'); b.className='btn'; b.textContent=label;
-      b.onclick=()=>{ closeDrawer(); const t=$(id); if(t) t.click(); };
+      b.onclick=()=>{ closeDrawer(); const t=$(id); if(t) setTimeout(()=>t.click(),160); };   // 等抽屉的 history 撤销完成再开新层（图鉴），避免连锁竞态
       menu.appendChild(b);
     });
     $('mMenuBtn').onclick=()=>{ drawerMode()==='menu' ? closeDrawer() : openDrawer('menu'); };

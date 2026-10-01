@@ -113,21 +113,30 @@ function buildModal() {
       set.has(key) ? set.delete(key) : set.add(key);
       render(); return;
     }
-    if (event.target.closest('.codex-close') || event.target === modal) close();
+    if (event.target.closest('.codex-close') || event.target === modal) closeCodex();   // close 从未定义（ReferenceError）：关闭按钮此前点击无反应
   });
   document.body.appendChild(modal);
 }
 
+/* 返回键集成：打开图鉴时压一条历史，手机返回键先关图鉴而不是退出页面；
+   点关闭按钮时撤销该条。标记用 history.state.vcLayer（与备战抽屉共用，连锁由调用方延迟切换）。 */
 export function openCodex() {
+  if (modal && !modal.hidden) return;
   if (!modal) buildModal();
   modal.hidden = false;
   render();
+  try { if (!(history.state && history.state.vcLayer)) history.pushState({vcLayer:1}, ''); } catch {}
 }
-export function closeCodex() { if (modal) modal.hidden = true; }
+export function closeCodex(fromPop) {
+  if (!modal || modal.hidden) return;
+  modal.hidden = true;
+  if (!fromPop) { try { if (history.state && history.state.vcLayer) history.back(); } catch {} }
+}
 
 export function mountCodex() {
   const button = document.getElementById('codexBtn');
   if (!button) return;
   button.addEventListener('click', openCodex);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeCodex(); });
+  window.addEventListener('popstate', () => closeCodex(true));
 }

@@ -7030,7 +7030,7 @@ $('homeNew').onclick=()=>{selMode='normal';selRunChallenge='';curseSel=[];openSe
 $('homeOnline').onclick=()=>{window.location.href='./online.html';};
 $('homeHelp').onclick=showHelp;
 $('homeTheme').onclick=toggleTheme;
-$('homeHistory').onclick=()=>{histTab='log';renderHistTab();$('flowShell').classList.add('is-hidden');$('flowShell').setAttribute('aria-hidden','true');$('histModal').classList.remove('hidden');flowPage='home';historyFromHome=true;};
+$('homeHistory').onclick=()=>{histTab='log';renderHistTab();$('flowShell').classList.add('is-hidden');$('flowShell').setAttribute('aria-hidden','true');$('histModal').classList.remove('hidden');flowPage='home';historyFromHome=true;vcPushLayer();};
 $('setupBack').onclick=()=>showHome();
 $('setupStart').onclick=()=>requestSetupStart();
 $('menuResume').onclick=returnToLiveView;
@@ -7231,7 +7231,7 @@ $('bookGrid').addEventListener('click', e=>{
   myosSet(myosGet()===id ? '' : id);
   renderBook();
 });
-$('bookBtn').onclick=()=>{ $('bookModal').classList.remove('hidden'); renderBook(); };
+$('bookBtn').onclick=()=>{ if(!$('bookModal').classList.contains('hidden'))return; $('bookModal').classList.remove('hidden'); renderBook(); vcPushLayer(); };
 // 图鉴标签切换：棋子（默认）/ 羁绊说明
 document.querySelectorAll('#bookTabs .btab').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#bookTabs .btab').forEach(x=>x.classList.toggle('on',x===b));
@@ -7239,7 +7239,7 @@ document.querySelectorAll('#bookTabs .btab').forEach(b=>b.onclick=()=>{
   $('bookSyn').classList.toggle('hidden', b.dataset.tab!=='syn');
   $('bookItems').classList.toggle('hidden', b.dataset.tab!=='items');
 });
-$('bookClose').onclick=()=>$('bookModal').classList.add('hidden');
+$('bookClose').onclick=()=>{ if($('bookModal').classList.contains('hidden'))return; $('bookModal').classList.add('hidden'); vcPopLayer(); };
 
 /* ================= 存档 / 继续上一局 / 历史战绩 ================= */
 const SAVE_KEY='vc_save4', HIST_KEY='vc_history', DAILY_KEY='vc_daily3', ARENA_SAVE_KEY='vc_arena3';
@@ -7668,8 +7668,8 @@ function renderHistTab(){
   const h2=document.querySelector('#histPanel h2'); if(h2) h2.textContent=histTitle();
   document.querySelectorAll('#histTabs .tab').forEach(b=>b.classList.toggle('on', b.dataset.t===histTab));
 }
-$('histBtn').onclick=()=>{ historyFromHome=false;renderHistTab(); $('histModal').classList.remove('hidden'); };
-$('histClose').onclick=()=>{ $('histModal').classList.add('hidden');if(historyFromHome){historyFromHome=false;showHome();} };
+$('histBtn').onclick=()=>{ historyFromHome=false;renderHistTab(); $('histModal').classList.remove('hidden'); vcPushLayer(); };
+$('histClose').onclick=()=>{ if($('histModal').classList.contains('hidden'))return; $('histModal').classList.add('hidden');if(historyFromHome){historyFromHome=false;showHome();} vcPopLayer(); };
 document.querySelectorAll('#histTabs .tab').forEach(b=>b.onclick=()=>{ histTab=b.dataset.t; renderHistTab(); });
 /* ================= 移动端触屏适配 =================
    主输入为粗指针（手机/平板）时启用：body.touch 样式钩子 + 点选移动模式 + 按钮去键位提示 +
@@ -7679,6 +7679,19 @@ const IS_TOUCH = (typeof matchMedia==='function' && matchMedia('(pointer:coarse)
 /* 手机抽屉：mShopSec(商店+刷新锁定) / mSideSec(详情+装备+战报) 二选一展示。
    节点整体 appendChild 搬迁，所有渲染函数按 ID 定位，搬迁不影响任何逻辑；
    抽屉无遮罩（pointer-events 仅面板本身），底栏与棋盘高亮格在抽屉外仍可点。 */
+/* ===== 弹层返回键集成（手机返回键先关弹层，不再直接退出页面）=====
+   打开弹层时压一条历史；返回键 popstate 关闭当前弹层；点关闭按钮时撤销该条。
+   vcLayerOpen 保证同一时刻只有一条弹层历史（连锁场景由调用方延迟切换）。 */
+let vcLayerOpen=false;
+function vcPushLayer(){ try{ if(vcLayerOpen||(history.state&&history.state.vcLayer))return; history.pushState({vcLayer:1},''); vcLayerOpen=true; }catch(e){} }
+function vcPopLayer(){ if(!vcLayerOpen&&!(history.state&&history.state.vcLayer))return; vcLayerOpen=false; try{ history.back(); }catch(e){} }
+window.addEventListener('popstate',()=>{
+  vcLayerOpen=false;
+  const bm=$('bookModal'), hm=$('histModal'), dr=$('mDrawer');
+  if(bm&&!bm.classList.contains('hidden')) bm.classList.add('hidden');
+  if(hm&&!hm.classList.contains('hidden')){ hm.classList.add('hidden'); if(typeof historyFromHome!=='undefined'&&historyFromHome){ historyFromHome=false; showHome(); } }
+  if(dr&&!dr.classList.contains('hidden')) dr.classList.add('hidden');
+});
 function openDrawer(mode){
   const d=$('mDrawer'); if(!d||!d.classList) return;
   $('mShopSec').classList.toggle('hidden', mode!=='shop');
@@ -7696,8 +7709,9 @@ function openDrawer(mode){
     : '📋 棋子详情 · 战报';
   try{ $('mDrawerBox').style.marginBottom = (($('shopbar')&&$('shopbar').offsetHeight)||0)+'px'; }catch(e){}
   d.classList.remove('hidden');
+  vcPushLayer();
 }
-function closeDrawer(){ const d=$('mDrawer'); if(d&&d.classList) d.classList.add('hidden'); }
+function closeDrawer(){ const d=$('mDrawer'); if(!d||d.classList.contains('hidden')) return; d.classList.add('hidden'); vcPopLayer(); }
 function drawerMode(){ const d=$('mDrawer');
   if(!d||d.classList.contains('hidden')) return null;
   if($('mShopSec')&&!$('mShopSec').classList.contains('hidden')) return 'shop';
