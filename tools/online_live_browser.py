@@ -3,14 +3,33 @@
 Serve the frontend on :8081 first. Never starts or falls back to a local backend.
 """
 from pathlib import Path
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 import json
 import os
 from playwright.sync_api import sync_playwright
 
 API = 'https://autochess-online-321604-12-1450980602.sh.run.tcloudbase.com'
+PAGE_ORIGIN = 'https://autochess.hanari520.cn'
 OUT = Path(__file__).resolve().parents[1] / 'out' / 'online-live-20261002'
 OUT.mkdir(parents=True, exist_ok=True)
+
+
+def leave_room(session):
+    if not session or not session.get('code') or not session.get('token'):
+        return
+    request = Request(
+        f"{API}/api/rooms/{session['code']}/leave",
+        data=json.dumps({'token': session['token']}).encode(),
+        headers={'Origin': PAGE_ORIGIN, 'Content-Type': 'application/json'},
+        method='POST',
+    )
+    try:
+        with urlopen(request, timeout=15):
+            return
+    except HTTPError as error:
+        if error.code not in (401, 404):
+            raise
 
 
 def run():
@@ -22,6 +41,7 @@ def run():
         browser = pw.chromium.launch(headless=True, channel='msedge')
         contexts = [browser.new_context(viewport={'width': 1440, 'height': 900}) for _ in range(2)]
         pages = [context.new_page() for context in contexts]
+        sessions = []
         try:
             for i, page in enumerate(pages):
                 page.on('pageerror', lambda error: errors.append(str(error)))
@@ -41,9 +61,11 @@ def run():
             host.locator('#createBtn').click()
             host.locator('#lobbySection').wait_for(state='visible')
             code = host.locator('#roomCode').inner_text().strip()
+            sessions.append(host.evaluate('() => ({code:window.__onlineState.code,token:window.__onlineState.session?.token})'))
             guest.locator('#roomCodeInput').fill(code)
             guest.locator('#joinBtn').click()
             guest.locator('#lobbySection').wait_for(state='visible')
+            sessions.append(guest.evaluate('() => ({code:window.__onlineState.code,token:window.__onlineState.session?.token})'))
             for n in range(6):
                 host.locator('#addBotBtn').click()
                 host.wait_for_function('(n) => window.__onlineState.lobby.players.filter(p => p.bot).length === n', arg=n + 1)
@@ -80,7 +102,7 @@ def run():
                 page.wait_for_function('() => window.__onlineState.actionQueue.length === 0')
             print('PASS: visible countdown ticks; ten acknowledged actions do not fill the client queue', flush=True)
             seat = guest.evaluate('() => window.__onlineState.seat')
-            guest.reload()
+            guest.reload(wait_until='domcontentloaded', timeout=20000)
             guest.locator('#gameSection').wait_for(state='visible', timeout=20000)
             guest.wait_for_function('(seat) => window.__onlineState.connected && window.__onlineState.synced && window.__onlineState.seat === seat && window.__onlineState.view.round >= 2', arg=seat)
             assert guest.locator('#roomCode').inner_text().strip() == code
@@ -88,12 +110,11 @@ def run():
             assert not errors, errors
             host.screenshot(path=str(OUT / 'round-two.png'), full_page=True)
         finally:
-            for page in pages:
-                if page.locator('#roomScreen').is_visible():
-                    button = page.locator('#leaveBtn2') if page.locator('#gameSection').is_visible() else page.locator('#leaveBtn')
-                    button.click(timeout=10000)
-                    page.locator('#entryScreen').wait_for(state='visible', timeout=10000)
-            browser.close()
+            try:
+                for session in reversed(sessions):
+                    leave_room(session)
+            finally:
+                browser.close()
     print('PASS: both test players left; no browser runtime errors', flush=True)
 
 
