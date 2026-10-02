@@ -4,7 +4,7 @@ const paths=[
  {name:'森林伴舞团',ids:['songlv','yujiu','goutan','pako','mahiru']},
  {name:'午后成长队',ids:['goutan','agari','likou','yukie','huali','miki']},
  {name:'聚光支援队',ids:['goutan','agari','ein','kouichi','yua','aza','ruiya','nana7mi']},
- {name:'茶会培养队',ids:['yuji','agari','lianshiye','shengge','mumu','miki','haruka']},
+ {name:'茶会培养队',ids:['suiji','agari','lianshiye','shengge','mumu','miki','haruka']},
  {name:'返场守护队',ids:['songlv','hoshimi','kanban','shiliu','seki','liAn','rei','taodai']},
  {name:'震场接力队',ids:['shadow','xuezhu','tiandou','diansu','agari']},
  {name:'星火舞团',ids:['songlv','mahiru','kanban','zeyin','miyue']},

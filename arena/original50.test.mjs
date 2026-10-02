@@ -5,10 +5,10 @@ import {EVENT_LABELS} from './replay.mjs';
 const u=(id,atk=2,hp=10,extra={})=>({uid:id,id,atk,hp,xp:0,level:1,perk:null,...extra});
 const fight=(a,b)=>battle(a,b,'original50');
 test('food shared growth, tier-one recruitment and teammate level-up trigger permanent skills',()=>{
- const s=createRun('food');s.team=[u('lianshiye'),u('yuji'),u('shengge'),u('mumu'),null];
+ const s=createRun('food');s.team=[u('lianshiye'),u('suiji'),u('shengge'),u('mumu'),null];
  s.foods[0]={id:'milk'};act(s,{type:'food',slot:0,to:1});assert.equal(s.team[0].atk,3);assert.equal(s.team[0].hp,11);assert.equal(s.team[1].hp,14);
  s.shop[0]={id:'hoshimi'};act(s,{type:'buy',slot:0,to:4});assert.equal(s.team[4].hp,3);assert.equal(s.team[3].hp,10);
- s.gold=20;s.team[1].xp=1;s.shop[0]={id:'yuji'};act(s,{type:'buy',slot:0,to:1});assert.equal(s.team[2].atk,4);assert.equal(s.team[2].hp,13);
+ s.gold=20;s.team[1].xp=1;s.shop[0]={id:'suiji'};act(s,{type:'buy',slot:0,to:1});assert.equal(s.team[2].atk,4);assert.equal(s.team[2].hp,13);
  const hp=s.team[4].hp;s.shop[0]={id:'hoshimi'};act(s,{type:'buy',slot:0,to:4});assert.equal(s.team[4].hp,hp+1,'buying to merge does not trigger the recruitment observer');
 });
 test('training depends on position, ally levels and the presence of a different level-three ally',()=>{

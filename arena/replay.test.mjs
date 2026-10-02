@@ -11,11 +11,11 @@ test('end-turn growth records each source once and starts replay before combat',
  assert.equal(s.preparationEvents.filter(e=>e.type==='roundEnd').length,3);
  const replay=addPreparationEvents(battle(team,[u('enemy','agari',20)],'phase'),s);
  assert.equal(replay.events[0].type,'roundEndStart');assert.deepEqual(replay.events.filter(e=>e.type==='roundEnd').map(e=>e.actors[0].uid),['grow','all','self']);
- s.team[0]=u('income','suiji');finishRound(s,{winner:'draw'});assert.equal(s.gold,11);assert.ok(s.roundStartEvents.some(e=>e.gold===1&&e.uids.includes('income')));
+ s.team[0]=u('income','yuji');finishRound(s,{winner:'draw'});assert.equal(s.gold,11);assert.ok(s.roundStartEvents.some(e=>e.gold===1&&e.uids.includes('income')));
 });
 test('buy, food, sell, upgrade and once-per-round refresh gains have visible feedback',()=>{
  const s=createRun('shop-feedback');s.team[0]=u('friend','goutan');s.shop[0]={id:'hoshimi',frozen:false};let before=structuredClone(s);act(s,{type:'buy',slot:0,to:1});assert.ok(actionFeedback(before,s,{type:'buy',to:1},unitInfo).some(n=>n.atk===1));
- s.team[1]=u('food','yuji');s.foods[0]={id:'milk',frozen:false};before=structuredClone(s);act(s,{type:'food',slot:0,to:1});assert.ok(actionFeedback(before,s,{type:'food',to:1},unitInfo).some(n=>n.hp===4));
+ s.team[1]=u('food','suiji');s.foods[0]={id:'milk',frozen:false};before=structuredClone(s);act(s,{type:'food',slot:0,to:1});assert.ok(actionFeedback(before,s,{type:'food',to:1},unitInfo).some(n=>n.hp===4));
  s.gold=10;s.team[1]=u('sell','chiharu');before=structuredClone(s);act(s,{type:'sell',slot:1});assert.ok(actionFeedback(before,s,{type:'sell',slot:1},unitInfo).some(n=>n.atk===1&&n.hp===1));
  s.team[1]=u('roll','zhouyi');before=structuredClone(s);act(s,{type:'roll'});assert.ok(actionFeedback(before,s,{type:'roll'},unitInfo).some(n=>n.gold===1));before=structuredClone(s);act(s,{type:'roll'});assert.ok(!actionFeedback(before,s,{type:'roll'},unitInfo).some(n=>n.gold));
  s.team[0].xp=1;s.team[2]=u('merge','goutan');before=structuredClone(s);act(s,{type:'merge',from:2,to:0});assert.ok(actionFeedback(before,s,{type:'merge',from:2,to:0},unitInfo).some(n=>n.level===2));
