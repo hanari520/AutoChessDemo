@@ -967,6 +967,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
     <p id="homeFeedback" class="flow-feedback" role="status" aria-live="polite"></p>
     <div class="flow-actions flow-home-actions">
       <button id="homeContinue" class="flow-primary" type="button" hidden>继续对局</button>
+      <button id="homeQueueArena" class="flow-secondary" type="button">✦ 星域小队 · 异步竞技场</button>
       <button id="homeNew" class="flow-secondary" type="button">新建对局</button>
       <button id="homeOnline" class="flow-secondary" type="button" title="创建或加入八人好友房间">八人联机 · 好友房间</button>
       <button id="homeHelp" class="flow-link" type="button">玩法说明</button>
@@ -1120,7 +1121,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
     <h3 class="help-h">🎮 模式与荣誉</h3>
     <ul class="help-list">
       <li>开局三选一：🎲 普通模式 / 📅 <b>每日挑战</b>（全体玩家同一随机序列，比谁推得远）/ ⚠ <b>自定义诅咒</b>（与每日挑战共用 12 条规则，单选一条）</li>
-      <li>✦ <b>巡演企划</b>（剧情模式）在新建对局卡片，点击直接进入</li>
+      <li>✦ <b>星域小队</b>（异步竞技场）从主页或新建对局进入，五人小队挑战十胜</li>
       <li>【🏆 荣誉殿堂】：📜 战绩记录 · 🏅 成就（17 项）· 🏆 本地排行 · 🌍 全球排行</li>
       <li>【🤖 托管】AI 代打全程运营；【▶ 自动开战】保持当前阵容连续开战（间隔约 2.5 秒）</li>
     </ul>
@@ -7026,6 +7027,7 @@ function trapFlowKeys(e){
 }
 document.addEventListener('keydown',trapFlowKeys,true);
 $('homeContinue').onclick=()=>continueRecommendedSave();
+$('homeQueueArena').onclick=()=>{location.href='arena.html';};
 $('homeNew').onclick=()=>{selMode='normal';selRunChallenge='';curseSel=[];openSetup();};
 $('homeOnline').onclick=()=>{window.location.href='./online.html';};
 $('homeHelp').onclick=showHelp;
@@ -7322,19 +7324,13 @@ function renderSetup(){
     {id:'daily',title:'📅 每日挑战',desc:`${todaySeed()} · 每日同步赛：四章共 100 回合；25/50/75 回合选增强，100 回合结算。同日同种子、同预置规则。`},
     {id:'custom',title:'⚠ 自定义诅咒',desc:'自选规则场：从每日赛同款 12 条规则中单选一条；四章 100 回合。与普通模式共享存档位。'},
   ];
-  /* 路线图批次 D：八人竞技入口下线（引擎与老存档保留），卡位让给「巡演企划」剧情模式（specs/narrative/tour-project.md §0.4） */
+  // The async arena replaces the retired story mode entry.
   $('setupModes').innerHTML=modes.map(m=>`<button type="button" class="flow-mode-card" role="radio" aria-checked="${selMode===m.id}" data-mode="${m.id}"><strong>${m.title}</strong><span>${m.desc}</span></button>`).join('')
-    +`<button type="button" class="flow-mode-card flow-mode-story" data-tour="1"><strong>✦ 巡演企划 · 剧情模式</strong><span>五十位主播的三站巡演：排阵容、登台演出，赶在终场之前把没唱完的那首唱完。</span></button>`;
+    +`<button type="button" class="flow-mode-card" data-queue-arena="1"><strong>✦ 星域小队 · 异步竞技场</strong><span>50 位主播、100 套棋子。五人队列、十金商店、技能连锁，挑战玩家历史阵容，赢下十座奖杯。</span></button>`;
   $('setupModes').querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{
     selMode=button.dataset.mode;renderSetup();
   }));
-  const tourCard=$('setupModes').querySelector('[data-tour]');
-  if(tourCard)tourCard.addEventListener('click',()=>{
-    /* 批次 E：剧情模式卡直接进入巡演企划（有存档继续、无存档新开），不再经过单人大厅 */
-    if(!window.SoloHost){$('setupFeedback').textContent='剧情模式资源尚未加载完成，请稍后重试。';return;}
-    const hasSave=(()=>{try{return !!localStorage.getItem('vc_solo_v1_expedition');}catch(e){return false;}})();
-    if(!(hasSave&&SoloHost.resume('expedition'))&&!SoloHost.start('expedition',hasSave)){$('setupFeedback').textContent='巡演企划启动失败，请重试。';}
-  });
+  $('setupModes').querySelector('[data-queue-arena]')?.addEventListener('click',()=>{location.href='arena.html';});
   const info=modes.find(m=>m.id===selMode)||modes[0];
   let details=info.desc;
   if(selMode==='daily')details+=`<br>${dailyInfoHTML()}`;

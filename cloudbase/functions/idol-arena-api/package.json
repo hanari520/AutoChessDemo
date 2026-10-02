@@ -1,0 +1,11 @@
+{
+  "name": "idol-arena-api",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cloudbase/node-sdk": "4.1.0"
+  },
+  "overrides": {
+    "axios": "0.34.0"
+  }
+}

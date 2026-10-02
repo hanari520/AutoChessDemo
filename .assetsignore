@@ -13,6 +13,11 @@ specs
 tasks
 server-online
 cloudbase
+arena/**
+!arena/client.mjs
+!arena/core.mjs
+!arena/outfits.mjs
+!arena/style.css
 .codex
 *.xlsx
 online/core.test.js
@@ -56,3 +61,5 @@ tools/**
 td.html
 td.css
 td.js
+
+!arena/replay.mjs

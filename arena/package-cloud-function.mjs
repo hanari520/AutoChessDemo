@@ -1,0 +1,11 @@
+import {mkdir,copyFile,realpath} from 'node:fs/promises';
+import {resolve,dirname,sep} from 'node:path';
+import {fileURLToPath} from 'node:url';
+const repo=await realpath(resolve(dirname(fileURLToPath(import.meta.url)),'..'));
+if(!process.argv[2])throw new Error('Specify an output directory outside the repository');
+const output=resolve(process.argv[2]);await mkdir(output,{recursive:true});
+const actual=await realpath(output);if(actual===repo||actual.startsWith(repo+sep))throw new Error('Output must be outside the public repository');
+const target=resolve(actual,'idol-arena-api');await mkdir(target,{recursive:true});
+for(const name of ['cloud-entry.mjs','cloud-service.mjs','core.mjs','outfits.mjs','presets.mjs'])await copyFile(resolve(repo,'arena',name),resolve(target,name));
+for(const name of ['package.json','scf_bootstrap'])await copyFile(resolve(repo,'cloudbase/functions/idol-arena-api',name),resolve(target,name));
+console.log('Function package prepared; install production dependencies in '+target+' before deployment.');
