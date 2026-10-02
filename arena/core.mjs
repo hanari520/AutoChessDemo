@@ -53,7 +53,33 @@ const rows = [
  ['rinco','秋凛子',6,7,8,'splashGift','退场：给所有友军 +1 攻击。'],
 ];
 export const BASE_ROSTER = rows.map(([id,name,tier,atk,hp,kind,ability])=>({id,name,tier,atk,hp,kind,ability,baseId:id,outfit:'原版',portrait:`assets/units_big/${id}.webp`}));
-export const ROSTER = [...BASE_ROSTER,...OUTFITS];
+// Skill numbers below are level-one values; all combat gains are temporary.
+export const SPECIAL_SKILLS = {
+ rearGrow:{title:'接力应援',ability:'前方最近友军普攻后：自己 +2/+2，每战 5 次。',hint:'放在高生命前排后方，承接多次攻击。'},
+ hurtGift:{title:'逆境传递',ability:'受伤且存活：后方最近友军 +1/+2，每战 4 次。',hint:'前方搭配震场节拍，后方搭配接力应援。'},
+ friendlyHit:{title:'震场节拍',ability:'自己普攻后：对后方最近友军造成 1 点伤害（各等级固定），每战 5 次。',hint:'用小额伤害主动触发逆境传递、受伤成长和反击。'},
+ knockout:{title:'破阵追击',ability:'击败敌人且自己存活：对当前首位存活敌人造成 4 点伤害，可连续追击，每战 5 次。',hint:'提高攻击先击败前排，再清理残血队伍。'},
+ faintGrow:{title:'谢幕接棒',ability:'其他友军退场：自己 +2/+1，每战 6 次。',hint:'放在后排，搭配多次召唤和伴舞徽章。'},
+ faintShield:{title:'守护誓约',ability:'前方最近友军退场：自己 +2 攻击并获得 4 点护盾，每战 4 次。',hint:'放在召唤棋子后面，用护盾承接下一轮交锋。'},
+ inheritSummon:{title:'星火继承',ability:'退场：召唤 1/2/3 位星火伴舞，各继承自己 50% 攻击（向上取整）、1 生命。',hint:'搭配聚光传递提高继承攻击，再搭配舞团编排。'},
+ summonTrain:{title:'舞团编排',ability:'友军被召唤：给其 +2/+2，每战 6 次。',hint:'放在后排，搭配星火继承或双重召唤。'},
+ weakening:{title:'聚光压制',ability:'开战：将最高生命敌人的当前生命削减 25%/50%/75%（向上取整，至少剩 1）；不触发受伤技能。',hint:'克制高生命前排，搭配开场狙击收割。'},
+ relayAttack:{title:'聚光传递',ability:'开战：给前方最近友军增加自身攻击的 50%/100%/150%（向上取整）。',hint:'放在星火继承或破阵追击后方。'},
+ copy:{title:'镜像合演',ability:'开战前：复制前方最近友军的战斗技能，以自己的技能等级释放；不复制镜像合演、商店或回合技能。',hint:'复制召唤、舞团编排、聚光压制，变化取决于站位。'},
+};
+const originalSkills={tiandou:'rearGrow',xuezhu:'hurtGift',shadow:'friendlyHit',quanrong:'knockout',miyue:'faintGrow',kanban:'faintShield',mahiru:'inheritSummon',zeyin:'summonTrain',youyu:'weakening',youyi:'relayAttack',rinco:'copy'};
+const outfitSkills={
+ 'AZA·打歌服':'rearGrow','笙歌·舞者款':'rearGrow','艾因·熊哥披肩':'hurtGift','笙歌·棉袄款':'hurtGift',
+ '星汐·侠客':'knockout','七海·仙侠师姐':'knockout','桃代·带刀JK':'knockout','瑞娅·嗜血蔷薇':'faintGrow',
+ '轴伊·冬装':'faintShield','又一·禧运警官':'faintShield','星汐·赛博猪猪':'inheritSummon','勾檀·万圣新衣':'inheritSummon',
+ '沐霂·东风团服':'summonTrain','又一·韩系打歌服':'summonTrain','又一·怪盗':'weakening','阿梓·忍梓':'weakening',
+ '瑞娅·王女':'relayAttack','梨安·红中团服':'relayAttack','瑞娅·时空日常服':'copy','礼墨·周年纪念':'copy',
+ '弥月·地雷装':'friendlyHit',
+};
+export const ROSTER = [...BASE_ROSTER,...OUTFITS].map(d=>{
+ const kind=originalSkills[d.id]||outfitSkills[d.name];
+ return kind?{...d,kind,...SPECIAL_SKILLS[kind]}:d;
+});
 export const FOODS = [
  {id:'snack',name:'应援曲奇',icon:'🍪',tier:1,description:'永久 +1 攻击、+1 生命。'},
  {id:'honey',name:'伴舞徽章',icon:'🐝',tier:1,description:'携带：退场召唤一只 1/1 小蜜蜂。'},
@@ -128,22 +154,119 @@ export function addPreparationEvents(replay,s){
 
 export function trainingTeam(round,seed='training'){const s={rng:hash(seed),nextUid:1},tier=tierFor(round),pool=ROSTER.filter(x=>x.tier<=tier),count=Math.min(5,2+Math.floor(round/2));return Array.from({length:5},(_,i)=>{if(i>=count)return null;const u=makeUnit(s,choose(s,pool).id);const growth=Math.max(0,round-3);u.atk=cap(u.atk+Math.floor(growth*.8));u.hp=cap(u.hp+growth);u.xp=round>10?2:0;u.level=round>10?2:1;return u;});}
 export function battle(teamA,teamB,seed='battle'){
- const state={rng:hash(seed)},teams={a:clone(teamA.filter(Boolean)),b:clone(teamB.filter(Boolean))},events=[],effects=[];let steps=0,serial=0;
- for(const u of [...teams.a,...teams.b]){u.maxhp=u.hp;u.shield=u.perk==='melon'?8:0;u.triggers=0;u.first=true;}
- const snap=side=>clone([...teams[side],...Array(Math.max(0,5-teams[side].length)).fill(null)]);
- const ref=(side,u)=>({side,uid:u.uid});
- const emit=(type,text,actors=[])=>{assert(events.length<500,'技能连锁超过安全上限');events.push({type,text,actors,a:snap('a'),b:snap('b')});};
- const name=u=>byId[u.id]?.name||(u.id==='bee'?'小蜜蜂':'伴舞');
+ const state={rng:hash(seed)},teams={a:clone(teamA.filter(Boolean)),b:clone(teamB.filter(Boolean))},events=[],effects=[];
+ let steps=0,serial=0;
+ const kind=u=>u?.battleKind||byId[u?.id]?.kind;
  const other=side=>side==='a'?'b':'a';
- const damage=(u,amount)=>{if(!u||u.hp<=0)return;let n=amount;if(u.perk==='garlic')n=Math.max(1,n-2);const absorb=Math.min(n,u.shield);u.shield-=absorb;n-=absorb;u.hp-=n;if(n>0&&u.hp>0&&byId[u.id]?.kind==='hurt'&&u.triggers<2){u.triggers++;u.atk=cap(u.atk+2*u.level);}if(n>0&&u.hp>0&&byId[u.id]?.kind==='retaliate'&&u.triggers<3){u.triggers++;effects.push(u);}};
- const drainEffects=()=>{let count=0;while(effects.length){assert(++count<40,'反击技能形成无限连锁');const u=effects.shift();if(u.hp<=0)continue;const side=teams.a.includes(u)?'a':'b',victim=teams[other(side)].find(v=>v.hp>0);if(victim){damage(victim,u.level);emit('retaliate',`${name(u)} 反击 ${name(victim)}`,[ref(side,u)]);}}};
- const summon=(side,at,atk,hp,id='dancer')=>{const t=teams[side];if(t.length>=5)return;const u={uid:`summon${serial++}`,id,atk,hp,maxhp:hp,xp:0,level:1,perk:null,shield:0,triggers:0,first:true};t.splice(Math.min(at,t.length),0,u);for(const ally of t){if(byId[ally.id]?.kind==='summonBuff'&&ally.hp>0&&ally.triggers<3){ally.triggers++;u.atk=cap(u.atk+ally.level);}}emit('summon',`${name(u)} 登场！`);};
- const deaths=()=>{let loops=0;while([...teams.a,...teams.b].some(u=>u.hp<=0)){assert(++loops<40,'退场技能形成无限连锁');const fallen=[];for(const side of ['a','b'])for(const u of [...teams[side]])if(u.hp<=0)fallen.push({side,u,at:teams[side].indexOf(u),next:teams[side].slice(teams[side].indexOf(u)+1).find(v=>v.hp>0)});for(const {side,u} of fallen)teams[side]=teams[side].filter(v=>v!==u);emit('faint',fallen.map(({u})=>`${name(u)} 退场`).join(' · '));for(const {side,u,at,next} of fallen){const kind=byId[u.id]?.kind;if(kind==='gift'&&next&&teams[side].includes(next)){next.atk=cap(next.atk+2*u.level);next.hp=cap(next.hp+2*u.level);next.maxhp=Math.max(next.maxhp,next.hp);emit('buff',`${name(u)} 留下援护 +${2*u.level}/+${2*u.level}`,[ref(side,u)]);}if(kind==='splashGift'){for(const v of teams[side])v.atk=cap(v.atk+u.level);emit('buff',`${name(u)} 给全队 +${u.level} 攻击`,[ref(side,u)]);}if(kind==='heal'){for(const v of teams[side])v.hp=Math.min(v.maxhp,v.hp+3*u.level);emit('heal',`${name(u)} 恢复全队生命`,[ref(side,u)]);}if(kind==='summon')summon(side,at,2*u.level,2*u.level);if(kind==='doubleSummon'){summon(side,at,u.level,u.level);summon(side,at+1,u.level,u.level);}if(u.perk==='honey')summon(side,at,1,1,'bee');}}};
+ const name=u=>byId[u.id]?.name||(u.id==='bee'?'小蜜蜂':u.id==='spark'?'星火伴舞':'伴舞');
+ const ref=(side,u)=>({side,uid:u.uid});
+ const snap=side=>clone([...teams[side],...Array(Math.max(0,5-teams[side].length)).fill(null)]);
+ const emit=(type,text,actors=[],targets=[])=>{assert(events.length<500,'技能连锁超过安全上限');events.push({type,text,actors,targets,a:snap('a'),b:snap('b')});};
+ const sideOf=u=>teams.a.includes(u)?'a':teams.b.includes(u)?'b':null;
+ const living=u=>u&&u.hp>0&&sideOf(u);
+ const next=(side,u,offset)=>{const at=teams[side].indexOf(u);return at<0?null:offset>0?teams[side].slice(at+1).find(v=>v.hp>0):teams[side].slice(0,at).findLast(v=>v.hp>0);};
+ const consume=(u,limit)=>{if(u.triggers>=limit)return false;u.triggers++;return true;};
+ const grow=(u,atk,hp)=>{u.atk=cap(u.atk+atk);u.hp=cap(u.hp+hp);u.maxhp=Math.max(u.maxhp,u.hp);};
+ for(const u of [...teams.a,...teams.b]){u.maxhp=u.hp;u.shield=u.perk==='melon'?8:0;u.triggers=0;u.first=true;delete u.battleKind;}
+ // Resolve copies from the original lineup, never from another copy's transient skill.
+ const shopKinds=new Set(['copy','grow','allGrow','selfGrow','income','buyBuff','sell','sellBuff','rollIncome','foodGrow','levelGift']);
+ const copies=[];
+ for(const side of ['a','b'])for(const u of teams[side])if(kind(u)==='copy'){
+  const source=next(side,u,-1),sourceKind=byId[source?.id]?.kind;
+  if(sourceKind&&!shopKinds.has(sourceKind)){u.battleKind=sourceKind;copies.push({side,u,source});}
+ }
  emit('start','双方队伍登场');
+ for(const {side,u,source} of copies)emit('copy',`${name(u)} 镜像合演：复制 ${name(source)} 的战斗技能（${u.level} 级）`,[ref(side,u)],[ref(side,source)]);
+ const damage=(u,amount,source=null)=>{
+  if(!u||u.hp<=0||amount<=0)return;
+  let n=amount;if(u.perk==='garlic')n=Math.max(1,n-2);
+  const absorb=Math.min(n,u.shield);u.shield-=absorb;n-=absorb;u.hp-=n;
+  if(n>0&&u.hp>0){
+   const k=kind(u),limit=k==='hurt'?2:k==='hurtGift'?4:3;
+   if(['hurt','retaliate','hurtGift'].includes(k)&&consume(u,limit))effects.push({type:k,u});
+  }
+  if(u.hp<=0&&source&&sideOf(source)!==sideOf(u)&&kind(source)==='knockout')effects.push({type:'knockout',u:source});
+ };
+ const drainEffects=()=>{
+  let count=0;
+  while(effects.length){
+   assert(++count<100,'受伤与追击技能形成无限连锁');
+   const {type,u}=effects.shift();if(!living(u))continue;const side=sideOf(u);
+   if(type==='hurt'){grow(u,2*u.level,0);emit('hurtGrow',`${name(u)} 受伤成长：攻击 +${2*u.level}`,[ref(side,u)],[ref(side,u)]);}
+   if(type==='hurtGift'){
+    const v=next(side,u,1);if(v){grow(v,u.level,2*u.level);emit('hurtGift',`${name(u)} 逆境传递 → ${name(v)} +${u.level}/+${2*u.level}`,[ref(side,u)],[ref(side,v)]);}
+   }
+   if(type==='retaliate'||type==='knockout'){
+    const v=teams[other(side)].find(v=>v.hp>0);if(!v||type==='knockout'&&!consume(u,5))continue;
+    const amount=(type==='knockout'?4:1)*u.level;damage(v,amount,u);
+    emit(type,`${name(u)} ${type==='knockout'?'击败追击':'受伤反击'} → ${name(v)}，${amount} 点伤害`,[ref(side,u)],[ref(other(side),v)]);
+   }
+  }
+ };
+ const summon=(side,at,atk,hp,id='dancer',source=null)=>{
+  const t=teams[side];if(t.length>=5)return;
+  const u={uid:`summon${serial++}`,id,atk:cap(atk),hp:cap(hp),maxhp:cap(hp),xp:0,level:1,perk:null,shield:0,triggers:0,first:true};
+  t.splice(Math.min(at,t.length),0,u);
+  // Preserve legacy summon snapshots, including their existing attack bonus.
+  for(const ally of t)if(kind(ally)==='summonBuff'&&ally.hp>0&&consume(ally,3))u.atk=cap(u.atk+ally.level);
+  emit('summon',`${source?name(source)+' 召唤 → ':''}${name(u)} 登场！${u.atk}/${u.hp}`,source?[ref(side,source)]:[],[ref(side,u)]);
+  for(const ally of t)if(kind(ally)==='summonTrain'&&ally.hp>0&&consume(ally,6)){
+   grow(u,2*ally.level,2*ally.level);emit('summonTrain',`${name(ally)} 舞团编排 → ${name(u)} +${2*ally.level}/+${2*ally.level}`,[ref(side,ally)],[ref(side,u)]);
+  }
+ };
+ const deaths=()=>{
+  let loops=0;
+  while([...teams.a,...teams.b].some(u=>u.hp<=0)){
+   assert(++loops<40,'退场技能形成无限连锁');const fallen=[];
+   for(const side of ['a','b'])for(const u of teams[side])if(u.hp<=0)fallen.push({side,u,at:teams[side].indexOf(u),next:next(side,u,1),adjacent:teams[side][teams[side].indexOf(u)+1]});
+   for(const {side,u} of fallen)teams[side]=teams[side].filter(v=>v!==u);
+   emit('faint',fallen.map(({u})=>`${name(u)} 退场`).join(' · '));
+   for(const {side,u,at,next:rear,adjacent} of fallen){
+    // Only survivors observe faint events; simultaneous deaths cannot revive each other.
+    for(const ally of teams[side])if(ally.hp>0){
+     if(kind(ally)==='faintGrow'&&consume(ally,6)){grow(ally,2*ally.level,ally.level);emit('faintGrow',`${name(ally)} 谢幕接棒：${name(u)} 退场，自己 +${2*ally.level}/+${ally.level}`,[ref(side,ally)],[ref(side,ally)]);}
+     if(ally===adjacent&&kind(ally)==='faintShield'&&consume(ally,4)){grow(ally,2*ally.level,0);ally.shield+=4*ally.level;emit('shield',`${name(ally)} 守护誓约：前方友军退场，攻击 +${2*ally.level}、护盾 +${4*ally.level}`,[ref(side,ally)],[ref(side,ally)]);}
+    }
+    const k=kind(u);
+    if(k==='gift'&&rear&&teams[side].includes(rear)){grow(rear,2*u.level,2*u.level);emit('buff',`${name(u)} 留下援护 +${2*u.level}/+${2*u.level}`,[ref(side,u)],[ref(side,rear)]);}
+    if(k==='splashGift'){for(const v of teams[side])grow(v,u.level,0);emit('buff',`${name(u)} 给全队 +${u.level} 攻击`,[ref(side,u)]);}
+    if(k==='heal'){for(const v of teams[side])v.hp=Math.min(v.maxhp,v.hp+3*u.level);emit('heal',`${name(u)} 恢复全队生命`,[ref(side,u)]);}
+    if(k==='summon')summon(side,at,2*u.level,2*u.level,'dancer',u);
+    if(k==='doubleSummon'){summon(side,at,u.level,u.level,'dancer',u);summon(side,at+1,u.level,u.level,'dancer',u);}
+    if(k==='inheritSummon')for(let i=0;i<u.level;i++)summon(side,at+i,Math.ceil(u.atk*.5),1,'spark',u);
+    if(u.perk==='honey')summon(side,at,1,1,'bee',u);
+   }
+  }
+ };
  const openers=['a','b'].flatMap(side=>teams[side].map(u=>({side,u}))).sort((a,b)=>b.u.atk-a.u.atk||String(a.u.uid).localeCompare(String(b.u.uid))||a.side.localeCompare(b.side));
- for(const {side,u} of openers){if(u.hp<=0||!teams[side].includes(u))continue;const kind=byId[u.id]?.kind;if(kind==='armor'){u.shield+=4*u.level;emit('shield',`${name(u)} 获得 ${4*u.level} 点护盾`,[ref(side,u)]);}if(kind==='teamShield'){for(const v of teams[side].filter(v=>v!==u&&v.hp>0).slice(0,2))v.shield+=2*u.level;emit('shield',`${name(u)} 为两位队友架起护盾`,[ref(side,u)]);}if(kind==='snipe'||kind==='backSnipe'){const enemies=teams[other(side)].filter(v=>v.hp>0);const victim=kind==='snipe'?enemies.sort((a,b)=>a.hp-b.hp)[0]:enemies.at(-1);if(victim){damage(victim,(kind==='snipe'?3:2)*u.level);emit('snipe',`${name(u)} 开场狙击 ${name(victim)}`,[ref(side,u)]);drainEffects();deaths();}}}
- while(teams.a.length&&teams.b.length){assert(++steps<150,'战斗超过安全上限');const a=teams.a[0],b=teams.b[0],atkA=a.atk+(a.first&&a.perk==='steak'?8:0),atkB=b.atk+(b.first&&b.perk==='steak'?8:0);a.first=b.first=false;damage(b,atkA);damage(a,atkB);emit('attack',`${name(a)} 与 ${name(b)} 互攻 ${atkA} / ${atkB}`,[ref('a',a),ref('b',b)]);
-  for(const [side,attacker] of [['a',a],['b',b]]){const enemy=teams[other(side)],kind=byId[attacker.id]?.kind;if(kind==='cleave'&&enemy[1]){damage(enemy[1],2*attacker.level);emit('cleave',`${name(attacker)} 波及后排`,[ref(side,attacker)]);}const rear=teams[side][1];if(rear&&rear.hp>0&&byId[rear.id]?.kind==='support'&&rear.triggers<3){const victims=enemy.filter(u=>u.hp>0);if(victims.length){rear.triggers++;damage(choose(state,victims),2*rear.level);emit('support',`${name(rear)} 发动后排支援`,[ref(side,rear)]);}}}
+ for(const {side,u} of openers){
+  if(!living(u))continue;const k=kind(u);
+  if(k==='armor'){u.shield+=4*u.level;emit('shield',`${name(u)} 获得 ${4*u.level} 点护盾`,[ref(side,u)]);}
+  if(k==='teamShield'){for(const v of teams[side].filter(v=>v!==u&&v.hp>0).slice(0,2))v.shield+=2*u.level;emit('shield',`${name(u)} 为两位队友架起护盾`,[ref(side,u)]);}
+  if(k==='relayAttack'){
+   const v=next(side,u,-1);if(v){const amount=Math.ceil(u.atk*.5*u.level);grow(v,amount,0);emit('relayAttack',`${name(u)} 聚光传递 → ${name(v)}，攻击 +${amount}`,[ref(side,u)],[ref(side,v)]);}
+  }
+  if(k==='weakening'){
+   const v=teams[other(side)].filter(v=>v.hp>0).sort((a,b)=>b.hp-a.hp)[0];
+   if(v){const amount=Math.min(v.hp-1,Math.ceil(v.hp*.25*u.level));v.hp-=amount;emit('weakening',`${name(u)} 聚光压制 → ${name(v)}，削减 ${amount} 生命（${25*u.level}%）`,[ref(side,u)],[ref(other(side),v)]);}
+  }
+  if(k==='snipe'||k==='backSnipe'){
+   const enemies=teams[other(side)].filter(v=>v.hp>0),v=k==='snipe'?enemies.sort((a,b)=>a.hp-b.hp)[0]:enemies.at(-1);
+   if(v){damage(v,(k==='snipe'?3:2)*u.level,u);emit('snipe',`${name(u)} 开场狙击 ${name(v)}`,[ref(side,u)],[ref(other(side),v)]);drainEffects();deaths();}
+  }
+ }
+ while(teams.a.length&&teams.b.length){
+  assert(++steps<150,'战斗超过安全上限');const a=teams.a[0],b=teams.b[0],atkA=a.atk+(a.first&&a.perk==='steak'?8:0),atkB=b.atk+(b.first&&b.perk==='steak'?8:0);
+  a.first=b.first=false;damage(b,atkA,a);damage(a,atkB,b);emit('attack',`${name(a)} 与 ${name(b)} 互攻 ${atkA} / ${atkB}`,[ref('a',a),ref('b',b)]);
+  for(const [side,attacker] of [['a',a],['b',b]]){
+   const enemy=teams[other(side)],k=kind(attacker),rear=next(side,attacker,1);
+   if(k==='cleave'&&enemy[1]){damage(enemy[1],2*attacker.level,attacker);emit('cleave',`${name(attacker)} 波及后排`,[ref(side,attacker)],[ref(other(side),enemy[1])]);}
+   if(k==='friendlyHit'&&living(attacker)&&rear&&consume(attacker,5)){damage(rear,1,attacker);emit('friendlyHit',`${name(attacker)} 震场节拍 → ${name(rear)}，友军受到 1 点伤害`,[ref(side,attacker)],[ref(side,rear)]);}
+   if(living(rear)&&kind(rear)==='rearGrow'&&consume(rear,5)){grow(rear,2*rear.level,2*rear.level);emit('rearGrow',`${name(rear)} 接力应援：${name(attacker)} 普攻，自己 +${2*rear.level}/+${2*rear.level}`,[ref(side,rear)],[ref(side,rear)]);}
+   if(living(rear)&&kind(rear)==='support'&&consume(rear,3)){
+    const victims=enemy.filter(u=>u.hp>0);if(victims.length){const v=choose(state,victims);damage(v,2*rear.level,rear);emit('support',`${name(rear)} 发动后排支援`,[ref(side,rear)],[ref(other(side),v)]);}
+   }
+  }
   drainEffects();deaths();
  }
  const winner=teams.a.length?'a':teams.b.length?'b':'draw';emit('end',winner==='a'?'你的队伍获胜！':winner==='b'?'对手获胜，下回合再来':'双方平局');return {winner,events,seed,ruleset:RULESET};

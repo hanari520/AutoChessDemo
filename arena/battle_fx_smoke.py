@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright
 script="""
 import {createRun,battle} from './arena/core.mjs';
 const u=(uid,id,atk,hp)=>({uid,id,atk,hp,level:1,xp:0,perk:null});
-const a=[u('a0','goutan',2,3),u('a1','songlv',3,4),u('a2','kouichi',3,10),u('a3','pako',2,8),u('a4','kanban',4,12)];
+const a=[u('a0','goutan',2,3),u('a1','songlv',3,4),u('a2','kouichi',3,10),u('a3','pako',2,8),u('a4','zhouyi__costume0',4,12)];
 const b=[u('b0','yua',2,12),u('b1','aza',3,10),u('b2','pako',2,7),u('b3','diansu',2,9),u('b4','nox',3,8)];
 console.log(JSON.stringify({run:createRun('fx-preview'),lastBattle:{battle:battle(a,b,'fx-preview'),opponent:{name:'反馈验证队伍',source:'training'}}}));
 """

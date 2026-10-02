@@ -6,6 +6,9 @@ const paths=[
  {name:'聚光支援队',ids:['goutan','agari','ein','kouichi','yua','aza','ruiya','nana7mi']},
  {name:'换装成长会',ids:['tiandou__costume30','lianshiye__costume16','mahiru__costume44','sumi__costume18','miki__costume47','sumi__costume17','rei__costume49','ruiya__costume39']},
  {name:'衣装登台团',ids:['yukie__costume25','ein__costume27','goutan__costume28','youyi__costume36','ruiya__costume38','seki__costume41','taodai__costume46','azi__costume45','nana7mi__costume32']},
+ {name:'震场接力队',ids:['shadow','xuezhu','tiandou','diansu','agari']},
+ {name:'星火舞团',ids:['songlv','mahiru','kanban','zeyin','miyue']},
+ {name:'镜像破阵队',ids:['quanrong','rinco','youyi','youyu','agari']},
 ];
 // Front is slot zero. Seeds cover early shops, full five-unit teams and later scaling.
 export const PRESET_TEAMS=Array.from({length:30},(_,index)=>paths.map((path,p)=>{

@@ -1,5 +1,5 @@
 // Replay presentation also accepts saved events from before actor metadata existed.
-export const EVENT_LABELS={roundEndStart:['◷','回合结束'],roundEnd:['↑','回合结束成长'],start:['✦','双方登场'],attack:['⚔','前排交锋'],snipe:['◎','开场狙击'],support:['✧','后排支援'],cleave:['➶','波及后排'],retaliate:['↩','受伤反击'],shield:['◈','护盾展开'],buff:['↑','援护增益'],heal:['♥','生命恢复'],summon:['＋','召唤登场'],faint:['↓','队员退场'],end:['⚑','战斗结算']};
+export const EVENT_LABELS={copy:['◇','镜像合演'],rearGrow:['↑','接力应援'],hurtGrow:['↑','受伤成长'],hurtGift:['↗','逆境传递'],friendlyHit:['♫','震场节拍'],knockout:['➶','破阵追击'],faintGrow:['↑','谢幕接棒'],summonTrain:['✦','舞团编排'],weakening:['◎','聚光压制'],relayAttack:['↗','聚光传递'],roundEndStart:['◷','回合结束'],roundEnd:['↑','回合结束成长'],start:['✦','双方登场'],attack:['⚔','前排交锋'],snipe:['◎','开场狙击'],support:['✧','后排支援'],cleave:['➶','波及后排'],retaliate:['↩','受伤反击'],shield:['◈','护盾展开'],buff:['↑','援护增益'],heal:['♥','生命恢复'],summon:['＋','召唤登场'],faint:['↓','队员退场'],end:['⚑','战斗结算']};
 export function eventChanges(event,previous){
  const changes=[];
  for(const side of ['a','b']){
