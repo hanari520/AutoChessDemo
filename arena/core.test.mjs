@@ -5,6 +5,13 @@ import { PRESET_TEAMS } from './presets.mjs';
 import { OUTFITS } from './outfits.mjs';
 import { existsSync } from 'node:fs';
 function unit(id,atk=2,hp=2,extra={}){return {uid:id,id,atk,hp,level:1,xp:0,perk:null,...extra};}
+test('merge inherits a source perk only into an unequipped target; shop merges retain equipment',()=>{
+ for(const [targetPerk,sourcePerk,expected] of [[null,'honey','honey'],['melon','honey','melon'],['garlic',null,'garlic'],[null,null,null]]){
+  const s=createRun('merge-perks');s.team[0]=unit('agari',4,3,{uid:'target',perk:targetPerk,xp:1});s.team[1]=unit('agari',2,6,{uid:'source',perk:sourcePerk});
+  act(s,{type:'merge',from:1,to:0});assert.equal(s.team[0].perk,expected);assert.equal(s.team[0].uid,'target');assert.equal(s.team[1],null);assert.equal(s.team[0].atk,5);assert.equal(s.team[0].hp,7);assert.equal(s.team[0].xp,2);assert.equal(s.team[0].level,2);
+ }
+ const s=createRun('shop-perk');s.team[0]=unit('agari',3,3,{perk:'steak'});s.shop[0]={id:'agari',frozen:false};act(s,{type:'buy',slot:0,to:0});assert.equal(s.team[0].perk,'steak');assert.equal(s.gold,7);
+});
 test('exactly 50 original portraits and 50 distinct working mechanics',()=>{
  assert.equal(ROSTER.length,50);assert.equal(BASE_ROSTER.length,50);assert.equal(new Set(ROSTER.map(d=>d.kind)).size,50);
  for(const d of ROSTER){assert.equal(d.id,d.baseId);assert.ok(!d.art);assert.ok(d.title&&d.ability);assert.ok(existsSync(new URL('../'+d.portrait,import.meta.url)));}

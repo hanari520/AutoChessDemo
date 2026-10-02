@@ -73,7 +73,7 @@ function render(){if(!run)return;$('teamTitle').textContent=run.teamName||'星�
  $('team').innerHTML=[4,3,2,1,0].map(i=>{const u=run.team[i],sel=selectedIs('team',i);return `<button class="unit-slot ${u?'':'empty'} ${sel?'selected':''} ${selected&&selected.zone!=='team'?'target':''}" data-zone="team" data-slot="${i}" data-unit="${u?.uid||''}" draggable="${!!u&&!unavailable}" ${unavailable?'disabled':''} aria-label="${u?`${esc(unitName(u))}，${u.atk}攻击，${u.hp}生命`:`队伍空位 ${i+1}`}，${i===0?'前排':'后排'}"><span class="position-number">${i===0?'前排':i+1}</span>${u?unitMarkup(u):'<span class="plus">＋</span><small>招募队员</small>'}</button>`;}).join('');
  $('shop').innerHTML=run.shop.map((o,i)=>o?`<div class="shop-card ${selectedIs('shop',i)?'selected':''} ${o.frozen?'frozen':''}"><span class="tier-dot">${unitInfo(o.id).tier}阶</span><button class="freeze-button" data-freeze="shop" data-slot="${i}" ${unavailable?'disabled':''} title="${o.frozen?'解冻':'冻结'} ${esc(unitInfo(o.id).name)}" aria-label="${o.frozen?'解冻':'冻结'} ${esc(unitInfo(o.id).name)}">❄</button><button class="buy-unit" data-zone="shop" data-slot="${i}" draggable="${!unavailable}" ${unavailable?'disabled':''} aria-label="招募 ${esc(unitInfo(o.id).name)}">${unitMarkup({...unitInfo(o.id),level:1,xp:0})}<span class="price">3 <i class="mini-coin">✦</i></span></button></div>`:`<div class="shop-card"><div class="sold">已招募<br>刷新补充</div></div>`).join('');
  $('foods').innerHTML=run.foods.map((o,i)=>o?`<div class="food-card ${selectedIs('foods',i)?'selected':''} ${o.frozen?'frozen':''}"><button class="freeze-button" data-freeze="foods" data-slot="${i}" ${unavailable?'disabled':''} aria-label="${o.frozen?'解冻':'冻结'} ${esc(foodInfo(o.id).name)}">❄</button><button class="food-buy" data-zone="foods" data-slot="${i}" draggable="${!unavailable}" ${unavailable?'disabled':''} aria-label="购买 ${esc(foodInfo(o.id).name)}"><span class="food-icon">${foodInfo(o.id).icon}</span><span class="food-name">${esc(foodInfo(o.id).name)}</span></button><span class="price">3 <i class="mini-coin">✦</i></span></div>`:`<div class="food-card"><small>已使用</small></div>`).join('');
- $('hint').textContent=selected?.zone==='shop'?'点击队伍空位招募，或点击同名队员合并。':selected?.zone==='foods'?'点击一位队员使用培养道具。':selected?.zone==='team'?(mergeMode?'点击另一位同名队员合并。':'点击位置调整顺序；同名棋子会自动合并，或选择出售。'):'拖动或点选招募、培养、排序；队员可拖到出售。';
+ $('hint').textContent=selected?.zone==='shop'?'点击队伍空位招募，或点击同名队员合并。':selected?.zone==='foods'?'点击一位队员使用培养道具。':selected?.zone==='team'?(mergeMode?'点击另一位同名队员合并。':'点击位置调整顺序；同名棋子会自动合并，或选择出售。'):'拖动或点选招募、培养、排序；队员可拖到商店区域出售。';
  $('sellBtn').disabled=unavailable||selected?.zone!=='team';$('mergeBtn').disabled=unavailable||selected?.zone!=='team';$('mergeBtn').textContent=mergeMode?'取消合并':'合并同名';$('rollBtn').disabled=unavailable||run.gold<1;$('fightBtn').disabled=unavailable||!run.team.some(Boolean);$('fightBtn').innerHTML=busy?'处理中…':run.status==='prep'?'结束回合 <span>⚔</span>':'本局已结束';$('newBtn').disabled=busy;$('freezeBtn').disabled=unavailable;$('freezeBtn').classList.toggle('active',freezeMode);$('freezeBtn').setAttribute('aria-pressed',String(freezeMode));$('freezeBtn').textContent=freezeMode?'❄ 点击商品冻结':'❄ 冻结';
  $('bonus').hidden=!run.bonusOffer;if(run.bonusOffer)$('bonus').innerHTML=`升级奖励：选择一位高阶角色加入商店${run.bonusOffer.map((o,i)=>`<button class="small-button" data-bonus="${i}" ${unavailable?'disabled':''}>${esc(unitInfo(o.id).name)} · 3金</button>`).join('')}`;
  if(lastBattle){$('recent').textContent=`${lastBattle.opponent.name} · ${lastBattle.opponent.source==='player'?'玩家历史阵容':'训练队伍'}\n${lastBattle.battle.winner==='a'?'胜利 +1 奖杯':lastBattle.battle.winner==='b'?'失利 −1 生命':'平局'}`;$('replayBtn').hidden=false;}
@@ -121,7 +121,7 @@ function beginDrag(e,el){
 }
 function dropAction(source,target){
  if(!target)return null;
- if(target.id==='sellBtn')return source.zone==='team'?{type:'sell',slot:source.slot}:null;
+ if(target.id==='sellBtn'||target.matches('.market'))return source.zone==='team'?{type:'sell',slot:source.slot}:null;
  const to=+target.dataset.slot,dest=run.team[to];
  if(source.zone==='team'){
   if(source.slot===to)return null;
@@ -154,12 +154,12 @@ document.addEventListener('pointermove',e=>{
   ghost.innerHTML=drag.zone==='foods'?`<span class="food-icon">${foodInfo(run.foods[drag.slot].id).icon}</span>`:unitMarkup(drag.zone==='team'?run.team[drag.slot]:{...unitInfo(run.shop[drag.slot].id),level:1,xp:0});
   document.body.append(ghost);drag.ghost=ghost;
   if(drag.zone==='team')$('sellBtn').disabled=false;
-  $('hint').textContent='拖到队伍位置购买、合并或调整顺序；队员可拖到出售。';
+  $('hint').textContent='拖到队伍位置购买、合并或调整顺序；队员拖到商店区域松手即可出售。';
  }
  e.preventDefault();drag.ghost.style.left=`${e.clientX}px`;drag.ghost.style.top=`${e.clientY}px`;
  clearDropMarks();
- const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-zone="team"],#sellBtn');
- drag.action=dropAction(drag,target);if(target?.id==='sellBtn'&&drag.action&&drag.hover!==target)sfx('sellhint');drag.hover=target;target?.classList.add(drag.action?'drop-valid':'drop-invalid');
+ const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-zone="team"],#sellBtn,.market');
+ drag.action=dropAction(drag,target);if((target?.id==='sellBtn'||target?.matches('.market'))&&drag.action&&drag.hover!==target)sfx('sellhint');drag.hover=target;target?.classList.add(drag.action?'drop-valid':'drop-invalid');
 },{passive:false});
 document.addEventListener('pointerup',e=>{if(drag?.pointerId===e.pointerId)endDrag();});
 document.addEventListener('pointercancel',e=>{if(drag?.pointerId===e.pointerId)endDrag(true);});
