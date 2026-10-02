@@ -1,12 +1,14 @@
+import {MAX_ROUND_ACTIONS,replayActions,restoreDraft} from './round-actions.mjs';
 import { EVENT_LABELS,eventChanges,eventActors,actionFeedback } from './replay.mjs';
-import { RULESET, migrateRun, ROSTER, FOODS, createRun, act, prepareTeam, battle, finishRound, trainingTeam, unitInfo, foodInfo, tierFor, addPreparationEvents } from './core.mjs';
+import { RULESET, migrateRun, ROSTER, FOODS, createRun, prepareTeam, battle, finishRound, trainingTeam, unitInfo, foodInfo, tierFor, addPreparationEvents } from './core.mjs';
 const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const KEY='vc_async_arena_preview_v1',TOKEN='vc_async_arena_token_v1',PENDING='vc_async_arena_pending_v1';
 const localPreview=['127.0.0.1','localhost'].includes(location.hostname);
 const productionApi='https://hanari-d6gjqwx683f6c455d-1450980602.ap-shanghai.app.tcloudbase.com';
 const apiBase=localPreview?(location.port==='8082'?location.origin:'http://127.0.0.1:8082'):productionApi;
-let freezeMode=false;
+let freezeMode=false,roundActions=false,draft=null,submissionPending=!!localStorage.getItem(PENDING);
 let run=null,token=localStorage.getItem(TOKEN),online=false,cloud=false,busy=true,selected=null,lastBattle=null,mergeMode=false,eventIndex=0,playing=false,timer=null,toastTimer;
+try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved?.token===token){draft=saved.draft||null;roundActions=!!saved.roundActions;}}catch{}
 const initialResume=!!token||!!localStorage.getItem(KEY);
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Reuse classic mode's quiet sine tones, voice limits and saved mute setting.
@@ -30,7 +32,23 @@ function battleSound(event){
 }
 function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3300);}
 async function request(path,body,auth=true){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{const res=await fetch(apiBase+'/api/arena/'+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(auth&&token?{Authorization:`Bearer ${token}`}:{})},body:body?JSON.stringify(body):undefined,signal:controller.signal});const result=await res.json();if(!res.ok){const e=new Error(result.error||'服务暂时不可用');e.status=res.status;throw e;}return result;}catch(e){if(e.name==='AbortError')throw new Error('连接超时，点击连接状态重新同步');throw e;}finally{clearTimeout(timeout);}}
-function localSave(){localStorage.setItem(KEY,JSON.stringify({run,lastBattle}));}
+function localSave(nextRun=run,nextDraft=draft){localStorage.setItem(KEY,JSON.stringify({run:nextRun,lastBattle,token,draft:nextDraft,roundActions}));}
+function acceptRemote(result){
+ roundActions=!!result.capabilities?.roundActions;cloud=result.snapshotStore==='cloudbase-pg';
+ const restored=restoreDraft(result.run,draft,token);
+ if(draft&&!restored){draft=null;toast('云端对局已更新，已同步当前回合。');}
+ run=restored||result.run;
+ if('battle' in result)lastBattle=result.battle?{battle:result.battle,opponent:result.opponent}:null;
+ localSave();
+}
+function savePending(path,input){localStorage.setItem(PENDING,JSON.stringify({token,path,input}));submissionPending=true;}
+function clearPending(){localStorage.removeItem(PENDING);submissionPending=false;}
+async function retryPending(){
+ const pending=JSON.parse(localStorage.getItem(PENDING)||'null');if(!pending)return null;
+ if(pending.token&&pending.token!==token){clearPending();return null;}
+ try{const result=await request(pending.path,pending.input);draft=null;acceptRemote(result);clearPending();return result;}
+ catch(e){if(e.status&&e.status<500){clearPending();if(e.status===409)return null;}throw e;}
+}
 const portrait=id=>unitInfo(id)?.portrait||`assets/units_big/${encodeURIComponent(unitInfo(id)?.baseId||id)}.webp`;
 function stats(u){return `<div class="stats"><span class="atk"><i>⚔</i>${u.atk}</span><span class="hp"><i>♥</i>${Math.max(0,u.hp)}</span></div>`;}
 function xp(u){return `<div class="xp-track" aria-label="经验 ${u.xp} / 5">${Array.from({length:5},(_,i)=>`<i class="${i<u.xp?'full':''}"></i>`).join('')}</div>`;}
@@ -50,7 +68,8 @@ function selectedIs(zone,slot){return selected?.zone===zone&&selected.slot===slo
 function render(){if(!run)return;$('teamTitle').textContent=run.teamName||'星域小队';$('round').textContent=run.round;$('wins').innerHTML=`${run.wins}<span>/10</span>`;$('lives').textContent=run.lives;$('gold').textContent=run.gold;$('tier').textContent=`${'一二三四五六'[tierFor(run.round)-1]}阶 · 第 ${run.round} 回合`;
  $('connection').textContent=online?(cloud?'● 异步联机 · 云端阵容库':'● 异步联机 · 点击同步'):token?'○ 联机未连接 · 点击重试':'○ 本地训练 · 点击连接';
  $('phaseNote').textContent=run.status==='won'?'十座奖杯！这次演出圆满收官。':run.status==='lost'?'本次演出告一段落，再组一支小队吧。':'招募队员，培养默契，向十胜出发。';
- const unavailable=busy||run.status!=='prep'||(!!token&&!online);
+ $('connection').title=roundActions?'商店操作保存在本机，结束回合统一提交校验'+(draft?.actions.length?`；待提交 ${draft.actions.length} 次操作`:''):'点击重新同步云端存档';
+ const unavailable=busy||submissionPending||run.status!=='prep'||(!!token&&!online&&!roundActions);
  $('team').innerHTML=[4,3,2,1,0].map(i=>{const u=run.team[i],sel=selectedIs('team',i);return `<button class="unit-slot ${u?'':'empty'} ${sel?'selected':''} ${selected&&selected.zone!=='team'?'target':''}" data-zone="team" data-slot="${i}" data-unit="${u?.uid||''}" draggable="${!!u&&!unavailable}" ${unavailable?'disabled':''} aria-label="${u?`${esc(unitName(u))}，${u.atk}攻击，${u.hp}生命`:`队伍空位 ${i+1}`}，${i===0?'前排':'后排'}"><span class="position-number">${i===0?'前排':i+1}</span>${u?unitMarkup(u):'<span class="plus">＋</span><small>招募队员</small>'}</button>`;}).join('');
  $('shop').innerHTML=run.shop.map((o,i)=>o?`<div class="shop-card ${selectedIs('shop',i)?'selected':''} ${o.frozen?'frozen':''}"><span class="tier-dot">${unitInfo(o.id).tier}阶</span><button class="freeze-button" data-freeze="shop" data-slot="${i}" ${unavailable?'disabled':''} title="${o.frozen?'解冻':'冻结'} ${esc(unitInfo(o.id).name)}" aria-label="${o.frozen?'解冻':'冻结'} ${esc(unitInfo(o.id).name)}">❄</button><button class="buy-unit" data-zone="shop" data-slot="${i}" draggable="${!unavailable}" ${unavailable?'disabled':''} aria-label="招募 ${esc(unitInfo(o.id).name)}">${unitMarkup({...unitInfo(o.id),level:1,xp:0})}<span class="price">3 <i class="mini-coin">✦</i></span></button></div>`:`<div class="shop-card"><div class="sold">已招募<br>刷新补充</div></div>`).join('');
  $('foods').innerHTML=run.foods.map((o,i)=>o?`<div class="food-card ${selectedIs('foods',i)?'selected':''} ${o.frozen?'frozen':''}"><button class="freeze-button" data-freeze="foods" data-slot="${i}" ${unavailable?'disabled':''} aria-label="${o.frozen?'解冻':'冻结'} ${esc(foodInfo(o.id).name)}">❄</button><button class="food-buy" data-zone="foods" data-slot="${i}" draggable="${!unavailable}" ${unavailable?'disabled':''} aria-label="购买 ${esc(foodInfo(o.id).name)}"><span class="food-icon">${foodInfo(o.id).icon}</span><span class="food-name">${esc(foodInfo(o.id).name)}</span></button><span class="price">3 <i class="mini-coin">✦</i></span></div>`:`<div class="food-card"><small>已使用</small></div>`).join('');
@@ -60,12 +79,21 @@ function render(){if(!run)return;$('teamTitle').textContent=run.teamName||'星�
  if(lastBattle){$('recent').textContent=`${lastBattle.opponent.name} · ${lastBattle.opponent.source==='player'?'玩家历史阵容':'训练队伍'}\n${lastBattle.battle.winner==='a'?'胜利 +1 奖杯':lastBattle.battle.winner==='b'?'失利 −1 生命':'平局'}`;$('replayBtn').hidden=false;}
  $('detail').dataset.visible=selected?'true':'false';bindCards();if(selected)showDetail(selected.zone,selected.slot);
 }
-async function mutate(action){if(busy||!run)return;const before=structuredClone(run);let feedback=[];busy=true;render();try{
- if(online){const input={requestId:crypto.randomUUID(),revision:run.revision,action};localStorage.setItem(PENDING,JSON.stringify({path:'action',input}));const result=await request('action',input);run=result.run;localStorage.removeItem(PENDING);}
- else{if(token)throw new Error('请先点击连接状态恢复联机');const copy=structuredClone(run);act(copy,action);copy.revision++;run=copy;localSave();}
+async function mutate(action){if(busy||submissionPending||!run)return;const before=structuredClone(run);let feedback=[];busy=true;render();try{
+ if(token&&roundActions){
+  const nextDraft=draft||{token,ruleset:run.ruleset,revision:run.revision,actions:[]};
+  if(nextDraft.actions.length>=MAX_ROUND_ACTIONS)throw new Error('本回合操作次数已达上限，请结束回合');
+  const next=replayActions(run,[action]),queued={...nextDraft,actions:[...nextDraft.actions,structuredClone(action)]};
+  localSave(next,queued);run=next;draft=queued;
+ }else if(online){const input={requestId:crypto.randomUUID(),revision:run.revision,action};savePending('action',input);const result=await request('action',input);acceptRemote(result);clearPending();}
+ else{if(token)throw new Error('请先点击连接状态恢复联机');const copy=replayActions(run,[action]);copy.revision++;localSave(copy);run=copy;}
  feedback=actionFeedback(before,run,action,unitInfo);actionSound(before,run,action);selected=null;mergeMode=false;
- }catch(e){toast(e.message);if(online){await recover(e);}}finally{busy=false;render();if(feedback.length)showPrepFeedback(feedback);}}
-async function recover(error){try{if(error.status&&error.status<500)localStorage.removeItem(PENDING);else{const pending=JSON.parse(localStorage.getItem(PENDING)||'null');if(pending){await request(pending.path,pending.input);localStorage.removeItem(PENDING);}}const result=await request('last-battle');run=result.run;lastBattle=result.battle?{battle:result.battle,opponent:result.opponent}:null;}catch{online=false;toast('连接已断开，点击右上连接状态恢复；操作会使用原标识重试。');}}
+ }catch(e){toast(e.message);if(submissionPending)await recover(e);}finally{busy=false;render();if(feedback.length)showPrepFeedback(feedback);}}
+async function recover(error){try{
+ if(error.status&&error.status<500)clearPending();else{const recovered=await retryPending();if(recovered){online=true;return;}}
+ const result=await request('last-battle');acceptRemote(result);online=true;
+ }catch{online=false;toast('连接已断开，商店进度已保存在本机；点击连接状态重试原提交。');}}
+
 function selectCard(zone,slot){
  if(busy)return;
  if(freezeMode&&(zone==='shop'||zone==='foods')){mutate({type:'freeze',zone,slot});return;}
@@ -158,7 +186,19 @@ function showPrepFeedback(notes){
  for(const note of notes)for(const uid of note.uids||[]){const card=[...$('team').querySelectorAll('[data-unit]')].find(el=>el.dataset.unit===uid);if(!card)continue;const badge=document.createElement('span');badge.className='prep-pop';badge.textContent=note.level?`升至 ${note.level} 级`:note.gold?`+${note.gold} 金币`:note.atk||note.hp?`${note.atk?`+${note.atk}⚔`:''} ${note.hp?`+${note.hp}♥`:''}`:note.caption||'技能触发';card.append(badge);if(!reduced){const portrait=card.querySelector('.portrait');if(portrait)portrait.animate([{filter:'drop-shadow(0 0 0 #91bb79)'},{filter:'drop-shadow(0 0 10px #91bb79)',transform:'translateY(-3px)'},{filter:'drop-shadow(0 0 0 #91bb79)',transform:'translateY(0)'}],{duration:700});}prepTimers.push(setTimeout(()=>badge.remove(),2600));}
  prepTimers.push(setTimeout(()=>$('prepFeedback').classList.remove('active'),7000));
 }
-async function fight(){if(busy)return;busy=true;selected=null;freezeMode=false;render();try{let result;if(online){const input={requestId:crypto.randomUUID(),revision:run.revision};localStorage.setItem(PENDING,JSON.stringify({path:'battle',input}));result=await request('battle',input);localStorage.removeItem(PENDING);}else{if(token)throw new Error('请先恢复联机');const next=structuredClone(run),team=prepareTeam(next),seed=crypto.randomUUID(),replay=addPreparationEvents(battle(team,trainingTeam(next.round,seed),seed),next);const opponent={name:`第 ${next.round} 回合训练小队`,source:'training',round:next.round};finishRound(next,replay);next.revision++;result={run:next,battle:replay,opponent};}run=result.run;lastBattle={battle:result.battle,opponent:result.opponent};if(!online)localSave();showBattle();}catch(e){toast(e.message);if(online)await recover(e);}finally{busy=false;render();}}
+async function fight(){if(busy||submissionPending)return;busy=true;selected=null;freezeMode=false;render();try{
+ let result;
+ if(token){
+  if(!online)throw new Error('请先点击连接状态恢复联机；商店操作已保存在本机');
+  const input={requestId:crypto.randomUUID(),revision:run.revision,...(roundActions?{actions:draft?.actions||[]}: {})};savePending('battle',input);
+  result=await request('battle',input);draft=null;acceptRemote(result);clearPending();
+ }else{
+  const next=structuredClone(run),team=prepareTeam(next),seed=crypto.randomUUID(),replay=addPreparationEvents(battle(team,trainingTeam(next.round,seed),seed),next);
+  const opponent={name:`第 ${next.round} 回合训练小队`,source:'training',round:next.round};finishRound(next,replay);next.revision++;result={run:next,battle:replay,opponent};run=result.run;lastBattle={battle:result.battle,opponent:result.opponent};localSave();
+ }
+ showBattle();
+ }catch(e){toast(e.message);if(submissionPending){const revision=run.revision;await recover(e);if(lastBattle&&run.revision!==revision)showBattle();}}finally{busy=false;render();}}
+
 let battleAnimations=[];
 function clearBattleFx(){for(const a of battleAnimations)a.cancel();battleAnimations=[];$('battleFx').replaceChildren();}
 function changeLabel(c){if(!c)return '';return [[c.hp,'生命'],[c.shield,'护盾'],[c.atk,'攻击']].filter(([n])=>n).map(([n,label])=>`${n>0?'+':'−'}${Math.abs(n)}${label}`).join(' · ');}
@@ -201,24 +241,28 @@ $('pauseBattle').addEventListener('click',()=>{playing=!playing;if(!playing)audi
 $('nextEvent').addEventListener('click',()=>{playing=false;clearTimeout(timer);if(eventIndex<lastBattle.battle.events.length-1)eventIndex++;drawEvent();});
 $('restartBattle').addEventListener('click',showBattle);$('speed').addEventListener('change',scheduleStep);
 
-async function newRun(teamName='星域小队'){busy=true;render();try{selected=null;mergeMode=false;lastBattle=null;if(online){const result=await request('runs',{teamName},false);token=result.token;localStorage.setItem(TOKEN,token);run=result.run;localStorage.removeItem(PENDING);}else{if(token)throw new Error('请先恢复联机再开始新一局');run=createRun(crypto.randomUUID());run.teamName=teamName;localSave();}$('recent').textContent='第一场演出，等你登台。';$('replayBtn').hidden=true;}catch(e){toast(e.message);}finally{busy=false;render();}}
+async function newRun(teamName='星域小队'){busy=true;render();try{
+ if(submissionPending)throw new Error('请先点击连接状态确认上一回合提交结果');
+ if(online){const result=await request('runs',{teamName},false);token=result.token;localStorage.setItem(TOKEN,token);draft=null;lastBattle=null;acceptRemote(result);clearPending();}
+ else{if(token)throw new Error('请先恢复联机再开始新一局');draft=null;lastBattle=null;run=createRun(crypto.randomUUID());run.teamName=teamName;localSave();}
+ selected=null;mergeMode=false;$('recent').textContent='第一场演出，等你登台。';$('replayBtn').hidden=true;
+ }catch(e){toast(e.message);}finally{busy=false;render();}}
 async function connect(){
  busy=true;render();
  try{
-  const health=await request('health',undefined,false);online=true;cloud=health.snapshotStore==='cloudbase-pg';
   if(token){
-   const pending=JSON.parse(localStorage.getItem(PENDING)||'null');
-   if(pending){try{await request(pending.path,pending.input);localStorage.removeItem(PENDING);}catch(e){if(e.status===409)localStorage.removeItem(PENDING);else throw e;}}
-   const result=await request('last-battle');run=result.run;lastBattle=result.battle?{battle:result.battle,opponent:result.opponent}:null;
-  }else await newRun();
-
+   const recovered=await retryPending();
+   if(!recovered){const result=await request('last-battle');try{acceptRemote(result);}catch(e){draft=null;acceptRemote(result);toast('本机操作记录无法恢复，已同步云端存档。');}}
+   online=true;
+  }else{await request('health',undefined,false);online=true;await newRun();}
  }catch(e){
   online=false;
-  if(e.status===401){token=null;localStorage.removeItem(TOKEN);localStorage.removeItem(PENDING);toast('原对局凭证已失效，点击连接状态开始新的联机局。');}
-  else toast(token?'联机暂时断开，点击连接状态重试。':localPreview?'本地服务尚未连接，当前可试玩训练模式。':'当前为本地训练，进度保存在此浏览器。');
-  if(!run){try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');run=saved?.run?migrateRun(saved.run):createRun();lastBattle=saved?.lastBattle?.battle?.ruleset===RULESET?saved.lastBattle:null;}catch{run=createRun();}}
+  if(e.status===401){token=null;draft=null;roundActions=false;localStorage.removeItem(TOKEN);clearPending();toast('原对局凭证已失效，点击连接状态开始新的联机局。');}
+  else toast(token?'联机暂时断开，商店进度保存在本机，点击连接状态重试。':localPreview?'本地服务尚未连接，当前可试玩训练模式。':'当前为本地训练，进度保存在此浏览器。');
+  if(!run){try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');run=saved?.run&&saved.token===token?migrateRun(saved.run):createRun();lastBattle=saved?.token===token&&saved?.lastBattle?.battle?.ruleset===RULESET?saved.lastBattle:null;}catch{run=createRun();}}
  }finally{busy=false;render();}
 }
+
 $('rollBtn').addEventListener('click',()=>mutate({type:'roll'}));$('fightBtn').addEventListener('click',()=>{if(run.gold>=3){$('unspentGold').textContent=`还有 ${run.gold} 金币。未使用的金币不会带到下一回合。`;$('endTurnDialog').showModal();}else fight();});$('sellBtn').addEventListener('click',()=>selected?.zone==='team'&&mutate({type:'sell',slot:selected.slot}));$('mergeBtn').addEventListener('click',()=>{mergeMode=!mergeMode;render();});$('helpBtn').addEventListener('click',()=>$('helpDialog').showModal());$('closeHelp').addEventListener('click',()=>$('helpDialog').close());$('newBtn').addEventListener('click',()=>$('newDialog').showModal());$('cancelNew').addEventListener('click',()=>$('newDialog').close());$('confirmNew').addEventListener('click',()=>{$('newDialog').close();showSetup();});$('replayBtn').addEventListener('click',showBattle);$('skipBtn').addEventListener('click',()=>{clearTimeout(timer);playing=false;eventIndex=lastBattle.battle.events.length-1;drawEvent();});$('continueBtn').addEventListener('click',()=>{$('battleDialog').close();showResult();});$('battleDialog').addEventListener('close',()=>{playing=false;clearTimeout(timer);audio.stopBattle();clearBattleFx();});document.addEventListener('keydown',e=>{if(e.key==='Escape'){endDrag(true);selected=null;mergeMode=false;render();}});$('connection').setAttribute('role','button');$('connection').setAttribute('tabindex','0');$('connection').style.cursor='pointer';$('connection').addEventListener('click',()=>{if(!busy)connect();});$('connection').addEventListener('keydown',e=>{if(e.key==='Enter'&&!busy)connect();});
 function renderCodex(){
  const query=$('codexSearch').value.trim().toLowerCase(),tier=$('codexTier').value,mode=$('codexMode').value;

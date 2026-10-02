@@ -65,3 +65,5 @@ td.js
 
 # Costume art is archived while the game uses the original 50-piece pack.
 assets/arena/outfit-atlas-*.png
+
+!arena/round-actions.mjs
