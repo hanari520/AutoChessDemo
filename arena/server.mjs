@@ -3,7 +3,7 @@ import { randomBytes, createHash } from 'node:crypto';
 import { mkdir, readFile, rename, open, rm, realpath } from 'node:fs/promises';
 import { resolve, dirname, extname, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { RULESET, createRun, act, prepareTeam, battle, finishRound, trainingTeam, addPreparationEvents } from './core.mjs';
+import { RULESET, migrateRun, migrateResult, createRun, act, prepareTeam, battle, finishRound, trainingTeam, addPreparationEvents } from './core.mjs';
 import { presetsFor } from './presets.mjs';
 import { configuredSnapshotStore } from './cloudbase-store.mjs';
 
@@ -19,10 +19,10 @@ export async function startServer({port=8082,dataDir=resolve(ROOT,'../workspace/
  const lockPath=resolve(dataDir,'.owner.lock');let lock;
  try{lock=await open(lockPath,'wx',0o600);await lock.writeFile(String(process.pid));}catch{throw new Error(`试玩数据正在使用：${dataDir}`);}
  const file=resolve(dataDir,'arena.json');let db={ruleset:RULESET,runs:{},snapshots:[]},queue=Promise.resolve();
- try{const parsed=JSON.parse(await readFile(file,'utf8'));if(parsed.ruleset!==RULESET||!parsed.runs||!Array.isArray(parsed.snapshots))throw new Error('试玩存档版本不兼容');db=parsed;}catch(e){if(e.code!=='ENOENT'){await lock.close();await rm(lockPath,{force:true});throw e;}}
+ try{const parsed=JSON.parse(await readFile(file,'utf8'));if(![RULESET,'idol-queue-v1'].includes(parsed.ruleset)||!parsed.runs||!Array.isArray(parsed.snapshots))throw new Error('试玩存档版本不兼容');for(const row of Object.values(parsed.runs)){row.run=migrateRun(row.run);if(row.lastBattle?.battle?.ruleset!==RULESET)row.lastBattle=null;for(const receipt of Object.values(row.requests||{}))receipt.result=migrateResult(receipt.result);}parsed.ruleset=RULESET;db=parsed;}catch(e){if(e.code!=='ENOENT'){await lock.close();await rm(lockPath,{force:true});throw e;}}
  async function persist(next){const temp=resolve(dataDir,`arena.${randomBytes(6).toString('hex')}.tmp`);let f;try{f=await open(temp,'wx',0o600);await f.writeFile(JSON.stringify(next));await f.sync();await f.close();f=null;await rename(temp,file);}finally{if(f)await f.close();await rm(temp,{force:true});}}
  const transact=fn=>{const result=queue.then(async()=>{const next=structuredClone(db),value=await fn(next);try{await persist(next);}catch{fail(503,'对局保存暂时失败，请使用原操作重试');}db=next;return value;});queue=result.catch(()=>{});return result;};
- async function flushSnapshots(){if(!snapshotStore)return;await transact(async next=>{for(const s of next.snapshots){if(s.published)continue;s.id=s.id||`${s.owner}-r${s.round}`;await snapshotStore.publish(s);s.published=true;}return null;});}
+ async function flushSnapshots(){if(!snapshotStore)return;await transact(async next=>{for(const s of next.snapshots){if(s.published||s.ruleset!==RULESET)continue;s.id=s.id||`${s.owner}-r${s.round}`;await snapshotStore.publish(s);s.published=true;}return null;});}
  try{if(snapshotStore){await snapshotStore.seed();await flushSnapshots();}}catch(e){await lock.close();await rm(lockPath,{force:true});throw e;}
  const view=row=>structuredClone(row.run);
  function authenticate(req,state=db){const raw=req.headers.authorization?.match(/^Bearer ([a-f0-9]{48})$/)?.[1];if(!raw)fail(401,'请重新建立对局连接');const key=hash(raw),row=state.runs[key];if(!row)fail(401,'这局不存在，请开始新一局');return {key,row};}
@@ -59,7 +59,7 @@ export async function startServer({port=8082,dataDir=resolve(ROOT,'../workspace/
       const opponent=picked?{name:picked.name||`旅人小队 ${picked.owner.slice(0,4)}`,source:'player',round,owner:picked.owner}:{name:preset.name,source:'training',round};
       const enemy=picked?picked.team:preset.team;const replay=addPreparationEvents(battle(team,enemy,seed),row.run);finishRound(row.run,replay);row.run.revision++;
       // Only publish after this run's result is determined. Never mutate the matched run.
-      next.snapshots.push({id:`${key}-r${round}`,owner:key,name:row.run.teamName||'星域小队',round,ruleset:RULESET,team,wins:row.run.wins,created:Date.now(),published:false});if(next.snapshots.length>2500){const removable=next.snapshots.findIndex(s=>s.published||!snapshotStore);if(removable>=0)next.snapshots.splice(removable,1);}
+      next.snapshots.push({id:`${RULESET}-${key}-r${round}`,owner:key,name:row.run.teamName||'星域小队',round,ruleset:RULESET,team,wins:row.run.wins,created:Date.now(),published:false});if(next.snapshots.length>2500){const removable=next.snapshots.findIndex(s=>s.published||!snapshotStore);if(removable>=0)next.snapshots.splice(removable,1);}
       row.lastBattle={battle:replay,opponent};result={run:view(row),...row.lastBattle};
      }
      row.requests[input.requestId]={fingerprint,result:structuredClone(result)};const ids=Object.keys(row.requests);for(const id of ids.slice(0,Math.max(0,ids.length-30)))delete row.requests[id];return result;
@@ -70,7 +70,7 @@ export async function startServer({port=8082,dataDir=resolve(ROOT,'../workspace/
   if(req.method!=='GET'&&req.method!=='HEAD')fail(405,'只允许读取页面');
   let relative;try{relative=decodeURIComponent(path).replace(/^\/+/, '')||'arena.html';}catch{fail(400,'路径无效');}
   if(relative.includes('..')||relative.includes('\\')||relative.includes('\0'))fail(403,'路径不允许');
-  const permitted=['arena.html','index.html','online.html','sw.js','icon-192.png','icon-512.png','manifest.json'].includes(relative)||['arena/client.mjs','arena/core.mjs','arena/outfits.mjs','arena/replay.mjs','arena/style.css'].includes(relative)||/^(assets|tools|online)\//.test(relative);
+  const permitted=['arena.html','index.html','online.html','sw.js','icon-192.png','icon-512.png','manifest.json'].includes(relative)||['arena/client.mjs','arena/core.mjs','arena/replay.mjs','arena/style.css'].includes(relative)||/^(assets|tools|online)\//.test(relative);
   if(!permitted||/(^|\/)\.|\.test\.|server|\.py$/.test(relative))fail(403,'文件不允许');
   const mime=MIME[extname(relative)];if(!mime)fail(403,'文件类型不允许');const target=resolve(ROOT,relative);const actual=await realpath(target);if(!actual.startsWith(ROOT+sep))fail(403,'路径不允许');const content=await readFile(actual);
   res.writeHead(200,{'content-type':mime,'cache-control':'no-store','x-content-type-options':'nosniff'});res.end(req.method==='HEAD'?undefined:content);

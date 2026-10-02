@@ -1,5 +1,5 @@
 // Replay presentation also accepts saved events from before actor metadata existed.
-export const EVENT_LABELS={copy:['◇','镜像合演'],rearGrow:['↑','接力应援'],hurtGrow:['↑','受伤成长'],hurtGift:['↗','逆境传递'],friendlyHit:['♫','震场节拍'],knockout:['➶','破阵追击'],faintGrow:['↑','谢幕接棒'],summonTrain:['✦','舞团编排'],weakening:['◎','聚光压制'],relayAttack:['↗','聚光传递'],roundEndStart:['◷','回合结束'],roundEnd:['↑','回合结束成长'],start:['✦','双方登场'],attack:['⚔','前排交锋'],snipe:['◎','开场狙击'],support:['✧','后排支援'],cleave:['➶','波及后排'],retaliate:['↩','受伤反击'],shield:['◈','护盾展开'],buff:['↑','援护增益'],heal:['♥','生命恢复'],summon:['＋','召唤登场'],faint:['↓','队员退场'],end:['⚑','战斗结算']};
+export const EVENT_LABELS={revive:['↺','返场演出'],volley:['◎','双重聚光'],tripleZap:['✦','三重星轨'],lastWord:['↯','谢幕震波'],attackSnipe:['➶','剑舞破后'],sniperSupport:['◎','精准伴奏'],revengeSnipe:['↩','离场追光'],shieldBreak:['↑','破盾觉醒'],copy:['◇','镜像合演'],rearGrow:['↑','接力应援'],hurtGrow:['↑','受伤成长'],hurtGift:['↗','逆境传递'],friendlyHit:['♫','震场节拍'],knockout:['➶','破阵追击'],faintGrow:['↑','谢幕接棒'],summonTrain:['✦','舞团编排'],weakening:['◎','聚光压制'],relayAttack:['↗','聚光传递'],roundEndStart:['◷','回合结束'],roundEnd:['↑','回合结束成长'],start:['✦','双方登场'],attack:['⚔','前排交锋'],snipe:['◎','开场狙击'],support:['✧','后排支援'],cleave:['➶','波及后排'],retaliate:['↩','受伤反击'],shield:['◈','护盾展开'],buff:['↑','援护增益'],heal:['♥','生命恢复'],summon:['＋','召唤登场'],faint:['↓','队员退场'],end:['⚑','战斗结算']};
 export function eventChanges(event,previous){
  const changes=[];
  for(const side of ['a','b']){
@@ -32,6 +32,12 @@ export function actionFeedback(before,after,action,info){
   else if(u.xp>old.xp)notes.push({text:`${info(u.id).name} 经验 +${u.xp-old.xp}`,uids:[u.uid]});
   if(u.perk!==old.perk)notes.push({text:`${info(u.id).name} 装备携带道具`,uids:[u.uid]});
   if(action.type==='roll'&&u.rollIncomeRound!==old.rollIncomeRound)notes.push({text:`${info(u.id).name} 刷新收益 +${u.level} 金币`,uids:[u.uid],gold:u.level});
+ }
+ const recruited=action.type==='buy'&&!before.team[action.to]?after.team[action.to]:null;
+ for(const u of after.team.filter(Boolean)){
+  const kind=info(u.id).kind;
+  const trigger=kind==='foodShare'&&action.type==='food'||kind==='allyBuy'&&recruited&&recruited!==u&&info(recruited.id).tier===1||kind==='teamLevel'&&after.team.some(v=>v&&v!==u&&before.team.some(old=>old?.uid===v.uid&&old.level<v.level));
+  if(trigger)notes.push({text:`${info(u.id).name} · ${info(u.id).title}触发`,caption:info(u.id).title,uids:[u.uid]});
  }
  if(action.type==='sell')notes.push({text:`出售获得 ${after.gold-before.gold} 金币`,uids:[],gold:after.gold-before.gold});
  return notes;

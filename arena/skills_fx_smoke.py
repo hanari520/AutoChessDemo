@@ -11,7 +11,11 @@ const pairs=[
  [[u('quanrong',5,30)],[u('agari',1,1),u('agari',1,3,{uid:'b2'}),u('agari',1,3,{uid:'b3'}),u('agari',1,10,{uid:'b4'})]],
  [[u('youyu',10),u('rinco',9,20,{level:3})],[u('agari',1,40)]],
  [[u('ein',1)],[u('agari',1,20)]],
- [[u('songlv',1,1),u('kanban'),u('miyue')],[u('agari',3,50)]]
+ [[u('songlv',1,1),u('kanban'),u('miyue')],[u('agari',3,50)]],
+ [[u('zhijin',5,40),u('azi',10,40)],[u('agari',1,50,{uid:'b1'}),u('agari',1,50,{uid:'b2'}),u('agari',1,50,{uid:'b3'})]],
+ [[u('nana7mi',1,40),u('ruiya',8,30)],[u('agari',1,50,{uid:'b1'}),u('agari',5,50,{uid:'b2'}),u('agari',1,50,{uid:'b3'})]],
+ [[u('sumi',8,1),u('liAn',1,30),u('taodai',1,30),u('rei',8,1),u('zeyin',1,30)],[u('agari',10,50)]],
+ [[u('seki',1,30),u('shiliu',1,30)],[u('agari',1,50)]]
 ];
 console.log(JSON.stringify(pairs.map(([a,b])=>({run:createRun('skills-fx'),lastBattle:{battle:battle(a,b,'skills-fx'),opponent:{name:'技能配合展示',source:'training'}}}))));
 """
@@ -28,7 +32,7 @@ with sync_playwright() as p:
    page.goto('http://127.0.0.1:8082/arena.html',wait_until='networkidle')
    if f==0:
     page.locator('#codexBtn').click();page.locator('#codexSearch').fill('镜像合演')
-    assert page.locator('#codexGrid .codex-card').count()==3
+    assert page.locator('#codexGrid .codex-card').count()==1
     page.locator('#codexGrid .codex-card').first.click()
     assert '配合建议' in page.locator('#codexDetail').inner_text()
     page.locator('#closeCodex').click()
@@ -53,6 +57,6 @@ with sync_playwright() as p:
    assert not errors,errors
    context.close()
  browser.close()
-required={'copy','rearGrow','hurtGift','friendlyHit','knockout','faintGrow','summonTrain','weakening','relayAttack','hurtGrow','shield'}
+required={'copy','rearGrow','hurtGift','friendlyHit','knockout','faintGrow','summonTrain','weakening','relayAttack','hurtGrow','shield','volley','tripleZap','attackSnipe','sniperSupport','lastWord','revengeSnipe','revive','shieldBreak'}
 assert required<=seen,required-seen
 print(json.dumps({'ok':True,'checkedEvents':checked,'types':sorted(seen),'viewports':[1440,390]}))

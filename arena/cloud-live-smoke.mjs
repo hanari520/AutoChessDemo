@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
+import {RULESET,ROSTER} from './core.mjs';
 const base=process.env.ARENA_API_BASE;
 if(!base)throw new Error('ARENA_API_BASE is required');
 const origin=process.env.ARENA_TEST_ORIGIN||'https://autochess.hanari520.cn';
 async function api(path,token,body,expected=200){const r=await fetch(base+'/api/arena/'+path,{method:body?'POST':'GET',headers:{Origin:origin,...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(30000)});assert.equal(r.status,expected,`${path}: HTTP ${r.status}`);assert.equal(r.headers.get('access-control-allow-origin'),origin);return r.json();}
-const health=await api('health');assert.equal(health.runStore,'cloudbase-pg');assert.equal((await api('health')).storageHealthy,true);
+const health=await api('health');assert.equal(health.ruleset,RULESET);assert.equal(health.runStore,'cloudbase-pg');assert.equal((await api('health')).storageHealthy,true);
 const preflight=await fetch(base+'/api/arena/action',{method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'authorization,content-type'}});assert.equal(preflight.status,204);
 assert.equal((await fetch(base+'/api/arena/health',{headers:{Origin:'https://invalid.example'}})).status,403);
 await api('run',undefined,undefined,401);
 const a=await api('runs',null,{teamName:'上线验证甲'},201),b=await api('runs',null,{teamName:'上线验证乙'},201);
+assert.equal(a.run.ruleset,RULESET);assert.ok(a.run.shop.every(o=>ROSTER.some(d=>d.id===o.id)));
 const input={requestId:randomUUID(),revision:a.run.revision,action:{type:'buy',slot:0,to:0}};
 const [one,two]=await Promise.all([api('action',a.token,input),api('action',a.token,input)]);assert.deepEqual(one,two);assert.equal(one.run.gold,7);
 await api('action',a.token,{...input,action:{type:'roll'}},409);

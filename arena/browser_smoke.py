@@ -15,22 +15,14 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelector('#connection').textContent.includes('异步联机')")
     if page.locator('#homeDialog').is_visible(): page.locator('#homeContinue').click()
     page.locator('#codexBtn').click()
-    assert page.locator('.codex-card').count() == 100
-    assert '50' in page.locator('#codexCount').inner_text()
-    page.locator('#codexMode').select_option('outfits')
     assert page.locator('.codex-card').count() == 50
-    assert page.locator('.codex-card .atlas-portrait').count() == 50
-    atlas_sizes = page.evaluate("""async () => {
-      const urls=[...new Set([...document.querySelectorAll('.atlas-cell')].map(el=>el.style.backgroundImage.match(/url\([\"']?(.*?)[\"']?\)/)[1]))];
-      return await Promise.all(urls.map(src=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve([i.naturalWidth,i.naturalHeight]);i.onerror=()=>reject(new Error(src));i.src=src;})));
-    }""")
-    assert len(atlas_sizes) == 3 and all(w > 800 and h > 800 for w,h in atlas_sizes)
-    page.screenshot(path=str(OUT/'desktop-outfit-codex.png'))
-    page.locator('#codexSearch').fill('忍梓')
+    assert '50' in page.locator('#codexCount').inner_text()
+    assert page.locator('.codex-card .atlas-portrait').count() == 0
+    page.locator('#codexSearch').fill('三重星轨')
     assert page.locator('.codex-card').count() == 1
     page.locator('.codex-card').click()
     assert '阿梓' in page.locator('#codexDetail').inner_text()
-    assert page.locator('#codexDetail .outfit-source').get_attribute('href').startswith('https://')
+    assert '配合建议' in page.locator('#codexDetail').inner_text()
     page.locator('#codexSearch').fill('')
     page.locator('#codexTier').select_option('6')
     assert page.locator('.codex-card').count() > 0
@@ -83,7 +75,7 @@ with sync_playwright() as p:
     phone.wait_for_function("document.querySelector('#connection').textContent.includes('异步联机')")
     if phone.locator('#homeDialog').is_visible(): phone.locator('#homeContinue').tap()
     phone.locator('#codexBtn').tap()
-    assert phone.locator('.codex-card').count() == 100
+    assert phone.locator('.codex-card').count() == 50
     assert phone.evaluate("document.querySelector('#codexDialog').scrollWidth <= document.querySelector('#codexDialog').clientWidth"), 'codex overflow'
     phone.screenshot(path=str(OUT/'mobile-outfit-codex.png'))
     phone.locator('#closeCodex').tap()

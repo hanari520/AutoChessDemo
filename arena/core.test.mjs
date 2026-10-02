@@ -1,22 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRun,act,prepareTeam,battle,finishRound,trainingTeam,tierFor,ROSTER,BASE_ROSTER } from './core.mjs';
+import { createRun,act,prepareTeam,battle,finishRound,trainingTeam,tierFor,ROSTER,BASE_ROSTER,migrateRun,RULESET } from './core.mjs';
 import { PRESET_TEAMS } from './presets.mjs';
 import { OUTFITS } from './outfits.mjs';
 import { existsSync } from 'node:fs';
 function unit(id,atk=2,hp=2,extra={}){return {uid:id,id,atk,hp,level:1,xp:0,perk:null,...extra};}
-test('100 unique pieces, 50 identities, 50 distinct outfit slots and complete ability metadata',()=>{
- assert.equal(ROSTER.length,100);assert.equal(OUTFITS.length,50);assert.equal(new Set(ROSTER.map(d=>d.id)).size,100);
- for(const d of OUTFITS){assert.ok(BASE_ROSTER.some(b=>b.id===d.baseId));assert.ok(d.description&&d.source&&d.ability);assert.ok(d.art.index>=0&&d.art.index<d.art.columns*d.art.rows);assert.ok(existsSync(new URL('../'+d.art.atlas,import.meta.url)));}
- assert.equal(new Set(OUTFITS.map(d=>`${d.art.atlas}:${d.art.index}`)).size,50);
+test('exactly 50 original portraits and 50 distinct working mechanics',()=>{
+ assert.equal(ROSTER.length,50);assert.equal(BASE_ROSTER.length,50);assert.equal(new Set(ROSTER.map(d=>d.kind)).size,50);
+ for(const d of ROSTER){assert.equal(d.id,d.baseId);assert.ok(!d.art);assert.ok(d.title&&d.ability);assert.ok(existsSync(new URL('../'+d.portrait,import.meta.url)));}
 });
-test('different outfits of one streamer cannot merge; identical outfit upgrades preserve identity',()=>{
- const s=createRun('outfit-merge');const first=OUTFITS.find(d=>d.baseId==='lianshiye'),second=OUTFITS.find(d=>d.baseId==='lianshiye'&&d.id!==first.id);
- s.team[0]=unit(first.id);s.team[1]=unit(second.id);const before=structuredClone(s);assert.throws(()=>act(s,{type:'merge',from:1,to:0}));assert.deepEqual(s,before);
- s.team[1]=unit(first.id);act(s,{type:'merge',from:1,to:0});assert.equal(s.team[0].id,first.id);assert.equal(s.team[0].xp,1);
+test('archived outfits never enter shops, bonuses, training or playable roster',()=>{
+ assert.equal(OUTFITS.length,50);assert.ok(OUTFITS.every(d=>!ROSTER.some(u=>u.id===d.id)));
+ const s=createRun('original-only');for(let round=1;round<=30;round++){s.round=round;s.gold=50;act(s,{type:'roll'});assert.ok(s.shop.every(o=>!o.id.includes('__costume')));assert.ok(trainingTeam(round).filter(Boolean).every(u=>!u.id.includes('__costume')));}
 });
-test('all outfit abilities produce bounded deterministic combat without changing permanent units',()=>{
- for(const d of OUTFITS){const team=[unit(d.id,d.atk,d.hp),unit('goutan'),unit('yujiu')];const original=structuredClone(team);const result=battle(team,trainingTeam(11,d.id),d.id);assert.ok(result.events.length<500);assert.deepEqual(result,battle(team,trainingTeam(11,d.id),d.id));assert.deepEqual(team,original);}
+test('all 50 original mechanics produce bounded deterministic combat without changing permanent units',()=>{
+ for(const d of ROSTER){const team=[unit(d.id,d.atk,d.hp),unit('goutan',2,3,{uid:'gift'}),unit('yujiu',2,3,{uid:'helper'})];const original=structuredClone(team);const result=battle(team,trainingTeam(11,d.id),d.id);assert.ok(result.events.length<500);assert.deepEqual(result,battle(team,trainingTeam(11,d.id),d.id));assert.deepEqual(team,original);}
+});
+test('legacy costume run migrates to original identity while preserving progress, training and frozen offers',()=>{
+ const s=createRun('legacy');s.ruleset='idol-queue-v1';s.round=8;s.wins=4;s.gold=7;s.revision=19;s.team[0]=unit('rei__costume49',17,22,{xp:2,level:2,perk:'melon'});s.shop[0]={id:'yukie__costume25',frozen:true};s.bonusOffer=[{id:'sumi__costume17'},{id:'aza__costume1'}];
+ const original=structuredClone(s),next=migrateRun(s);assert.equal(next.ruleset,RULESET);assert.deepEqual(s,original);assert.deepEqual(next.team[0],{...s.team[0],id:'rei'});assert.deepEqual(next.shop[0],{id:'yukie',frozen:true});assert.deepEqual(next.bonusOffer,[{id:'sumi'},{id:'aza'}]);assert.equal(next.revision,19);assert.equal(next.wins,4);assert.equal(next.gold,7);
 });
 test('deterministic shops, exactly 50 streamer identities and round unlocks',()=>{assert.deepEqual(createRun('x'),createRun('x'));assert.equal(BASE_ROSTER.length,50);assert.equal(new Set(ROSTER.map(x=>x.baseId)).size,50);assert.equal(tierFor(11),6);assert.ok(PRESET_TEAMS.every(x=>x.team.filter(Boolean).every(u=>ROSTER.find(d=>d.id===u.id).tier<=tierFor(x.round))));});
 test('freeze persists across rolls and rounds, coins reset',()=>{const s=createRun('freeze');act(s,{type:'freeze',zone:'shop',slot:4});const frozen=structuredClone(s.shop[4]);act(s,{type:'buy',slot:0,to:0});act(s,{type:'roll'});assert.deepEqual(s.shop[4],frozen);prepareTeam(s);finishRound(s,{winner:'draw'});assert.deepEqual(s.shop[4],frozen);assert.equal(s.gold,10);assert.equal(s.round,2);});

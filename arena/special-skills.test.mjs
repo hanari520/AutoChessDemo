@@ -4,9 +4,9 @@ import {battle,ROSTER,SPECIAL_SKILLS} from './core.mjs';
 import {EVENT_LABELS,eventChanges} from './replay.mjs';
 const u=(id,atk=2,hp=20,extra={})=>({uid:id,id,atk,hp,level:1,xp:0,perk:null,...extra});
 const events=(a,b)=>battle(a,b,'skill-test').events;
-test('eleven new mechanics cover 32 pieces with explanations and replay labels',()=>{
- assert.equal(Object.keys(SPECIAL_SKILLS).length,11);
- assert.equal(ROSTER.filter(d=>SPECIAL_SKILLS[d.kind]).length,32);
+test('27 special mechanics cover 27 original pieces with explanations and replay labels',()=>{
+ assert.equal(Object.keys(SPECIAL_SKILLS).length,27);
+ assert.equal(ROSTER.filter(d=>SPECIAL_SKILLS[d.kind]).length,27);
  for(const d of ROSTER.filter(d=>SPECIAL_SKILLS[d.kind]))assert.ok(d.title&&d.hint&&d.ability);
 });
 test('front attacks grow only the nearest rear friend, with a five-trigger limit',()=>{

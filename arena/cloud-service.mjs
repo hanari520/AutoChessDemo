@@ -1,6 +1,6 @@
 import http from 'node:http';
 import {randomBytes,createHash} from 'node:crypto';
-import {RULESET,createRun,act,prepareTeam,battle,finishRound,addPreparationEvents} from './core.mjs';
+import {RULESET,migrateRun,migrateResult,createRun,act,prepareTeam,battle,finishRound,addPreparationEvents} from './core.mjs';
 import {PRESET_TEAMS} from './presets.mjs';
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const fail=(status,message)=>{throw Object.assign(new Error(message),{status});};
@@ -35,13 +35,13 @@ export function createCloudArenaServer(store,{origins=['https://autochess.hanari
     const token=randomBytes(24).toString('hex'),run=createRun(randomBytes(16).toString('hex'));run.teamName=input.teamName?.trim()||'星域小队';await store.create(hash(token),run);reply(201,{token,run});return;
    }
    if(!['/api/arena/run','/api/arena/last-battle','/api/arena/action','/api/arena/battle'].includes(path))fail(404,'接口不存在');
-   const token=req.headers.authorization?.match(/^Bearer ([a-f0-9]{48})$/)?.[1];if(!token)fail(401,'请重新建立对局连接');const owner=hash(token),row=await store.get(owner);if(!row)fail(401,'对局不存在，请重新组队');
+   const token=req.headers.authorization?.match(/^Bearer ([a-f0-9]{48})$/)?.[1];if(!token)fail(401,'请重新建立对局连接');const owner=hash(token),row=await store.get(owner);if(!row)fail(401,'对局不存在，请重新组队');row.run=migrateRun(row.run);if(row.last_battle?.battle?.ruleset!==RULESET)row.last_battle=null;
    if(path==='/api/arena/run'&&req.method==='GET'){reply(200,{run:row.run});return;}
    if(path==='/api/arena/last-battle'&&req.method==='GET'){reply(200,{run:row.run,...(row.last_battle||{battle:null})});return;}
    if(req.method!=='POST'||!['/api/arena/action','/api/arena/battle'].includes(path))fail(405,'不支持此请求方法');
    const input=await read(req);if(!/^[a-zA-Z0-9-]{8,80}$/.test(input.requestId||''))fail(400,'操作标识无效');if(!Number.isSafeInteger(input.revision)||input.revision<0)fail(400,'存档版本无效');
    const fingerprint=hash(JSON.stringify({path,revision:input.revision,action:input.action}));const prior=await store.prior(owner,input.requestId);
-   if(prior){if(prior.fingerprint!==fingerprint)fail(409,'同一操作标识不能用于不同请求');reply(200,prior.result);return;}
+   if(prior){if(prior.fingerprint!==fingerprint)fail(409,'同一操作标识不能用于不同请求');reply(200,migrateResult(prior.result));return;}
    if(row.run.revision!==input.revision)fail(409,'对局已经更新，请同步后重试');
    const run=structuredClone(row.run);let result,snapshot=null;
    if(path.endsWith('/action')){try{act(run,input.action);}catch(e){fail(400,e.message);}run.revision++;result={run};}
@@ -52,9 +52,9 @@ export function createCloudArenaServer(store,{origins=['https://autochess.hanari
     const presets=picked?[]:await store.training(round);if(!picked&&!presets.length)fail(503,'训练阵容库尚未就绪');const preset=presets.length?presets[randomBytes(4).readUInt32LE()%presets.length]:null;
     const opponent=picked?{name:picked.name,source:'player',owner:picked.owner_hash,round}:{name:preset.name,source:'training',round};
     const replay=addPreparationEvents(battle(team,picked?.team||preset.team,randomBytes(12).toString('hex')),run);finishRound(run,replay);run.revision++;result={run,battle:replay,opponent};
-    snapshot={id:`${owner}-r${round}`,name:run.teamName,round,ruleset:RULESET,team,wins:run.wins};
+    snapshot={id:`${RULESET}-${owner}-r${round}`,name:run.teamName,round,ruleset:RULESET,team,wins:run.wins};
    }
-   reply(200,await store.commit(owner,input,fingerprint,run,result,snapshot));
+   reply(200,migrateResult(await store.commit(owner,input,fingerprint,run,result,snapshot)));
   }catch(e){reply(e.status||503,{error:e.status?e.message:'云端服务暂时不可用，请稍后重试'});}
  });
 }
