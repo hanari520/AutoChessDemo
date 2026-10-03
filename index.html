@@ -10,7 +10,7 @@
 <link rel="icon" href="icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>星域棋战 · VirtuaReal 虚拟偶像自走棋</title>
-<link rel="stylesheet" href="tools/battle-presentation.css?v=1">
+<link rel="stylesheet" href="tools/battle-presentation.css?v=4">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
 html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }   /* 禁用 Android Chrome 字体自动放大：图鉴筛选等密集控件会被整块撑爆 */
@@ -1422,24 +1422,24 @@ const COMBAT_KITS={
   yua:v3Kit('记忆回收站','single','向最远敌人发射记忆碎片，造成 225% 法术伤害，烧毁 45% 当前法力并沉默 1.8 秒。','#b989ff','void',{target:'far',mult:2.25,manaBurn:.45,silence:1.8,attackStyle:'arc'}),
   goutan:v3Kit('忠犬拦截','guardLink','给生命最低的队友与自身各套上护盾，并建立拦截链接：队友下一次受击由勾檀分担 30%。','#ffb36b','ward',{allyShield:.30,selfShield:.20,taunt:1.8,link:.30,attackStyle:'blade'}),
   yujiu:v3Kit('天线锁定','single','锁定最远敌人，造成 180% 远程伤害并削减 24 点护甲；命中后下一枚普攻自动弹向附近敌人。','#8fe8ff','arc',{target:'far',mult:1.8,shred:24,bounce:true,attackStyle:'shot'}),
-  songlv:v3Kit('根系重击','burst','以根锤震击周围敌人，造成 150% 伤害、眩晕 0.8 秒并回复自身 20% 造成伤害的生命。','#9be36a','blade',{mult:1.5,stun:.8,lifesteal:.20,attackStyle:'blade'}),
+  songlv:v3Kit('根系重击','burst','以根锤砸向出手时锁定的前方扇区（纵深 2 格），造成 150% 伤害、眩晕 0.8 秒并回复自身 20% 造成伤害的生命。','#9be36a','blade',{mult:1.5,stun:.8,lifesteal:.20,front:{depth:2,cone:1},attackStyle:'blade'}),
   likou:v3Kit('急救快闪','heal','治疗生命比例最低的队友 210% 攻击生命，同时附加 10% 最大生命护盾并净化其控制。','#ff9ab6','ward',{heal:2.1,shield:.10,cleanse:true,attackStyle:'arc'}),
   agari:v3Kit('应援心拍','team','全队回复 90% 攻击生命并获得 8% 最大生命护盾；3 秒内首次普攻额外产生一次心拍爆发。','#ff6fae','arc',{heal:.9,shield:.08,tempo:true,attackStyle:'pulse'}),
   hoshimi:v3Kit('月猫跃迁','dash','扑向生命比例最低的敌人，造成 235% 伤害并施加 2 秒流血；击杀后立刻刷新一次位移。','#dca3ff','blade',{target:'low',mult:2.35,bleed:.018,bleedDuration:2,attackStyle:'blade'}),
-  chiharu:v3Kit('夜岚折返','cleave','向前方扇区斩出两道夜岚，合计造成 165% 伤害并使命中者受到的下一次普攻伤害提高 25%。','#8fbcff','blade',{mult:.825,hits:2,wound:.25,attackStyle:'blade'}),
+  chiharu:v3Kit('夜岚折返','cleave','向出手时锁定的前方扇区（纵深 2 格）斩出两道夜岚，合计造成 165% 伤害并使命中者受到的下一次普攻伤害提高 25%。','#8fbcff','blade',{mult:.825,hits:2,wound:.25,front:{depth:2,cone:1},attackStyle:'blade'}),
   suiji:v3Kit('十小时续航','support','为除自身外的队友回复 28 点法力并治疗 60% 攻击生命；同时获得 18% 攻速，持续 4 秒。','#8ddc9b','ward',{mana:28,heal:.6,haste:.18,attackStyle:'pulse'}),
   kanban:v3Kit('海獭缓冲层','guard','吸收 45% 最大生命伤害，获得 35% 格挡，持续 4 秒；格挡成功时向攻击者喷出水花减速。','#7ed7d9','ward',{shield:.45,block:.35,slow:.20,attackStyle:'blade'}),
   zhouyi:v3Kit('破盾读秒','passive','被动：普通攻击优先拆除护盾；目标无护盾时，下一次攻击造成额外 80% 破防伤害。','#c77dff','void',{passive:true,attackHit:'shieldbreak',attackStyle:'blade'}),
   yuji:v3Kit('雨幕偏航','passive','被动：雨幕庇护——雨纪每 2 次普攻凝结 1 层「雨露」（至多 2 层）；受到攻击时消耗 1 层雨露必定闪避该次攻击，并召唤雨幕：获得 8% 最大生命护盾、下一次普攻附带减速。无雨露时保留 25% 概率格挡（伤害减半）兜底。','#72c9ff','ward',{passive:true,attackHit:'rainveil',attackStyle:'shot'}),
   tiandou:v3Kit('点心补给线','heal','把点心投向两名最需要治疗的队友，各回复 145% 攻击生命并获得 8% 护盾；护盾破裂时回复 8 点法力。','#ffc56d','ward',{heal:1.45,healN:2,shield:.08,mana:8,attackStyle:'arc'}),
-  aza:v3Kit('节拍装甲','team','以鼓点强化全队：回复 70% 攻击生命、攻击 +12%，并在施法者脚下留下 2 秒震荡圈。','#ff8b8b','arc',{heal:.7,attack:.12,zone:{r:1,dur:2000,dps:.18},attackStyle:'pulse'}),
+  aza:v3Kit('节拍装甲','team','以鼓点强化全队：回复 70% 攻击生命、攻击 +12%，并在施法者脚下留下 2 秒震荡圈（3×3 格）。','#ff8b8b','arc',{heal:.7,attack:.12,zone:{r:1,dur:2000,dps:.18},attackStyle:'pulse'}),
   pako:v3Kit('善意溢出','heal','治疗生命最低的队友 230% 攻击生命，溢出治疗转化为 18% 最大生命护盾，并压低其受到的治疗削减。','#73d6e8','ward',{heal:2.3,shield:.18,attackStyle:'arc'}),
   zhijin:v3Kit('紫藤追迹','dash','沿紫藤轨迹突进最远敌人，造成 240% 伤害并窃取 18% 伤害生命；命中后目标 2 秒内无法获得护盾。','#e69bff','blade',{target:'far',mult:2.4,lifesteal:.18,noShield:2,attackStyle:'blade'}),
   sishi:v3Kit('四季转盘','chain','向最多 4 个敌人发射季节弹：春减速、夏烧蓝、秋流血、冬冻结，每跳伤害递减。','#ffd27d','arc',{targets:4,mults:[1.25,1.05,.88,.72],season:true,attackStyle:'shot'}),
   sumi:v3Kit('墨龙入砚','teamShield','为全队附加 18% 最大生命护盾并获得 10% 减伤；墨龙会优先吞掉一次控制效果。','#a58bff','void',{shield:.18,dr:.10,cleanse:true,attackStyle:'arc'}),
   yukie:v3Kit('上勾拳三连','combo','连续三段锁定同一目标：100%／110%／160% 伤害，第三段击飞并附加 1.5 秒流血。','#ff9b7b','blade',{target:'near',hits:3,mults:[1,1.1,1.6],stun:.45,bleed:.015,bleedDuration:1.5,attackStyle:'blade'}),
   miting:v3Kit('看破真相','single','揭开攻击最高敌人的弱点，造成 205% 法术伤害并削减 35% 魔抗；其下一次技能伤害反噬自身。','#ffe49b','arc',{target:'hi',mult:2.05,sunder:.35,reflectSkill:.30,attackStyle:'arc'}),
-  xuezhu:v3Kit('冰烛禁区','zone','冻结最远敌人 2 秒并造成 170% 伤害，在脚下生成 2.7 秒冰封禁区。','#9fe8ff','arc',{target:'far',mult:1.7,freeze:2,zone:{r:1,dur:2700,dps:.35},attackStyle:'arc'}),
+  xuezhu:v3Kit('冰烛禁区','zone','冻结最远敌人 2 秒并造成 170% 伤害，在其脚下生成 2.7 秒冰封禁区（3×3 格）。','#9fe8ff','arc',{target:'far',mult:1.7,freeze:2,zone:{r:1,dur:2700,dps:.35},attackStyle:'arc'}),
   zeyin:v3Kit('泽畔回声','team','治疗全队 100% 攻击生命，并让敌方全体受到的治疗降低 25%，持续 4 秒；每个受伤队友回响一次水波。','#79e6d5','ward',{heal:1,enemyHealDown:.25,attackStyle:'pulse'}),
   sanli:v3Kit('梦境三拍','chain','对 3 名敌人进行梦境连锁，造成 160%／120%／90% 法术伤害；最后一跳使目标沉睡 0.6 秒。','#f29eff','arc',{targets:3,mults:[1.6,1.2,.9],stun:.6,attackStyle:'pulse'}),
   diansu:v3Kit('邪修石符','single','在攻击最高敌人身上刻下石符，造成 200% 伤害并石化 2.2 秒；若目标有护盾则额外碎盾。','#d9c8a6','void',{target:'hi',mult:2,petrify:2.2,shieldbreak:true,attackStyle:'arc'}),
@@ -1452,21 +1452,21 @@ const COMBAT_KITS={
   huali:v3Kit('花礼绽放','heal','治疗两名队友各 160% 攻击生命并回复 18 点法力；受疗者生命越低，治疗越高。','#ffb7d0','ward',{heal:1.6,healN:2,mana:18,attackStyle:'arc'}),
   youyu:v3Kit('幽魂相位','dash','化为幽魂穿过敌阵，对最近敌人造成 220% 纯粹伤害并获得 1.5 秒相位闪避。','#78d9ff','void',{target:'near',mult:2.2,dtype:'pure',phase:1.5,attackStyle:'blade'}),
   quanrong:v3Kit('小狗反甲','guard','获得 50% 最大生命护盾并嘲讽 2.5 秒；护盾期间每次受击反弹 8% 最大生命。','#d7a76b','ward',{shield:.50,taunt:2.5,thorns:.08,attackStyle:'blade'}),
-  ruiya:v3Kit('时空封存','zone','冻结最远敌人 2.4 秒并造成 200% 伤害；生成时空区，区域内敌人攻速降低 60%。','#a8b9ff','void',{target:'far',mult:2,freeze:2.4,slow:.6,zone:{r:1,dur:3000,dps:.22},attackStyle:'arc'}),
+  ruiya:v3Kit('时空封存','zone','冻结最远敌人 2.4 秒并造成 200% 伤害；在其脚下生成 3×3 格时空区，区域内敌人攻速降低 60%。','#a8b9ff','void',{target:'far',mult:2,freeze:2.4,slow:.6,zone:{r:1,dur:3000,dps:.22},attackStyle:'arc'}),
   mumu:v3Kit('东风润物','team','全队回复 105% 攻击生命并获得 20% 攻速，持续 4 秒；生命满的队友改为获得 10% 护盾。','#9cffb4','ward',{heal:1.05,haste:.20,shield:.10,attackStyle:'pulse'}),
   kroya:v3Kit('混沌裂界','chaos','对攻击最高敌人造成 260% 法术伤害并裂变一次：随机附加冻结、沉默或烧蓝。','#ff8dce','void',{target:'hi',mult:2.6,chaos:true,attackStyle:'arc'}),
   shiliu:v3Kit('浣熊洗劫','single','偷走最近敌人的全部护盾并造成 215% 伤害；若偷到护盾，额外眩晕 0.6 秒。','#f5b46b','blade',{mult:2.15,stealShield:true,stun:.6,attackStyle:'blade'}),
-  seki:v3Kit('星蚀低语','field','在自身周围展开星蚀领域，对范围内敌人造成 150% 伤害、沉默 2.6 秒并持续烧蓝。','#7e75ff','void',{mult:1.5,silence:2.6,manaBurn:.35,attackStyle:'pulse'}),
-  haruka:v3Kit('白刃拍击','cleave','以白刃拍击周围敌人，造成 180% 伤害并削减 25% 攻击；被削弱者攻击会给白神遥回 4 点法力。','#f6f3ff','blade',{mult:1.8,weaken:.25,mana:4,attackStyle:'blade'}),
+  seki:v3Kit('星蚀低语','field','以自身为中心展开星蚀领域，3 格内敌人受到 150% 伤害、沉默 2.6 秒并持续烧蓝。','#7e75ff','void',{mult:1.5,silence:2.6,manaBurn:.35,attackStyle:'pulse'}),
+  haruka:v3Kit('白刃拍击','cleave','白刃横扫出手时锁定的前方扇区（纵深 2 格），造成 180% 伤害并削减 25% 攻击；被削弱者攻击会给白神遥回 4 点法力。','#f6f3ff','blade',{mult:1.8,weaken:.25,mana:4,front:{depth:2,cone:1},attackStyle:'blade'}),
   mahiru:v3Kit('绯红旋风','cleave','旋转三圈，每圈对周围敌人造成 90% 伤害并回复 25% 伤害生命；第三圈附加流血。','#ff6b75','blade',{mult:.9,hits:3,lifesteal:.25,bleed:.02,attackStyle:'blade'}),
-  nana7mi:v3Kit('鲨皇潮','burst','召唤鲨潮冲撞前方，造成 210% 伤害、拉近敌人并减速 35%；血量越低伤害越高。','#67d4e8','arc',{mult:2.1,slow:.35,pull:true,lowHPBoost:.6,attackStyle:'blade'}),
-  liAn:v3Kit('晨露凝霜','field','将全场最危险的敌人群体冻结 1.4 秒并造成 125% 伤害；冻结结束后目标获得易伤。','#e6fbff','arc',{mult:1.25,freeze:1.4,brittle:.22,attackStyle:'arc'}),
+  nana7mi:v3Kit('鲨皇潮','burst','短引导 0.6 秒，鲨潮沿出手锁定的方向冲撞正前方直线 3 格：造成 210% 伤害、拉近敌人并减速 35%；血量越低伤害越高。引导被打断则损失一半法力。','#67d4e8','arc',{mult:2.1,slow:.35,pull:true,lowHPBoost:.6,front:{depth:3,width:0},castT:0.6,attackStyle:'blade'}),
+  liAn:v3Kit('晨露凝霜','field','锁定攻击最高的敌人，将其周围 4 格内的敌人群体冻结 1.4 秒并造成 125% 伤害；冻结结束后目标获得易伤。','#e6fbff','arc',{mult:1.25,freeze:1.4,brittle:.22,attackStyle:'arc'}),
   youyi:v3Kit('一心同体','passive','被动：每次普通攻击为自身与生命最低的队友各回复 3% 最大生命；任意一方濒死时共享 20% 护盾。','#ff9f9f','ward',{passive:true,attackHit:'soulmate',attackStyle:'blade'}),
-  azi:v3Kit('高音震魂','field','释放高音震魂波，范围内敌人受到 130% 伤害并眩晕 1.5 秒；每命中一人，阿梓获得 6 点法力。','#ffbd6a','arc',{mult:1.3,stun:1.5,mana:6,attackStyle:'pulse'}),
+  azi:v3Kit('高音震魂','field','引导 1.2 秒，向出手锁定的方向释放高音震魂波：前方 3 格（宽 3 格）内敌人受到 160% 伤害并眩晕 1.5 秒，每命中一人阿梓获得 6 点法力。引导被打断则损失一半法力。','#ffbd6a','arc',{mult:1.6,stun:1.5,mana:6,front:{depth:3,width:1},castT:1.2,attackStyle:'pulse'}),
   taodai:v3Kit('桃香结界','teamShield','全队获得 22% 最大生命护盾；桃香结界持续 4 秒，期间全队减伤 20%，桃代嘲讽 2.7 秒。','#ffb1c9','ward',{shield:.22,dr:.20,taunt:2.7,attackStyle:'blade'}),
   miki:v3Kit('星海庇护','heal','治疗 3 名队友各 150% 攻击生命，附加 12% 护盾并回复 12 点法力；优先濒危单位。','#8fd9ff','ward',{heal:1.5,healN:3,shield:.12,mana:12,attackStyle:'arc'}),
-  rei:v3Kit('灵界之门','field','开启灵界之门，范围敌人受到 135% 伤害并沉默 2.4 秒；门会把其中一次治疗的 40% 转成伤害。','#b78cff','void',{mult:1.35,silence:2.4,enemyHealDown:.40,attackStyle:'pulse'}),
-  rinco:v3Kit('十二点拉闸','cleave','拉下总闸，对周围敌人造成 210% 伤害并沉默 1.8 秒；自身获得 25% 吸血，直到战斗结束。','#ff5f70','void',{mult:2.1,silence:1.8,lifesteal:.25,attackStyle:'blade'})
+  rei:v3Kit('灵界之门','field','引导 1.5 秒开启灵界之门，向出手锁定的方向喷涌灵界洪流：前方 3 格（宽 3 格）内敌人受到 150% 伤害并沉默 2.4 秒，门会把其中一次治疗的 40% 转成伤害。引导被打断则损失一半法力。','#b78cff','void',{mult:1.5,silence:2.4,enemyHealDown:.40,front:{depth:3,width:1},castT:1.5,attackStyle:'pulse'}),
+  rinco:v3Kit('十二点拉闸','cleave','引导 1.2 秒，沿出手锁定的方向拉下总闸，电浪席卷正前方直线纵深 3 格：造成 210% 伤害并沉默 1.8 秒；自身获得 25% 吸血，直到战斗结束。引导被打断则损失一半法力。','#ff5f70','void',{mult:2.1,silence:1.8,lifesteal:.25,front:{depth:3,width:0},castT:1.2,attackStyle:'blade'})
 };
 const skillName=d=>COMBAT_KITS[d.id]?.name||d.sk[0];
 function v3AttackOf(u){
@@ -1619,6 +1619,7 @@ function castV3Skill(u,units,skMul,k){
   const d=byId(u.id), allies=units.filter(v=>v.hp>0&&v.side===u.side), foes=units.filter(v=>v.hp>0&&v.side!==u.side);
   const power=Math.round(eatk(u)*(u.side===0?skMul:1)*d.skc*(u.sks||1));
   const target=v3PickTarget(u,foes,k), mark=svOf(u.id).sigMark;
+  const dir=u._castDir||((target||foes[0])?dirOf(u,target||foes[0]):null); u._castDir=null;   // 出手瞬间锁定攻击方向
   const primary=target||allies.slice().sort((a,b)=>a.hp/a.maxhp-b.hp/b.maxhp)[0]||u;
   const injuredAtCast=allies.filter(t=>t.hp<t.maxhp).length;
   showCutin(u,k.name,k.mode);u._casting=true;u._skillArch=k.mode;
@@ -1682,21 +1683,29 @@ function castV3Skill(u,units,skMul,k){
     if(u.id==='hoshimi')u.killReset=true;
     if(k.mode==='dashCleave')hitList=foes.filter(f=>nearCells(f,u,1));
     else if(target){hitList=[target];if(k.splash){const splash=v3NearestFoes(target,foes,1,3);splash.forEach(f=>{hit(f,k.splash);hitList.push(f);});}}
+    if(k.splash&&target)markCells(diamondCells(target,1),zoneCls(u,'zone-hit'),450);   // 溅射落点环闪光
     hitList.filter(f=>f===target||k.mode==='dashCleave').forEach(f=>hit(f,k.mult));
     if(u.id==='miyue'&&hitList.length)u.vamp=Math.min(.30,(u.vamp||0)+hitList.length*(k.lifesteal||.05));
     if(k.mode==='dashCleave')vfxAt(u,'tex-slash',500);
+    if(k.mode==='dashCleave')markCells(areaCellsOf(u,1),zoneCls(u,'zone-hit'),450);   // 落点周围格闪光（深雪）
     if(k.phase){u.phaseT=k.phase*1000;u.phaseDodge=.55;}
-    if(k.afterimage&&target&&target.hp>0)target.v3Afterimage={left:2000,owner:u,damage:Math.round(power*.72),x:target.x,y:target.y};
+    if(k.afterimage&&target&&target.hp>0){target.v3Afterimage={left:2000,owner:u,damage:Math.round(power*.72),x:target.x,y:target.y};
+      const zi=areaCellsOf(target,1), zels=markCells(zi,zoneCls(u,'zone-warn'));   // 残影爆点预警 2 秒（夜莺）
+      setTimeout(()=>{zels.forEach(el=>el.classList.remove('zone-warn','zone-foe'));markCells(zi,zoneCls(u,'zone-hit'),450);},2000/(SPEED||1));}
   } else if(k.mode==='single'){
     if(target){hit(target,k.mult);hitList=[target];}
     if(k.bounce)u.bounceReady=true;
   } else if(k.mode==='burst'){
-    if(u.id==='songlv')hitList=foes.filter(f=>nearCells(f,u,1));
+    if(k.front&&dir){hitList=frontFoes(u,foes,dir,k.front);markCells(frontCells(u,dir,k.front),zoneCls(u,'zone-hit'),450);
+      const gv=unitVisual(u);const sw=fxNode('sweep',gv.x,gv.y,520);if(sw)sw.style['--rot']=(Math.atan2(dir.dy,dir.dx)*180/Math.PI).toFixed(0)+'deg';}
+    else if(u.id==='songlv')hitList=foes.filter(f=>nearCells(f,u,1));
     else if(target)hitList=[target,...v3NearestFoes(target,foes,1,2)];
     hitList.forEach(f=>hit(f,k.mult));
   } else if(k.mode==='cleave'){
     const times=k.hits||1;for(let i=0;i<times;i++){
-      const list=foes.filter(f=>nearCells(f,u,1));
+      const list=k.front?frontFoes(u,foes,dir,k.front):foes.filter(f=>nearCells(f,u,1));   // 前方扇区（纵深 2 格）或周围 1 格
+      if(k.front&&dir)markCells(frontCells(u,dir,k.front),zoneCls(u,'zone-hit'),450);
+      else markCells(areaCellsOf(u,1),zoneCls(u,'zone-hit'),450);   // 周围型 cleave（羽入）：真实范围闪光
       const strike=u.id==='mahiru'&&i<times-1?Object.assign({},k,{bleed:0}):k;
       list.forEach(f=>v3ApplyHit(u,f,power,strike,units,k.mult));hitList=list;
       const e=vfxAt(u,i%2?'tex-quake':'tex-slash',430);if(e&&k.hits>1)e.style.filter='hue-rotate('+(i*90)+'deg)';
@@ -1723,10 +1732,20 @@ function castV3Skill(u,units,skMul,k){
     vfxAt(u,'tex-chain',500);
     return;
   } else if(k.mode==='field'){
+    if(k.front&&dir){   // 前方条带波（阿梓/灵门）：出手方向锁定
+      hitList=frontFoes(u,foes,dir,k.front);
+      markCells(frontCells(u,dir,k.front),zoneCls(u,'zone-hit'),450);
+      hitList.forEach(f=>hit(f,k.mult));
+      const gv=unitVisual(u);
+      const sw=fxNode('sweep',gv.x,gv.y,560);
+      if(sw)sw.style['--rot']=(target?fxDir(u,target).ang*180/Math.PI:Math.atan2(dir.dy,dir.dx)*180/Math.PI).toFixed(0)+'deg';
+    }else{
     const anchor=u.id==='liAn'?(foes.slice().sort((a,b)=>eatk(b)-eatk(a))[0]||target):u;
     const radius=u.id==='liAn'?4:3;
     hitList=foes.filter(f=>unitDist(f,anchor)<=radius);
+    markCells(diamondCells(anchor,radius),zoneCls(u,'zone-hit'),450);   // 自体菱形范围闪光（晨露 r4 / 星蚀 r3）
     hitList.forEach(f=>hit(f,k.mult));vfxAoe(anchor,Math.max(1,Math.ceil(radius/2)),u.id==='seki'?'drain':'',650);
+    }
     if(k.freeze)hitList.forEach(f=>{if(f.hp>0)f.frozen=Math.max(f.frozen,k.freeze*1000);});
     if(k.brittle)hitList.forEach(f=>{if(u.id==='liAn')f.v3BrittleOnThaw=k.brittle;else{f.v3Vuln=k.brittle;f.v3VulnT=5000;f.v3VulnBasicOnly=false;}});
     if(k.mana){u.mana=Math.min(u.maxmana,u.mana+k.mana*hitList.length);}
@@ -4788,6 +4807,7 @@ function startBattle(){
   closeDrawer();   // 抽屉（商店/详情）开着时开战：先收起，不挡战斗画面
   const _sl=document.getElementById('synBadgeLayer'); if(_sl) _sl.remove();   // 徽章悬浮层只属于备战棋盘
   stopTickLoop(); // 关闭任何残余的战斗时钟
+  clearAllZoneMarks();   // 防御：清掉上一场遗留的格子预警/闪光（自动连战中间不重建棋盘）
   skillImpactQueue=[];skillImpactClock=0;
   fillBoardBeforeBattle();   // 人口不满先自动补位（只上场、不动阵型、不合成）；全空则维持原拦截
   if(S.board.filter(Boolean).length===0){ log('⚠ 至少上场 1 名棋子'); return; }
@@ -5006,7 +5026,7 @@ function startBattle(){
     const castGateOpen=t-lastCastAt>=SKILL_GLOBAL_STAGGER&&(sideReady(0)||sideReady(1));
     /* 闸门未开时跳过候选筛选；闸门打开后每个战斗心跳筛选一次。 */
     const readyCasters=castGateOpen
-      ? units.filter(v=>v.hp>0&&!v.isPassiveFlag&&v.stun<=0&&v.frozen<=0&&v.silenceT<=0&&v.hexT<=0&&v.mana>=v.maxmana&&v.skillCd<=0)
+      ? units.filter(v=>v.hp>0&&!v.isPassiveFlag&&!v.channel&&v.stun<=0&&v.frozen<=0&&v.silenceT<=0&&v.hexT<=0&&v.mana>=v.maxmana&&v.skillCd<=0)
       : [];
     const nextCaster=castGateOpen&&(readyCasters.find(v=>v.side===nextCastSide&&sideReady(v.side))
       || readyCasters.find(v=>sideReady(v.side))) || null;
@@ -5042,7 +5062,31 @@ function startBattle(){
       if(u.v3HealBomb){u.v3HealBomb.left-=TICK;if(u.v3HealBomb.left<=0)u.v3HealBomb=null;}
       if(u.tempoT>0){u.tempoT-=TICK;if(u.tempoT<=0)u.tempoHits=0;}
       if(u.v3SoulShieldCd>0)u.v3SoulShieldCd-=TICK;
-      if(u.hp<=0)continue;
+      if(u.hp<=0){ if(u.channel){u.channel=null;u._castDir=null;hideCastBar(u);hideCastZone(u,false);} continue; }
+      if(u.channel){
+        const ch=u.channel;
+        if(u.stun>0||u.frozen>0||u.petrifyT>0||u.hexT>0||u.x!==ch.x||u.y!==ch.y){
+          /* 引导被打断：硬控（眩晕/冰冻/石化/变形）或位移（拉近/击退）→ 退还一半蓝、不进技能 CD */
+          u.channel=null;u._castDir=null;hideCastBar(u);hideCastZone(u,false);
+          u.mana=Math.round(u.maxmana*.5);   // 引导被打断：法力损失一半（蓝在完成时才消耗，打断时为满）
+          vfxAt(u,'ring',500);dmgPopup(null,u,'❗打断','cast');
+          log(`　❗ ${u.side===0?'我方':'敌方'}${byId(u.id).name} 的【${ch.name}】引导被打断`);
+        } else {
+          ch.left-=TICK;
+          if(ch.left<=0){   // 引导完成：蓝/CD 在此刻才结算，方向沿用开条时锁定
+            u.channel=null;hideCastBar(u);hideCastZone(u,true);   // 预警格转命中闪光
+            u.mana=0;
+            const haste=Math.min(0.6,(u.side===0?augTotal('skillhaste')/100:0)+(u.skillHaste||0));
+            u.skillCd=SKILL_CD*(1-haste);
+            castSkill(u,null,units,u.skMul);
+            if(bondModern())BondRuntime.cast(u,units);
+            { const _bc=bsRec(u); if(_bc) _bc.casts++; }
+            u.cd=Math.max(u.cd,SKILL_RECOVERY);
+            if(u.side===0) lastCastAt0=t; else lastCastAt1=t;
+            lastCastAt=t;nextCastSide=1-u.side;
+          } else continue;   // 引导中静立：不移动、不普攻
+        }
+      }
       if(u.frozen>0){ u.frozen-=TICK;if(u.frozen<=0&&u.v3BrittleOnThaw>0){u.v3Vuln=Math.max(u.v3Vuln||0,u.v3BrittleOnThaw);u.v3VulnT=Math.max(u.v3VulnT||0,5000);u.v3VulnBasicOnly=false;u.v3BrittleOnThaw=0;dmgPopup(null,u,'❄易伤','cast');}continue; }
       if(u.stun>0){ u.stun-=TICK; continue; }        // 眩晕/击飞：无法行动
       if(u.atkDownT>0){u.atkDownT-=TICK;if(u.atkDownT<=0)u.v3WeakenBy=null;} // 攻击力降低
@@ -5151,6 +5195,17 @@ function startBattle(){
       const aspd = d.spd*(u.spdMul||1)*(u.v3HasteMul||1)*(u.itemKillHasteBonus||1);
       if(u===nextCaster && u.silenceT<=0 && u.hexT<=0 && u.mana>=u.maxmana && u.skillCd<=0){
         if(bondModern()&&BondRuntime.beforeCast(u,units))continue;
+        const _ck=COMBAT_KITS[u.id], _ct=_ck&&_ck.castT?Math.round(_ck.castT*1000):0;
+        if(_ct>0 && units.some(v=>v.hp>0&&v.side!==u.side)){
+          /* ⏳ 引导读条：出手瞬间锁定攻击方向；蓝/CD 留到引导完成才结算 */
+          const _dir=dirOf(u,v3PickTarget(u,units.filter(v=>v.hp>0&&v.side!==u.side),_ck));
+          u.channel={left:_ct,total:_ct,dx:_dir.dx,dy:_dir.dy,x:u.x,y:u.y,name:_ck.name};
+          u._castDir={dx:_dir.dx,dy:_dir.dy};
+          vfxAt(u,'charge',_ct);
+          showCastBar(u,_ct);
+          showCastZone(u);
+          log(`　⏳ ${u.side===0?'我方':'敌方'}${byId(u.id).name} 开始引导【${_ck.name}】…`);
+        } else {
         u.mana=0;
         const haste = Math.min(0.6, (u.side===0?augTotal('skillhaste')/100:0) + (u.skillHaste||0));   // ⏱️ 技能急速 + 湮灭宝珠
         u.skillCd = SKILL_CD*(1-haste);
@@ -5161,6 +5216,7 @@ function startBattle(){
         if(u.side===0) lastCastAt0=t; else lastCastAt1=t;
         lastCastAt=t;   // 全场施法间隔
         nextCastSide=1-u.side;
+        }
       }
       if(unitDist(tgt,u)<=d.rng){   // 距离按占据格集合算：贴 2×2 头目任意一格即在射程内
         if(u.cd<=0){
@@ -5298,6 +5354,8 @@ function startBattle(){
     const alive1=units.filter(u=>u.hp>0&&u.side===1).length;
     if((alive0===0||alive1===0||t>60000)&&(t>60000||!skillImpactQueue.length)){
       stopTickLoop();
+      units.forEach(u=>{u.channel=null;u._castDir=null;u._zoneEls=null;u._zoneFoe=false;hideCastBar(u);});   // 读条中途战斗结束：状态与读条条一并清理
+      clearAllZoneMarks();   // 否则预警格永久残留（自动开战不重建棋盘会带进下一场）
       if(t>60000&&alive0>0&&alive1>0) log(`⏱ 战斗超时（60 秒）：按存活数判定 —— 我方 ${alive0} : 敌方 ${alive1}，${alive0>=alive1?'我方判胜':'我方判负'}（与常规判定同口径：存活数不少于敌方即为胜）`);
       showResultBanner(S.solo?SoloHost.battleWon(alive0,alive1):alive0>0&&alive0>=alive1, ()=>{ if(session===runSessionId) endBattle(alive0,alive1); });
       return;
@@ -5497,6 +5555,48 @@ function cellOccupied(units,x,y,ignore){   // 该格是否被任一存活棋子�
 function nearCells(f,u,r){   // 两棋子占据格集合的切比雪夫距离 ≤ r（cleave/slam/volley 的"周围 N 格"）
   return cellsOf(f).some(([fx,fy])=>cellsOf(u).some(([ux,uy])=>Math.abs(fx-ux)<=r&&Math.abs(fy-uy)<=r));
 }
+function dirOf(u,f){   // 出手方向：朝目标向量的 8 向 sign；无向量时朝敌方半场
+  if(!f) return {dx:0,dy:u.side===0?-1:1};
+  const dx=Math.sign(f.x-u.x), dy=Math.sign(f.y-u.y);
+  return (dx||dy)?{dx,dy}:{dx:0,dy:u.side===0?-1:1};
+}
+function frontCells(u,dir,opt){   // 前方 N 格的格子序号列表（预警/闪光的视觉区，纵深 d 侧偏 l，cone 时 |l|≤d）
+  if(!dir||(!dir.dx&&!dir.dy)) return [];
+  const out=new Set();
+  for(let d=1;d<=opt.depth;d++) for(let l=-opt.depth;l<=opt.depth;l++){
+    if(opt.cone? Math.abs(l)>d : Math.abs(l)>opt.width) continue;
+    const cx=u.x+dir.dx*d-dir.dy*l, cy=u.y+dir.dy*d+dir.dx*l;
+    if(cx>=0&&cy>=0&&cx<BOARD_W&&cy<BOARD_H) out.add(cy*BOARD_W+cx);
+  }
+  return [...out];
+}
+function areaCells(x,y,r){   // 切比雪夫方形格子序号（与 battleZones/nearCells 的"周围 N 格"判定同形）
+  const out=[];
+  for(let dx=-r;dx<=r;dx++) for(let dy=-r;dy<=r;dy++){
+    const cx=x+dx, cy=y+dy;
+    if(cx>=0&&cy>=0&&cx<BOARD_W&&cy<BOARD_H) out.push(cy*BOARD_W+cx);
+  }
+  return out;
+}
+function areaCellsOf(u,r){   // 棋子占据格集合的方形并集（2×2 头目覆盖更宽）
+  const out=new Set();
+  for(const [ax,ay] of cellsOf(u)) areaCells(ax,ay,r).forEach(i=>out.add(i));
+  return [...out];
+}
+function diamondCells(anchor,r){   // 曼哈顿菱形（与 unitDist≤r 的 field 判定同形）
+  const out=new Set();
+  for(const [ax,ay] of cellsOf(anchor))
+    for(let dx=-r;dx<=r;dx++) for(let dy=-(r-Math.abs(dx));dy<=r-Math.abs(dx);dy++){
+      const cx=ax+dx, cy=ay+dy;
+      if(cx>=0&&cy>=0&&cx<BOARD_W&&cy<BOARD_H) out.add(cy*BOARD_W+cx);
+    }
+  return [...out];
+}
+function frontFoes(u,foes,dir,opt){   // 前方 N 格：沿锁定方向的条带（width=侧向半宽）或扇区（cone），2×2 头目任一格落入即命中
+  const zone=new Set(frontCells(u,dir,opt));
+  if(!zone.size) return [];
+  return foes.filter(f=>cellsOf(f).some(([cx,cy])=>zone.has(cy*BOARD_W+cx)));
+}
 function bigFits(units,u,x,y){   // 2×2 方块锚点 (x,y) 是否放得下（越界或压到其他棋子都不行，忽略自身）
   if(x<0||y<0||x+1>=BOARD_W||y+1>=BOARD_H) return false;
   return ![[x,y],[x+1,y],[x,y+1],[x+1,y+1]].some(([cx,cy])=>cellOccupied(units,cx,cy,u));
@@ -5627,6 +5727,57 @@ function freeCell(units,nx,ny){
 /* ===== 命中/技能特效扩展（纯视觉层：只读棋子坐标，不写任何数值/状态字段；
    所有节点经 fxNode 生成并到时自动 remove，受 _vfxN≤40 预算约束，战斗结束后随棋盘重建清零） ===== */
 let _vfxN=0;   // 当前并存装饰特效节点数（预算上限 40，超出即跳过，保证帧率）
+function clearAllZoneMarks(){   // 战斗收尾：清空全部格子预警/闪光（战斗在读条/区域中途结束时不走逐单位清理路径）
+  try{
+    const b=$('board'); if(!b) return;
+    b.querySelectorAll('.cell.zone-warn,.cell.zone-hit').forEach(el=>el.classList.remove('zone-warn','zone-foe','zone-hit'));
+  }catch(e){}
+}
+function zoneCls(u,base){ return u.side===0?base:base+' zone-foe'; }   // 敌方施法者：预警/闪光带 zone-foe 修饰（红/绯危险色，与敌方半场同语）
+function markCells(idx,cls,dur){   // 给棋盘格子加临时状态类（zone-warn 预警 / zone-hit 命中闪光，可空格分隔多类），dur 毫秒后自动摘除
+  try{
+    const b=$('board'); if(!b) return [];
+    const list=cls.split(/\s+/).filter(Boolean);
+    const els=[];
+    idx.forEach(i=>{ const el=b.querySelector('.cell[data-i="'+i+'"]'); if(el){ list.forEach(cc=>el.classList.add(cc)); els.push(el); } });
+    if(dur) setTimeout(()=>els.forEach(el=>list.forEach(cc=>el.classList.remove(cc))),dur/(SPEED||1));
+    return els;
+  }catch(e){ return []; }
+}
+function showCastZone(u){   // 引导预警：将要命中的格子持续点亮（敌我分色，双方都可读）
+  try{
+    const k=COMBAT_KITS[u.id]; if(!k||!k.front||!u._castDir) return;
+    hideCastZone(u,false);
+    u._zoneFoe=u.side!==0;
+    u._zoneEls=markCells(frontCells(u,u._castDir,k.front),zoneCls(u,'zone-warn'));
+  }catch(e){}
+}
+function hideCastZone(u,flash){
+  const els=u._zoneEls, foe=u._zoneFoe; u._zoneEls=null; u._zoneFoe=false;
+  if(!els||!els.length) return;
+  const strip=el=>['zone-warn','zone-foe','zone-hit'].forEach(cc=>el.classList.remove(cc));
+  try{
+    if(flash){ const cls=foe?'zone-hit zone-foe':'zone-hit';
+      els.forEach(el=>{strip(el);cls.split(/\s+/).forEach(cc=>el.classList.add(cc));});
+      setTimeout(()=>els.forEach(el=>['zone-hit','zone-foe'].forEach(cc=>el.classList.remove(cc))),500/(SPEED||1)); }
+    else els.forEach(strip);
+  }catch(e){}
+}
+function showCastBar(u,ms){   // ⏳ 读条条：挂在棋子元素上方，引导期间随时间排空
+  try{
+    const host=unitVisual(u).el; if(!host) return;
+    hideCastBar(u,true);
+    const wrap=document.createElement('div'); wrap.className='castbar';
+    const fill=document.createElement('i');
+    fill.style.animationDuration=Math.max(200,Math.round(ms/(SPEED||1)))+'ms';
+    wrap.appendChild(fill); host.appendChild(wrap);
+    u._castBarEl=wrap;
+  }catch(e){}
+}
+function hideCastBar(u,instant){
+  const el=u._castBarEl; u._castBarEl=null; if(!el) return;
+  try{ if(instant){el.remove();} else {el.classList.add('done'); setTimeout(()=>el.remove(),200);} }catch(e){}
+}
 function fxNode(cls,x,y,dur){    // 在棋盘坐标 (x,y)（=元素中心）生成一个自动回收的特效节点
   if(_vfxN>=40) return null;
   const el=document.createElement('div');
@@ -6209,6 +6360,10 @@ let battleZones=[];
 function spawnZone(u,x,y,z){   // 持续区域按 tick 结算伤害和附加控制
   battleZones.push({x,y,r:z.r,dur:z.dur,dmg:z.dps>0?Math.max(1,Math.round(u.atk*z.dps)):0,slow:z.slow||0,manaBurn:z.manaBurn||0,side:u.side,acc:0,u});
   vfxAoe(u,z.r,'frost',z.dur); sfx('zone');
+  if((z.r||1)<=2){   // 区域格点亮至区域结束（冰烛/时空/节拍/星蚀留场）
+    const zels=markCells(areaCells(x,y,z.r||1),zoneCls(u,'zone-warn'));
+    setTimeout(()=>zels.forEach(el=>['zone-warn','zone-foe'].forEach(cc=>el.classList.remove(cc))),z.dur/(SPEED||1));
+  }
 }
 function renderBattle(units){
   let layer=document.getElementById('unitLayer');
