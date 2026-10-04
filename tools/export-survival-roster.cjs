@@ -1,0 +1,15 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const root = path.resolve(__dirname, '..');
+const source = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const match = source.match(/const UNITS = (\[[\s\S]*?\n\]);/);
+if (!match) throw new Error('Cannot find the classic roster');
+const roster = vm.runInNewContext(match[1], Object.create(null), {timeout: 1000});
+const kitsMatch=source.match(/const COMBAT_KITS=(\{[\s\S]*?\n\});/);
+if(!kitsMatch)throw new Error('Cannot find classic combat kits');
+const kits=vm.runInNewContext('('+kitsMatch[1]+')',{v3Kit:(name,mode,desc,color,asset,opts={})=>({name,mode,desc,color,asset,...opts})},{timeout:1000});
+if(roster.length!==50||roster.some(h=>!kits[h.id]))throw new Error('Classic content must cover all 50 characters');
+fs.writeFileSync(path.join(root, 'survival', 'roster.json'), JSON.stringify(roster.map(({id,name,job,job2,fac,fac2,sk,hp,atk,spd,rng}) => ({id,name,job,fac,job2:job2||null,fac2:fac2||null,skill:sk[0],signature:kits[id].name,base:{hp,atk,spd,rng}})), null, 2) + '\n');
+fs.writeFileSync(path.join(root,'survival','classic-kits.js'),'(function(root){\n  const kits='+JSON.stringify(kits,null,2)+';\n  if(typeof module===\'object\'&&module.exports)module.exports=kits;else root.SurvivalClassicKits=kits;\n})(globalThis);\n');
+console.log(`Exported ${roster.length} existing characters`);

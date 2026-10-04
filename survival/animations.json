@@ -1,0 +1,2613 @@
+{
+  "version": 1,
+  "frameSize": [
+    256,
+    256
+  ],
+  "footAnchor": [
+    128,
+    235
+  ],
+  "characters": {
+    "ein": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/ein/idle.webp",
+          "sourceSha256": "faaf4e2ba8bcdcf60e6031c9274c910caa8e286f4647c548ab07489e1419824d"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/ein/move.webp",
+          "sourceSha256": "99343a12072a589794083358bf5b0abc0da948744ca70e77b9eddea343b6867a"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/ein/attack.webp",
+          "sourceSha256": "a659a5e053e26e6fdaa585df2a8ab4eee5dc4e98c3e99914f3837f8fbb9a075c"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/ein/cast.webp",
+          "sourceSha256": "f15034734ce10af5a7f35042972efd5c020a53574506bfc175419d0cd7c89fa1"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/ein/hit.webp",
+          "sourceSha256": "ec049942d094bd547b40e5ac6bdfdc79b0477d89bbd3668404ca299510a6e85d"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/ein/death.webp",
+          "sourceSha256": "f11ee1f4a8cfc7c628c4a7cc28c2714a70a8336abfd47732751c52abfa3b7039"
+        }
+      }
+    },
+    "kouichi": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/kouichi/idle.webp",
+          "sourceSha256": "80a6530a5aa522955ba332f0e32482ff77345d78a06ff5e99f2bbfa3ffe0124e"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/kouichi/move.webp",
+          "sourceSha256": "5ea855f0a68c50eef14f4e900c94a7f78d296e42c7fb8b5baf5580864da56929"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/kouichi/attack.webp",
+          "sourceSha256": "6e333c50ade306d68c8683cf1c8a55234db453a5db879610e7ff8e64f5954e6b"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/kouichi/cast.webp",
+          "sourceSha256": "ef22917adc73d654adb29c12db831c18acf9696122ec41c422cf65feef99d578"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/kouichi/hit.webp",
+          "sourceSha256": "b53da70b6e5f429b69c97d06767e9ff8c5756bf23525df0a33f782b800124ad9"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/kouichi/death.webp",
+          "sourceSha256": "819e43d2ada2e2d54ee64707d75574f97cdb2d8bdc2cd8eb3d98fe98c60ea3d5"
+        }
+      }
+    },
+    "yua": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/yua/idle.webp",
+          "sourceSha256": "7bd66867bc42045d4f8b069ffd4842dbf7b67647aa696bc453ca7d795d030524"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/yua/move.webp",
+          "sourceSha256": "0c9637970204a3ebd5cb394613df2c08525cff71c9572768f6da492182b7e4b0"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/yua/attack.webp",
+          "sourceSha256": "ea64b0092aed8838f59b5d24305f8718db055f82e794b4b15fd02857b1f86f4e"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/yua/cast.webp",
+          "sourceSha256": "c3564fa41cbad8c4c5d433c17c5445586b01315e74d3d2342307de079b93a495"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/yua/hit.webp",
+          "sourceSha256": "5aa01f9a6516de2c97a8c94a2d8c8b5f2442d9d91d129b6d7cd6fdcce0237ccd"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/yua/death.webp",
+          "sourceSha256": "cacc4a5d7f6b3384d9d0e889aeb3c5ae0ed7ea0d2dcd37333932004d06f2e09b"
+        }
+      }
+    },
+    "goutan": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/goutan/idle.webp",
+          "sourceSha256": "2bd648763d0f9f566426217122273973a547c5a718a21a9b80dadeeedcffc6f7"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/goutan/move.webp",
+          "sourceSha256": "421cc46b926e2374aaef80fdff2a1284117bbafb71dbf7d0537b315376293bb4"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/goutan/attack.webp",
+          "sourceSha256": "5ab870794aeaa0357ba4d44709ac931d5febe4d2e38c3cf3e33ebffbace989d0"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/goutan/cast.webp",
+          "sourceSha256": "19777b86674db359e218109791f91fc4b9fdf3a949312b75bf713122060a3838"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/goutan/hit.webp",
+          "sourceSha256": "7351f62815806467d5d86135348b458260c19e5ae6f30e5a09c47e232efffa8a"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/goutan/death.webp",
+          "sourceSha256": "937cfe038e527a867e9782678539ab6b9752827df63ad45740dc32cb42854530"
+        }
+      }
+    },
+    "yujiu": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/yujiu/idle.webp",
+          "sourceSha256": "7c2eec51fa4daaccff88fbf14824014ccc5ce90331e4137f2afb7db802ccb13d"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/yujiu/move.webp",
+          "sourceSha256": "3bafbab226879dadb6b5ee56c2a7a71a6aeeea02eb09e716966dddc3c30a830f"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/yujiu/attack.webp",
+          "sourceSha256": "a6ba7a593bebd4276b79c61c528f71081cd91fc2c0f3541f76e155289682f0db"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/yujiu/cast.webp",
+          "sourceSha256": "d5b465695a7467b037f694c136001dbd067fbc63225a1cea164f1166bfbaaa15"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/yujiu/hit.webp",
+          "sourceSha256": "aeee1e34a38e2dd021ae657d54d56d9dd210a724b38c9fee4116a1b13a362ac5"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/yujiu/death.webp",
+          "sourceSha256": "e4129129cde745c8d22f8d232afe8d6d19b3e60d3b9d91d99efdb1439f680332"
+        }
+      }
+    },
+    "songlv": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/songlv/idle.webp",
+          "sourceSha256": "f57d101d2bc6f251bb212229aed4b81a4a0b4ae9b865abcfcbde7daea56487d0"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/songlv/move.webp",
+          "sourceSha256": "48a8f915407f0589ef3e3ef86e6601ec6d1b11a46c3ce177219c4497cc5f4478"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/songlv/attack.webp",
+          "sourceSha256": "59ecbf88bc687d1e0e27aad6ee3fbea94d411b9ebe331da2498395ac07fbd7e9"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/songlv/cast.webp",
+          "sourceSha256": "ce8f0fd22d2a5de3f4462189c4e3c382349ecae06fe8595b09c7a5f4af3f7001"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/songlv/hit.webp",
+          "sourceSha256": "534bc565c6858309235138e42a686b71878274a549e7f428295599e587909f75"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/songlv/death.webp",
+          "sourceSha256": "4c911ef3a1057f37df0da3bbaaa5f709214a21099f5585fdd6c2cfe705889b99"
+        }
+      }
+    },
+    "likou": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/likou/idle.webp",
+          "sourceSha256": "5f399251ea74566e0a0098b769848a17e5fd7d79358a2650cdde0398c82b8d9c"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/likou/move.webp",
+          "sourceSha256": "0beb909047198fe92107340e23936fc12aa035807af5840369753bffca68bb43"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/likou/attack.webp",
+          "sourceSha256": "0edb01ad98a45b78ec475ff1e7e1c13c7ccfed58e1d0ee78842b68c48e77fa77"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/likou/cast.webp",
+          "sourceSha256": "a67406ec840d33f1b8d250aae01e9e84a2bf1e1e29306ce4cdc83564347f1d34"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/likou/hit.webp",
+          "sourceSha256": "511bb42f49631af281f5d33278a3d6171386cc5f8c968056da6d16e688906595"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/likou/death.webp",
+          "sourceSha256": "c05942728e08c95157742d4deed701efb18f4ca39562065fe571f8533728a6d3"
+        }
+      }
+    },
+    "agari": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/agari/idle.webp",
+          "sourceSha256": "02c6119826750e18efcc918081416873a35bac876aa34e934b194921c65a559b"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/agari/move.webp",
+          "sourceSha256": "ddae31f5210e1f52c5a5d47c47608a7289ad7ddfcba36e823083761e1b409cfe"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/agari/attack.webp",
+          "sourceSha256": "6ef2d38cc27de6714b52b28c0509abf0fef8f4cee7ffc8546746b134a660e261"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/agari/cast.webp",
+          "sourceSha256": "df5138b2eb9a4519e22ff1610006a918326b5f5696422a06fa8f1af421cd70e4"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/agari/hit.webp",
+          "sourceSha256": "4e746cda3ac161c28fc6ff6de1cfdaaa0929da12312660eb094ab2ef04b0ccbc"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/agari/death.webp",
+          "sourceSha256": "8ccf7988e06a0b137b9dc44d5bbe7d650597d3594b73e8d35dbe9362e65a890f"
+        }
+      }
+    },
+    "hoshimi": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/hoshimi/idle.webp",
+          "sourceSha256": "66d5d3313c63d6e1525ef2b5045afa2a303e5e4b904608df04cb27b98a294c8b"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/hoshimi/move.webp",
+          "sourceSha256": "539a02ac6766cc8ee6f83d0e2c31cda9be898ab6df6ed064234f45a85ac3ed92"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/hoshimi/attack.webp",
+          "sourceSha256": "ad7b7d1aa1c76f85669851b0fbfd13f9f9ea03b902bc38ef63ef0c611da1017c"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/hoshimi/cast.webp",
+          "sourceSha256": "313f3bdb6227008ee0d7548abf431ae9a0e4c7a9e22b6c2d5bdf4a420e734a0e"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/hoshimi/hit.webp",
+          "sourceSha256": "fd8a3ef22cf53396c8a90fcc956bb10bf18993b2c6742376090f52cd334f023c"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/hoshimi/death.webp",
+          "sourceSha256": "76878b5bbdbde44901b727f020a3413fa9483fe20a3371eb3c73e296251e73f3"
+        }
+      }
+    },
+    "chiharu": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/chiharu/idle.webp",
+          "sourceSha256": "a254552825e1d0470fab921f3eaa9adf6a5dc8a9416f0d398a926e1f1aa5312a"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/chiharu/move.webp",
+          "sourceSha256": "222c542f6fa351d2f86300963862f903d8182135ae081d6e7e416ae92a7e900d"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/chiharu/attack.webp",
+          "sourceSha256": "f8efec5a350e6631651bd667147f566b4bd1ee96fc60ac40ff1ed05101c94d14"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/chiharu/cast.webp",
+          "sourceSha256": "9f4cd77ec11f9a3ccfb0ef92e22b63916a0d9445e83629fc8c0ccb6d5288c7d7"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/chiharu/hit.webp",
+          "sourceSha256": "30dbe0f70f3a8a4b7d5c6d88682d209d216f4523537d042e9be7aee7d6269ba7"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/chiharu/death.webp",
+          "sourceSha256": "556089bb49df82cfcc724a80cfef2baa407ddbc42fd933dd31eb0e5d73ef6346"
+        }
+      }
+    },
+    "suiji": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/suiji/idle.webp",
+          "sourceSha256": "87ce91ded3f8570101bcf1087cd7742d3e21f33e202208d4391b1a6bcfa9279c"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/suiji/move.webp",
+          "sourceSha256": "1d0d821e5c0a40ed71f9875d8cbbdb7a7b8654d47f048305a31a76fbcf778d25"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/suiji/attack.webp",
+          "sourceSha256": "163a5c759af525939de3f9303815ef3496c361bc2890fd4e616c1980fdc06cd5"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/suiji/cast.webp",
+          "sourceSha256": "434dfef86be89f899c0abd2b3c5a09781afe8c2780cdca73835a16bb45456670"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/suiji/hit.webp",
+          "sourceSha256": "e0dd73e10ffac13f211b21d57014fe71e23ffd7bfafa3f383428bff053706895"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/suiji/death.webp",
+          "sourceSha256": "e4c954bc0bbe347c5e269b8193a8af5bc259bbc7411a3131fc6cd5fa2c38e7fd"
+        }
+      }
+    },
+    "kanban": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/kanban/idle.webp",
+          "sourceSha256": "715a15670731a557f752ec2abe0b242c48493749b3739fa223dd03db753239d6"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/kanban/move.webp",
+          "sourceSha256": "b728a93455b038991d9dc5bc1a451b152bd0bd9dcfea3c4b73eb872ca3f1d818"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/kanban/attack.webp",
+          "sourceSha256": "35057a2f9c1fcdb4da2e327acffb65256b3bd3f50cab1f2f6bbed900b4f272ec"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/kanban/cast.webp",
+          "sourceSha256": "67cfabe921ed0a9f99668aef69b1389d2ae9b76b27b0d92649e4816257877268"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/kanban/hit.webp",
+          "sourceSha256": "ec56ca815b4939ebeca1ce46fef1137a745c28ec2bd15c88bd930f538459a300"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/kanban/death.webp",
+          "sourceSha256": "cfdb8c6ffc6690046dd38f32c579a64194edb90d73488bfaedf3767dfa739ef8"
+        }
+      }
+    },
+    "zhouyi": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/zhouyi/idle.webp",
+          "sourceSha256": "8985cac6b9ea804b1548abcf10ed95bdd40d5332d773dc761857092a50b4fba7"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/zhouyi/move.webp",
+          "sourceSha256": "31d8829a74da9348650a02818b4423dbbf99710f3e473ab878b7c8e2c2208c90"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/zhouyi/attack.webp",
+          "sourceSha256": "b4670feaacd41083ed15baf8a2a6c5c93c35de2d0733d7f2a322382656bb31e5"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/zhouyi/cast.webp",
+          "sourceSha256": "fc864155187062752ffcdc895cd6a672e4cbe273e1451783412e1f95494786a7"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/zhouyi/hit.webp",
+          "sourceSha256": "3afd012998d3d2ca7d280fcf0472034d6e4c2a97aa1b93ee69bcdb1fdb002ca4"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/zhouyi/death.webp",
+          "sourceSha256": "9cda1bb8f8043bb78f8fb1eb036c18d8ab77b4a5e0ad4e073fdcc76a958cd29b"
+        }
+      }
+    },
+    "yuji": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/yuji/idle.webp",
+          "sourceSha256": "fe50cadfac1cd86731771092d42581bd2e938212e9c39b29390fcd484b6b0109"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/yuji/move.webp",
+          "sourceSha256": "08f23efa44f9660da591fa4db6600c37537da4d3f8dce0f2257e56b79f0687ea"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/yuji/attack.webp",
+          "sourceSha256": "21f3e9a9c77b0eaca10dbcdd86bf59ee8fc5f5bf86de1b728d8b6340129ef474"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/yuji/cast.webp",
+          "sourceSha256": "c1bbe0c6ec57a333da5690021ae564cea52424d9ff81c5e6d75286414493e06e"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/yuji/hit.webp",
+          "sourceSha256": "97479a9c38af255f2fb1aae765a63f9fa238467f0bb7f21a20dd968f44b15485"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/yuji/death.webp",
+          "sourceSha256": "0b96dfb9e13cf18ecfeaf60058863552ae02540cf1d150fb799ae711cdd4a3ff"
+        }
+      }
+    },
+    "tiandou": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/tiandou/idle.webp",
+          "sourceSha256": "3dbb5c8c4c19bd41d9661b4bdd3961cc93d58b2bdcdf4d4434ef7725d7b400b9"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/tiandou/move.webp",
+          "sourceSha256": "7b9fe5e7542faea35589dab70a31d7cb304ec4c46cd12f98b9556f0e94d7adcd"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/tiandou/attack.webp",
+          "sourceSha256": "2d4fb2e75b82f713afc1dc5b7c5850de6a5c942e725e966fc78d3e17fbec7e26"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/tiandou/cast.webp",
+          "sourceSha256": "fc696b9aaf3a5382f167986960f1cc9c89b6fc30de7bfa755e713896a325cb6a"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/tiandou/hit.webp",
+          "sourceSha256": "125d2a022516bb5e2d9e9c1f01749fb8792401760c80ac427b8365808eb3975d"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/tiandou/death.webp",
+          "sourceSha256": "0b5daef4d84b0d302c61c33f81868d3e5e80b04efb6738d7acddf3e4bf39ecaa"
+        }
+      }
+    },
+    "aza": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/aza/idle.webp",
+          "sourceSha256": "e306d95013478ec7208d8fe8a166c0dd99bc59144cc4decc605802f0d0096b96"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/aza/move.webp",
+          "sourceSha256": "9108729badbf4db7d06eb67d755d70e5e2a73986981b77d6993691cd05b9b806"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/aza/attack.webp",
+          "sourceSha256": "79486f8c78869de73b2b2b95149d44678fb7144a85a457e21832e699559dc589"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/aza/cast.webp",
+          "sourceSha256": "e19bb6671dca8262d3c67b4512cde41587ecd3951094d1364418326548ad8900"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/aza/hit.webp",
+          "sourceSha256": "6be181ad253ac40ead3a23eae69aad97673906a3374c608b70e0ca197d471d21"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/aza/death.webp",
+          "sourceSha256": "b5897df8e5d7d840e8cd052f5fd3cb37ad404bb3674bc5f3fabb6831e7abb05e"
+        }
+      }
+    },
+    "pako": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/pako/idle.webp",
+          "sourceSha256": "5ef8f9b5637c82697c79124753e5453c7324c36420e5aa576fd947e48fdbdfc6"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/pako/move.webp",
+          "sourceSha256": "bd77c122ec57bc6cf246e94bccbec8c0504ac97a9ec0bf8c905e046bcfe47861"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/pako/attack.webp",
+          "sourceSha256": "d81fee6279e331dfe0931cea65e1afccfa47c16cf1586a5979458707f9e056fe"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/pako/cast.webp",
+          "sourceSha256": "3d9bebb101fb2993aaa161919ae3d6742a6c3934ed0ab41bac476d9192dd3a00"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/pako/hit.webp",
+          "sourceSha256": "2df414e725178e25552e8440367fff4d7203d8e0c2e771e8a52e6c8786ea2a1c"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/pako/death.webp",
+          "sourceSha256": "8b935e6521f04915ae280dc9d071ff564cd6235a7f6a98ef7716e4b51eb69053"
+        }
+      }
+    },
+    "zhijin": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/zhijin/idle.webp",
+          "sourceSha256": "6414a6daef931e7e2d19c3eea2bc3170bfe3920232b39da2cb788cd21b3b69c8"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/zhijin/move.webp",
+          "sourceSha256": "786f3f2824fad7075617bd32d566a8efe238c06bd7affff0d15e08b5013874e4"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/zhijin/attack.webp",
+          "sourceSha256": "1211ebce9d95b550c42252d933cd2642a828c86c0bba75921d21f4fcf2769334"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/zhijin/cast.webp",
+          "sourceSha256": "8666753032be47b6071a5b11ebd96072359d198d10b40c820b5cdb4ed7cb54fb"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/zhijin/hit.webp",
+          "sourceSha256": "b86bd3f3e9b0dbc2c4e85843fe84bc14284902879c0ac8d126026b0475e834c2"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/zhijin/death.webp",
+          "sourceSha256": "9db15dd040a5f86a7bdd8b9967564cd5ea41dce4f048aa897999a668777e1e47"
+        }
+      }
+    },
+    "sishi": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/sishi/idle.webp",
+          "sourceSha256": "2c9058249e855da08b599647033fa6ca0a40240249f420eb133125a88878c239"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/sishi/move.webp",
+          "sourceSha256": "17ce4d6fe825896253ac1d7f3c470b5d01c0654219e3da2a57bb3845238bf8c1"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/sishi/attack.webp",
+          "sourceSha256": "5ba40b7e006455afe0ac748512db2cabb48fac7282f70722d6c8cd495214fb49"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/sishi/cast.webp",
+          "sourceSha256": "bbbaa6a4dbc65a81233a33ee01c83963188801652927e83054a1f89dcdf00095"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/sishi/hit.webp",
+          "sourceSha256": "1d21bb79c464e3d2e90591823913cf34aa0c444c8f94fdbb0aec438cf5e99b21"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/sishi/death.webp",
+          "sourceSha256": "f5c22deae095868c30a98e8f88823225813857d8a35067487c7b5ac68c53269a"
+        }
+      }
+    },
+    "sumi": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/sumi/idle.webp",
+          "sourceSha256": "eafe7ccfe02981271b2d7659b9a0f90c9bcfcbac69e01838ce90bca079be8415"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/sumi/move.webp",
+          "sourceSha256": "50119fc4f8078bbcee9e6170ec62f43c272c156f2046078057bb8d5932c3cf77"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/sumi/attack.webp",
+          "sourceSha256": "8c8aa667f6dcc8c1d998c77b79397e9d1cf21cc2294eab0f155381b056332fb4"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/sumi/cast.webp",
+          "sourceSha256": "6d06da69f785629369f4140ece15a14a43c4c4c383ff7225a7538a7d64fff823"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/sumi/hit.webp",
+          "sourceSha256": "6679feb0b23fd408ad60e14044200dec11c77088098e42b28e29d57b200d22e8"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/sumi/death.webp",
+          "sourceSha256": "71e5e8118464e6f5f26b733299cf6052d340fc809a343f7c55bcf79e44aa8f2e"
+        }
+      }
+    },
+    "yukie": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/yukie/idle.webp",
+          "sourceSha256": "983655ddc62734a6f3e4c4723f94ed0220b40a7f08a8c348baec5c02a39c4b3b"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/yukie/move.webp",
+          "sourceSha256": "9b6dc7be89229d342fdb35c52f732c6d60d95403a38b33e4b011c997f52ac95e"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/yukie/attack.webp",
+          "sourceSha256": "58ea946152767e12b0723fdc9cf4e9eb79090ca723dc7a896c6cfef9c8a4df5c"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/yukie/cast.webp",
+          "sourceSha256": "7ad0d62356838df77aca3a6a1e61fc0360108ebca1ba986ac9a855dfad22397a"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/yukie/hit.webp",
+          "sourceSha256": "590c7eabb6345e6cab72ed4201fad66eb22bcbdbcd4181be182e966fa8aff240"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/yukie/death.webp",
+          "sourceSha256": "5e832c23e33ae360fc6693eac727f46b175c4601ee06b8a57ae54bde79621b6a"
+        }
+      }
+    },
+    "miting": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/miting/idle.webp",
+          "sourceSha256": "4c78fb6a80a6298d543537f7c43cbdcf437df70d52c9d6e72107d1eff07743c9"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/miting/move.webp",
+          "sourceSha256": "189ee0e75d67992a62f44f36d6b3890b721c6e54716e087040876995957094f1"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/miting/attack.webp",
+          "sourceSha256": "6eaccffba926709ec26c235a980ab0ad0f61f019b512278b7c16fb3edc6c70f7"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/miting/cast.webp",
+          "sourceSha256": "62f8bf2adff88bd47309506abf785cd3a8ace6a5288d3eeaa9d7e547ac8d40ab"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/miting/hit.webp",
+          "sourceSha256": "174f506984d70215b5ac398d9b3baa6620484116c96f3fbd94fedcde8c41287d"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/miting/death.webp",
+          "sourceSha256": "6997751fab351de5fb08a4cab70d6aa58ddbbdbd24964106e7cce9f0ffa6185c"
+        }
+      }
+    },
+    "xuezhu": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/xuezhu/idle.webp",
+          "sourceSha256": "4f97ee52f5391d1d191daa7938501d6847d3791f75d041be1e6e896db369d12e"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/xuezhu/move.webp",
+          "sourceSha256": "9f7cca358e135fb5caff6a9ef87b7614f7e5b9704897d29219a43e21a9dda845"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/xuezhu/attack.webp",
+          "sourceSha256": "26d5fc981ef52e235cdebf012ccfe077d1338d0aac2c05e80610c4236e3f4cd8"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/xuezhu/cast.webp",
+          "sourceSha256": "6d8d313373a2a3ced67af5079b15b7e16391bb83d870b2fc5d7aee5b47ba7831"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/xuezhu/hit.webp",
+          "sourceSha256": "548b3f0d6a5d953d55e2f635537067726eb8da58a8ef9b58e88443c7c5800792"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/xuezhu/death.webp",
+          "sourceSha256": "ada0510f55103b134846c36cefc6e38f1a4befff2f1f64d38b0d99153a2ed6ae"
+        }
+      }
+    },
+    "zeyin": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/zeyin/idle.webp",
+          "sourceSha256": "2e52f5a859f6d99794331b9efb3624d0ccf7ac583f2b4b77527a2a93209ff838"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/zeyin/move.webp",
+          "sourceSha256": "cb1fcfeeebd426bf367410c9ef2a1b291ca0916be5fae7b3fcb9b8123795bfe0"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/zeyin/attack.webp",
+          "sourceSha256": "8d2c6f78138c8b57934fdbb127f27460b255b07c75f80ce093210a50115caa66"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/zeyin/cast.webp",
+          "sourceSha256": "8b44e7ab3e8962bec08f9da45c057882aa28a8bdcc283fd73d62806faebd378b"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/zeyin/hit.webp",
+          "sourceSha256": "1c17b817542581f0c6176367c82fce5f9061542c548550517532eed77b7d7b87"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/zeyin/death.webp",
+          "sourceSha256": "5642b6dde0e5d39e4b12439d99952502840e4bba2a0ca771bd9e5265e5469085"
+        }
+      }
+    },
+    "sanli": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/sanli/idle.webp",
+          "sourceSha256": "43c4b46847fddfe0d1598345d6a1fb024ba39923c79151a371314a3c31f777c6"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/sanli/move.webp",
+          "sourceSha256": "5c2976e71a6c258c40b979ed6986796105fc522c00afc1efef1ecd85842a923a"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/sanli/attack.webp",
+          "sourceSha256": "ce5d5443587de3fe3bc86bf00a9d36c912948cf02c7d54f988c64226c4f36b51"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/sanli/cast.webp",
+          "sourceSha256": "90fee9a9825be3b6dc33a8b88d6afcaaec701b052517e3147e472d6ca6879b8c"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/sanli/hit.webp",
+          "sourceSha256": "dd98b572aa21d4540ec6bff42785a506e60b1796bb79c635d81d9ed39bcf0539"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/sanli/death.webp",
+          "sourceSha256": "940cc27588b1d3d50378b0a34b356ebbabe092192ada76d00749de92f14ea91c"
+        }
+      }
+    },
+    "diansu": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/diansu/idle.webp",
+          "sourceSha256": "1399596622a6fcfee103d2edbd10ac1d311ce5644c84adffc9fafda8ef4e38cf"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/diansu/move.webp",
+          "sourceSha256": "00012bf5bc496685ddec5bd8384591207c8101822975ddd3d68bafa118199105"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/diansu/attack.webp",
+          "sourceSha256": "96943146fe8ee18ed24707782a8e8dc6ed8cf37d72aa7433d8c129f0426cb3df"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/diansu/cast.webp",
+          "sourceSha256": "14226dc31009b1790a88ce8ae54608da38e6d74cf2475823ff55f2806ff9318a"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/diansu/hit.webp",
+          "sourceSha256": "21309fc3e23ac2811f736780dba2fa23cd0cfa1382a933091bedf9dafcf77c48"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/diansu/death.webp",
+          "sourceSha256": "5708f01143b38a5f4bbd4bfa6f997e7575d2bdc4ddd97c612c5e8002a58505aa"
+        }
+      }
+    },
+    "lianshiye": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/lianshiye/idle.webp",
+          "sourceSha256": "7d9999f58798b8561972279334b75e28fbe9be1ad49624f83e54eb160974c391"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/lianshiye/move.webp",
+          "sourceSha256": "a63e0badd3bfe9096022fc1079e569f2ade9a19cf34de314a7da7aaaf7271a2d"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/lianshiye/attack.webp",
+          "sourceSha256": "78104dbdc1b20052f39c8857b1362d85cb8914154cd9d6a8726f49b617b23162"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/lianshiye/cast.webp",
+          "sourceSha256": "4bfd8e099a3d41abeabf4ac858f051f51d3d21ac9da2fb5642dc48b5cb7c4104"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/lianshiye/hit.webp",
+          "sourceSha256": "b454e04d8425fd584c41a43f9403d60885f5860e7a9a705c5823559d96fe26ac"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/lianshiye/death.webp",
+          "sourceSha256": "4fc053b680c0105b255697b34d6e688f415ec81eae211f80e84deda241c2ffc0"
+        }
+      }
+    },
+    "huize": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/huize/idle.webp",
+          "sourceSha256": "34f6d520925c9526f96991a8ada4dc533a82e39d789c0ef803b68d45b8c83022"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/huize/move.webp",
+          "sourceSha256": "567c8cde33d40a14b48e769f1ad33fb9bc75cb13dcc34eebdcc2bccc082ac328"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/huize/attack.webp",
+          "sourceSha256": "b9eeb7501cef311696103a869025055014b57d0091ace8852e7a02507106c999"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/huize/cast.webp",
+          "sourceSha256": "902b75ee17b1ae8b19ee8af584966494a9a5417eb7c0f25765d1839eabaebe04"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/huize/hit.webp",
+          "sourceSha256": "e167715df2008ab3cdcbca5d7f84f4253f13759d7665c9afb90978336f4ad537"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/huize/death.webp",
+          "sourceSha256": "911de419fd022cc0fc3bbe0bee37ab3cd851ad5d9cd0165dc11123fbbb649c90"
+        }
+      }
+    },
+    "shengge": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/shengge/idle.webp",
+          "sourceSha256": "b3474380d8a6f6e5f59aa04fff7fd586f9b7a6c89e7c6b96b3f9d8854f489f6b"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/shengge/move.webp",
+          "sourceSha256": "b48f42ad02c96e736cf5f7f4a4cc66e4f571f6ab28856af803d16391dba3daad"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/shengge/attack.webp",
+          "sourceSha256": "2041955cbecfc497f2729de272e4883803f111c6557733e2be3cd308fb96d13d"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/shengge/cast.webp",
+          "sourceSha256": "f58e4c6853f6105e06b6711c8f21cf93e5bb0f13ce4ee7c9909be1c97be14dc6"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/shengge/hit.webp",
+          "sourceSha256": "aa764319c06c2ee8752478065ce6de318502af083714cee395eb6fd39cac2bf5"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/shengge/death.webp",
+          "sourceSha256": "1bdfa547df2575b2860815830415171a9ce7f4ee16ba06035aa2af68505f751d"
+        }
+      }
+    },
+    "shadow": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/shadow/idle.webp",
+          "sourceSha256": "fe465689871bb2e34022e1f8d5437595aca745d3747c406021f823d5f31fc991"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/shadow/move.webp",
+          "sourceSha256": "58be64b8665fa16626d36488c81c2be369bbf956d2200d1f53c220ab884306b8"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/shadow/attack.webp",
+          "sourceSha256": "97d83bd831a7ef7eaea26467d85ab6be41c15f20b186d1502eaf196b22c84037"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/shadow/cast.webp",
+          "sourceSha256": "f587ebf839b7e794465d3c48c8aebb662529c2b3c7215cb42411d623bb5f8174"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/shadow/hit.webp",
+          "sourceSha256": "fd26fd0c734074e4846c2145e0479223718266ec3a9b79fb3ae2d1ab99f85bf7"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/shadow/death.webp",
+          "sourceSha256": "089883c11f2f37f83c2a83776a219f99d3b5a9deb6f579841937c03d4fc0bf23"
+        }
+      }
+    },
+    "nox": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/nox/idle.webp",
+          "sourceSha256": "65a9ce8babb444c06c8047b8a2f98d5bf88e276789e37a3fabd46fb40886fb8f"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/nox/move.webp",
+          "sourceSha256": "324e9077efbc9e8f9b0428ff50f558e4a742c402cb463ed9e0063f609208d0f9"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/nox/attack.webp",
+          "sourceSha256": "c4164a203a5b938e8ff7c722432c3facec7b9b37a7a07df3b7f0792e78148f2e"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/nox/cast.webp",
+          "sourceSha256": "674b24d2f9a67a8a77e6e9a185d0507aa69e0f37e00bc6511465a75119c2a4b2"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/nox/hit.webp",
+          "sourceSha256": "4fb122af2f1a74ffac0bbef4367f4e92e0b49cd3d3afdadd70fb16cb665a61f1"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/nox/death.webp",
+          "sourceSha256": "ab35b1a98644a52091040a117d74501ec83e6b4e60a554f3bfd3af498b86012c"
+        }
+      }
+    },
+    "miyue": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/miyue/idle.webp",
+          "sourceSha256": "3a566ce4a6e625a3ae352e16513413763069d75d8959d55c79748123f0e9b8e1"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/miyue/move.webp",
+          "sourceSha256": "1e64ec562c8a45d7d21a48dd0bc1c613c0e07030ac00457910480c9205cded6a"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/miyue/attack.webp",
+          "sourceSha256": "c855c96109f27d9f06ed406489a0cafba83648270115f9ce9c57f51b29678f79"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/miyue/cast.webp",
+          "sourceSha256": "f21e697936930f1121bb1bf90f2cc501f1aa09425832443b63ffdc607b243179"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/miyue/hit.webp",
+          "sourceSha256": "9526c9ef362c434d88fcd2eace57c5f7dc49b50b1c3458d45c4b466c4c7419d4"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/miyue/death.webp",
+          "sourceSha256": "9c9db5e228f960ce6026175a59b0b6187f0aa3c676938c6ed12e0d16643fac53"
+        }
+      }
+    },
+    "huali": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/huali/idle.webp",
+          "sourceSha256": "19b797cf415776be1dcdde66f6cced7d47e412047f9c257c5e83a1ebfa964a4b"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/huali/move.webp",
+          "sourceSha256": "ec93c7d79d7d345fc0d76ad77c0dc1f5cbd4cc4e6048432a1b989914a3018ff4"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/huali/attack.webp",
+          "sourceSha256": "cff28ed9698cbca418bf1db0f00f42a0ca71390f2111dd9700584d07d4275d47"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/huali/cast.webp",
+          "sourceSha256": "fb0708c2198a037716e32bfc2d68957f27602a0ddf2db330790a25969df70418"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/huali/hit.webp",
+          "sourceSha256": "c355853c825d402665f1544984aeedebe4c5242b25ad224bed036e6f066eba29"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/huali/death.webp",
+          "sourceSha256": "78d31a6879c8f67a20fbb1c0742ea13b225366ebad147871b9a0d33d4f736b6e"
+        }
+      }
+    },
+    "youyu": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/youyu/idle.webp",
+          "sourceSha256": "2451b4f1aa1fd1451e4f1bdc5766bdbac57e6734f146f6c718dc896e1fdf9b29"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/youyu/move.webp",
+          "sourceSha256": "d5a20d106949e1706614e9f82542b58cb56e8dc3c4ff9b3b96c8cad12c0fc28b"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/youyu/attack.webp",
+          "sourceSha256": "abb4c3fe982e31c5d5aee5a4f4f573a9f01726f2da11abe4d0b46b50faa03a4a"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/youyu/cast.webp",
+          "sourceSha256": "8c23636b92847ceaa7cd0fa0abb9a8c2a0cb15bfeed6f77bfc9d6e43ff9e30de"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/youyu/hit.webp",
+          "sourceSha256": "19e23a0d31ca6507a45f41070143fce1491a675da64073448d60a1edec02455e"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/youyu/death.webp",
+          "sourceSha256": "44ee7812c57abe47f80b6960feb0139ad6260afd8c4abf9a0e5bddc507942679"
+        }
+      }
+    },
+    "quanrong": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/quanrong/idle.webp",
+          "sourceSha256": "8f86cc4d99de6809b470ab64909d3072682e131ad3c410daa31459b262acabb9"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/quanrong/move.webp",
+          "sourceSha256": "0dfee4de1b179f680a90cb4bced663845b1b7c36f43d97e52def52e1b56c7d45"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/quanrong/attack.webp",
+          "sourceSha256": "d237ef228d9128d560d46fdd768c37c50d5b7cd2e9438be0cc54d3768615bd0f"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/quanrong/cast.webp",
+          "sourceSha256": "c9f1aec88afdbba4309b45d9c5a0a18920100f9893e5b75e0192713e8576686e"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/quanrong/hit.webp",
+          "sourceSha256": "832b62aba65a2e2172a777cfddc0f3c83a6cb62755c5448f510de6e85de3fd84"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/quanrong/death.webp",
+          "sourceSha256": "8c5df8f4cb12d7216053fa631e7d58d2bb29e02043343a1c81e190094169e996"
+        }
+      }
+    },
+    "ruiya": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/ruiya/idle.webp",
+          "sourceSha256": "ffbd91cbf67d118e5be1865bcfade8479e370a982dc94936a75a157b3cf1c809"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/ruiya/move.webp",
+          "sourceSha256": "279be2c14df68dfa49cb57f128cffa83e515f9da0d29dbaaab8066e73f91dc84"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/ruiya/attack.webp",
+          "sourceSha256": "49cd10507168945f06324aa358adaa28363668b7aeca362698bc77648e09bb7d"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/ruiya/cast.webp",
+          "sourceSha256": "289dc931c1ab59f6d6204fb6e21481509eed37365c65ccccc2aa4926cd7617c7"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/ruiya/hit.webp",
+          "sourceSha256": "ad9284b76b9ef09be1b9ebfdc797cd9e4ced5961c912e194fab7fa7d7fd666f9"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/ruiya/death.webp",
+          "sourceSha256": "d8cbb7059e2cba2e1d4012f9de91e6ffb4e8b9a1adf2ba658ef38ed43d50e5e4"
+        }
+      }
+    },
+    "mumu": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/mumu/idle.webp",
+          "sourceSha256": "ddda1f7608506b155e2a298abb52964306ef7e71ab3b753b0a0c8fc319d5e099"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/mumu/move.webp",
+          "sourceSha256": "2e5af11979bc125204118afecba696d7392965c166a2e35465f1997cd597263b"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/mumu/attack.webp",
+          "sourceSha256": "61c9fc1288ea13a6c19f8f777724130525d31648bf93828f8038dd8eac230ebb"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/mumu/cast.webp",
+          "sourceSha256": "a26268e7c7b17feaf1435c9a1c980d793b4f72e6f0dbf558a1028855e7098b04"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/mumu/hit.webp",
+          "sourceSha256": "0bffe6358997c5fea3e198b0e8236185c4dca9b85e41aa492a94843fd4abf9af"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/mumu/death.webp",
+          "sourceSha256": "8daee581d3f2f534a3bfbd3ebac5d23e95d30a7ac51c175530bc26908aab6a9c"
+        }
+      }
+    },
+    "kroya": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/kroya/idle.webp",
+          "sourceSha256": "ca872a10cd45e1c9541e4039d99624de84a8ebaf12059aecb26762e0db89206b"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/kroya/move.webp",
+          "sourceSha256": "25e9a86d8d4e212b354bd3181d797dd3e087fd14a355fb486a044474a1db1fcc"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/kroya/attack.webp",
+          "sourceSha256": "59d7c2f8ff2513c2fc17b041023786dfdd44fc3589c218b799cf81a523388f53"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/kroya/cast.webp",
+          "sourceSha256": "8c2cacf29bcc6b7de3b367d9367ee72740fba7763638d3e5113cff8de5fb5eb9"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/kroya/hit.webp",
+          "sourceSha256": "58afd332cb6d7bf2e05228abdd6c5f527fddbf063f5163a0712614776f0a6dae"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/kroya/death.webp",
+          "sourceSha256": "1a04abc8eb7fce042fda0fc5213949d1d005bd7be03e0c97f0cfe8ea35b116fd"
+        }
+      }
+    },
+    "shiliu": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/shiliu/idle.webp",
+          "sourceSha256": "91a3909849c2303f0e445250ba3844e219d9223886a180dfa01c5d8c7d894b5f"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/shiliu/move.webp",
+          "sourceSha256": "1136b0c5dfbbda5e17c056503572e1126a19a13c0e158b0c38c370f8f9b0c33d"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/shiliu/attack.webp",
+          "sourceSha256": "8760131a988ee9b27cbe41fdc5fc12fe2ac740b66111b08bd42ed072be928f9c"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/shiliu/cast.webp",
+          "sourceSha256": "023a154d4b80e31f186b3c3b0cbf7150b4e1e77c5ec44de379ddaefb2ab4213b"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/shiliu/hit.webp",
+          "sourceSha256": "6cab274a38303d875ba1e75b6eb1a80401ac826cac09f2ef062f9679f2b63b75"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/shiliu/death.webp",
+          "sourceSha256": "ecf6a15d9e76c6b78e896bf4e8e37658ef1ee23343054bc02c16b29fef0b5d75"
+        }
+      }
+    },
+    "seki": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/seki/idle.webp",
+          "sourceSha256": "bf77733e7cdbb68f85a9ebd8881e263d377d4f6ecc3e6ca45a5836896cd8d54a"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/seki/move.webp",
+          "sourceSha256": "2207d5500f1bdf1ebb4292a91290f4a4c6834d67860fb158078cd2e41d9b0236"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/seki/attack.webp",
+          "sourceSha256": "b600c0c9bc0332fb7a0328ab3f8c75b61e501df149662fe3a8cfd66bc290c10c"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/seki/cast.webp",
+          "sourceSha256": "77a185a619cc2d4d99d4dac6cce11b8be588024fce83c8c129ede41aad254093"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/seki/hit.webp",
+          "sourceSha256": "2fd34809211a6db9e15215edbff43ce1bb534e96b6883df0b8a676411f090738"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/seki/death.webp",
+          "sourceSha256": "b14fb88cfe2c855583fe6ed4f9c353669029f8ab0aca3565761dd91ae4937098"
+        }
+      }
+    },
+    "haruka": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/haruka/idle.webp",
+          "sourceSha256": "f51179832403e3470defc9754d816d3299d1b3f2d3ba6b50a44f03735b53b02c"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/haruka/move.webp",
+          "sourceSha256": "f09ee84644748bf324add56ab8010135acf447a043479cf11f13daec33238948"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/haruka/attack.webp",
+          "sourceSha256": "1460aa98b9add48a1058776d5cd60dbf9c42f2555d2e1d6356dde327dc7ef34e"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/haruka/cast.webp",
+          "sourceSha256": "e8410d3a953d6e39dc9f9a1b2dd88d74dae2e8d25fed9478c7a22e587f5bbb18"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/haruka/hit.webp",
+          "sourceSha256": "d7deb5e8e02adc8bf11054d182bac275ab122f5bf76e3ca92789ab61a1d19a84"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/haruka/death.webp",
+          "sourceSha256": "d4ec0385127aef3e4980970113a891c97ba2fc5128c6bd0fe5179d608116e0fa"
+        }
+      }
+    },
+    "mahiru": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/mahiru/idle.webp",
+          "sourceSha256": "4e74ca05456822caddf53046e1ff9847f1823bd02eb99b3001d0c87cf484ee26"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/mahiru/move.webp",
+          "sourceSha256": "3628c7a4c9f15c73cd59db0569bf5a069d8f3586b381c2cba128f837c3f67880"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/mahiru/attack.webp",
+          "sourceSha256": "887c9dc20459874cf4d34e01d0c1dab0baba90d490060f1024280dc06044debf"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/mahiru/cast.webp",
+          "sourceSha256": "f9a209afe462f05e875c81f79de55224338f7775c4ffb2e21473d13a2f82467a"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/mahiru/hit.webp",
+          "sourceSha256": "83047acfa3edc0d5e04363ccedd491c6584310c0c5ca4435673df268733d1f39"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/mahiru/death.webp",
+          "sourceSha256": "65174c8ffd6560432e28026c2681d585b07a31814208524d1bd79cf1cfb14230"
+        }
+      }
+    },
+    "nana7mi": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/nana7mi/idle.webp",
+          "sourceSha256": "b51a2dff9538997b3d9948ae2d67583e0a1d83a4b8c60368e45e0ea705e5d040"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/nana7mi/move.webp",
+          "sourceSha256": "c636a8c1a4872260feb6b260c0845259892f3b46f00e5187ec381fbffe665ca9"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/nana7mi/attack.webp",
+          "sourceSha256": "76c37f2052ac04a91eb3f80f0d93de985c4876683d73ed49874c08d93189580c"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/nana7mi/cast.webp",
+          "sourceSha256": "fddcf2a337173c63ced175f53d75edcbdcc830197bff71126e501fd7740f640d"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/nana7mi/hit.webp",
+          "sourceSha256": "d0210cd2d641b2b5dd628165927e3b9c4f38884442d35a3d45375708b8a410fa"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/nana7mi/death.webp",
+          "sourceSha256": "b0a5ea69b53fe572896a2c96a3128d17b888635850bd7457341a2c62bbc2b87a"
+        }
+      }
+    },
+    "liAn": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/liAn/idle.webp",
+          "sourceSha256": "13fcc36591404d6e7f2b383c9662f37b49a4afd6df3815b8c7aa50d98b9c13ca"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/liAn/move.webp",
+          "sourceSha256": "e8c2e2b7c768640d926f4caac41151a434b33340d363662d85e54eae7bbec943"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/liAn/attack.webp",
+          "sourceSha256": "e27607ece84a4a4e2fb957e79753f1441e87e9d43accc4e32384377377890525"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/liAn/cast.webp",
+          "sourceSha256": "f8f76efdcb6d91e63fe7fc1a9d73f1292b124b29f16a89fae10ed097fec88131"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/liAn/hit.webp",
+          "sourceSha256": "fc327ddcda54d38deca3899035052105ed94ab55593cd027138a1f5b09a0b824"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/liAn/death.webp",
+          "sourceSha256": "cb0b3a8b36d172ed96672317e4e2ea6fc93bf9f2def309c86a34b2149fa8e483"
+        }
+      }
+    },
+    "youyi": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/youyi/idle.webp",
+          "sourceSha256": "e30591a33e8a064aa17b6d449d1980ad9d1572743d4ed2d0530afbe7fdd1f7fd"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/youyi/move.webp",
+          "sourceSha256": "00c574bdc0aa688cccf123a82e3cd56b270a2cb159d999acbcadc4760ba48218"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/youyi/attack.webp",
+          "sourceSha256": "6820de5e2f65ee07ec104dff3f6aaa53c06a213b64d08bc255f9c45f8c970f7b"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/youyi/cast.webp",
+          "sourceSha256": "a43621cb7a4b07390e002e316a8877a34ddb3bfbf14ebea370f319920fb9f052"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/youyi/hit.webp",
+          "sourceSha256": "953186116b80d4cd3432153ae5fea92adc50f41ac7f743499b76afdb1d13b1cc"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/youyi/death.webp",
+          "sourceSha256": "6faea28f81660d65af57d5227bb3e027efd57a0fa5a4b8afad645249a0005bd5"
+        }
+      }
+    },
+    "azi": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/azi/idle.webp",
+          "sourceSha256": "590e123b119168605d752d72032007892b55c8e70e4123ea4f834a7d2e5fa2ed"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/azi/move.webp",
+          "sourceSha256": "05b6d5db7d4235aa31e8e32011e7f090899d566f782776e15d65dc05edc08e59"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/azi/attack.webp",
+          "sourceSha256": "613471343eba7432b9dfec207f079ec2f977f0a40cc51060bcd585063c69ee91"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/azi/cast.webp",
+          "sourceSha256": "d4fb4597979af00325f32fb98659ccaf9f328157849c37970e98d70ad71fb997"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/azi/hit.webp",
+          "sourceSha256": "8138cabf647bfe5f8311f8689ef8a0d162e25c217664cc3baa1e2d17f47439de"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/azi/death.webp",
+          "sourceSha256": "25a90b18135f8b8c85ed5ba58ea8505ef46841ee1a31fa3b60cb878c4dc3ad87"
+        }
+      }
+    },
+    "taodai": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/taodai/idle.webp",
+          "sourceSha256": "237e8112f949974803fe6be4ec412260e3c07b391f8c46fdab8e8f596bdcfe9f"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/taodai/move.webp",
+          "sourceSha256": "2f8d3ee415d8e9765e227f00cc11fee8f6f5c5d612fb6ace8969b3eaa1a846c1"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/taodai/attack.webp",
+          "sourceSha256": "33adc72f8125487d30f36ddd9d3a8885725da552a16e9c1dc2b5a4f7b731b005"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/taodai/cast.webp",
+          "sourceSha256": "1a0dd103e156e6e222ae65c4fe562f5d56501c990aafe3f083e5556fd033e25b"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/taodai/hit.webp",
+          "sourceSha256": "ed49f87a4fd024affbdcc0e22f345a3346b4bd2ee2a8ff1687538d7e8d9e662a"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/taodai/death.webp",
+          "sourceSha256": "a84df52ee148c62305da2fb32427b999cc05265732965b418a35a04ff1662d25"
+        }
+      }
+    },
+    "miki": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/miki/idle.webp",
+          "sourceSha256": "87e57dd09a4f54d15f14da1849ebd36104c72702d7d85834ebc48b1bb7be4895"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/miki/move.webp",
+          "sourceSha256": "260b9e28feea5ffebb6d7be28998f4ede5a63f8356da8336c7942aa07bf893c2"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/miki/attack.webp",
+          "sourceSha256": "c815644dcb3a531e81558606263e51bda05869e01e11d37bd80f77c8e5a8ee4b"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/miki/cast.webp",
+          "sourceSha256": "234af337e70b73ebb80b88a0a18dd2f87f3b745a77f84e7e31fd0464b2ca715b"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/miki/hit.webp",
+          "sourceSha256": "fd1c8486eca79655bb2cac9015cab1defab575919419ebbe9ee89e0a9c96170c"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/miki/death.webp",
+          "sourceSha256": "cb89698d7a8b9ccfe45bf7fbe5012dbe2db1cd35da75f53334259584e260fc48"
+        }
+      }
+    },
+    "rei": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/rei/idle.webp",
+          "sourceSha256": "c583d46b8c0e0ba16a8685fa667baa0ba0693affe42132b042d0e71061061323"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/rei/move.webp",
+          "sourceSha256": "4989cf15c5c36341d31f3587833ef7ca17d06988e8cacee2e458cf5bc095d5c9"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/rei/attack.webp",
+          "sourceSha256": "cd2410ebcefd6e77da86a3303b0706cb8836499330561fe244f9cca5941e2932"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/rei/cast.webp",
+          "sourceSha256": "66ea360ae73e71b84a87cc2c45354237cfe451a10c478c9557b125a8249f5d5d"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/rei/hit.webp",
+          "sourceSha256": "498136c40b2b46f689436dbbca44f202b51926a8ada08662ccd0d04904c6c84d"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/rei/death.webp",
+          "sourceSha256": "3055f6d7b10204d519964bc25ef6e523bb8a3ec0c50968aca8c6b764ab23b87a"
+        }
+      }
+    },
+    "rinco": {
+      "actions": {
+        "idle": {
+          "count": 8,
+          "columns": 4,
+          "fps": 8.0,
+          "loop": true,
+          "path": "survival/assets/animations/rinco/idle.webp",
+          "sourceSha256": "a6fc1927eb0c26ab04c83b7b64ad965e82a3b26a9aaa13a16014266dda23fb98"
+        },
+        "move": {
+          "count": 8,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": true,
+          "path": "survival/assets/animations/rinco/move.webp",
+          "sourceSha256": "58a5ea311828b23a5002ffa473824b80a787ba04c88d0c58d7435480e7f956a0"
+        },
+        "attack": {
+          "count": 8,
+          "columns": 4,
+          "fps": 16.0,
+          "loop": false,
+          "path": "survival/assets/animations/rinco/attack.webp",
+          "sourceSha256": "ce6d549b0f74b4b851420c47d196fd12de2c7b105b191875534ccdebfd3800c3"
+        },
+        "cast": {
+          "count": 10,
+          "columns": 5,
+          "fps": 14.0,
+          "loop": false,
+          "path": "survival/assets/animations/rinco/cast.webp",
+          "sourceSha256": "d858fbaabbf6f5e73af45b71f5e321b4abfebd9d4f512aea51f7e72642cfe549"
+        },
+        "hit": {
+          "count": 4,
+          "columns": 4,
+          "fps": 12.0,
+          "loop": false,
+          "path": "survival/assets/animations/rinco/hit.webp",
+          "sourceSha256": "e7dd6fd7ca36b29988a9e8993c4019b16b0194e67390258c93781855833ea451"
+        },
+        "death": {
+          "count": 6,
+          "columns": 3,
+          "fps": 10.0,
+          "loop": false,
+          "path": "survival/assets/animations/rinco/death.webp",
+          "sourceSha256": "5a478b560a15ba069898811db01f086e3a7e3c01af5c587d0113531650049294"
+        }
+      }
+    }
+  }
+}

@@ -969,6 +969,7 @@ html[data-theme="dark"] .help-h { color:#c3c9ff; }
       <button id="homeContinue" class="flow-primary" type="button" hidden>继续对局</button>
       <button id="homeQueueArena" class="flow-secondary" type="button">✦ 星域小队 · 异步竞技场</button>
       <button id="homeNew" class="flow-secondary" type="button">新建对局</button>
+      <button id="homeSurvival" class="flow-secondary" type="button">星域幸存者 · 波次生存</button>
       <button id="homeOnline" class="flow-secondary" type="button" title="创建或加入八人好友房间">八人联机 · 好友房间</button>
       <button id="homeHelp" class="flow-link" type="button">玩法说明</button>
       <button id="homeHistory" class="flow-link" type="button">战绩与荣誉</button>
@@ -7184,6 +7185,7 @@ document.addEventListener('keydown',trapFlowKeys,true);
 $('homeContinue').onclick=()=>continueRecommendedSave();
 $('homeQueueArena').onclick=()=>{location.href='arena.html';};
 $('homeNew').onclick=()=>{selMode='normal';selRunChallenge='';curseSel=[];openSetup();};
+$('homeSurvival').onclick=()=>{location.href='survival.html';};
 $('homeOnline').onclick=()=>{window.location.href='./online.html';};
 $('homeHelp').onclick=showHelp;
 $('homeTheme').onclick=toggleTheme;

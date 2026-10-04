@@ -1,0 +1,802 @@
+[
+  {
+    "id": "ein",
+    "name": "艾因",
+    "job": "守护",
+    "fac": "魔道",
+    "job2": null,
+    "fac2": null,
+    "skill": "魔导结界",
+    "signature": "棱镜守夜",
+    "base": {
+      "hp": 84,
+      "atk": 6,
+      "spd": 0.8,
+      "rng": 1
+    }
+  },
+  {
+    "id": "kouichi",
+    "name": "光一",
+    "job": "狂战",
+    "fac": "工造",
+    "job2": null,
+    "fac2": null,
+    "skill": "滑板切入",
+    "signature": "霓虹轮刃",
+    "base": {
+      "hp": 58,
+      "atk": 10,
+      "spd": 1.1,
+      "rng": 1
+    }
+  },
+  {
+    "id": "yua",
+    "name": "悠亚",
+    "job": "法师",
+    "fac": "星际",
+    "job2": "咒术",
+    "fac2": null,
+    "skill": "记忆篡改",
+    "signature": "记忆回收站",
+    "base": {
+      "hp": 44,
+      "atk": 12,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "goutan",
+    "name": "勾檀",
+    "job": "守护",
+    "fac": "毛茸乐园",
+    "job2": null,
+    "fac2": null,
+    "skill": "忠犬护主",
+    "signature": "忠犬拦截",
+    "base": {
+      "hp": 82,
+      "atk": 6,
+      "spd": 0.8,
+      "rng": 1
+    }
+  },
+  {
+    "id": "yujiu",
+    "name": "羽啾",
+    "job": "游侠",
+    "fac": "毛茸乐园",
+    "job2": null,
+    "fac2": "森之国",
+    "skill": "天线锁定",
+    "signature": "天线锁定",
+    "base": {
+      "hp": 40,
+      "atk": 10,
+      "spd": 1.25,
+      "rng": 4
+    }
+  },
+  {
+    "id": "songlv",
+    "name": "小松绿",
+    "job": "狂战",
+    "fac": "森之国",
+    "job2": null,
+    "fac2": null,
+    "skill": "盘根重锤",
+    "signature": "根系重击",
+    "base": {
+      "hp": 58,
+      "atk": 10,
+      "spd": 1.05,
+      "rng": 1
+    }
+  },
+  {
+    "id": "likou",
+    "name": "莉蔻",
+    "job": "医者",
+    "fac": "学园",
+    "job2": null,
+    "fac2": null,
+    "skill": "救急手册",
+    "signature": "急救快闪",
+    "base": {
+      "hp": 44,
+      "atk": 9,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "agari",
+    "name": "东爱璃",
+    "job": "偶像",
+    "fac": "P-SP",
+    "job2": null,
+    "fac2": null,
+    "skill": "四十八人应援",
+    "signature": "应援心拍",
+    "base": {
+      "hp": 50,
+      "atk": 7,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "hoshimi",
+    "name": "希侑",
+    "job": "刺客",
+    "fac": "夜幕",
+    "job2": null,
+    "fac2": null,
+    "skill": "猫爪突袭",
+    "signature": "月猫跃迁",
+    "base": {
+      "hp": 69,
+      "atk": 11,
+      "spd": 1.15,
+      "rng": 1
+    }
+  },
+  {
+    "id": "chiharu",
+    "name": "初濑",
+    "job": "刀客",
+    "fac": "森之国",
+    "job2": null,
+    "fac2": null,
+    "skill": "夜岚斩",
+    "signature": "夜岚折返",
+    "base": {
+      "hp": 60,
+      "atk": 11,
+      "spd": 1.05,
+      "rng": 1
+    }
+  },
+  {
+    "id": "suiji",
+    "name": "岁己",
+    "job": "歌势",
+    "fac": "森之国",
+    "job2": null,
+    "fac2": null,
+    "skill": "十小时续航",
+    "signature": "十小时续航",
+    "base": {
+      "hp": 48,
+      "atk": 10,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "kanban",
+    "name": "栞栞",
+    "job": "守护",
+    "fac": "毛茸乐园",
+    "job2": null,
+    "fac2": null,
+    "skill": "海獭硬壳",
+    "signature": "海獭缓冲层",
+    "base": {
+      "hp": 92,
+      "atk": 6,
+      "spd": 0.8,
+      "rng": 1
+    }
+  },
+  {
+    "id": "zhouyi",
+    "name": "轴伊",
+    "job": "刀客",
+    "fac": "夜幕",
+    "job2": null,
+    "fac2": null,
+    "skill": "破盾之刃",
+    "signature": "破盾读秒",
+    "base": {
+      "hp": 55,
+      "atk": 11,
+      "spd": 1.1,
+      "rng": 1
+    }
+  },
+  {
+    "id": "yuji",
+    "name": "雨纪",
+    "job": "游侠",
+    "fac": "深海",
+    "job2": null,
+    "fac2": null,
+    "skill": "雨幕庇护",
+    "signature": "雨幕偏航",
+    "base": {
+      "hp": 46,
+      "atk": 10,
+      "spd": 1.2,
+      "rng": 4
+    }
+  },
+  {
+    "id": "tiandou",
+    "name": "恬豆",
+    "job": "歌势",
+    "fac": "四禧丸子",
+    "job2": null,
+    "fac2": null,
+    "skill": "点心投喂",
+    "signature": "点心补给线",
+    "base": {
+      "hp": 52,
+      "atk": 10,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "aza",
+    "name": "AZA",
+    "job": "狂战",
+    "fac": "音律",
+    "job2": null,
+    "fac2": null,
+    "skill": "节拍堡垒",
+    "signature": "节拍装甲",
+    "base": {
+      "hp": 88,
+      "atk": 6,
+      "spd": 0.8,
+      "rng": 1
+    }
+  },
+  {
+    "id": "pako",
+    "name": "帕可",
+    "job": "医者",
+    "fac": "深海",
+    "job2": null,
+    "fac2": null,
+    "skill": "善意收集",
+    "signature": "善意溢出",
+    "base": {
+      "hp": 50,
+      "atk": 9,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "zhijin",
+    "name": "枝堇",
+    "job": "刺客",
+    "fac": "花语",
+    "job2": null,
+    "fac2": "森之国",
+    "skill": "紫藤突刺",
+    "signature": "紫藤追迹",
+    "base": {
+      "hp": 76,
+      "atk": 12,
+      "spd": 1.2,
+      "rng": 1
+    }
+  },
+  {
+    "id": "sishi",
+    "name": "四时小路",
+    "job": "游侠",
+    "fac": "音律",
+    "job2": null,
+    "fac2": null,
+    "skill": "四季轮舞",
+    "signature": "四季转盘",
+    "base": {
+      "hp": 46,
+      "atk": 11,
+      "spd": 1.2,
+      "rng": 4
+    }
+  },
+  {
+    "id": "sumi",
+    "name": "礼墨",
+    "job": "守护",
+    "fac": "P-SP",
+    "job2": null,
+    "fac2": null,
+    "skill": "墨龙结界",
+    "signature": "墨龙入砚",
+    "base": {
+      "hp": 90,
+      "atk": 6,
+      "spd": 0.8,
+      "rng": 1
+    }
+  },
+  {
+    "id": "yukie",
+    "name": "桃濑雪绘",
+    "job": "刀客",
+    "fac": "工造",
+    "job2": null,
+    "fac2": null,
+    "skill": "上勾拳连段",
+    "signature": "上勾拳三连",
+    "base": {
+      "hp": 62,
+      "atk": 11,
+      "spd": 1.05,
+      "rng": 1
+    }
+  },
+  {
+    "id": "miting",
+    "name": "米汀",
+    "job": "咒术",
+    "fac": "魔道",
+    "job2": null,
+    "fac2": null,
+    "skill": "侦探的看破",
+    "signature": "看破真相",
+    "base": {
+      "hp": 46,
+      "atk": 16,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "xuezhu",
+    "name": "雪烛",
+    "job": "法师",
+    "fac": "夜幕",
+    "job2": null,
+    "fac2": null,
+    "skill": "奇门冰封",
+    "signature": "冰烛禁区",
+    "base": {
+      "hp": 44,
+      "atk": 15,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "zeyin",
+    "name": "泽音",
+    "job": "医者",
+    "fac": "深海",
+    "job2": null,
+    "fac2": null,
+    "skill": "泽畔歌声",
+    "signature": "泽畔回声",
+    "base": {
+      "hp": 52,
+      "atk": 11,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "sanli",
+    "name": "三理",
+    "job": "法师",
+    "fac": "音律",
+    "job2": null,
+    "fac2": null,
+    "skill": "梦境三重奏",
+    "signature": "梦境三拍",
+    "base": {
+      "hp": 48,
+      "atk": 15,
+      "spd": 0.75,
+      "rng": 3
+    }
+  },
+  {
+    "id": "diansu",
+    "name": "点酥",
+    "job": "刺客",
+    "fac": "魔道",
+    "job2": null,
+    "fac2": null,
+    "skill": "邪修石符",
+    "signature": "邪修石符",
+    "base": {
+      "hp": 55,
+      "atk": 16,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "lianshiye",
+    "name": "恋诗夜",
+    "job": "刀客",
+    "fac": "夜幕",
+    "job2": null,
+    "fac2": null,
+    "skill": "失忆挽歌",
+    "signature": "失忆挽歌",
+    "base": {
+      "hp": 60,
+      "atk": 11,
+      "spd": 1.05,
+      "rng": 1
+    }
+  },
+  {
+    "id": "huize",
+    "name": "灰泽满",
+    "job": "咒术",
+    "fac": "学园",
+    "job2": null,
+    "fac2": null,
+    "skill": "果冻封印",
+    "signature": "果冻封印",
+    "base": {
+      "hp": 48,
+      "atk": 16,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "shengge",
+    "name": "笙歌",
+    "job": "歌势",
+    "fac": "P-SP",
+    "job2": null,
+    "fac2": null,
+    "skill": "笙歌净化",
+    "signature": "净音祷歌",
+    "base": {
+      "hp": 50,
+      "atk": 12,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "shadow",
+    "name": "李豆沙",
+    "job": "刺客",
+    "fac": "P-SP",
+    "job2": null,
+    "fac2": null,
+    "skill": "熊猫跃袭",
+    "signature": "熊跃终点",
+    "base": {
+      "hp": 78,
+      "atk": 13,
+      "spd": 1.3,
+      "rng": 1
+    }
+  },
+  {
+    "id": "nox",
+    "name": "诺莺",
+    "job": "刺客",
+    "fac": "毛茸乐园",
+    "job2": null,
+    "fac2": null,
+    "skill": "夜莺回响",
+    "signature": "夜莺回响",
+    "base": {
+      "hp": 76,
+      "atk": 13,
+      "spd": 1.25,
+      "rng": 1
+    }
+  },
+  {
+    "id": "miyue",
+    "name": "弥月",
+    "job": "刀客",
+    "fac": "夜幕",
+    "job2": null,
+    "fac2": null,
+    "skill": "月影斩",
+    "signature": "月影留痕",
+    "base": {
+      "hp": 60,
+      "atk": 12,
+      "spd": 1.1,
+      "rng": 1
+    }
+  },
+  {
+    "id": "huali",
+    "name": "花礼",
+    "job": "偶像",
+    "fac": "花语",
+    "job2": null,
+    "fac2": null,
+    "skill": "小花的祝福",
+    "signature": "花礼绽放",
+    "base": {
+      "hp": 52,
+      "atk": 9,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "youyu",
+    "name": "柚雨",
+    "job": "刀客",
+    "fac": "深海",
+    "job2": null,
+    "fac2": null,
+    "skill": "幽魂斩",
+    "signature": "幽魂相位",
+    "base": {
+      "hp": 60,
+      "atk": 13,
+      "spd": 1.1,
+      "rng": 1
+    }
+  },
+  {
+    "id": "quanrong",
+    "name": "犬绒",
+    "job": "守护",
+    "fac": "毛茸乐园",
+    "job2": null,
+    "fac2": null,
+    "skill": "小狗硬壳",
+    "signature": "小狗反甲",
+    "base": {
+      "hp": 100,
+      "atk": 8,
+      "spd": 0.8,
+      "rng": 1
+    }
+  },
+  {
+    "id": "ruiya",
+    "name": "瑞娅",
+    "job": "法师",
+    "fac": "星际",
+    "job2": null,
+    "fac2": "工造",
+    "skill": "时空禁锢",
+    "signature": "时空封存",
+    "base": {
+      "hp": 46,
+      "atk": 16,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "mumu",
+    "name": "沐霂",
+    "job": "偶像",
+    "fac": "四禧丸子",
+    "job2": null,
+    "fac2": null,
+    "skill": "东风润物",
+    "signature": "东风润物",
+    "base": {
+      "hp": 54,
+      "atk": 10,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "kroya",
+    "name": "克罗雅",
+    "job": "法师",
+    "fac": "学园",
+    "job2": null,
+    "fac2": null,
+    "skill": "混沌裂界",
+    "signature": "混沌裂界",
+    "base": {
+      "hp": 46,
+      "atk": 16,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "shiliu",
+    "name": "十六萤",
+    "job": "刺客",
+    "fac": "森之国",
+    "job2": "游侠",
+    "fac2": null,
+    "skill": "浣熊洗劫",
+    "signature": "浣熊洗劫",
+    "base": {
+      "hp": 80,
+      "atk": 13,
+      "spd": 1.2,
+      "rng": 3
+    }
+  },
+  {
+    "id": "seki",
+    "name": "星汐",
+    "job": "咒术",
+    "fac": "P-SP",
+    "job2": null,
+    "fac2": "魔道",
+    "skill": "星蚀低语",
+    "signature": "星蚀低语",
+    "base": {
+      "hp": 46,
+      "atk": 16,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "haruka",
+    "name": "白神遥",
+    "job": "刀客",
+    "fac": "P-SP",
+    "job2": null,
+    "fac2": null,
+    "skill": "白刃拍击",
+    "signature": "白刃拍击",
+    "base": {
+      "hp": 58,
+      "atk": 12,
+      "spd": 1.1,
+      "rng": 1
+    }
+  },
+  {
+    "id": "mahiru",
+    "name": "真绯瑠",
+    "job": "狂战",
+    "fac": "毛茸乐园",
+    "job2": null,
+    "fac2": null,
+    "skill": "绯红旋风",
+    "signature": "绯红旋风",
+    "base": {
+      "hp": 68,
+      "atk": 13,
+      "spd": 1.1,
+      "rng": 1
+    }
+  },
+  {
+    "id": "nana7mi",
+    "name": "七海",
+    "job": "刀客",
+    "fac": "深海",
+    "job2": null,
+    "fac2": null,
+    "skill": "鲨皇旋流",
+    "signature": "鲨皇潮",
+    "base": {
+      "hp": 62,
+      "atk": 12,
+      "spd": 1.05,
+      "rng": 1
+    }
+  },
+  {
+    "id": "liAn",
+    "name": "梨安",
+    "job": "法师",
+    "fac": "四禧丸子",
+    "job2": null,
+    "fac2": null,
+    "skill": "晨露凝霜",
+    "signature": "晨露凝霜",
+    "base": {
+      "hp": 48,
+      "atk": 17,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "youyi",
+    "name": "又一",
+    "job": "刺客",
+    "fac": "四禧丸子",
+    "job2": "刀客",
+    "fac2": null,
+    "skill": "一心同体",
+    "signature": "一心同体",
+    "base": {
+      "hp": 92,
+      "atk": 13,
+      "spd": 1.15,
+      "rng": 1
+    }
+  },
+  {
+    "id": "azi",
+    "name": "阿梓",
+    "job": "歌势",
+    "fac": "工造",
+    "job2": null,
+    "fac2": "音律",
+    "skill": "高音震魂",
+    "signature": "高音震魂",
+    "base": {
+      "hp": 52,
+      "atk": 15,
+      "spd": 1,
+      "rng": 3
+    }
+  },
+  {
+    "id": "taodai",
+    "name": "桃代",
+    "job": "守护",
+    "fac": "花语",
+    "job2": null,
+    "fac2": null,
+    "skill": "桃香结界",
+    "signature": "桃香结界",
+    "base": {
+      "hp": 96,
+      "atk": 8,
+      "spd": 0.8,
+      "rng": 1
+    }
+  },
+  {
+    "id": "miki",
+    "name": "弥希",
+    "job": "医者",
+    "fac": "星际",
+    "job2": null,
+    "fac2": null,
+    "skill": "星海庇护",
+    "signature": "星海庇护",
+    "base": {
+      "hp": 48,
+      "atk": 13,
+      "spd": 0.9,
+      "rng": 3
+    }
+  },
+  {
+    "id": "rei",
+    "name": "病院坂灵",
+    "job": "医者",
+    "fac": "P-SP",
+    "job2": null,
+    "fac2": null,
+    "skill": "灵界之门",
+    "signature": "灵界之门",
+    "base": {
+      "hp": 47,
+      "atk": 15,
+      "spd": 0.7,
+      "rng": 3
+    }
+  },
+  {
+    "id": "rinco",
+    "name": "秋凛子",
+    "job": "狂战",
+    "fac": "P-SP",
+    "job2": null,
+    "fac2": null,
+    "skill": "神社拉闸",
+    "signature": "十二点拉闸",
+    "base": {
+      "hp": 62,
+      "atk": 13,
+      "spd": 1.1,
+      "rng": 1
+    }
+  }
+]
