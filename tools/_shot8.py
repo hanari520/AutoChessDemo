@@ -14,7 +14,7 @@ with sync_playwright() as p:
     pg.on("requestfailed", lambda r: fails.append(r.url))
     pg.on("response", lambda r: {404: lambda: fails.append("404 " + r.url)}.get(r.status, lambda: None)())
     pg.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-    pg.goto("http://localhost:8081/index.html")
+    pg.goto("http://localhost:8081/classic.html")
     pg.wait_for_timeout(1200)
 
     # 定向买到 8 名新立绘棋子并上阵

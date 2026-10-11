@@ -6,7 +6,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const game=()=>createGame({seed:'prep-controls',players:Array.from({length:8},(_,i)=>({id:`p${i}`,name:`P${i}`}))});
 test('all equipment descriptions and 21 recipes match the classic catalog',()=>{
-  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const html=readFileSync(new URL('../classic.html',import.meta.url),'utf8');
   const literal=html.match(/const ITEMS = (\{[\s\S]*?\n\});/)[1];
   assert.equal(JSON.stringify(EQUIPMENT),JSON.stringify(vm.runInNewContext(`(${literal})`)));
   const crafted=Object.entries(EQUIPMENT).filter(([,item])=>item.from);

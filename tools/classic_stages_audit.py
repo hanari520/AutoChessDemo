@@ -81,7 +81,7 @@ with sync_playwright() as pw:
     page = browser.new_page(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True)
     page.add_init_script(TOUCH_PATCH)
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto('http://127.0.0.1:8081/index.html')
+    page.goto('http://127.0.0.1:8081/classic.html')
     page.wait_for_timeout(800)
     check(page, '1-首页', 'p1-home.png')
 
@@ -203,7 +203,7 @@ with sync_playwright() as pw:
     land = browser.new_page(viewport={'width': 844, 'height': 390}, has_touch=True, is_mobile=True)
     land.add_init_script(TOUCH_PATCH)
     land.on('pageerror', lambda e: errors.append('landscape: '+str(e)))
-    land.goto('http://127.0.0.1:8081/index.html')
+    land.goto('http://127.0.0.1:8081/classic.html')
     enter_game(land)
     check(land, '20-横屏·备战', 'l20-prep.png')
     land.locator('#fightBtn').click()

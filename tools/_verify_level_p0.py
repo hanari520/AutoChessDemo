@@ -10,7 +10,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'tools')
-URL = os.environ.get('URL', 'http://127.0.0.1:8088/index.html')
+URL = os.environ.get('URL', 'http://127.0.0.1:8088/classic.html')
 
 
 def check(ok, label, details=None):

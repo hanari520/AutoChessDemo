@@ -14,7 +14,7 @@ assert.match(manifest.method, /deterministic local synthesis/);
 assert.equal(manifest.skills.length, 50, 'every playable unit has a signature cue');
 assert.ok(manifest.events.length >= 60, 'system and synergy cues are included');
 
-const page = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const page = fs.readFileSync(path.join(root, 'classic.html'), 'utf8');
 const engine = fs.readFileSync(path.join(root, 'tools', 'battle-audio.js'), 'utf8');
 const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 assert.match(page, /tools\/battle-audio\.js/, 'page still wires the shared sound engine');

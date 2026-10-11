@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1",
+  "gameId": "midnight-store",
+  "assets": [
+    {
+      "assetId": "suiji-store",
+      "path": "assets/game-library/midnight-store/suiji-v1.webp",
+      "version": "1",
+      "width": 640,
+      "height": 960,
+      "usage": "岁己便利店来访立绘",
+      "characterId": "suiji",
+      "transparent": true,
+      "tool": "image_gen.imagegen",
+      "model": null,
+      "prompt": "Generate a new transparent character standing illustration for a cozy anime convenience-store story game. The provided image is an identity reference only: preserve this girl's silver-white long hair, vivid red eyes, small red rose hair ornaments and red ribbon accents; do not copy the chibi body, fantasy battle costume, crown, weapon or magical effects. Redesign her as an adult virtual idol after finishing a late livestream, friendly and a little tired, wearing a soft ivory cardigan over a wine-red blouse and a simple dark pleated skirt, small rose hair clip. Clean beautiful hand-drawn anime visual novel art, approximately 6-head-tall stylized adult proportions, three-quarter front view from mid-thigh up, hands naturally holding a small closed umbrella in front (no drink, no readable text), a gentle conversational smile. Soft warm indoor light from front-left, subtle cool night rim light, refined line art and gentle cel shading, harmonious cream/peach/lavender palette. Centered one character, complete head and hair, no cropped hands, ample transparent padding around silhouette, vertical portrait composition. Genuine transparent alpha background, no floor, no scene, no white rectangle, no text, no watermark, no speech bubble. This is a game-specific unofficial fan-made daily outfit, not official art.",
+      "referenceImages": [
+        "assets/units_big/suiji.webp"
+      ],
+      "sourceImage": "C:/Users/twj/.codex/generated_images/01a128c2-f933-7581-8eae-a19df39c7f13/exec-d97287a5-7ab2-46d2-a31f-ea96c6b00851.png",
+      "archivedSource": "out/game-library-art/midnight-store/suiji-source-v1.png",
+      "processing": "Resize640×960;RGBA preserved;WebP87 method6"
+    },
+    {
+      "assetId": "kanban-store",
+      "path": "assets/game-library/midnight-store/kanban-v1.webp",
+      "version": "1",
+      "width": 640,
+      "height": 960,
+      "usage": "便利店顾客日常装立绘",
+      "characterId": "kanban",
+      "transparent": true,
+      "tool": "image_gen.imagegen",
+      "model": null,
+      "prompt": "Generate a new transparent character standing illustration for the same cozy anime convenience-store story game as the second reference. FIRST reference is character identity: preserve this adult girl's long wavy pale sandy-blonde hair, bright blue eyes, gentle round face, and recognizable brown-and-cream panda motif. SECOND reference sets the illustration style, linework, warm lighting and adult proportions only; do not copy her silver hair, red eyes or rose details. Redesign the first character in a daily outfit after a late broadcast: a cream blouse under a cozy soft cocoa-brown cardigan, muted blue pleated skirt, small panda-shaped hair clip and tiny panda charm on a canvas tote, no large panda hood. She carries a rolled blank notice poster and a notebook against her chest with relaxed natural hands, thoughtful friendly conversational expression. Clean refined hand-drawn anime visual novel art, 6-head-tall stylized adult proportions, three-quarter front view, mid-thigh-up crop, full head and hair within frame, centered vertical portrait with ample padding. Soft warm front-left indoor lighting, cool lavender rim light, gentle cel shading, matching cream peach lavender harmony. Genuine transparent alpha background, no floor, no scene, no glow rectangle, no weapons or magic, no text or readable writing, no logos or watermark. Unofficial fan game daily outfit.",
+      "referenceImages": [
+        "assets/units_big/kanban.webp",
+        "assets/game-library/midnight-store/suiji-v1.webp"
+      ],
+      "sourceImage": "C:/Users/twj/.codex/generated_images/01a128c2-f933-7581-8eae-a19df39c7f13/exec-d03c13b9-8c75-497e-adf3-5e65dccf6d7b.png",
+      "archivedSource": "out/game-library-art/midnight-store/kanban-source-v1.png",
+      "processing": "Resize640×960;RGBA preserved;WebP87 method6"
+    },
+    {
+      "assetId": "huize-store",
+      "path": "assets/game-library/midnight-store/huize-v1.webp",
+      "version": "1",
+      "width": 640,
+      "height": 960,
+      "usage": "便利店顾客日常装立绘",
+      "characterId": "huize",
+      "transparent": true,
+      "tool": "image_gen.imagegen",
+      "model": null,
+      "prompt": "Create a transparent adult male character illustration for a cozy anime convenience-store visual novel, matching the SECOND reference's detailed hand-drawn linework, warm front-left interior lighting, soft lavender edge light and gentle cel shading. FIRST reference is the character identity: preserve the adult androgynous man's long ash-silver hair tied in a loose side ponytail, gray-lavender eyes, small red bead hair accessory, dark forest-green color identity. Do not copy the chibi proportions, supernatural potion, battle stance or purple magic. Redesign him after a night shift wearing a comfortable dark forest-green hoodie beneath a light gray work jacket, simple black straight trousers, a subtle red cord on the wrist, carrying a compact closed tool pouch with natural relaxed hands. Slender adult masculine features and flat chest, calm attentive slight smile, shoulders relaxed, three-quarter front view, mid-thigh-up, approximately 6-head-tall adult anime proportions. Complete head/hair/hands in frame and generous transparent padding; centered vertical portrait. He should look ready to chat at the shop counter, not ready for combat. Match the visual novel finish and cream peach lavender environment lighting of the second reference; do not copy her outfit, eye color, roses, skirt or feminine chest. Genuine transparent alpha background, no background, no floor, no magic, no weapon, no text, no logos, no watermark. Unofficial fan game casual outfit.",
+      "referenceImages": [
+        "assets/units_big/huize.webp",
+        "assets/game-library/midnight-store/suiji-v1.webp"
+      ],
+      "sourceImage": "C:/Users/twj/.codex/generated_images/01a128c2-f933-7581-8eae-a19df39c7f13/exec-5de81ea0-0465-454b-ad5a-9699ed6fa3e4.png",
+      "archivedSource": "out/game-library-art/midnight-store/huize-source-v1.png",
+      "processing": "Resize640×960;RGBA preserved;WebP87 method6"
+    }
+  ]
+}

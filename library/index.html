@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8faff"><meta name="description" content="星夜游戏馆，虚拟偶像主题游戏的集合。从自走棋、幸存者到工作室经营，选一款，登上今晚的舞台。">
+  <title>星夜游戏馆 · 虚拟偶像的游戏舞台</title>
+  <link rel="icon" href="../assets/ui/star-stage-icon.svg" type="image/svg+xml"><link rel="manifest" href="../manifest.json"><link rel="stylesheet" href="../hall/style.css?v=1">
+</head>
+<body>
+<a class="skip" href="#game-library">跳到游戏列表</a>
+<header class="header"><div class="shell"><a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true">✦</span><span>星夜游戏馆<small>虚拟偶像的游戏舞台</small></span></a><nav aria-label="主导航"><a href="#game-library">全部游戏</a><a href="../library/profile.html">我的纪念</a><a href="#new-games">新作预告</a></nav><span class="header-note"><i class="dot" aria-hidden="true"></i>舞台已就绪，随时入场</span></div></header>
+<main>
+<section class="hero" aria-labelledby="hero-title"><div class="hero-scene" aria-hidden="true"></div><div class="shell"><div class="hero-copy"><p class="hero-note">今晚的特别节目 · 工作室经营</p><h1 id="hero-title">下播之后，<br>还有我们的舞台。</h1><p class="hero-description">和熟悉的她们，开启一段新的故事。<br>从日常排练到联合演出，今晚由你来安排。</p><div class="hero-actions"><a id="featured-play" class="primary" data-game="studio-manager" href="../games/studio-manager/">试玩《今晚谁来播》</a><a class="sub-link" href="#game-library">发现更多游戏</a></div><p class="hero-footnote">单人经营 · 四周战役 · 进度保存在此浏览器</p></div><div class="hero-cast" aria-hidden="true"><img src="../assets/units_big/kanban.webp" alt="" width="512" height="512"><img src="../assets/units_big/huize.webp" alt="" width="512" height="512"><img src="../assets/units_big/suiji.webp" alt="" width="512" height="512"></div><span class="stage-caption">岁己 / 栞栞 / 灰泽满 · 与你一同开场</span></div></section>
+<div class="shell"><div class="welcome-strip"><p><strong>每一种心情，都有一场好戏。</strong>策略、冒险、经营，找到你今晚想玩的那一款。</p><a href="#game-library">挑选你的舞台 ↘</a></div>
+<section id="game-library" aria-labelledby="library-title"><div class="section-heading"><h2 id="library-title">选择下一场精彩</h2><p>所有已开放的游戏，都在这里。</p></div>
+<div class="search-row"><label class="search-box"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="m16 16 5 5" stroke="currentColor" stroke-width="1.6"/></svg><input id="search" type="search" aria-label="搜索游戏、角色或玩法" placeholder="搜索游戏、角色或玩法" autocomplete="off"></label><label class="sort-label">排序<select id="sort"><option value="recommended">推荐顺序</option><option value="title">游戏名称</option></select></label></div>
+<nav class="tabs" aria-label="游戏列表"><button data-tab="all" aria-pressed="true">全部游戏 <span id="all-count">8</span></button><button data-tab="favorites" aria-pressed="false">我的收藏 <span id="favorite-count">0</span></button><button data-tab="recent" aria-pressed="false">最近打开 <span id="recent-count">0</span></button></nav>
+<div class="filters" role="group" aria-label="游戏类型"><button data-category="all" aria-pressed="true">全部类型</button><button data-category="策略对战" aria-pressed="false">策略对战</button><button data-category="动作冒险" aria-pressed="false">动作冒险</button><button data-category="模拟经营" aria-pressed="false">模拟经营</button><button data-category="经营叙事" aria-pressed="false">经营叙事</button></div>
+<p id="game-count" class="game-count" role="status" aria-live="polite">正在准备游戏列表…</p><p id="preference-note" class="preference-note" hidden>浏览器暂时无法保存收藏和最近打开，本次页面仍可正常使用。</p><div id="games" class="games"></div><noscript><p>请启用 JavaScript 以使用游戏列表。也可以直接进入<a href="../classic.html">星域棋战</a>、<a href="../arena.html">星域小队</a>、<a href="../survival.html">星域幸存者</a>、<a href="../rpg/">星渊手记</a>、<a href="../rpg/action.html">自由探索原型</a>、<a href="../online.html">八人联机</a>或<a href="../games/studio-manager/">今晚谁来播</a>。游戏本身也需要 JavaScript。</p></noscript></section>
+<section id="souvenirs" class="souvenirs" aria-labelledby="souvenir-title"><h2 id="souvenir-title">把精彩，留作纪念。</h2><p>完成《今晚谁来播》或《下播后的便利店》，收下自己的纪念物。记录保存在此浏览器。</p><p><a class="sub-link" href="../library/profile.html">布置我的六槽展示</a></p><div id="collectibles">还没有纪念物。就从第一次开播开始吧。</div></section>
+<section id="new-games" aria-labelledby="upcoming-title"><div class="section-heading"><h2 id="upcoming-title">下一幕，正在准备</h2><p>开发中的新故事，敬请期待。</p></div><div id="upcoming" class="upcoming-grid">正在读取新作预告…</div></section></div>
+</main><footer class="footer"><div class="shell"><p>✦ 星夜游戏馆　与你共享每一次开场</p><p>非官方同人试玩项目 · 单人进度保存在本机 · 联机游戏需要网络服务</p></div></footer>
+<script type="module" src="../hall/app.mjs?v=2"></script>
+</body></html>

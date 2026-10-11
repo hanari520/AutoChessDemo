@@ -6,7 +6,7 @@ import {CLASSIC_SKILLS,CLASSIC_MARKS,classicAttackProfile} from './skill-catalog
 import {MAX_LEVEL,XP_NEED,SHOP_ODDS,sellRefund,interestGain,streakGain} from './economy.js';
 import {createGame,applyAction,advancePhase,viewFor} from './core.js';
 import {resolveBattle,bondSummary} from './combat.js';
-const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=readFileSync(new URL('../classic.html',import.meta.url),'utf8');
 const source=readFileSync(new URL('./combat.js',import.meta.url),'utf8');
 const board=(ids,side='A')=>ids.map((id,i)=>({slot:side==='A'?32+i:i,unit:{uid:`${side}-${id}-${i}`,id,star:3,items:['armor','armor']}}));
 test('all 50 skill definitions and basic attack profiles match the actual classic source',()=>{

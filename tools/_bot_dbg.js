@@ -1,6 +1,6 @@
 /* 最小驱动：newGame → botPrep()，捕获异常（调试用） */
 const fs = require('fs'), path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'classic.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 ;globalThis.API = { get S(){return S}, byId, buy, pairCount, rollShop, startBattle, clickUnit, getAt, xpNeed, checkLevel, autoDeploy, autoDeployBest,
   placeFormation, genEnemy, prepEnemy, tidyBench, fillBoardBeforeBattle, unitBand, makeBattleUnit, equipTo, sellSelected };`;
