@@ -221,7 +221,7 @@ def main():
     handler = partial(QuietHandler, directory=str(ROOT))
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     Thread(target=server.serve_forever, daemon=True).start()
-    base = f"http://127.0.0.1:{server.server_port}/classic.html"
+    base = f"http://127.0.0.1:{server.server_port}/index.html"
     rows = []
     errors = []
     try:

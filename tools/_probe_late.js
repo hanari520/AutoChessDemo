@@ -2,7 +2,7 @@
    用法：node tools/_probe_late.js
    结论口径：胜负取自 S.stats.wins/losses 增量，超时/存活数从战报文本读取。 */
 const fs = require('fs'), path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '..', 'classic.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 
 ;globalThis.API = { get S(){return S}, setS:v=>{S=v}, byId, genEnemy, prepEnemy, startBattle,

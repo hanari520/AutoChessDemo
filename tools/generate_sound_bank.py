@@ -143,7 +143,7 @@ def render_skill(unit: dict) -> np.ndarray:
 
 
 def parse_events() -> list[dict]:
-    source = (ROOT / "classic.html").read_text(encoding="utf-8")
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
     block = source.split("const SFX_DEF={", 1)[1].split("\n};", 1)[0]
     events = []
     for key, body in re.findall(r"^\s{2}(\w+):\{([^\n]+)", block, flags=re.M):

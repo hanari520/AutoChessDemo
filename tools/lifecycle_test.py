@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "out" / "screenshots"
 OUT.mkdir(parents=True, exist_ok=True)
 STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
-BASE = "http://127.0.0.1:8081/classic.html"
+BASE = "http://127.0.0.1:8081/index.html"
 
 
 def require(condition, message):

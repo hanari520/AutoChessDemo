@@ -1,11 +1,11 @@
 # 虚拟棋战 · 棋子与羁绊总览表：按《刀塔自走棋棋子与羁绊 (1).xlsx》三表结构整理当前 demo 数据
-# 数据源：classic.html（经 export_units.js 导出 units.json）+ FACTIONS/CLASSES 定义
+# 数据源：index.html（经 export_units.js 导出 units.json）+ FACTIONS/CLASSES 定义
 import json, io, re
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
-BASE = io.open('../classic.html', encoding='utf8').read()
+BASE = io.open('../index.html', encoding='utf8').read()
 units = json.load(io.open('units.json', encoding='utf8'))
 
 def grab(name):

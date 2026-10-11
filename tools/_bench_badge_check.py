@@ -6,7 +6,7 @@ OUT = 'F:/demo/autochess/out/_bench_badge_check.png'
 with sync_playwright() as p:
     b = p.chromium.launch(channel='msedge', headless=True)
     pg = b.new_page(viewport={'width': 1400, 'height': 1000})
-    pg.goto('http://127.0.0.1:8081/classic.html', wait_until='networkidle')
+    pg.goto('http://127.0.0.1:8081/index.html', wait_until='networkidle')
     pg.wait_for_timeout(800)
     info = pg.evaluate('''() => {
       globalThis.newGame();

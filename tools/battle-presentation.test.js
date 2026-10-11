@@ -7,7 +7,7 @@ vm.runInContext(fs.readFileSync(new URL('./battle-presentation.js',import.meta.u
 const shared=context.ClassicBattlePresentation;
 test('both modes load the same presentation module and all 50 classic gestures',()=>{
   assert.equal(Object.keys(shared.actions).length,50);
-  const classic=fs.readFileSync(new URL('../classic.html',import.meta.url),'utf8');
+  const classic=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
   const online=fs.readFileSync(new URL('../online/battle-effects.js',import.meta.url),'utf8');
   assert.ok(classic.includes('ClassicBattlePresentation.create('));
   assert.ok(online.includes('ClassicBattlePresentation.create('));

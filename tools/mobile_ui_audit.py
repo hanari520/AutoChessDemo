@@ -1,4 +1,4 @@
-"""移动端 UI 体检：经典模式（classic.html）与八人联机（online.html）。
+"""移动端 UI 体检：经典模式（index.html）与八人联机（online.html）。
 量测：横向溢出、触控目标尺寸、小字号、安全区、固定栏遮挡。
 运行前提：静态 :8081（联机还需 API :3000）。
 """
@@ -69,7 +69,7 @@ with sync_playwright() as pw:
     page.add_init_script(TOUCH_PATCH)
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto('http://127.0.0.1:8081/classic.html')
+    page.goto('http://127.0.0.1:8081/index.html')
     page.locator('#homeNew').click()
     page.locator('#setupStart').click()
     page.wait_for_function('() => document.body.classList.contains("touch")', timeout=8000)
@@ -82,7 +82,7 @@ with sync_playwright() as pw:
             except Exception: pass
     page.wait_for_timeout(400)
     m = page.evaluate(MEASURE)
-    report('经典模式 classic.html @390x844', m)
+    report('经典模式 index.html @390x844', m)
     page.screenshot(path=str(OUT / 'classic-390.png'), full_page=True)
     print('pageerrors:', errors[:3])
 

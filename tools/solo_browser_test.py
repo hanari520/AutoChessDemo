@@ -312,7 +312,7 @@ def main():
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    base = f"http://127.0.0.1:{server.server_port}/classic.html"
+    base = f"http://127.0.0.1:{server.server_port}/index.html"
     errors = []
     try:
         with sync_playwright() as playwright:

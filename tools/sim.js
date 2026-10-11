@@ -1,8 +1,8 @@
-/* 无头模拟器：加载 classic.html 的游戏脚本，用 DOM 桩跑真实战斗逻辑。
+/* 无头模拟器：加载 index.html 的游戏脚本，用 DOM 桩跑真实战斗逻辑。
    普通模式四章各在 r25/50/75/100 守关，败亡即终局；MAXR 可提前截断采样。 */
 const fs = require('fs'), path = require('path');
 const simMetrics = require('./sim-metrics.js');
-const html = fs.readFileSync(process.env.HTML || path.join(__dirname, '..', 'classic.html'), 'utf8');   // HTML=路径 可指定文件，用于改动前后 A/B 对照
+const html = fs.readFileSync(process.env.HTML || path.join(__dirname, '..', 'index.html'), 'utf8');   // HTML=路径 可指定文件，用于改动前后 A/B 对照
 const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 
 ;globalThis.API = { get S(){return S}, setS:v=>{S=v},

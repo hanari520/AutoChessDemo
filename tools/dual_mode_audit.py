@@ -79,7 +79,7 @@ with sync_playwright() as pw:
     # ---------- 经典模式操作序列 ----------
     page = browser.new_page(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True)
     page.add_init_script(TOUCH_PATCH)
-    page.goto('http://127.0.0.1:8081/classic.html')
+    page.goto('http://127.0.0.1:8081/index.html')
     page.locator('#homeNew').click()
     page.locator('#setupStart').click()
     page.wait_for_function('() => document.body.classList.contains("touch")', timeout=8000)

@@ -71,9 +71,8 @@ export async function startServer({port=8082,dataDir=resolve(ROOT,'../workspace/
   }
   if(req.method!=='GET'&&req.method!=='HEAD')fail(405,'只允许读取页面');
   let relative;try{relative=decodeURIComponent(path).replace(/^\/+/, '')||'arena.html';}catch{fail(400,'路径无效');}
-  if(relative.endsWith('/'))relative+='index.html';
   if(relative.includes('..')||relative.includes('\\')||relative.includes('\0'))fail(403,'路径不允许');
-  const permitted=['arena.html','index.html','classic.html','survival.html','online.html','sw.js','icon-192.png','icon-512.png','manifest.json'].includes(relative)||['arena/client.mjs','arena/core.mjs','arena/replay.mjs','arena/round-actions.mjs','arena/style.css'].includes(relative)||/^(assets|tools|online|hall|library|games|rpg|survival)\//.test(relative);
+  const permitted=['arena.html','index.html','online.html','sw.js','icon-192.png','icon-512.png','manifest.json'].includes(relative)||['arena/client.mjs','arena/core.mjs','arena/replay.mjs','arena/round-actions.mjs','arena/style.css'].includes(relative)||/^(assets|tools|online)\//.test(relative);
   if(!permitted||/(^|\/)\.|\.test\.|server|\.py$/.test(relative))fail(403,'文件不允许');
   const mime=MIME[extname(relative)];if(!mime)fail(403,'文件类型不允许');const target=resolve(ROOT,relative);const actual=await realpath(target);if(!actual.startsWith(ROOT+sep))fail(403,'路径不允许');const content=await readFile(actual);
   res.writeHead(200,{'content-type':mime,'cache-control':'no-store','x-content-type-options':'nosniff'});res.end(req.method==='HEAD'?undefined:content);

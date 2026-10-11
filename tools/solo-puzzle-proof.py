@@ -109,7 +109,7 @@ def main():
                 for puzzle in range(3):
                     context = browser.new_context(viewport={"width": 1365, "height": 900})
                     page = context.new_page()
-                    page.goto(f"http://127.0.0.1:{PORT}/classic.html", wait_until="load")
+                    page.goto(f"http://127.0.0.1:{PORT}/index.html", wait_until="load")
                     page.wait_for_function("!!window.SoloHost && !!window.SoloModes", timeout=10000)
                     report = page.evaluate(SEARCH_JS, {"puzzle": puzzle, "maxTrials": 60})
                     print(json.dumps(report, ensure_ascii=False))

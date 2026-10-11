@@ -11,7 +11,7 @@ import os, sys
 from playwright.sync_api import sync_playwright
 
 OUT = os.path.dirname(os.path.abspath(__file__))
-URL = os.environ.get("URL", "http://localhost:8088/classic.html")
+URL = os.environ.get("URL", "http://localhost:8088/index.html")
 errors, fails = [], []
 
 with sync_playwright() as p:

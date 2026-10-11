@@ -5,7 +5,7 @@
    用法：node tools/syn_test.js [每羁绊局数] [羁绊名1 羁绊名2 ...]
         不给羁绊名 = 测全部 22 个；局数默认 30；MAXR=100 只测前四章 */
 const fs = require('fs'), path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '..', 'classic.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const code = html.match(/<script>([\s\S]*?)<\/script>/)[1] + `
 
 ;globalThis.API = { get S(){return S}, setS:v=>{S=v},

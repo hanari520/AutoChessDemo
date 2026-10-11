@@ -71,7 +71,7 @@ with sync_playwright() as p:
     pg = b.new_page(viewport={'width': 1400, 'height': 900}, device_scale_factor=2)
     errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)))
-    pg.goto('http://127.0.0.1:8081/classic.html')
+    pg.goto('http://127.0.0.1:8081/index.html')
     pg.wait_for_timeout(800)
     pg.evaluate("""() => {
       const r = document.getElementById('resumeOv');

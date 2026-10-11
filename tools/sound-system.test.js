@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'classic.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const battleAudio = fs.readFileSync(path.join(__dirname, 'battle-audio.js'), 'utf8');
 const begin = html.indexOf('/* ================= 声音系统');
 const end = html.indexOf('function byId(', begin);
@@ -41,7 +41,7 @@ function harness({ muted = false, audio = true } = {}) {
   vm.createContext(sandbox);
   // 页面里 tools/battle-audio.js 以 <script src> 先于内联声音段加载，这里保持同一顺序。
   vm.runInContext(battleAudio, sandbox, { filename: 'tools/battle-audio.js' });
-  vm.runInContext(`${assetDeclaration}\n${soundCode}`, sandbox, { filename: 'classic.html:sound' });
+  vm.runInContext(`${assetDeclaration}\n${soundCode}`, sandbox, { filename: 'index.html:sound' });
   const evalIn = code => vm.runInContext(code, sandbox);
   return { sandbox, ctx, sources, store, evalIn,
     setMode(v) { mode = v; }, draws() { return { battleDraws, dailyDraws }; } };

@@ -8,7 +8,7 @@ with sync_playwright() as p:
     pg = b.new_page(viewport={"width": 1280, "height": 900})
     errs = []
     pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
-    pg.goto("http://localhost:8081/classic.html")
+    pg.goto("http://localhost:8081/index.html")
     pg.wait_for_timeout(1200)
 
     # 备战：r20 头目预览（2x2 boss），同时买满 8 人（boss 预览与满员同屏验证）

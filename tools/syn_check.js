@@ -1,4 +1,4 @@
-/* 羁绊结构性体检（tools/syn_check.js）：解析 classic.html 的 UNITS/FACTIONS/CLASSES，
+/* 羁绊结构性体检（tools/syn_check.js）：解析 index.html 的 UNITS/FACTIONS/CLASSES，
    对 22 个羁绊（12 阵营 + 10 职业）检查——
    ✗ 真问题：① 无成员 ② 有1-2费入门子（第1回合商店刷得出） ③ 档位不可达（need > 成员数）
    ⑤ 阵营/职业拼写自洽
@@ -6,7 +6,7 @@
    支持刀塔式双标签 fac2/job2。
    用法：node tools/syn_check.js */
 const fs = require('fs'), path = require('path');
-const src = fs.readFileSync(path.join(__dirname, '..', 'classic.html'), 'utf8');
+const src = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
 /* ---- 解析棋子表（含双标签 fac2/job2，刀塔式兼职） ---- */
 const unitRe = /\{id:'(\w+)',\s*name:'([^']*)',\s*cost:(\d),\s*fac:'([^']+)',\s*job:'([^']+)'(?:,\s*fac2:'([^']+)')?(?:,\s*job2:'([^']+)')?/g;

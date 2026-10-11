@@ -56,7 +56,7 @@ with sync_playwright() as pw:
     assert result['effectBudget']<=40,result
     assert not errors,errors
     # Verify the classic page still initializes with the extracted module.
-    page.goto('http://127.0.0.1:8081/classic.html')
+    page.goto('http://127.0.0.1:8081/index.html')
     page.wait_for_timeout(1000)
     assert page.evaluate('typeof ClassicBattlePresentation.create')=='function'
     assert not errors,errors

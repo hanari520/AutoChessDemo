@@ -30,14 +30,14 @@ with sync_playwright() as pw:
     page.reload()
     assert page.locator('html').get_attribute('data-theme')=='dark'
     page.screenshot(path=str(OUT/'entry-dark.png'))
-    page.goto(base+'classic.html')
+    page.goto(base+'index.html')
     assert page.locator('html').get_attribute('data-theme')=='dark'
     page.locator('#homeTheme').click()
     assert page.evaluate("localStorage.getItem('vc_theme')")=='light'
     checks=0
     for theme in ['light','dark']:
         classic={}
-        page.goto(base+'classic.html')
+        page.goto(base+'index.html')
         page.evaluate('(theme)=>document.documentElement.dataset.theme=theme',theme)
         for side in ['ally','enemy']:classic[side]=page.evaluate(fixture,{'online':False,'side':side})
         page.goto(base+'online.html')
