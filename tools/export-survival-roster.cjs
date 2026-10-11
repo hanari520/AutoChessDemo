@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'classic.html'), 'utf8');
 const match = source.match(/const UNITS = (\[[\s\S]*?\n\]);/);
 if (!match) throw new Error('Cannot find the classic roster');
 const roster = vm.runInNewContext(match[1], Object.create(null), {timeout: 1000});

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8f4ff">
+  <meta name="description" content="在最后一班车驶过之后，照看一间小小的夜间便利店，听熟悉的人说说今天。">
+  <title>下播后的便利店 · 星夜游戏馆</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#app">跳到游戏内容</a>
+  <header class="topbar">
+    <a class="brand" href="../../index.html" aria-label="返回星夜游戏馆">
+      <span class="brand-mark" aria-hidden="true">✦</span>
+      <span><strong>下播后的便利店</strong><small>午夜营业中 · 星夜游戏馆</small></span>
+    </a>
+    <div class="top-status">
+      <span class="status-light" aria-hidden="true"></span>
+      <span id="save-status" role="status" aria-live="polite">正在读取本地进度…</span>
+    </div>
+    <div class="top-actions" aria-label="游戏工具">
+      <div class="text-size" role="group" aria-label="正文大小">
+        <span>字号</span>
+        <button id="font-smaller" type="button" aria-label="缩小正文">A−</button>
+        <button id="font-larger" type="button" aria-label="放大正文">A＋</button>
+      </div>
+      <button id="save" type="button" disabled>保存</button>
+      <button id="export" type="button" disabled>导出档案</button>
+      <button id="export-original" type="button" hidden>导出原档</button>
+      <label class="file-button" for="import" role="button" aria-label="导入游戏档案" aria-disabled="true" tabindex="-1">导入档案</label>
+      <input id="import" type="file" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <main id="app" tabindex="-1">
+    <section class="loading-card" aria-live="polite">
+      <span class="loading-star" aria-hidden="true">✦</span>
+      <p>把门口的灯打开，马上就好。</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a href="../../index.html">← 返回星夜游戏馆</a>
+    <span>单人故事 · 不需要赶时间 · 进度只保存在此浏览器</span>
+  </footer>
+  <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

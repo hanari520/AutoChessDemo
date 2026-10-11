@@ -1,6 +1,14 @@
-# 星域棋战 · VirtuaReal 自走棋 Demo
+# 星夜游戏馆 · 虚拟偶像游戏 Demo 集合
 
-虚拟偶像主题自走棋（VirtuaReal + P-SP 角色阵容），包含经典闯关、每日挑战、自定义诅咒与「星域小队」异步竞技场。游戏规则与战斗仍由 `index.html` 驱动；界面皮肤、舞台演出和施法表现拆分在 `tools/idol-ui.css`、`tools/idol-redesign.css`、`tools/idol-ui.js` 与 `tools/idol-ui-redesign.js`，无需构建或安装依赖。
+虚拟偶像主题自走棋（VirtuaReal + P-SP 角色阵容），包含经典闯关、每日挑战、自定义诅咒与「星域小队」异步竞技场。游戏规则与战斗仍由 `classic.html` 驱动；界面皮肤、舞台演出和施法表现拆分在 `tools/idol-ui.css`、`tools/idol-redesign.css`、`tools/idol-ui.js` 与 `tools/idol-ui-redesign.js`，无需构建或安装依赖。
+
+## 统一游戏大厅（2026-10-11）
+
+根地址 `/` 与 `index.html` 现在进入浅色舞台风格的统一大厅；`/library/` 是同一界面的兼容入口。大厅集中展示 7 个现有游戏入口：经典自走棋 `classic.html`、异步竞技场 `arena.html`、幸存者 `survival.html`、八人联机 `online.html`、章节 RPG `rpg/`、早期探索原型 `rpg/action.html` 和工作室经营 `games/studio-manager/`。7 款尚未实现的游戏仅展示在新作预告区。
+
+支持角色/玩法搜索、类型筛选、名称排序、本地收藏与最近打开。大厅偏好使用独立的 `vtlib:hall:preferences:v1` 键，旧游戏存档命名不变。新游戏登记在 `hall/catalog.mjs`，大厅样式与交互在 `hall/`。舞台背景为既有素材的 WebP 优化版本，未新增运行时依赖。
+
+验证、缓存边界与发布记录见 `specs/game-library/implementation/HALL-report.md`。经典自走棋的源码读取与浏览器检查工具已改为 `classic.html`。
 
 ## 本地游玩
 

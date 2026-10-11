@@ -8,9 +8,9 @@ const path = require('node:path');
 const vm = require('node:vm');
 const DailyCurses = require('./daily-curses.js');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'classic.html'), 'utf8');
 const match = html.match(/<script>([\s\S]*?)<\/script>/);
-assert(match, 'index.html must contain the inline game script');
+assert(match, 'classic.html must contain the inline game script');
 const source = match[1];
 const runtimeSource = fs.readFileSync(path.join(__dirname, 'bond-runtime.js'), 'utf8');
 
@@ -79,7 +79,7 @@ function game(seed = 41) {
     'boardTierKeys, nbList, dailyMods, makeBattleUnit, dealDamage, castSkill, byId, facsOf, jobsOf, ' +
     'renderSynergy, renderBook, rankedRun, rankedHist, writeRunHistory, ' +
     'get BV(){return BV}, get RND(){return RND}, get BondRuntime(){return BondRuntime}, ' +
-    'get BOND_NEW_DESC(){return BOND_NEW_DESC}, bondModern, bondDesc, get boardUnits(){return window.__bu} };', ctx, { filename: 'index.html' });
+    'get BOND_NEW_DESC(){return BOND_NEW_DESC}, bondModern, bondDesc, get boardUnits(){return window.__bu} };', ctx, { filename: 'classic.html' });
   return { ctx, api: ctx.BondTestAPI, storage, elements };
 }
 

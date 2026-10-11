@@ -90,7 +90,7 @@ def run_test():
         page.wait_for_timeout(1000)
         page.screenshot(path=str(OUT / 'desktop-companion.png'))
         result['shop_and_companion'] = True
-        page.goto(BASE + '/index.html')
+        page.goto(BASE + '/classic.html')
         page.locator('#homeSurvival').wait_for(state='visible')
         page.locator('#homeSurvival').click()
         ready(page)

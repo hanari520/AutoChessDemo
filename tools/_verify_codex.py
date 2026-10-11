@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'tools')
-URL = 'http://127.0.0.1:8088/index.html'
+URL = 'http://127.0.0.1:8088/classic.html'
 
 
 def open_book(pg):

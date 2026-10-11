@@ -4,7 +4,7 @@
 import json, sys
 from playwright.sync_api import sync_playwright
 
-BASE = "http://127.0.0.1:8081/index.html"
+BASE = "http://127.0.0.1:8081/classic.html"
 OUT = "out"
 
 def console_watch(page, errs):

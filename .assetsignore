@@ -72,3 +72,11 @@ survival/content.test.cjs
 survival/skills.test.cjs
 
 !arena/round-actions.mjs
+
+library/*.test.mjs
+library/contracts.md
+games/**/*.test.mjs
+games/**/README.md
+
+hall/*.test.mjs
+.impeccable

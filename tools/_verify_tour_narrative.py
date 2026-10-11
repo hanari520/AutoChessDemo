@@ -6,7 +6,7 @@ Re-run notes (project constraints):
   (any .py path in the Bash command). Run the code inline via heredoc halves,
   exactly like the acceptance run recorded in the session log:
   part1 = classic copy + SW (expects vcache-v71-tour-bar-width after the M5 fix),
-  part2 = solo-stack injection (index.html does NOT load solo-* in production;
+  part2 = solo-stack injection (classic.html does NOT load solo-* in production;
   inject tools/solo-ui.css + solo-modes/solo-ui/solo-host via add_style/script_tag).
 - Page globals: S / UNITS are top-level let/const -> NOT on window; inside
   page.evaluate use bare S (wait on `typeof startConfiguredRun === 'function'`).
@@ -23,7 +23,7 @@ Re-run notes (project constraints):
 import sys
 from playwright.sync_api import sync_playwright
 
-BASE = "http://127.0.0.1:8081/index.html"
+BASE = "http://127.0.0.1:8081/classic.html"
 SW_CACHE = "vcache-v71-tour-bar-width"
 failures = []
 
@@ -91,7 +91,7 @@ def main():
         check("A1 run-start banner", "常设赛开始" in banner["text"] and not banner["solo"], banner)
         shop = p1.evaluate("() => { rollShop(); return S.shop.filter(Boolean).map(u => UNITS.find(x=>x.id===u.id)?.cost ?? u.cost); }")
         check("C classic shop unaffected", all(1 <= c <= 5 for c in shop) and shop, shop)
-        sw = p1.evaluate("async () => { await navigator.serviceWorker.ready; await new Promise(r => setTimeout(r, 2500)); const keys = await caches.keys(); const name = keys.find(k => k.startsWith('vcache-')); const hit = {}; if (name) { const c = await caches.open(name); for (const f of ['./tools/narrative-tour.js?v=1','./tools/narrative-bar.js?v=1','./tools/narrative-bar.css?v=2','./index.html?v=71']) hit[f] = !!(await c.match(f)); } return { name, hit }; }")
+        sw = p1.evaluate("async () => { await navigator.serviceWorker.ready; await new Promise(r => setTimeout(r, 2500)); const keys = await caches.keys(); const name = keys.find(k => k.startsWith('vcache-')); const hit = {}; if (name) { const c = await caches.open(name); for (const f of ['./tools/narrative-tour.js?v=1','./tools/narrative-bar.js?v=1','./tools/narrative-bar.css?v=2','./classic.html?v=71']) hit[f] = !!(await c.match(f)); } return { name, hit }; }")
         check("SW " + SW_CACHE + " with narrative assets", sw["name"] == SW_CACHE and all(sw["hit"].values()), sw)
         check("no page errors (classic)", not errs1, errs1[:3])
 

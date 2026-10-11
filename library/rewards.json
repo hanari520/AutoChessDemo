@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1",
+  "games": {
+    "studio-manager": [
+      {
+        "id": "studio-first",
+        "gameId": "studio-manager",
+        "title": "首场开演",
+        "image": null,
+        "description": "首次完成四周战役并举办联合演出。"
+      },
+      {
+        "id": "studio-diverse",
+        "gameId": "studio-manager",
+        "title": "节目百花齐放",
+        "image": null,
+        "description": "以多样的节目编排完成联合演出。"
+      },
+      {
+        "id": "studio-best",
+        "gameId": "studio-manager",
+        "title": "全场最佳",
+        "image": null,
+        "description": "取得最高评价，完成联合演出。"
+      }
+    ],
+    "midnight-store": [
+      {
+        "id": "store-first",
+        "gameId": "midnight-store",
+        "title": "第七夜的灯",
+        "image": null,
+        "description": "完成七夜营业，收下属于这间便利店的结尾。"
+      },
+      {
+        "id": "store-listener",
+        "gameId": "midnight-store",
+        "title": "给故事留一把椅子",
+        "image": null,
+        "description": "在七夜里认真倾听三位顾客。"
+      },
+      {
+        "id": "store-promises",
+        "gameId": "midnight-store",
+        "title": "写在便签上的约定",
+        "image": null,
+        "description": "兑现三位顾客各自的约定。"
+      }
+    ]
+  }
+}

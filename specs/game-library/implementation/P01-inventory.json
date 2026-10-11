@@ -1,0 +1,637 @@
+{
+  "date": "2026-10-11",
+  "entries": [
+    {
+      "path": "index.html",
+      "network": "local game",
+      "verification": "Entry exists; not a complete gameplay regression"
+    },
+    {
+      "path": "arena.html",
+      "network": "online service required for matches",
+      "verification": "Entry exists; not a complete gameplay regression"
+    },
+    {
+      "path": "online.html",
+      "network": "online room service required",
+      "verification": "Entry exists; not a complete gameplay regression"
+    },
+    {
+      "path": "survival.html",
+      "network": "local game",
+      "verification": "Entry exists; not a complete gameplay regression"
+    },
+    {
+      "path": "rpg/index.html",
+      "network": "local prototype",
+      "verification": "Entry exists; not a complete gameplay regression"
+    }
+  ],
+  "characters": [
+    {
+      "id": "ein",
+      "displayName": "艾因",
+      "portrait": "assets/units_big/ein.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/ein.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "kouichi",
+      "displayName": "光一",
+      "portrait": "assets/units_big/kouichi.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/kouichi.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "yua",
+      "displayName": "悠亚",
+      "portrait": "assets/units_big/yua.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/yua.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "goutan",
+      "displayName": "勾檀",
+      "portrait": "assets/units_big/goutan.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/goutan.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "yujiu",
+      "displayName": "羽啾",
+      "portrait": "assets/units_big/yujiu.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/yujiu.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "songlv",
+      "displayName": "小松绿",
+      "portrait": "assets/units_big/songlv.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/songlv.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "likou",
+      "displayName": "莉蔻",
+      "portrait": "assets/units_big/likou.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/likou.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "agari",
+      "displayName": "东爱璃",
+      "portrait": "assets/units_big/agari.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/agari.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "hoshimi",
+      "displayName": "希侑",
+      "portrait": "assets/units_big/hoshimi.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/hoshimi.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "chiharu",
+      "displayName": "初濑",
+      "portrait": "assets/units_big/chiharu.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/chiharu.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "suiji",
+      "displayName": "岁己",
+      "portrait": "assets/units_big/suiji.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/suiji.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "kanban",
+      "displayName": "栞栞",
+      "portrait": "assets/units_big/kanban.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/kanban.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "zhouyi",
+      "displayName": "轴伊",
+      "portrait": "assets/units_big/zhouyi.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/zhouyi.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "yuji",
+      "displayName": "雨纪",
+      "portrait": "assets/units_big/yuji.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/yuji.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "tiandou",
+      "displayName": "恬豆",
+      "portrait": "assets/units_big/tiandou.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/tiandou.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "aza",
+      "displayName": "AZA",
+      "portrait": "assets/units_big/aza.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/aza.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "pako",
+      "displayName": "帕可",
+      "portrait": "assets/units_big/pako.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/pako.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "zhijin",
+      "displayName": "枝堇",
+      "portrait": "assets/units_big/zhijin.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/zhijin.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "sishi",
+      "displayName": "四时小路",
+      "portrait": "assets/units_big/sishi.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/sishi.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "sumi",
+      "displayName": "礼墨",
+      "portrait": "assets/units_big/sumi.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/sumi.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "yukie",
+      "displayName": "桃濑雪绘",
+      "portrait": "assets/units_big/yukie.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/yukie.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "miting",
+      "displayName": "米汀",
+      "portrait": "assets/units_big/miting.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/miting.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "xuezhu",
+      "displayName": "雪烛",
+      "portrait": "assets/units_big/xuezhu.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/xuezhu.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "zeyin",
+      "displayName": "泽音",
+      "portrait": "assets/units_big/zeyin.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/zeyin.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "sanli",
+      "displayName": "三理",
+      "portrait": "assets/units_big/sanli.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/sanli.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "diansu",
+      "displayName": "点酥",
+      "portrait": "assets/units_big/diansu.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/diansu.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "lianshiye",
+      "displayName": "恋诗夜",
+      "portrait": "assets/units_big/lianshiye.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/lianshiye.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "huize",
+      "displayName": "灰泽满",
+      "portrait": "assets/units_big/huize.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/huize.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "shengge",
+      "displayName": "笙歌",
+      "portrait": "assets/units_big/shengge.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/shengge.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "shadow",
+      "displayName": "李豆沙",
+      "portrait": "assets/units_big/shadow.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/shadow.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "nox",
+      "displayName": "诺莺",
+      "portrait": "assets/units_big/nox.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/nox.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "miyue",
+      "displayName": "弥月",
+      "portrait": "assets/units_big/miyue.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/miyue.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "huali",
+      "displayName": "花礼",
+      "portrait": "assets/units_big/huali.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/huali.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "youyu",
+      "displayName": "柚雨",
+      "portrait": "assets/units_big/youyu.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/youyu.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "quanrong",
+      "displayName": "犬绒",
+      "portrait": "assets/units_big/quanrong.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/quanrong.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "ruiya",
+      "displayName": "瑞娅",
+      "portrait": "assets/units_big/ruiya.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/ruiya.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "mumu",
+      "displayName": "沐霂",
+      "portrait": "assets/units_big/mumu.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/mumu.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "kroya",
+      "displayName": "克罗雅",
+      "portrait": "assets/units_big/kroya.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/kroya.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "shiliu",
+      "displayName": "十六萤",
+      "portrait": "assets/units_big/shiliu.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/shiliu.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "seki",
+      "displayName": "星汐",
+      "portrait": "assets/units_big/seki.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/seki.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "haruka",
+      "displayName": "白神遥",
+      "portrait": "assets/units_big/haruka.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/haruka.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "mahiru",
+      "displayName": "真绯瑠",
+      "portrait": "assets/units_big/mahiru.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/mahiru.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "nana7mi",
+      "displayName": "七海",
+      "portrait": "assets/units_big/nana7mi.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/nana7mi.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "liAn",
+      "displayName": "梨安",
+      "portrait": "assets/units_big/liAn.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/liAn.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "youyi",
+      "displayName": "又一",
+      "portrait": "assets/units_big/youyi.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/youyi.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "azi",
+      "displayName": "阿梓",
+      "portrait": "assets/units_big/azi.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/azi.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "taodai",
+      "displayName": "桃代",
+      "portrait": "assets/units_big/taodai.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/taodai.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "miki",
+      "displayName": "弥希",
+      "portrait": "assets/units_big/miki.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/miki.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "rei",
+      "displayName": "病院坂灵",
+      "portrait": "assets/units_big/rei.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/rei.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    },
+    {
+      "id": "rinco",
+      "displayName": "秋凛子",
+      "portrait": "assets/units_big/rinco.webp",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "legacyManifestSource": "assets/units_redraw/rinco.png",
+      "provenance": "Existing project redraw; generation prompt/model/licensing provenance not recorded"
+    }
+  ],
+  "notes": [
+    "Case-sensitive legacy ID liAn retained",
+    "50 base characters; do not advertise 100 outfit variants as currently playable",
+    "Assets units_redraw are deployment-excluded source art; units_big production portraits are used at runtime"
+  ]
+}

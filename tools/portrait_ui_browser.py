@@ -12,7 +12,7 @@ with sync_playwright() as pw:
         page = browser.new_page(viewport={'width': width, 'height': height}, is_mobile=True, has_touch=True)
         errors = []
         page.on('pageerror', lambda e: errors.append(str(e)))
-        page.goto('http://127.0.0.1:8081/index.html')
+        page.goto('http://127.0.0.1:8081/classic.html')
         page.locator('#homeNew').click()
         page.screenshot(path=str(OUT / f'{width}-setup.png'))
         page.locator('#setupStart').click()

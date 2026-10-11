@@ -1,13 +1,13 @@
 {
-  "name": "星域棋战 · VirtuaReal 虚拟偶像自走棋",
-  "short_name": "星域棋战",
-  "description": "VirtuaReal 虚拟偶像主题单人闯关自走棋",
+  "name": "星夜游戏馆 · 虚拟偶像的游戏舞台",
+  "short_name": "星夜游戏馆",
+  "description": "虚拟偶像主题游戏集合：策略、冒险与经营",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#eaf3ff",
-  "theme_color": "#eaf3ff",
+  "background_color": "#f8faff",
+  "theme_color": "#f8faff",
   "icons": [
     { "src": "assets/ui/star-stage-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

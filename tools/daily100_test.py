@@ -32,7 +32,7 @@ def main():
             context = browser.new_context(viewport={"width": 1366, "height": 768})
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
-            page.goto(f"http://127.0.0.1:{server.server_port}/index.html", wait_until="load")
+            page.goto(f"http://127.0.0.1:{server.server_port}/classic.html", wait_until="load")
             page.wait_for_function("() => window.DailyCurses && typeof S !== 'undefined' && typeof startConfiguredRun === 'function'", timeout=15000)
 
             catalog = page.evaluate("() => DailyCurses.CATALOG.map(c=>({id:c.id,name:c.name,limit:c.limit,compensation:c.compensation,timing:c.timing}))")
